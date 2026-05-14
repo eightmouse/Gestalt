@@ -25,21 +25,21 @@ Then edit the created file in `content/records/`.
 Keep one record per game. Add the newest note at the top of the body, with an optional banner image first:
 
 ```md
+:::note 14 / 05 / 2026 - Session Title
 ![Short banner description](/media/records/game-id/session-banner.jpg)
 
-## Session Title
 Thoughts from the session.
+:::
+
+:::note 13 / 05 / 2026 - Older Note Title
+Older note content.
+:::
 
 ## Update Index
 - 14 / 05 / 2026 - Short update label.
-
-## Previous Notes
-:::previous-note 14 / 05 / 2026 - Older Note Title
-Older note content.
-:::
 ```
 
-Use `:::previous-note ... :::` for older notes so the public entry stays readable as the archive grows.
+Use `:::note ... :::` for each game note. The Notes page turns each note into an expandable record, and `## Update Index` is shown separately in the right-side history drawer.
 
 ## Local Studio
 

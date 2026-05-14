@@ -1702,7 +1702,8 @@ button:focus-visible {
 
 .record-aside {
   display: grid;
-  align-content: start;
+  align-content: stretch;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 24px;
   padding: 26px 18px;
   border: 1px solid var(--line);
@@ -2067,13 +2068,13 @@ button:focus-visible {
   margin: 0 0 10px;
 }
 
-.previous-note {
+.note-entry {
   margin-block-start: 12px;
   border: 1px solid var(--line);
   background: rgba(5, 6, 5, 0.36);
 }
 
-.previous-note summary {
+.note-entry summary {
   min-block-size: 42px;
   display: flex;
   align-items: center;
@@ -2085,20 +2086,20 @@ button:focus-visible {
   list-style: none;
 }
 
-.previous-note summary::-webkit-details-marker {
+.note-entry summary::-webkit-details-marker {
   display: none;
 }
 
-.previous-note summary::before {
+.note-entry summary::before {
   content: ">";
   color: var(--accent);
 }
 
-.previous-note summary span {
+.note-entry summary span {
   flex: 1;
 }
 
-.previous-note summary i {
+.note-entry summary i {
   color: var(--muted-2);
   font-style: normal;
   font-size: 0;
@@ -2106,31 +2107,81 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
-.previous-note summary i::before {
+.note-entry summary i::before {
   content: "open";
   font-size: 11px;
 }
 
-.previous-note[open] summary {
+.note-entry[open] summary {
   border-bottom: 1px solid var(--line);
 }
 
-.previous-note[open] summary i {
+.note-entry[open] summary i {
   color: var(--muted);
 }
 
-.previous-note[open] summary i::before {
+.note-entry[open] summary i::before {
   content: "close";
 }
 
-.previous-note-body {
+.note-entry-body {
   padding: 12px;
 }
 
-.previous-note-body > .record-body {
+.note-entry-body > .record-body {
   padding: 0;
   border: 0;
   background: transparent;
+}
+
+.update-history {
+  align-self: end;
+  margin-block-start: auto;
+  border: 1px solid var(--line);
+  background: rgba(5, 6, 5, 0.36);
+}
+
+.update-history summary {
+  min-block-size: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 11px;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  letter-spacing: 0.08em;
+}
+
+.update-history summary::-webkit-details-marker {
+  display: none;
+}
+
+.update-history summary span {
+  font-size: 12px;
+}
+
+.update-history summary i {
+  min-inline-size: 24px;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-style: normal;
+  font-size: 11px;
+  text-align: center;
+}
+
+.update-history ol {
+  margin: 0;
+  padding: 10px 12px 12px 24px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.update-history li {
+  padding-block: 5px;
+  line-height: 1.45;
 }
 
 .status-grid {

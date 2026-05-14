@@ -104,23 +104,23 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     latestNote: "New note",
     tags: ["persona", "games", "jrpg", "play-log"],
     milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
-    body: `![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
+    body: `:::note 14 / 05 / 2026 - First Session File
+![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
 
-## First Session File
 This note is mostly here to lock in the shape of the Persona 5 Royal play log.
 
 The idea is simple: one game gets one main record, and every longer session can become its own little article inside that record. Newest thoughts stay at the top, with their own banner or screenshots when I have them.
+:::
 
-## Update Index
-- 14 / 05 / 2026 - First note stack tested.
-- 14 / 05 / 2026 - Play log created.
-
-## Previous Notes
-:::previous-note 14 / 05 / 2026 - Opening Note
+:::note 14 / 05 / 2026 - Opening Note
 ![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
 
 Opening this as the main Persona 5 Royal play log.
-:::`
+:::
+
+## Update Index
+- 14 / 05 / 2026 - First note stack tested.
+- 14 / 05 / 2026 - Play log created.`
   }
 ].sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
@@ -375,6 +375,33 @@ function contentOrdinal(record, index) {
   return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
 }
 
+function splitUpdateIndex(body) {
+  const lines = body.split(/\r?\n/);
+  const startIndex = lines.findIndex((line) => line.trim() === "## Update Index");
+
+  if (startIndex === -1) {
+    return { mainBody: body, updates: [] };
+  }
+
+  let endIndex = lines.length;
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (lines[index].startsWith("## ") || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
+      endIndex = index;
+      break;
+    }
+  }
+
+  const updates = lines
+    .slice(startIndex + 1, endIndex)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2));
+  const mainBody = [...lines.slice(0, startIndex), ...lines.slice(endIndex)].join("\n").trim();
+
+  return { mainBody, updates };
+}
+
 function markdownBody(body) {
   const lines = body.split(/\r?\n/);
   const output = [];
@@ -382,10 +409,10 @@ function markdownBody(body) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const key = `data-line="${index}"`;
-    const previousNotePrefix = ":::previous-note ";
+    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
 
-    if (line.startsWith(previousNotePrefix)) {
-      const title = line.slice(previousNotePrefix.length).trim();
+    if (line.startsWith(":::note ") || line.startsWith(":::previous-note ")) {
+      const title = line.slice(notePrefix.length).trim();
       const innerLines = [];
 
       index += 1;
@@ -395,9 +422,9 @@ function markdownBody(body) {
         index += 1;
       }
 
-      output.push(`<details class="previous-note" ${key}>
+      output.push(`<details class="note-entry" ${key}>
         <summary><span>${escapeHtml(title || "Previous note")}</span><i>open</i></summary>
-        <div class="previous-note-body">${markdownBody(innerLines.join("\n"))}</div>
+        <div class="note-entry-body">${markdownBody(innerLines.join("\n"))}</div>
       </details>`);
       continue;
     }
@@ -544,7 +571,8 @@ function renderSamplePage(record) {
 }
 
 function renderNotesPage(record) {
-  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(record.body);
+  const { mainBody } = splitUpdateIndex(record.body);
+  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(mainBody);
   const noteImage = record.banner && !bodyHasImage
     ? `<div class="notes-banner"><img src="${escapeHtml(record.banner)}" alt="" /></div>`
     : "";
@@ -552,8 +580,23 @@ function renderNotesPage(record) {
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="terminal-title">// NOTES PAGE</div>
     ${noteImage}
-    <div class="record-body">${markdownBody(record.body)}</div>
+    <div class="record-body">${markdownBody(mainBody)}</div>
   </section>`;
+}
+
+function renderUpdateHistory(record) {
+  const { updates } = splitUpdateIndex(record.body);
+
+  if (!updates.length) {
+    return "";
+  }
+
+  return `<details class="update-history">
+    <summary><span>UPDATE INDEX</span><i>${updates.length}</i></summary>
+    <ol>
+      ${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}
+    </ol>
+  </details>`;
 }
 
 function renderTechnicalPage(record) {
@@ -653,7 +696,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.0</span>
+      <span>v1.5.1</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -668,7 +711,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -868,6 +911,8 @@ function recordWindow(record) {
           <div><dt>Last Updated:</dt><dd>${readableDate(record.updated)}</dd></div>
           ${record.mood ? `<div><dt>Mood:</dt><dd>${escapeHtml(record.mood)}</dd></div>` : ""}
         </dl>
+
+        ${renderUpdateHistory(record)}
       </aside>
     </div>
   </article>`;

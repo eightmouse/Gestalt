@@ -375,7 +375,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.0</span>
+        <span>v1.5.1</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -420,7 +420,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.0</dd>
+            <dd>GESTALT OS v1.5.1</dd>
           </div>
         </dl>
       </div>
@@ -782,6 +782,7 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
               </div>
             ) : null}
           </dl>
+          <UpdateHistory body={record.body} />
         </aside>
 
       </div>
@@ -836,6 +837,33 @@ function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label:
 
 function contentOrdinal(record: RecordEntry, index: number): string {
   return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
+}
+
+function splitUpdateIndex(body: string): { mainBody: string; updates: string[] } {
+  const lines = body.split(/\r?\n/);
+  const startIndex = lines.findIndex((line) => line.trim() === "## Update Index");
+
+  if (startIndex === -1) {
+    return { mainBody: body, updates: [] };
+  }
+
+  let endIndex = lines.length;
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    if (lines[index].startsWith("## ") || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
+      endIndex = index;
+      break;
+    }
+  }
+
+  const updates = lines
+    .slice(startIndex + 1, endIndex)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2));
+  const mainBody = [...lines.slice(0, startIndex), ...lines.slice(endIndex)].join("\n").trim();
+
+  return { mainBody, updates };
 }
 
 function RecordContentPanel({ activeContent, record }: { activeContent: ContentKey; record: RecordEntry }) {
@@ -1041,7 +1069,8 @@ function SampleGrid({ record }: { record: RecordEntry }) {
 }
 
 function NotesPage({ record }: { record: RecordEntry }) {
-  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(record.body);
+  const { mainBody } = splitUpdateIndex(record.body);
+  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(mainBody);
 
   return (
     <section className="content-terminal notes-page" aria-label={`${record.title} notes`}>
@@ -1051,7 +1080,7 @@ function NotesPage({ record }: { record: RecordEntry }) {
           <img src={record.banner} alt="" />
         </div>
       ) : null}
-      <RecordBody body={record.body} />
+      <RecordBody body={mainBody} />
     </section>
   );
 }
@@ -1063,10 +1092,10 @@ function RecordBody({ body }: { body: string }) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const key = `${index}-${line}`;
-    const previousNotePrefix = ":::previous-note ";
+    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
 
-    if (line.startsWith(previousNotePrefix)) {
-      const title = line.slice(previousNotePrefix.length).trim() || "Previous note";
+    if (line.startsWith(":::note ") || line.startsWith(":::previous-note ")) {
+      const title = line.slice(notePrefix.length).trim() || "Previous note";
       const innerLines: string[] = [];
 
       index += 1;
@@ -1077,12 +1106,12 @@ function RecordBody({ body }: { body: string }) {
       }
 
       nodes.push(
-        <details className="previous-note" key={key}>
+        <details className="note-entry" key={key}>
           <summary>
             <span>{title}</span>
             <i>open</i>
           </summary>
-          <div className="previous-note-body">
+          <div className="note-entry-body">
             <RecordBody body={innerLines.join("\n")} />
           </div>
         </details>
@@ -1158,6 +1187,28 @@ function RecordBody({ body }: { body: string }) {
     <div className="record-body">
       {nodes}
     </div>
+  );
+}
+
+function UpdateHistory({ body }: { body: string }) {
+  const { updates } = splitUpdateIndex(body);
+
+  if (!updates.length) {
+    return null;
+  }
+
+  return (
+    <details className="update-history">
+      <summary>
+        <span>UPDATE INDEX</span>
+        <i>{updates.length}</i>
+      </summary>
+      <ol>
+        {updates.map((update) => (
+          <li key={update}>{update}</li>
+        ))}
+      </ol>
+    </details>
   );
 }
 
