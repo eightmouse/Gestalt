@@ -1136,17 +1136,39 @@ button:focus-visible {
 }
 
 .memory-core {
-  inset: 27% 28%;
-  border: 1px solid rgba(217, 213, 193, 0.2);
+  inset: 25% 27%;
+  border: 1px solid rgba(217, 213, 193, 0.24);
+  border-radius: 50%;
   background:
-    linear-gradient(90deg, transparent 0 38%, rgba(217, 213, 193, 0.16) 39% 40%, transparent 41% 100%),
-    linear-gradient(180deg, transparent 0 39%, rgba(217, 213, 193, 0.12) 40% 41%, transparent 42% 100%),
-    radial-gradient(circle, rgba(236, 230, 211, 0.28) 0 2px, transparent 3px),
-    radial-gradient(circle, rgba(200, 189, 159, 0.11), transparent 58%);
-  clip-path: polygon(50% 0, 88% 17%, 100% 52%, 78% 91%, 34% 100%, 4% 69%, 10% 25%);
-  opacity: 0.72;
-  transform: translate3d(0, 0, 0) rotate(-4deg);
-  animation: memory-core 7.5s ease-in-out infinite;
+    radial-gradient(circle at 42% 34%, rgba(236, 230, 211, 0.42) 0 2px, transparent 3px),
+    radial-gradient(circle at 58% 58%, rgba(236, 230, 211, 0.22) 0 1px, transparent 2px),
+    radial-gradient(circle at 50% 52%, rgba(217, 213, 193, 0.2), transparent 43%),
+    linear-gradient(115deg, transparent 0 42%, rgba(217, 213, 193, 0.16) 43% 44%, transparent 45% 100%),
+    linear-gradient(25deg, transparent 0 51%, rgba(217, 213, 193, 0.09) 52% 53%, transparent 54% 100%);
+  opacity: 0.78;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: memory-sphere 7.5s ease-in-out infinite;
+}
+
+.memory-core::before,
+.memory-core::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border: 1px solid rgba(217, 213, 193, 0.14);
+  border-block-color: transparent;
+  border-radius: 50%;
+}
+
+.memory-core::before {
+  transform: rotate(-18deg) scaleX(1.18);
+  animation: memory-shell-a 6.2s ease-in-out infinite;
+}
+
+.memory-core::after {
+  inset: 22%;
+  transform: rotate(26deg) scaleX(0.82);
+  animation: memory-shell-b 5.7s ease-in-out infinite;
 }
 
 .memory-orbit {
@@ -2365,16 +2387,44 @@ button:focus-visible {
   }
 }
 
-@keyframes memory-core {
+@keyframes memory-sphere {
   0%,
   100% {
-    opacity: 0.56;
-    transform: translate3d(-1%, 1%, 0) rotate(-5deg) scale(0.96);
+    border-radius: 48% 52% 51% 49% / 50% 46% 54% 50%;
+    opacity: 0.64;
+    transform: translate3d(-1%, 1%, 0) scale(0.96);
   }
 
   46% {
-    opacity: 0.82;
-    transform: translate3d(2%, -1%, 0) rotate(4deg) scale(1.04);
+    border-radius: 53% 47% 48% 52% / 45% 53% 47% 55%;
+    opacity: 0.86;
+    transform: translate3d(2%, -1%, 0) scale(1.05);
+  }
+}
+
+@keyframes memory-shell-a {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: rotate(-18deg) scaleX(1.12);
+  }
+
+  50% {
+    opacity: 0.58;
+    transform: rotate(14deg) scaleX(1.28);
+  }
+}
+
+@keyframes memory-shell-b {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: rotate(26deg) scaleX(0.78);
+  }
+
+  50% {
+    opacity: 0.46;
+    transform: rotate(-22deg) scaleX(0.95);
   }
 }
 
