@@ -367,7 +367,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.2.12</span>
+        <span>v1.2.13</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -412,7 +412,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.2.12</dd>
+            <dd>GESTALT OS v1.2.13</dd>
           </div>
         </dl>
       </div>
@@ -706,8 +706,12 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
-              {record.title}
-              <span className="cursor">_</span>
+              <span className="record-title-text is-writing" style={{ "--record-title-chars": record.title.length } as CSSProperties}>
+                {record.title}
+              </span>
+              <span className="cursor record-title-cursor is-delayed" style={{ "--record-title-chars": record.title.length } as CSSProperties}>
+                _
+              </span>
             </h2>
             <p>
               Status: {record.status}

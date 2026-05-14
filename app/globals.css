@@ -599,6 +599,20 @@ button:focus-visible {
     headline-signal 120ms steps(2, end) 2;
 }
 
+.record-title-text {
+  display: inline-block;
+  max-inline-size: 100%;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.record-title-text.is-writing {
+  clip-path: inset(0 100% 0 0);
+  animation:
+    headline-write clamp(360ms, calc(var(--record-title-chars, 12) * 46ms), 920ms) steps(var(--record-title-chars, 12), end) 70ms both,
+    headline-signal 120ms steps(2, end) 2;
+}
+
 .subtle {
   color: var(--muted);
 }
@@ -1316,11 +1330,23 @@ button:focus-visible {
   vertical-align: bottom;
 }
 
+.record-title-cursor {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
 .headline-cursor.is-delayed {
   opacity: 0;
   animation:
     headline-cursor-enter 1ms linear calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 80ms) both,
     cursor-blink 780ms steps(1, end) calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 80ms) infinite;
+}
+
+.record-title-cursor.is-delayed {
+  opacity: 0;
+  animation:
+    headline-cursor-enter 1ms linear calc(clamp(360ms, calc(var(--record-title-chars, 12) * 46ms), 920ms) + 110ms) both,
+    cursor-blink 780ms steps(1, end) calc(clamp(360ms, calc(var(--record-title-chars, 12) * 46ms), 920ms) + 110ms) infinite;
 }
 
 .banner-frame,

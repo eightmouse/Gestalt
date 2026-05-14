@@ -87,6 +87,7 @@ const state = {
   searchQuery: "",
   bootDismissed: false,
   windowSteady: false,
+  recordTitleAnimating: false,
   headlineAnimating: true
 };
 
@@ -115,6 +116,7 @@ function openRecord(recordId) {
   state.panelMaximized = false;
   state.searchOpen = false;
   state.searchQuery = "";
+  state.recordTitleAnimating = true;
   render();
 }
 
@@ -530,7 +532,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.2.12</span>
+      <span>v1.2.13</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -545,7 +547,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.2.12</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.2.13</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -684,6 +686,8 @@ function recordWindow(record) {
 
   const contents = getRecordContents(record);
   const activeContent = normalizeContentKey(record);
+  const titleClass = state.recordTitleAnimating ? "record-title-text is-writing" : "record-title-text";
+  const cursorClass = state.recordTitleAnimating ? "cursor record-title-cursor is-delayed" : "cursor record-title-cursor";
 
   return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
     <header class="window-bar">
@@ -700,7 +704,7 @@ function recordWindow(record) {
         <div class="record-heading">
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
-          <h2>${escapeHtml(record.title)}<span class="cursor">_</span></h2>
+          <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span><span class="${cursorClass}" style="--record-title-chars: ${record.title.length}">_</span></h2>
           <p>
             Status: ${escapeHtml(record.status)}
             <span>.</span>
@@ -822,6 +826,10 @@ function render() {
 
   if (state.windowSteady) {
     state.windowSteady = false;
+  }
+
+  if (state.recordTitleAnimating) {
+    state.recordTitleAnimating = false;
   }
 
   if (state.headlineAnimating) {
@@ -998,6 +1006,7 @@ document.addEventListener("click", (event) => {
   if (windowAction === "open") {
     state.panelOpen = true;
     state.panelMinimized = false;
+    state.recordTitleAnimating = true;
     render();
   }
 
