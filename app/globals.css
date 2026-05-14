@@ -1173,9 +1173,11 @@ button:focus-visible {
 
 .memory-orbit {
   inset: 12% 7%;
-  border: 1px solid rgba(217, 213, 193, 0.2);
-  border-inline-color: transparent;
   border-radius: 50%;
+  background:
+    conic-gradient(from 14deg, transparent 0 12deg, rgba(217, 213, 193, 0.22) 13deg 35deg, transparent 36deg 92deg, rgba(217, 213, 193, 0.14) 93deg 118deg, transparent 119deg 186deg, rgba(217, 213, 193, 0.2) 187deg 207deg, transparent 208deg 284deg, rgba(217, 213, 193, 0.12) 285deg 306deg, transparent 307deg 360deg);
+  -webkit-mask: radial-gradient(ellipse, transparent 0 64%, #000 65% 67%, transparent 68%);
+  mask: radial-gradient(ellipse, transparent 0 64%, #000 65% 67%, transparent 68%);
   transform: rotate(-8deg);
   animation: memory-orbit 12s linear infinite;
 }
@@ -1184,20 +1186,21 @@ button:focus-visible {
 .memory-orbit::after {
   content: "";
   position: absolute;
-  inline-size: 4px;
-  block-size: 4px;
-  border: 1px solid rgba(236, 230, 211, 0.42);
-  background: rgba(217, 213, 193, 0.16);
+  inline-size: 5px;
+  block-size: 5px;
+  border: 1px solid rgba(236, 230, 211, 0.38);
+  background: rgba(217, 213, 193, 0.2);
+  box-shadow: 0 0 14px rgba(217, 213, 193, 0.18);
 }
 
 .memory-orbit::before {
-  inset-block-start: 18%;
-  inset-inline-start: 19%;
+  inset-block-start: 19%;
+  inset-inline-start: 22%;
 }
 
 .memory-orbit::after {
-  inset-block-end: 21%;
-  inset-inline-end: 24%;
+  inset-block-end: 23%;
+  inset-inline-end: 27%;
 }
 
 .memory-gate {
