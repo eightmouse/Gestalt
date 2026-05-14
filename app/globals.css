@@ -1476,8 +1476,8 @@ button:focus-visible {
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.08);
   background:
-    linear-gradient(180deg, rgba(5, 6, 5, 0.02), rgba(5, 6, 5, 0.9)),
-    linear-gradient(90deg, rgba(5, 6, 5, 0.68), rgba(5, 6, 5, 0.08) 56%, rgba(5, 6, 5, 0.58));
+    linear-gradient(180deg, rgba(5, 6, 5, 0.22), rgba(5, 6, 5, 0.94)),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.76), rgba(5, 6, 5, 0.26) 56%, rgba(5, 6, 5, 0.7));
 }
 
 .record-heading.has-heading-banner::before {
@@ -1487,9 +1487,10 @@ button:focus-visible {
   pointer-events: none;
   z-index: 1;
   background:
-    linear-gradient(180deg, transparent 45%, rgba(5, 6, 5, 0.68)),
-    linear-gradient(90deg, rgba(5, 6, 5, 0.66), transparent 54%, rgba(5, 6, 5, 0.5)),
-    rgba(5, 6, 5, 0.12);
+    linear-gradient(180deg, transparent 38%, rgba(5, 6, 5, 0.74)),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.72), transparent 54%, rgba(5, 6, 5, 0.56)),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 8px),
+    rgba(5, 6, 5, 0.18);
 }
 
 .heading-banner-image {
@@ -1501,7 +1502,7 @@ button:focus-visible {
   display: block;
   object-fit: cover;
   object-position: center 50%;
-  opacity: 0.72;
+  opacity: 0.52;
 }
 
 .record-heading.has-heading-banner > :not(.heading-banner-image) {
