@@ -95,18 +95,32 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     started: "2026-05-14",
     updated: "2026-05-14",
     mood: "stylish",
-    summary: "Current play log for Persona 5 Royal.",
+    summary: "Play log for Persona 5 Royal, these are my opinions and thoughts as I play through the game. I will update this log with new notes as I play.",
     banner: "public/media/records/persona-5-royal/cover.jpg",
     headerImage: "public/media/records/persona-5-royal/header.jpg",
-    progress: 0,
+    progress: 28,
     priority: 8,
-    playtime: "0h",
-    lastPlayed: "Today",
+    steamAppId: 1687950,
+    playtime: "28.9h",
+    lastPlayed: "13 / 05 / 2026",
+    achievementCount: "15 / 53",
     latestNote: "New note",
     tags: ["persona", "games", "jrpg", "play-log"],
     milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
-    body: `:::note 14 / 05 / 2026 - First Session File
-![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
+    body: `
+:::note 14 / 05 / 2026 - Where am I at?
+![Persona 5 Royal opening note](public/media/records/persona-5-royal/test.png)
+
+So, screenshot is from few days ago, using it to mostly test + update with some actual in-game stuff.
+
+I just entered the second palace, explored it as I have no clue if it will be an actual palace or not, I yet have to find out if Madarame is a bad guy or not lulz.
+Have to admit, I thought at some point I would get bothered by the amount of text and dialogue, especially early on but I think they did a crazy good job with the plot for me to be invested.
+
+Beside, these long yapping sessions are balanced with an equal amount of fights/exploration ~
+:::
+
+:::note 14 / 05 / 2026 - First Session File
+![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)
 
 This note is mostly here to lock in the shape of the Persona 5 Royal play log.
 
@@ -114,12 +128,13 @@ The idea is simple: one game gets one main record, and every longer session can 
 :::
 
 :::note 14 / 05 / 2026 - Opening Note
-![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
+![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)
 
-Opening this as the main Persona 5 Royal play log.
+Opening this as the main Persona 5 Royal play log, first test of the note stack!
 :::
 
 ## Update Index
+- 14 / 05 / 2026 - Added first real Persona session note.
 - 14 / 05 / 2026 - First note stack tested.
 - 14 / 05 / 2026 - Play log created.`
   }
@@ -778,7 +793,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.9</span>
+      <span>v1.5.10</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -793,7 +808,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.9</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.10</dd></div>
       </dl>
     </div>
   </aside>`;
