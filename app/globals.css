@@ -87,6 +87,10 @@ button:focus-visible {
   filter: grayscale(1) contrast(0.9) brightness(0.72);
 }
 
+.archive-shell.has-record::before {
+  opacity: 0.22;
+}
+
 .archive-shell::after {
   display: none;
 }
@@ -166,6 +170,14 @@ button:focus-visible {
 .scanline-layer {
   opacity: 0.028;
   background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 10px);
+}
+
+.archive-shell.has-record .grain-layer {
+  opacity: 0.12;
+}
+
+.archive-shell.has-record .scanline-layer {
+  opacity: 0.018;
 }
 
 .sidebar {

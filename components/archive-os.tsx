@@ -198,7 +198,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const subtext = activeSection === "system" ? dashboardSubtext(now) : "Browse the records filed under this archive.";
 
   return (
-    <main className="archive-shell">
+    <main className={panelOpen ? "archive-shell has-record" : "archive-shell"}>
       <div className="boot-screen" aria-hidden="true">
         <span>GESTALT</span>
         <i>System initializing</i>
@@ -367,7 +367,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.2.11</span>
+        <span>v1.2.12</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -412,7 +412,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.2.11</dd>
+            <dd>GESTALT OS v1.2.12</dd>
           </div>
         </dl>
       </div>

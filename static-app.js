@@ -530,7 +530,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.2.11</span>
+      <span>v1.2.12</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -545,7 +545,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.2.11</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.2.12</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -775,7 +775,7 @@ function render() {
   const headlineClass = state.headlineAnimating ? "headline-text is-writing" : "headline-text";
   const cursorClass = state.headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
-  root.innerHTML = `<main class="archive-shell">
+  root.innerHTML = `<main class="${state.panelOpen ? "archive-shell has-record" : "archive-shell"}">
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
       <i>System initializing</i>
