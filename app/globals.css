@@ -157,16 +157,15 @@ button:focus-visible {
 }
 
 .grain-layer {
-  opacity: 0.28;
+  opacity: 0.2;
   background-image:
-    repeating-radial-gradient(circle at 17% 23%, rgba(255, 255, 255, 0.13) 0 1px, transparent 1px 4px),
-    repeating-radial-gradient(circle at 72% 61%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 5px);
-  mix-blend-mode: overlay;
+    repeating-radial-gradient(circle at 17% 23%, rgba(255, 255, 255, 0.065) 0 1px, transparent 1px 5px),
+    repeating-radial-gradient(circle at 72% 61%, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 7px);
 }
 
 .scanline-layer {
-  opacity: 0.038;
-  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 8px);
+  opacity: 0.028;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0 1px, transparent 1px 10px);
 }
 
 .sidebar {
@@ -1102,6 +1101,8 @@ button:focus-visible {
   box-shadow:
     0 28px 78px rgba(0, 0, 0, 0.68),
     0 0 0 1px rgba(255, 255, 255, 0.08);
+  contain: layout paint style;
+  transform: translateZ(0);
   animation: window-in 200ms ease-out;
   will-change: opacity;
 }
@@ -1124,9 +1125,8 @@ button:focus-visible {
 
 .record-window::after {
   inset: 0;
-  opacity: 0.025;
-  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0 1px, transparent 1px 8px);
-  mix-blend-mode: screen;
+  opacity: 0.018;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.36) 0 1px, transparent 1px 10px);
 }
 
 .record-window.is-maximized {
@@ -1243,6 +1243,9 @@ button:focus-visible {
   padding: 28px 26px 30px 30px;
   overflow: auto;
   overscroll-behavior: contain;
+  contain: content;
+  scrollbar-gutter: stable;
+  will-change: scroll-position;
 }
 
 .record-main {
@@ -1325,7 +1328,7 @@ button:focus-visible {
   block-size: 100%;
   display: block;
   object-fit: cover;
-  filter: grayscale(0.78) contrast(0.92) brightness(0.74);
+  opacity: 0.72;
 }
 
 .banner-frame::after {
@@ -1334,8 +1337,7 @@ button:focus-visible {
   inset: 0;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, 0.35), transparent 42%, rgba(0, 0, 0, 0.22)),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 4px);
-  mix-blend-mode: overlay;
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 7px);
 }
 
 .empty-banner {
@@ -1347,6 +1349,7 @@ button:focus-visible {
 
 .record-section {
   margin-block-start: 26px;
+  contain: layout paint;
 }
 
 .record-section h3,
@@ -1545,6 +1548,7 @@ button:focus-visible {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 42%),
     rgba(255, 255, 255, 0.018);
+  contain: layout paint;
 }
 
 .terminal-title {
@@ -1640,15 +1644,15 @@ button:focus-visible {
   block-size: 100%;
   display: block;
   object-fit: cover;
-  filter: grayscale(0.8) contrast(0.95) brightness(0.72);
+  opacity: 0.72;
 }
 
 .sample-frame::after {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.1;
-  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 7px);
+  opacity: 0.08;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 8px);
 }
 
 .media-alert-field {
@@ -1798,7 +1802,7 @@ button:focus-visible {
   block-size: 100%;
   display: block;
   object-fit: cover;
-  filter: grayscale(0.8) contrast(0.95) brightness(0.72);
+  opacity: 0.72;
 }
 
 .media-frame::after,
@@ -1806,8 +1810,8 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset: 0;
-  opacity: 0.1;
-  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0 1px, transparent 1px 7px);
+  opacity: 0.08;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 8px);
 }
 
 .media-placeholder {
