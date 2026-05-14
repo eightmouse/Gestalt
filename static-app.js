@@ -161,6 +161,9 @@ const state = {
   activeContent: "overview",
   searchOpen: false,
   searchQuery: "",
+  noteSearchOpen: false,
+  noteSearchQuery: "",
+  updateHistoryOpen: false,
   bootDismissed: false,
   windowSteady: false,
   recordTitleAnimating: false,
@@ -196,6 +199,9 @@ function openRecord(recordId) {
   state.panelMaximized = false;
   state.searchOpen = false;
   state.searchQuery = "";
+  state.noteSearchOpen = false;
+  state.noteSearchQuery = "";
+  state.updateHistoryOpen = false;
   state.recordTitleAnimating = true;
   render();
 }
@@ -207,6 +213,9 @@ function openSection(sectionId) {
   state.panelMinimized = false;
   state.searchOpen = false;
   state.searchQuery = "";
+  state.noteSearchOpen = false;
+  state.noteSearchQuery = "";
+  state.updateHistoryOpen = false;
   render();
 }
 
@@ -402,6 +411,39 @@ function splitUpdateIndex(body) {
   return { mainBody, updates };
 }
 
+function noteEntries(body) {
+  const { mainBody } = splitUpdateIndex(body);
+  const lines = mainBody.split(/\r?\n/);
+  const notes = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
+
+    if (!line.startsWith(":::note ") && !line.startsWith(":::previous-note ")) {
+      continue;
+    }
+
+    const title = line.slice(notePrefix.length).trim() || "Untitled note";
+    const innerLines = [];
+
+    index += 1;
+
+    while (index < lines.length && lines[index].trim() !== ":::") {
+      innerLines.push(lines[index]);
+      index += 1;
+    }
+
+    notes.push({ title, body: innerLines.join("\n").trim() });
+  }
+
+  if (!notes.length && mainBody.trim()) {
+    notes.push({ title: "Current note", body: mainBody.trim() });
+  }
+
+  return notes;
+}
+
 function markdownBody(body) {
   const lines = body.split(/\r?\n/);
   const output = [];
@@ -571,16 +613,42 @@ function renderSamplePage(record) {
 }
 
 function renderNotesPage(record) {
-  const { mainBody } = splitUpdateIndex(record.body);
-  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(mainBody);
-  const noteImage = record.banner && !bodyHasImage
-    ? `<div class="notes-banner"><img src="${escapeHtml(record.banner)}" alt="" /></div>`
-    : "";
+  const notes = noteEntries(record.body);
+  const indexedNotes = notes.map((note, index) => ({ ...note, index }));
+  const query = state.noteSearchQuery.trim().toLowerCase();
+  const filteredNotes = query
+    ? indexedNotes.filter((note) => note.title.toLowerCase().includes(query))
+    : indexedNotes;
+  const suggestions = notes
+    .map((note) => `<option value="${escapeHtml(note.title)}"></option>`)
+    .join("");
+  const noteList = filteredNotes.length
+    ? filteredNotes
+        .map(
+          (note) => `<details class="note-entry" data-note-index="${note.index}">
+            <summary><em>${note.index === 0 ? "New Note" : "Previous Note"}</em><span>${escapeHtml(note.title)}</span><i>open</i></summary>
+            <div class="note-entry-body"><div class="record-body">${markdownBody(note.body)}</div></div>
+          </details>`
+        )
+        .join("")
+    : `<p class="notes-empty">No note matches that signal.</p>`;
 
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
-    <div class="terminal-title">// NOTES PAGE</div>
-    ${noteImage}
-    <div class="record-body">${markdownBody(mainBody)}</div>
+    <div class="notes-page-header">
+      <div class="terminal-title">// NOTES PAGE</div>
+      <button class="${state.noteSearchOpen ? "note-search-toggle is-active" : "note-search-toggle"}" type="button" data-note-search-toggle>Search</button>
+    </div>
+    ${
+      state.noteSearchOpen
+        ? `<div class="note-search-panel">
+          <label for="note-search">Search note title or date</label>
+          <input id="note-search" type="search" list="note-search-suggestions" value="${escapeHtml(state.noteSearchQuery)}" data-note-search-input autocomplete="off" />
+          <datalist id="note-search-suggestions">${suggestions}</datalist>
+        </div>`
+        : ""
+    }
+    ${record.banner ? `<div class="notes-banner"><img src="${escapeHtml(record.banner)}" alt="" /></div>` : ""}
+    <div class="note-stack">${noteList}</div>
   </section>`;
 }
 
@@ -591,12 +659,20 @@ function renderUpdateHistory(record) {
     return "";
   }
 
-  return `<details class="update-history">
-    <summary><span>UPDATE INDEX</span><i>${updates.length}</i></summary>
-    <ol>
-      ${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}
-    </ol>
-  </details>`;
+  return `<div class="update-history">
+    <button type="button" data-update-history-toggle>
+      <span>UPDATE INDEX</span>
+      <i>${updates.length}</i>
+    </button>
+    ${
+      state.updateHistoryOpen
+        ? `<div class="update-history-window" role="dialog" aria-label="Update index">
+          <header><span>// UPDATE INDEX</span><button type="button" data-update-history-close>close</button></header>
+          <ol>${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}</ol>
+        </div>`
+        : ""
+    }
+  </div>`;
 }
 
 function renderTechnicalPage(record) {
@@ -696,7 +772,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.1</span>
+      <span>v1.5.2</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -711,7 +787,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1153,6 +1229,25 @@ document.addEventListener("click", (event) => {
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
 
+  if (target.dataset.noteSearchToggle !== undefined) {
+    state.noteSearchOpen = !state.noteSearchOpen;
+    state.noteSearchQuery = "";
+    render();
+    return;
+  }
+
+  if (target.dataset.updateHistoryToggle !== undefined) {
+    state.updateHistoryOpen = true;
+    render();
+    return;
+  }
+
+  if (target.dataset.updateHistoryClose !== undefined) {
+    state.updateHistoryOpen = false;
+    render();
+    return;
+  }
+
   if (target.dataset.weatherAction !== undefined) {
     requestWeather();
     return;
@@ -1177,6 +1272,9 @@ document.addEventListener("click", (event) => {
   if (contentKey) {
     state.activeContent = contentKey;
     state.windowSteady = true;
+    state.noteSearchOpen = false;
+    state.noteSearchQuery = "";
+    state.updateHistoryOpen = false;
     render();
     return;
   }
@@ -1215,22 +1313,34 @@ document.addEventListener("click", (event) => {
 document.addEventListener("input", (event) => {
   const target = event.target;
 
-  if (!(target instanceof HTMLInputElement) || target.dataset.searchInput === undefined) {
+  if (!(target instanceof HTMLInputElement)) {
     return;
   }
 
-  state.searchQuery = target.value;
-  render();
+  if (target.dataset.searchInput !== undefined) {
+    state.searchQuery = target.value;
+    render();
+  }
+
+  if (target.dataset.noteSearchInput !== undefined) {
+    state.noteSearchQuery = target.value;
+    render();
+  }
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape" || !state.searchOpen) {
+  if (event.key !== "Escape") {
     return;
   }
 
-  state.searchOpen = false;
-  state.searchQuery = "";
-  render();
+  if (state.updateHistoryOpen || state.noteSearchOpen || state.searchOpen) {
+    state.updateHistoryOpen = false;
+    state.noteSearchOpen = false;
+    state.noteSearchQuery = "";
+    state.searchOpen = false;
+    state.searchQuery = "";
+    render();
+  }
 });
 
 render();

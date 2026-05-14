@@ -39,7 +39,7 @@ Older note content.
 - 14 / 05 / 2026 - Short update label.
 ```
 
-Use `:::note ... :::` for each game note. The Notes page turns each note into an expandable record, and `## Update Index` is shown separately in the right-side history drawer.
+Use `:::note ... :::` for each game note. The Notes page turns each note into an expandable record, and `## Update Index` is shown from the right-side history control as a small scrollable window.
 
 ## Local Studio
 

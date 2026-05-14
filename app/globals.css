@@ -2064,6 +2064,70 @@ button:focus-visible {
   gap: 16px;
 }
 
+.notes-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.notes-page-header .terminal-title {
+  margin-block-end: 0;
+}
+
+.note-search-toggle {
+  min-block-size: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.note-search-toggle:hover,
+.note-search-toggle.is-active {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.note-search-panel {
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: rgba(5, 6, 5, 0.38);
+}
+
+.note-search-panel label {
+  color: var(--muted-2);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.note-search-panel input {
+  min-block-size: 32px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  outline: 0;
+}
+
+.note-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.notes-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
 .record-body .note-banner {
   margin: 0 0 10px;
 }
@@ -2093,6 +2157,15 @@ button:focus-visible {
 .note-entry summary::before {
   content: ">";
   color: var(--accent);
+}
+
+.note-entry summary em {
+  min-inline-size: 84px;
+  color: var(--muted-2);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .note-entry summary span {
@@ -2137,32 +2210,29 @@ button:focus-visible {
 .update-history {
   align-self: end;
   margin-block-start: auto;
-  border: 1px solid var(--line);
-  background: rgba(5, 6, 5, 0.36);
 }
 
-.update-history summary {
+.update-history > button {
+  inline-size: 100%;
   min-block-size: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 11px;
+  border: 1px solid var(--line);
+  background: rgba(5, 6, 5, 0.36);
   color: var(--text);
   cursor: pointer;
-  list-style: none;
   letter-spacing: 0.08em;
+  text-align: left;
 }
 
-.update-history summary::-webkit-details-marker {
-  display: none;
-}
-
-.update-history summary span {
+.update-history > button span {
   font-size: 12px;
 }
 
-.update-history summary i {
+.update-history > button i {
   min-inline-size: 24px;
   padding: 2px 6px;
   border: 1px solid var(--line);
@@ -2172,14 +2242,60 @@ button:focus-visible {
   text-align: center;
 }
 
-.update-history ol {
-  margin: 0;
-  padding: 10px 12px 12px 24px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
+.update-history > button:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.045);
 }
 
-.update-history li {
+.update-history-window {
+  position: absolute;
+  z-index: 6;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: min(390px, calc(100% - 56px));
+  max-block-size: min(360px, calc(100% - 74px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 36%),
+    rgba(5, 6, 5, 0.94);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.6);
+}
+
+.update-history-window header {
+  min-block-size: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  letter-spacing: 0.08em;
+}
+
+.update-history-window header button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.update-history-window ol {
+  min-block-size: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 14px 16px 16px 30px;
+  color: var(--muted);
+  overscroll-behavior: contain;
+}
+
+.update-history-window li {
   padding-block: 5px;
   line-height: 1.45;
 }

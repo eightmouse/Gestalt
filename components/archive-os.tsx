@@ -375,7 +375,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.1</span>
+        <span>v1.5.2</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -420,7 +420,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.1</dd>
+            <dd>GESTALT OS v1.5.2</dd>
           </div>
         </dl>
       </div>
@@ -693,9 +693,11 @@ type RecordWindowProps = {
 function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [activeContent, setActiveContent] = useState<ContentKey>("overview");
+  const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
 
   useEffect(() => {
     setActiveContent("overview");
+    setUpdateHistoryOpen(false);
   }, [record.id]);
 
   return (
@@ -758,7 +760,13 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
             <ol>
               {contents.map((item, index) => (
                 <li className={activeContent === item.key ? "is-active" : ""} key={item.key}>
-                  <button type="button" onClick={() => setActiveContent(item.key)}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveContent(item.key);
+                      setUpdateHistoryOpen(false);
+                    }}
+                  >
                     {contentOrdinal(record, index)}_{item.label}
                   </button>
                 </li>
@@ -782,7 +790,7 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
               </div>
             ) : null}
           </dl>
-          <UpdateHistory body={record.body} />
+          <UpdateHistory body={record.body} isOpen={updateHistoryOpen} onClose={() => setUpdateHistoryOpen(false)} onOpen={() => setUpdateHistoryOpen(true)} />
         </aside>
 
       </div>
@@ -864,6 +872,39 @@ function splitUpdateIndex(body: string): { mainBody: string; updates: string[] }
   const mainBody = [...lines.slice(0, startIndex), ...lines.slice(endIndex)].join("\n").trim();
 
   return { mainBody, updates };
+}
+
+function noteEntries(body: string): Array<{ title: string; body: string }> {
+  const { mainBody } = splitUpdateIndex(body);
+  const lines = mainBody.split(/\r?\n/);
+  const notes: Array<{ title: string; body: string }> = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
+
+    if (!line.startsWith(":::note ") && !line.startsWith(":::previous-note ")) {
+      continue;
+    }
+
+    const title = line.slice(notePrefix.length).trim() || "Untitled note";
+    const innerLines: string[] = [];
+
+    index += 1;
+
+    while (index < lines.length && lines[index].trim() !== ":::") {
+      innerLines.push(lines[index]);
+      index += 1;
+    }
+
+    notes.push({ title, body: innerLines.join("\n").trim() });
+  }
+
+  if (!notes.length && mainBody.trim()) {
+    notes.push({ title: "Current note", body: mainBody.trim() });
+  }
+
+  return notes;
 }
 
 function RecordContentPanel({ activeContent, record }: { activeContent: ContentKey; record: RecordEntry }) {
@@ -1069,18 +1110,69 @@ function SampleGrid({ record }: { record: RecordEntry }) {
 }
 
 function NotesPage({ record }: { record: RecordEntry }) {
-  const { mainBody } = splitUpdateIndex(record.body);
-  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(mainBody);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const notes = noteEntries(record.body);
+  const indexedNotes = notes.map((note, index) => ({ ...note, index }));
+  const cleanQuery = query.trim().toLowerCase();
+  const filteredNotes = cleanQuery ? indexedNotes.filter((note) => note.title.toLowerCase().includes(cleanQuery)) : indexedNotes;
 
   return (
     <section className="content-terminal notes-page" aria-label={`${record.title} notes`}>
-      <div className="terminal-title">// NOTES PAGE</div>
-      {record.banner && !bodyHasImage ? (
+      <div className="notes-page-header">
+        <div className="terminal-title">// NOTES PAGE</div>
+        <button
+          className={searchOpen ? "note-search-toggle is-active" : "note-search-toggle"}
+          type="button"
+          onClick={() => {
+            setSearchOpen((current) => !current);
+            setQuery("");
+          }}
+        >
+          Search
+        </button>
+      </div>
+      {searchOpen ? (
+        <div className="note-search-panel">
+          <label htmlFor={`${record.id}-note-search`}>Search note title or date</label>
+          <input
+            autoComplete="off"
+            id={`${record.id}-note-search`}
+            list={`${record.id}-note-suggestions`}
+            onChange={(event) => setQuery(event.target.value)}
+            type="search"
+            value={query}
+          />
+          <datalist id={`${record.id}-note-suggestions`}>
+            {notes.map((note) => (
+              <option key={note.title} value={note.title} />
+            ))}
+          </datalist>
+        </div>
+      ) : null}
+      {record.banner ? (
         <div className="notes-banner">
           <img src={record.banner} alt="" />
         </div>
       ) : null}
-      <RecordBody body={mainBody} />
+      <div className="note-stack">
+        {filteredNotes.length > 0 ? (
+          filteredNotes.map((note) => (
+            <details className="note-entry" key={note.title}>
+              <summary>
+                <em>{note.index === 0 ? "New Note" : "Previous Note"}</em>
+                <span>{note.title}</span>
+                <i>open</i>
+              </summary>
+              <div className="note-entry-body">
+                <RecordBody body={note.body} />
+              </div>
+            </details>
+          ))
+        ) : (
+          <p className="notes-empty">No note matches that signal.</p>
+        )}
+      </div>
     </section>
   );
 }
@@ -1190,7 +1282,17 @@ function RecordBody({ body }: { body: string }) {
   );
 }
 
-function UpdateHistory({ body }: { body: string }) {
+function UpdateHistory({
+  body,
+  isOpen,
+  onClose,
+  onOpen
+}: {
+  body: string;
+  isOpen: boolean;
+  onClose: () => void;
+  onOpen: () => void;
+}) {
   const { updates } = splitUpdateIndex(body);
 
   if (!updates.length) {
@@ -1198,17 +1300,27 @@ function UpdateHistory({ body }: { body: string }) {
   }
 
   return (
-    <details className="update-history">
-      <summary>
+    <div className="update-history">
+      <button type="button" onClick={onOpen}>
         <span>UPDATE INDEX</span>
         <i>{updates.length}</i>
-      </summary>
-      <ol>
-        {updates.map((update) => (
-          <li key={update}>{update}</li>
-        ))}
-      </ol>
-    </details>
+      </button>
+      {isOpen ? (
+        <div className="update-history-window" role="dialog" aria-label="Update index">
+          <header>
+            <span>// UPDATE INDEX</span>
+            <button type="button" onClick={onClose}>
+              close
+            </button>
+          </header>
+          <ol>
+            {updates.map((update) => (
+              <li key={update}>{update}</li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
