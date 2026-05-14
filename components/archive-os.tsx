@@ -378,7 +378,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.5</span>
+        <span>v1.5.6</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -423,7 +423,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.5</dd>
+            <dd>GESTALT OS v1.5.6</dd>
           </div>
         </dl>
       </div>
@@ -714,7 +714,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
     const closeUpdateHistory = (event: MouseEvent) => {
       const target = event.target;
 
-      if (!(target instanceof Element) || updateHistoryRef.current?.contains(target)) {
+      if (!(target instanceof Element) || updateHistoryRef.current?.contains(target) || target.closest(".update-history-window")) {
         return;
       }
 
@@ -728,7 +728,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
   return (
     <>
     <motion.article
-      className={maximized ? "record-window is-maximized" : "record-window"}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${updateHistoryOpen ? " has-index-modal" : ""}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -818,10 +818,11 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
               </div>
             ) : null}
           </dl>
-          <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onOpen={() => setUpdateHistoryOpen(true)} />
+          <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
         </aside>
 
       </div>
+      {updateHistoryOpen ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
     </motion.article>
     </>
   );
@@ -1312,17 +1313,7 @@ function RecordBody({ body }: { body: string }) {
   );
 }
 
-function UpdateHistory({
-  body,
-  containerRef,
-  isOpen,
-  onOpen
-}: {
-  body: string;
-  containerRef: RefObject<HTMLDivElement | null>;
-  isOpen: boolean;
-  onOpen: () => void;
-}) {
+function UpdateHistory({ body, containerRef, isOpen, onToggle }: { body: string; containerRef: RefObject<HTMLDivElement | null>; isOpen: boolean; onToggle: () => void }) {
   const { updates } = splitUpdateIndex(body);
 
   if (!updates.length) {
@@ -1331,23 +1322,35 @@ function UpdateHistory({
 
   return (
     <div className="update-history" ref={containerRef}>
-      <button type="button" aria-expanded={isOpen} onClick={onOpen}>
+      <button type="button" aria-expanded={isOpen} onClick={onToggle}>
         <span>UPDATE INDEX</span>
         <i>{updates.length}</i>
       </button>
-      {isOpen ? (
-        <div className="update-history-window" role="dialog" aria-label="Update index">
-          <header>
-            <span>// UPDATE INDEX</span>
-          </header>
-          <ol>
-            {updates.map((update) => (
-              <li key={update}>{update}</li>
-            ))}
-          </ol>
-        </div>
-      ) : null}
     </div>
+  );
+}
+
+function UpdateHistoryModal({ body, onClose }: { body: string; onClose: () => void }) {
+  const { updates } = splitUpdateIndex(body);
+
+  if (!updates.length) {
+    return null;
+  }
+
+  return (
+    <>
+      <button className="update-history-backdrop" type="button" aria-label="Close update index" onClick={onClose} />
+      <div className="update-history-window" role="dialog" aria-label="Update index">
+        <header>
+          <span>// UPDATE INDEX</span>
+        </header>
+        <ol>
+          {updates.map((update) => (
+            <li key={update}>{update}</li>
+          ))}
+        </ol>
+      </div>
+    </>
   );
 }
 

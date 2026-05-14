@@ -662,10 +662,20 @@ function renderUpdateHistory(record) {
       <span>UPDATE INDEX</span>
       <i>${updates.length}</i>
     </button>
-    <div class="update-history-window" role="dialog" aria-label="Update index" hidden>
-      <header><span>// UPDATE INDEX</span></header>
-      <ol>${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}</ol>
-    </div>
+  </div>`;
+}
+
+function renderUpdateHistoryModal(record) {
+  const { updates } = splitUpdateIndex(record.body);
+
+  if (!updates.length || !state.updateHistoryOpen) {
+    return "";
+  }
+
+  return `<button class="update-history-backdrop" type="button" aria-label="Close update index" data-update-history-backdrop></button>
+  <div class="update-history-window" role="dialog" aria-label="Update index">
+    <header><span>// UPDATE INDEX</span></header>
+    <ol>${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}</ol>
   </div>`;
 }
 
@@ -766,7 +776,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.5</span>
+      <span>v1.5.6</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -781,7 +791,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.5</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.6</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -937,7 +947,7 @@ function recordWindow(record) {
 
   const headerImage = recordHeaderImage(record);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
     <header class="window-bar">
       <span>// ARCHIVE ENTRY</span>
       <div class="window-actions">
@@ -987,6 +997,7 @@ function recordWindow(record) {
         ${renderUpdateHistory(record)}
       </aside>
     </div>
+    ${renderUpdateHistoryModal(record)}
   </article>`;
 }
 
@@ -1187,17 +1198,8 @@ function filterNoteEntries(notesPage, query) {
 }
 
 function setUpdateHistory(open) {
-  const history = document.querySelector(".update-history");
-  const button = history?.querySelector("[data-update-history-toggle]");
-  const windowEl = history?.querySelector(".update-history-window");
-
-  button?.setAttribute("aria-expanded", String(open));
-
-  if (windowEl instanceof HTMLElement) {
-    windowEl.hidden = !open;
-  }
-
   state.updateHistoryOpen = open;
+  render();
 }
 
 function requestWeather() {
@@ -1310,7 +1312,12 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.dataset.updateHistoryToggle !== undefined) {
-    setUpdateHistory(true);
+    setUpdateHistory(!state.updateHistoryOpen);
+    return;
+  }
+
+  if (target.dataset.updateHistoryBackdrop !== undefined) {
+    setUpdateHistory(false);
     return;
   }
 

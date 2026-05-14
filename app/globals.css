@@ -1311,6 +1311,12 @@ button:focus-visible {
   animation: none;
 }
 
+.record-window.has-index-modal .record-layout {
+  filter: blur(1.4px);
+  opacity: 0.42;
+  transition: filter 120ms ease, opacity 120ms ease;
+}
+
 .record-window::before,
 .record-window::after {
   content: "";
@@ -1448,6 +1454,11 @@ button:focus-visible {
   will-change: scroll-position;
 }
 
+.record-window.is-maximized .record-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 260px);
+  gap: 30px;
+}
+
 .record-main {
   min-width: 0;
 }
@@ -1457,16 +1468,16 @@ button:focus-visible {
 }
 
 .record-heading.has-heading-banner {
-  min-block-size: 178px;
+  min-block-size: clamp(230px, 30vh, 310px);
   display: grid;
   align-content: end;
   margin-block-end: 22px;
-  padding: 78px 22px 22px;
+  padding: 96px 22px 26px;
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.08);
   background:
-    linear-gradient(180deg, rgba(5, 6, 5, 0.1), rgba(5, 6, 5, 0.82)),
-    linear-gradient(90deg, rgba(5, 6, 5, 0.74), rgba(5, 6, 5, 0.1) 54%, rgba(5, 6, 5, 0.64)),
+    linear-gradient(180deg, rgba(5, 6, 5, 0.02), rgba(5, 6, 5, 0.9)),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.68), rgba(5, 6, 5, 0.08) 56%, rgba(5, 6, 5, 0.58)),
     var(--heading-banner);
   background-position: center 58%;
   background-size: cover;
@@ -1489,6 +1500,19 @@ button:focus-visible {
 
 .record-heading.has-heading-banner p {
   margin-block-end: 0;
+}
+
+.record-heading.has-heading-banner .record-kind {
+  justify-self: start;
+  margin-block-end: 26px;
+  background: rgba(5, 6, 5, 0.48);
+}
+
+.record-heading.has-heading-banner .record-id {
+  position: static;
+  justify-self: start;
+  margin-block-end: 4px;
+  color: var(--muted);
 }
 
 .record-kind {
@@ -2187,8 +2211,7 @@ button:focus-visible {
 
 .note-search-panel[hidden],
 .note-entry[hidden],
-.notes-empty[hidden],
-.update-history-window[hidden] {
+.notes-empty[hidden] {
   display: none;
 }
 
@@ -2312,13 +2335,20 @@ button:focus-visible {
   background: rgba(255, 255, 255, 0.045);
 }
 
+.update-history-backdrop {
+  position: absolute;
+  z-index: 5;
+  inset: 48px 0 0;
+  background: rgba(5, 6, 5, 0.38);
+}
+
 .update-history-window {
   position: absolute;
-  z-index: 6;
+  z-index: 7;
   inset-block-start: 50%;
   inset-inline-start: 50%;
-  inline-size: min(390px, calc(100% - 56px));
-  max-block-size: min(360px, calc(100% - 74px));
+  inline-size: min(430px, calc(100% - 72px));
+  max-block-size: min(380px, calc(100% - 104px));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   transform: translate(-50%, -50%);
@@ -2339,16 +2369,6 @@ button:focus-visible {
   border-bottom: 1px solid var(--line);
   color: var(--text);
   letter-spacing: 0.08em;
-}
-
-.update-history-window header button {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
 }
 
 .update-history-window ol {
