@@ -2076,14 +2076,16 @@ button:focus-visible {
 }
 
 .note-search-toggle {
+  inline-size: 30px;
   min-block-size: 30px;
-  padding: 5px 9px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.025);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 16px;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
   cursor: pointer;
 }
 
@@ -2116,6 +2118,13 @@ button:focus-visible {
   background: transparent;
   color: var(--text);
   outline: 0;
+}
+
+.note-search-panel[hidden],
+.note-entry[hidden],
+.notes-empty[hidden],
+.update-history-window[hidden] {
+  display: none;
 }
 
 .note-stack {

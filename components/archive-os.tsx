@@ -375,7 +375,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.2</span>
+        <span>v1.5.3</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -420,7 +420,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.2</dd>
+            <dd>GESTALT OS v1.5.3</dd>
           </div>
         </dl>
       </div>
@@ -694,11 +694,31 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
   const contents = getRecordContents(record);
   const [activeContent, setActiveContent] = useState<ContentKey>("overview");
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
+  const updateHistoryRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setActiveContent("overview");
     setUpdateHistoryOpen(false);
   }, [record.id]);
+
+  useEffect(() => {
+    if (!updateHistoryOpen) {
+      return;
+    }
+
+    const closeUpdateHistory = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element) || updateHistoryRef.current?.contains(target)) {
+        return;
+      }
+
+      setUpdateHistoryOpen(false);
+    };
+
+    document.addEventListener("mousedown", closeUpdateHistory);
+    return () => document.removeEventListener("mousedown", closeUpdateHistory);
+  }, [updateHistoryOpen]);
 
   return (
     <>
@@ -790,7 +810,7 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
               </div>
             ) : null}
           </dl>
-          <UpdateHistory body={record.body} isOpen={updateHistoryOpen} onClose={() => setUpdateHistoryOpen(false)} onOpen={() => setUpdateHistoryOpen(true)} />
+          <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onOpen={() => setUpdateHistoryOpen(true)} />
         </aside>
 
       </div>
@@ -1122,6 +1142,8 @@ function NotesPage({ record }: { record: RecordEntry }) {
       <div className="notes-page-header">
         <div className="terminal-title">// NOTES PAGE</div>
         <button
+          aria-label="Search notes"
+          aria-expanded={searchOpen}
           className={searchOpen ? "note-search-toggle is-active" : "note-search-toggle"}
           type="button"
           onClick={() => {
@@ -1129,7 +1151,7 @@ function NotesPage({ record }: { record: RecordEntry }) {
             setQuery("");
           }}
         >
-          Search
+          <Search size={14} />
         </button>
       </div>
       {searchOpen ? (
@@ -1284,13 +1306,13 @@ function RecordBody({ body }: { body: string }) {
 
 function UpdateHistory({
   body,
+  containerRef,
   isOpen,
-  onClose,
   onOpen
 }: {
   body: string;
+  containerRef: RefObject<HTMLDivElement | null>;
   isOpen: boolean;
-  onClose: () => void;
   onOpen: () => void;
 }) {
   const { updates } = splitUpdateIndex(body);
@@ -1300,8 +1322,8 @@ function UpdateHistory({
   }
 
   return (
-    <div className="update-history">
-      <button type="button" onClick={onOpen}>
+    <div className="update-history" ref={containerRef}>
+      <button type="button" aria-expanded={isOpen} onClick={onOpen}>
         <span>UPDATE INDEX</span>
         <i>{updates.length}</i>
       </button>
@@ -1309,9 +1331,6 @@ function UpdateHistory({
         <div className="update-history-window" role="dialog" aria-label="Update index">
           <header>
             <span>// UPDATE INDEX</span>
-            <button type="button" onClick={onClose}>
-              close
-            </button>
           </header>
           <ol>
             {updates.map((update) => (

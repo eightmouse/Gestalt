@@ -614,16 +614,12 @@ function renderSamplePage(record) {
 
 function renderNotesPage(record) {
   const notes = noteEntries(record.body);
-  const indexedNotes = notes.map((note, index) => ({ ...note, index }));
-  const query = state.noteSearchQuery.trim().toLowerCase();
-  const filteredNotes = query
-    ? indexedNotes.filter((note) => note.title.toLowerCase().includes(query))
-    : indexedNotes;
   const suggestions = notes
     .map((note) => `<option value="${escapeHtml(note.title)}"></option>`)
     .join("");
-  const noteList = filteredNotes.length
-    ? filteredNotes
+  const noteList = notes.length
+    ? notes
+        .map((note, index) => ({ ...note, index }))
         .map(
           (note) => `<details class="note-entry" data-note-index="${note.index}">
             <summary><em>${note.index === 0 ? "New Note" : "Previous Note"}</em><span>${escapeHtml(note.title)}</span><i>open</i></summary>
@@ -631,24 +627,20 @@ function renderNotesPage(record) {
           </details>`
         )
         .join("")
-    : `<p class="notes-empty">No note matches that signal.</p>`;
+    : "";
 
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
       <div class="terminal-title">// NOTES PAGE</div>
-      <button class="${state.noteSearchOpen ? "note-search-toggle is-active" : "note-search-toggle"}" type="button" data-note-search-toggle>Search</button>
+      <button class="note-search-toggle" type="button" aria-label="Search notes" aria-expanded="false" data-note-search-toggle>⌕</button>
     </div>
-    ${
-      state.noteSearchOpen
-        ? `<div class="note-search-panel">
-          <label for="note-search">Search note title or date</label>
-          <input id="note-search" type="search" list="note-search-suggestions" value="${escapeHtml(state.noteSearchQuery)}" data-note-search-input autocomplete="off" />
-          <datalist id="note-search-suggestions">${suggestions}</datalist>
-        </div>`
-        : ""
-    }
+    <div class="note-search-panel" hidden>
+      <label for="note-search">Search note title or date</label>
+      <input id="note-search" type="search" list="note-search-suggestions" value="" data-note-search-input autocomplete="off" />
+      <datalist id="note-search-suggestions">${suggestions}</datalist>
+    </div>
     ${record.banner ? `<div class="notes-banner"><img src="${escapeHtml(record.banner)}" alt="" /></div>` : ""}
-    <div class="note-stack">${noteList}</div>
+    <div class="note-stack">${noteList}<p class="notes-empty" ${notes.length ? "hidden" : ""}>No note matches that signal.</p></div>
   </section>`;
 }
 
@@ -660,18 +652,14 @@ function renderUpdateHistory(record) {
   }
 
   return `<div class="update-history">
-    <button type="button" data-update-history-toggle>
+    <button type="button" aria-expanded="false" data-update-history-toggle>
       <span>UPDATE INDEX</span>
       <i>${updates.length}</i>
     </button>
-    ${
-      state.updateHistoryOpen
-        ? `<div class="update-history-window" role="dialog" aria-label="Update index">
-          <header><span>// UPDATE INDEX</span><button type="button" data-update-history-close>close</button></header>
-          <ol>${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}</ol>
-        </div>`
-        : ""
-    }
+    <div class="update-history-window" role="dialog" aria-label="Update index" hidden>
+      <header><span>// UPDATE INDEX</span></header>
+      <ol>${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}</ol>
+    </div>
   </div>`;
 }
 
@@ -772,7 +760,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.2</span>
+      <span>v1.5.3</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -787,7 +775,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.3</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1140,6 +1128,70 @@ function syncWeather() {
   }
 }
 
+function setNoteSearch(notesPage, open) {
+  const button = notesPage.querySelector("[data-note-search-toggle]");
+  const panel = notesPage.querySelector(".note-search-panel");
+  const input = notesPage.querySelector("[data-note-search-input]");
+
+  notesPage.classList.toggle("is-searching", open);
+  state.noteSearchOpen = open;
+  button?.classList.toggle("is-active", open);
+  button?.setAttribute("aria-expanded", String(open));
+
+  if (panel instanceof HTMLElement) {
+    panel.hidden = !open;
+  }
+
+  if (input instanceof HTMLInputElement) {
+    if (!open) {
+      input.value = "";
+      filterNoteEntries(notesPage, "");
+      return;
+    }
+
+    window.requestAnimationFrame(() => input.focus());
+  }
+}
+
+function filterNoteEntries(notesPage, query) {
+  const cleanQuery = query.trim().toLowerCase();
+  const entries = notesPage.querySelectorAll(".note-entry");
+  let visibleCount = 0;
+
+  entries.forEach((entry) => {
+    const title = entry.querySelector("summary span")?.textContent?.toLowerCase() || "";
+    const isVisible = !cleanQuery || title.includes(cleanQuery);
+
+    if (entry instanceof HTMLElement) {
+      entry.hidden = !isVisible;
+    }
+
+    if (isVisible) {
+      visibleCount += 1;
+    }
+  });
+
+  const empty = notesPage.querySelector(".notes-empty");
+
+  if (empty instanceof HTMLElement) {
+    empty.hidden = visibleCount > 0;
+  }
+}
+
+function setUpdateHistory(open) {
+  const history = document.querySelector(".update-history");
+  const button = history?.querySelector("[data-update-history-toggle]");
+  const windowEl = history?.querySelector(".update-history-window");
+
+  button?.setAttribute("aria-expanded", String(open));
+
+  if (windowEl instanceof HTMLElement) {
+    windowEl.hidden = !open;
+  }
+
+  state.updateHistoryOpen = open;
+}
+
 function requestWeather() {
   if (weatherState.loading) {
     return;
@@ -1212,6 +1264,15 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (
+    state.updateHistoryOpen &&
+    !clickTarget.closest(".update-history-window") &&
+    !clickTarget.closest("[data-update-history-toggle]")
+  ) {
+    setUpdateHistory(false);
+    return;
+  }
+
   const target = clickTarget.closest("button");
 
   if (!target) {
@@ -1230,21 +1291,17 @@ document.addEventListener("click", (event) => {
   const windowAction = target.dataset.windowAction;
 
   if (target.dataset.noteSearchToggle !== undefined) {
-    state.noteSearchOpen = !state.noteSearchOpen;
-    state.noteSearchQuery = "";
-    render();
+    const notesPage = target.closest(".notes-page");
+
+    if (notesPage instanceof HTMLElement) {
+      setNoteSearch(notesPage, !notesPage.classList.contains("is-searching"));
+    }
+
     return;
   }
 
   if (target.dataset.updateHistoryToggle !== undefined) {
-    state.updateHistoryOpen = true;
-    render();
-    return;
-  }
-
-  if (target.dataset.updateHistoryClose !== undefined) {
-    state.updateHistoryOpen = false;
-    render();
+    setUpdateHistory(true);
     return;
   }
 
@@ -1323,8 +1380,11 @@ document.addEventListener("input", (event) => {
   }
 
   if (target.dataset.noteSearchInput !== undefined) {
-    state.noteSearchQuery = target.value;
-    render();
+    const notesPage = target.closest(".notes-page");
+
+    if (notesPage instanceof HTMLElement) {
+      filterNoteEntries(notesPage, target.value);
+    }
   }
 });
 
@@ -1333,10 +1393,22 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.updateHistoryOpen || state.noteSearchOpen || state.searchOpen) {
-    state.updateHistoryOpen = false;
-    state.noteSearchOpen = false;
-    state.noteSearchQuery = "";
+  if (state.updateHistoryOpen) {
+    setUpdateHistory(false);
+    return;
+  }
+
+  if (state.noteSearchOpen) {
+    const notesPage = document.querySelector(".notes-page");
+
+    if (notesPage instanceof HTMLElement) {
+      setNoteSearch(notesPage, false);
+    }
+
+    return;
+  }
+
+  if (state.searchOpen) {
     state.searchOpen = false;
     state.searchQuery = "";
     render();
