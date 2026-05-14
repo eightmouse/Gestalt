@@ -278,7 +278,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <WeatherPanel />
           </DashboardPanel>
 
-          <DashboardPanel title="MEMORY LOOP" className="memory-panel">
+          <DashboardPanel title="MEMORY STATE" className="memory-panel">
             <MemoryLoop />
           </DashboardPanel>
 
@@ -371,7 +371,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.3.0</span>
+        <span>v1.3.1</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -416,7 +416,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.3.0</dd>
+            <dd>GESTALT OS v1.3.1</dd>
           </div>
         </dl>
       </div>
@@ -544,8 +544,10 @@ function WeatherPanel() {
 function MemoryLoop() {
   return (
     <div className="memory-loop" aria-hidden="true">
+      <span className="memory-core" />
       <span className="memory-orbit" />
       <span className="memory-gate" />
+      <span className="memory-shard" />
       <span className="memory-rain" />
     </div>
   );

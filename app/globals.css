@@ -1100,7 +1100,8 @@ button:focus-visible {
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.12);
   background:
-    radial-gradient(ellipse at 50% 62%, rgba(200, 189, 159, 0.16), transparent 38%),
+    radial-gradient(ellipse at 50% 62%, rgba(200, 189, 159, 0.18), transparent 37%),
+    radial-gradient(circle at 52% 48%, rgba(217, 213, 193, 0.07), transparent 18%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 44%),
     rgba(5, 6, 5, 0.56);
 }
@@ -1119,42 +1120,91 @@ button:focus-visible {
   background:
     radial-gradient(circle at 38% 42%, rgba(236, 230, 211, 0.24) 0 1px, transparent 2px),
     radial-gradient(circle at 67% 54%, rgba(236, 230, 211, 0.18) 0 1px, transparent 2px),
+    radial-gradient(circle at 44% 68%, rgba(236, 230, 211, 0.16) 0 1px, transparent 2px),
     radial-gradient(circle at 50% 58%, rgba(200, 189, 159, 0.16), transparent 22%);
   opacity: 0.74;
   animation: memory-drift 9s ease-in-out infinite alternate;
 }
 
 .memory-loop::after {
-  opacity: 0.18;
+  opacity: 0.2;
   background:
+    linear-gradient(115deg, transparent 0 44%, rgba(217, 213, 193, 0.13) 45%, transparent 47% 100%),
     linear-gradient(90deg, rgba(5, 6, 5, 0.72), transparent 42%, rgba(5, 6, 5, 0.64)),
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 9px);
+  animation: memory-scan 6.5s ease-in-out infinite;
+}
+
+.memory-core {
+  inset: 27% 28%;
+  border: 1px solid rgba(217, 213, 193, 0.2);
+  background:
+    linear-gradient(90deg, transparent 0 38%, rgba(217, 213, 193, 0.16) 39% 40%, transparent 41% 100%),
+    linear-gradient(180deg, transparent 0 39%, rgba(217, 213, 193, 0.12) 40% 41%, transparent 42% 100%),
+    radial-gradient(circle, rgba(236, 230, 211, 0.28) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(200, 189, 159, 0.11), transparent 58%);
+  clip-path: polygon(50% 0, 88% 17%, 100% 52%, 78% 91%, 34% 100%, 4% 69%, 10% 25%);
+  opacity: 0.72;
+  transform: translate3d(0, 0, 0) rotate(-4deg);
+  animation: memory-core 7.5s ease-in-out infinite;
 }
 
 .memory-orbit {
-  inset: 15% 10%;
-  border: 1px solid rgba(217, 213, 193, 0.18);
+  inset: 12% 7%;
+  border: 1px solid rgba(217, 213, 193, 0.2);
   border-inline-color: transparent;
   border-radius: 50%;
   transform: rotate(-8deg);
   animation: memory-orbit 12s linear infinite;
 }
 
+.memory-orbit::before,
+.memory-orbit::after {
+  content: "";
+  position: absolute;
+  inline-size: 4px;
+  block-size: 4px;
+  border: 1px solid rgba(236, 230, 211, 0.42);
+  background: rgba(217, 213, 193, 0.16);
+}
+
+.memory-orbit::before {
+  inset-block-start: 18%;
+  inset-inline-start: 19%;
+}
+
+.memory-orbit::after {
+  inset-block-end: 21%;
+  inset-inline-end: 24%;
+}
+
 .memory-gate {
-  inset: 22% 26%;
+  inset: 18% 18%;
   background:
-    linear-gradient(90deg, transparent, rgba(217, 213, 193, 0.18), transparent),
-    linear-gradient(180deg, transparent 0 46%, rgba(217, 213, 193, 0.28) 47% 48%, transparent 49% 100%);
-  opacity: 0.52;
+    linear-gradient(90deg, transparent 0 10%, rgba(217, 213, 193, 0.11) 11% 12%, transparent 13% 88%, rgba(217, 213, 193, 0.1) 89% 90%, transparent 91%),
+    linear-gradient(90deg, transparent, rgba(217, 213, 193, 0.16), transparent),
+    linear-gradient(180deg, transparent 0 45%, rgba(217, 213, 193, 0.26) 46% 47%, transparent 48% 100%);
+  opacity: 0.5;
   transform: scaleX(0.72);
   animation: memory-pulse 5.4s ease-in-out infinite;
+}
+
+.memory-shard {
+  inset: 19% 17%;
+  opacity: 0.58;
+  background:
+    linear-gradient(132deg, transparent 0 36%, rgba(236, 230, 211, 0.2) 37% 38%, transparent 39% 100%),
+    linear-gradient(28deg, transparent 0 57%, rgba(236, 230, 211, 0.12) 58% 59%, transparent 60% 100%),
+    radial-gradient(circle at 52% 48%, rgba(236, 230, 211, 0.14) 0 1px, transparent 2px);
+  clip-path: polygon(9% 40%, 42% 11%, 88% 24%, 78% 65%, 54% 91%, 19% 75%);
+  animation: memory-shard 8.8s ease-in-out infinite;
 }
 
 .memory-rain {
   background-image:
     linear-gradient(90deg, transparent 0 15%, rgba(217, 213, 193, 0.14) 16%, transparent 17% 38%, rgba(217, 213, 193, 0.09) 39%, transparent 40% 100%);
   background-size: 46px 100%;
-  opacity: 0.2;
+  opacity: 0.18;
   transform: translateY(-12%);
   animation: memory-fall 7s linear infinite;
 }
@@ -2315,6 +2365,19 @@ button:focus-visible {
   }
 }
 
+@keyframes memory-core {
+  0%,
+  100% {
+    opacity: 0.56;
+    transform: translate3d(-1%, 1%, 0) rotate(-5deg) scale(0.96);
+  }
+
+  46% {
+    opacity: 0.82;
+    transform: translate3d(2%, -1%, 0) rotate(4deg) scale(1.04);
+  }
+}
+
 @keyframes memory-pulse {
   0%,
   100% {
@@ -2325,6 +2388,28 @@ button:focus-visible {
   48% {
     opacity: 0.62;
     transform: scaleX(0.82);
+  }
+}
+
+@keyframes memory-shard {
+  0%,
+  100% {
+    transform: translate3d(-2%, 1%, 0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translate3d(3%, -2%, 0) rotate(5deg);
+  }
+}
+
+@keyframes memory-scan {
+  0%,
+  100% {
+    transform: translateX(-9%);
+  }
+
+  50% {
+    transform: translateX(9%);
   }
 }
 
