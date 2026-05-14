@@ -276,8 +276,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             )}
           </DashboardPanel>
 
-          <DashboardPanel title="CURRENT GAME">
-            {currentGame ? <CurrentGame onOpenNotes={() => openRecord(currentGame, "notes")} record={currentGame} viewedNoteIds={viewedNoteIds} /> : <p className="subtle">No session active.</p>}
+          <DashboardPanel title="CURRENT GAME" footerLabel={currentGame ? "Read note" : undefined} onFooter={() => currentGame && openRecord(currentGame, "notes")}>
+            {currentGame ? <CurrentGame record={currentGame} viewedNoteIds={viewedNoteIds} /> : <p className="subtle">No session active.</p>}
           </DashboardPanel>
 
           <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
@@ -378,7 +378,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.4</span>
+        <span>v1.5.5</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -423,7 +423,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.4</dd>
+            <dd>GESTALT OS v1.5.5</dd>
           </div>
         </dl>
       </div>
@@ -665,15 +665,7 @@ function SearchPanel({
   );
 }
 
-function CurrentGame({
-  onOpenNotes,
-  record,
-  viewedNoteIds
-}: {
-  onOpenNotes: () => void;
-  record: RecordEntry;
-  viewedNoteIds: string[];
-}) {
+function CurrentGame({ record, viewedNoteIds }: { record: RecordEntry; viewedNoteIds: string[] }) {
   const latestNote = typeof record.meta.latestNote === "string" && !viewedNoteIds.includes(record.id) ? record.meta.latestNote : "";
 
   return (
@@ -688,9 +680,6 @@ function CurrentGame({
         <span>{record.progress}% Complete</span>
         <span>{String(record.meta.playtime ?? "18.7h")} Play Time</span>
         <span>Last Played: {String(record.meta.lastPlayed ?? "Today")}</span>
-        <button className="current-game-note" type="button" onClick={onOpenNotes}>
-          Read note -&gt;
-        </button>
       </div>
     </div>
   );
@@ -710,6 +699,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
   const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
+  const headerImage = recordHeaderImage(record);
 
   useEffect(() => {
     setActiveContent(initialContent);
@@ -763,8 +753,8 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
       <div className="record-layout">
         <div className="record-main">
           <div
-            className={record.banner ? "record-heading has-heading-banner" : "record-heading"}
-            style={record.banner ? ({ "--heading-banner": `url("${record.banner}")` } as CSSProperties) : undefined}
+            className={headerImage ? "record-heading has-heading-banner" : "record-heading"}
+            style={headerImage ? ({ "--heading-banner": `url("${headerImage}")` } as CSSProperties) : undefined}
           >
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
@@ -883,6 +873,10 @@ function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label:
 
 function contentOrdinal(record: RecordEntry, index: number): string {
   return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
+}
+
+function recordHeaderImage(record: RecordEntry): string {
+  return typeof record.meta.headerImage === "string" ? record.meta.headerImage : "";
 }
 
 function splitUpdateIndex(body: string): { mainBody: string; updates: string[] } {
@@ -1037,9 +1031,11 @@ function RecordContentPanel({ activeContent, record }: { activeContent: ContentK
 }
 
 function RecordOverviewPage({ record }: { record: RecordEntry }) {
+  const headerImage = recordHeaderImage(record);
+
   return (
     <div className="overview-stack">
-      <RecordBanner record={record} />
+      {headerImage ? null : <RecordBanner record={record} />}
 
       <section className="record-section">
         <h3>// OVERVIEW</h3>

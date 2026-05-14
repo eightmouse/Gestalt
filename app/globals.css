@@ -1026,23 +1026,6 @@ button:focus-visible {
   line-height: 1.55;
 }
 
-.current-game-note {
-  justify-self: start;
-  margin-block-start: 10px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  cursor: pointer;
-}
-
-.current-game-note:hover {
-  color: var(--text-strong);
-}
-
 .latest-log p {
   max-inline-size: 34ch;
   text-wrap: balance;
@@ -1480,10 +1463,10 @@ button:focus-visible {
   margin-block-end: 22px;
   padding: 78px 22px 22px;
   overflow: hidden;
-  border: 1px solid rgba(217, 213, 193, 0.1);
+  border: 1px solid rgba(217, 213, 193, 0.08);
   background:
-    linear-gradient(180deg, rgba(5, 6, 5, 0.12), rgba(5, 6, 5, 0.86)),
-    linear-gradient(90deg, rgba(5, 6, 5, 0.82), rgba(5, 6, 5, 0.18) 52%, rgba(5, 6, 5, 0.72)),
+    linear-gradient(180deg, rgba(5, 6, 5, 0.1), rgba(5, 6, 5, 0.82)),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.74), rgba(5, 6, 5, 0.1) 54%, rgba(5, 6, 5, 0.64)),
     var(--heading-banner);
   background-position: center 58%;
   background-size: cover;
@@ -1495,8 +1478,8 @@ button:focus-visible {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, transparent 55%, rgba(5, 6, 5, 0.42)),
-    rgba(5, 6, 5, 0.18);
+    linear-gradient(180deg, transparent 52%, rgba(5, 6, 5, 0.48)),
+    rgba(5, 6, 5, 0.08);
 }
 
 .record-heading.has-heading-banner > * {
@@ -1753,9 +1736,14 @@ button:focus-visible {
 }
 
 .record-aside {
+  position: sticky;
+  inset-block-start: 0;
+  align-self: start;
+  block-size: auto;
+  max-block-size: min(580px, calc(100dvh - 150px));
   display: grid;
-  align-content: stretch;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+  grid-template-rows: auto auto auto;
   gap: 24px;
   padding: 26px 18px;
   border: 1px solid var(--line);

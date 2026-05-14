@@ -97,6 +97,7 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     mood: "stylish",
     summary: "Current play log for Persona 5 Royal.",
     banner: "public/media/records/persona-5-royal/cover.jpg",
+    headerImage: "public/media/records/persona-5-royal/header.jpg",
     progress: 0,
     priority: 8,
     playtime: "0h",
@@ -303,6 +304,10 @@ function progressBlocks(value) {
 
 function recordImage(record) {
   return record.banner || "public/images/archive-banner.png";
+}
+
+function recordHeaderImage(record) {
+  return record.headerImage || "";
 }
 
 function updatedProjectRecords() {
@@ -538,8 +543,10 @@ function recordMilestones(record) {
 }
 
 function renderOverviewPage(record) {
+  const headerImage = recordHeaderImage(record);
+
   return `<div class="overview-stack">
-    ${recordBanner(record)}
+    ${headerImage ? "" : recordBanner(record)}
 
     <section class="record-section">
       <h3>// OVERVIEW</h3>
@@ -759,7 +766,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.4</span>
+      <span>v1.5.5</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -774,7 +781,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.5</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -851,7 +858,6 @@ function dashboard() {
           <span>${currentGame.progress}% Complete</span>
           <span>${escapeHtml(currentGame.playtime || "18.7h")} Play Time</span>
           <span>Last Played: ${escapeHtml(currentGame.lastPlayed || "Today")}</span>
-          <button class="current-game-note" type="button" data-open-record="${currentGame.id}" data-open-content="notes">Read note -&gt;</button>
         </div>
       </div>`
     : `<p class="subtle">No session active.</p>`;
@@ -877,7 +883,7 @@ function dashboard() {
     ${dashboardPanel("ACTIVE PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
     ${dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel")}
-    ${dashboardPanel("CURRENT GAME", game, "", "")}
+    ${dashboardPanel("CURRENT GAME", game, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "")}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", `data-open-section="logs"`, "wide-panel")}
   </div>`;
@@ -929,6 +935,8 @@ function recordWindow(record) {
   const titleClass = state.recordTitleAnimating ? "record-title-text is-writing" : "record-title-text";
   const cursorClass = state.recordTitleAnimating ? "cursor record-title-cursor is-delayed" : "cursor record-title-cursor";
 
+  const headerImage = recordHeaderImage(record);
+
   return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
     <header class="window-bar">
       <span>// ARCHIVE ENTRY</span>
@@ -941,7 +949,7 @@ function recordWindow(record) {
 
     <div class="record-layout">
       <div class="record-main">
-        <div class="${record.banner ? "record-heading has-heading-banner" : "record-heading"}" ${record.banner ? `style="--heading-banner: url('${escapeHtml(record.banner)}')"` : ""}>
+        <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}" ${headerImage ? `style="--heading-banner: url('${escapeHtml(headerImage)}')"` : ""}>
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span><span class="${cursorClass}" style="--record-title-chars: ${record.title.length}">_</span></h2>
