@@ -86,6 +86,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewedNoteIds, setViewedNoteIds] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -177,6 +178,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openRecord = (record: RecordEntry) => {
     setSelectedId(record.id);
+    if (typeof record.meta.latestNote === "string") {
+      setViewedNoteIds((current) => (current.includes(record.id) ? current : [...current, record.id]));
+    }
     setPanelOpen(true);
     setPanelMinimized(false);
     setPanelMaximized(false);
@@ -271,7 +275,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           </DashboardPanel>
 
           <DashboardPanel title="CURRENT GAME">
-            {currentGame ? <CurrentGame record={currentGame} /> : <p className="subtle">No session active.</p>}
+            {currentGame ? <CurrentGame record={currentGame} viewedNoteIds={viewedNoteIds} /> : <p className="subtle">No session active.</p>}
           </DashboardPanel>
 
           <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
@@ -371,7 +375,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.4.0</span>
+        <span>v1.4.2</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -416,7 +420,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.4.0</dd>
+            <dd>GESTALT OS v1.4.2</dd>
           </div>
         </dl>
       </div>
@@ -658,12 +662,14 @@ function SearchPanel({
   );
 }
 
-function CurrentGame({ record }: { record: RecordEntry }) {
+function CurrentGame({ record, viewedNoteIds }: { record: RecordEntry; viewedNoteIds: string[] }) {
+  const latestNote = typeof record.meta.latestNote === "string" && !viewedNoteIds.includes(record.id) ? record.meta.latestNote : "";
+
   return (
     <div className="current-game">
       <div className="game-cover">
         <img src={record.banner || "/images/archive-banner.png"} alt="" />
-        {typeof record.meta.latestNote === "string" ? <i className="game-cover-signal">{record.meta.latestNote}</i> : null}
+        {latestNote ? <i className="game-cover-signal">{latestNote}</i> : null}
         <span>{record.title.slice(0, 10)}</span>
       </div>
       <div>
@@ -1062,6 +1068,10 @@ function RecordBody({ body }: { body: string }) {
 
         if (line.startsWith("## ")) {
           return <h4 key={key}>// {line.slice(3)}</h4>;
+        }
+
+        if (line.startsWith("### ")) {
+          return <h5 key={key}>{line.slice(4)}</h5>;
         }
 
         if (line.startsWith("- [x] ")) {

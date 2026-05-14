@@ -980,16 +980,14 @@ button:focus-visible {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  filter: grayscale(0.85) contrast(0.9) brightness(0.55);
+  object-position: center 58%;
 }
 
 .game-cover::after {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.64)),
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 6px);
+  background: linear-gradient(180deg, transparent 46%, rgba(0, 0, 0, 0.5));
 }
 
 .game-cover-signal {
@@ -1542,7 +1540,12 @@ button:focus-visible {
   block-size: 100%;
   display: block;
   object-fit: cover;
+  object-position: center;
   opacity: 0.72;
+}
+
+.record-window[aria-label^="Persona 5 Royal"] .banner-frame img {
+  object-position: center 58%;
 }
 
 .banner-frame::after {
@@ -1567,12 +1570,20 @@ button:focus-visible {
 }
 
 .record-section h3,
-.record-body h4 {
+.record-body h4,
+.record-body h5 {
   margin: 0 0 13px;
   color: var(--text);
   font-size: 15px;
   font-weight: 400;
   letter-spacing: 0.08em;
+}
+
+.record-body h5 {
+  margin-block: 6px 2px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.06em;
 }
 
 .record-section p,
@@ -2018,7 +2029,12 @@ button:focus-visible {
   block-size: 100%;
   display: block;
   object-fit: cover;
+  object-position: center;
   opacity: 0.72;
+}
+
+.record-window[aria-label^="Persona 5 Royal"] .notes-banner img {
+  object-position: center 58%;
 }
 
 .media-frame::after,

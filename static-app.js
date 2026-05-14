@@ -95,7 +95,7 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     started: "2026-05-14",
     updated: "2026-05-14",
     mood: "stylish",
-    summary: "Current play log for Persona 5 Royal. Future thoughts will be collected here instead of split into separate game entries.",
+    summary: "Current play log for Persona 5 Royal.",
     banner: "public/media/records/persona-5-royal/cover.jpg",
     progress: 0,
     priority: 8,
@@ -104,12 +104,11 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     latestNote: "New note",
     tags: ["persona", "games", "jrpg", "play-log"],
     milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
-    body: `## Current Thoughts
+    body: `## Notes
+### 14 / 05 / 2026 - Opening Note
 Opening this as the main Persona 5 Royal play log.
 
-Future updates, session notes, screenshots, and stray thoughts will live inside this same entry instead of becoming separate Persona 5 Royal records.
-
-## Updates
+## Update Index
 - 14 / 05 / 2026 - Play log created.`
   }
 ].sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
@@ -154,7 +153,8 @@ const state = {
   bootDismissed: false,
   windowSteady: false,
   recordTitleAnimating: false,
-  headlineAnimating: true
+  headlineAnimating: true,
+  viewedNoteIds: []
 };
 
 const root = document.querySelector("#root");
@@ -176,6 +176,9 @@ function openRecord(recordId) {
 
   state.headlineAnimating = false;
   state.selectedId = record.id;
+  if (record.latestNote && !state.viewedNoteIds.includes(record.id)) {
+    state.viewedNoteIds = [...state.viewedNoteIds, record.id];
+  }
   state.activeContent = "overview";
   state.panelOpen = true;
   state.panelMinimized = false;
@@ -373,6 +376,10 @@ function markdownBody(body) {
 
       if (line.startsWith("## ")) {
         return `<h4 ${key}>// ${escapeHtml(line.slice(3))}</h4>`;
+      }
+
+      if (line.startsWith("### ")) {
+        return `<h5 ${key}>${escapeHtml(line.slice(4))}</h5>`;
       }
 
       if (line.startsWith("- [x] ")) {
@@ -598,7 +605,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.4.0</span>
+      <span>v1.4.2</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -613,7 +620,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.4.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.4.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -682,7 +689,7 @@ function dashboard() {
     ? `<div class="current-game">
         <div class="game-cover">
           <img src="${escapeHtml(recordImage(currentGame))}" alt="" />
-          ${currentGame.latestNote ? `<i class="game-cover-signal">${escapeHtml(currentGame.latestNote)}</i>` : ""}
+          ${currentGame.latestNote && !state.viewedNoteIds.includes(currentGame.id) ? `<i class="game-cover-signal">${escapeHtml(currentGame.latestNote)}</i>` : ""}
           <span>${escapeHtml(currentGame.title.slice(0, 10))}</span>
         </div>
         <div>
