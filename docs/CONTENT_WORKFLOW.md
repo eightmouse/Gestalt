@@ -20,6 +20,27 @@ Useful sections:
 
 Then edit the created file in `content/records/`.
 
+## Game Note Stack
+
+Keep one record per game. Add the newest note at the top of the body, with an optional banner image first:
+
+```md
+![Short banner description](/media/records/game-id/session-banner.jpg)
+
+## Session Title
+Thoughts from the session.
+
+## Update Index
+- 14 / 05 / 2026 - Short update label.
+
+## Previous Notes
+:::previous-note 14 / 05 / 2026 - Older Note Title
+Older note content.
+:::
+```
+
+Use `:::previous-note ... :::` for older notes so the public entry stays readable as the archive grows.
+
 ## Local Studio
 
 For form-based editing and drag/drop media, run the Next app locally and open:

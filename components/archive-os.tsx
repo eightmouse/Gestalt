@@ -375,7 +375,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.4.2</span>
+        <span>v1.5.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -420,7 +420,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.4.2</dd>
+            <dd>GESTALT OS v1.5.0</dd>
           </div>
         </dl>
       </div>
@@ -1041,10 +1041,12 @@ function SampleGrid({ record }: { record: RecordEntry }) {
 }
 
 function NotesPage({ record }: { record: RecordEntry }) {
+  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(record.body);
+
   return (
     <section className="content-terminal notes-page" aria-label={`${record.title} notes`}>
       <div className="terminal-title">// NOTES PAGE</div>
-      {record.banner ? (
+      {record.banner && !bodyHasImage ? (
         <div className="notes-banner">
           <img src={record.banner} alt="" />
         </div>
@@ -1056,57 +1058,105 @@ function NotesPage({ record }: { record: RecordEntry }) {
 
 function RecordBody({ body }: { body: string }) {
   const lines = body.split(/\r?\n/);
+  const nodes: React.ReactNode[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const key = `${index}-${line}`;
+    const previousNotePrefix = ":::previous-note ";
+
+    if (line.startsWith(previousNotePrefix)) {
+      const title = line.slice(previousNotePrefix.length).trim() || "Previous note";
+      const innerLines: string[] = [];
+
+      index += 1;
+
+      while (index < lines.length && lines[index].trim() !== ":::") {
+        innerLines.push(lines[index]);
+        index += 1;
+      }
+
+      nodes.push(
+        <details className="previous-note" key={key}>
+          <summary>
+            <span>{title}</span>
+            <i>open</i>
+          </summary>
+          <div className="previous-note-body">
+            <RecordBody body={innerLines.join("\n")} />
+          </div>
+        </details>
+      );
+      continue;
+    }
+
+    if (!line.trim()) {
+      nodes.push(<br key={key} />);
+      continue;
+    }
+
+    if (line.startsWith("## ")) {
+      nodes.push(<h4 key={key}>// {line.slice(3)}</h4>);
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      nodes.push(<h5 key={key}>{line.slice(4)}</h5>);
+      continue;
+    }
+
+    const imageMatch = line.match(/^!\[(.*?)]\((.*?)\)$/);
+
+    if (imageMatch) {
+      nodes.push(
+        <figure className="note-banner" key={key}>
+          <img src={imageMatch[2]} alt={imageMatch[1]} />
+        </figure>
+      );
+      continue;
+    }
+
+    if (line.startsWith("- [x] ")) {
+      nodes.push(
+        <p className="check-line" key={key}>
+          <span>[x]</span>
+          {line.slice(6)}
+        </p>
+      );
+      continue;
+    }
+
+    if (line.startsWith("- [ ] ")) {
+      nodes.push(
+        <p className="check-line is-open" key={key}>
+          <span>[ ]</span>
+          {line.slice(6)}
+        </p>
+      );
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      nodes.push(
+        <p className="bullet-line" key={key}>
+          <span>&gt;</span>
+          {line.slice(2)}
+        </p>
+      );
+      continue;
+    }
+
+    if (line.startsWith("> ")) {
+      nodes.push(<blockquote key={key}>{line.slice(2)}</blockquote>);
+      continue;
+    }
+
+    nodes.push(<p key={key}>{line}</p>);
+  }
 
   return (
     <div className="record-body">
-      {lines.map((line, index) => {
-        const key = `${index}-${line}`;
-
-        if (!line.trim()) {
-          return <br key={key} />;
-        }
-
-        if (line.startsWith("## ")) {
-          return <h4 key={key}>// {line.slice(3)}</h4>;
-        }
-
-        if (line.startsWith("### ")) {
-          return <h5 key={key}>{line.slice(4)}</h5>;
-        }
-
-        if (line.startsWith("- [x] ")) {
-          return (
-            <p className="check-line" key={key}>
-              <span>[x]</span>
-              {line.slice(6)}
-            </p>
-          );
-        }
-
-        if (line.startsWith("- [ ] ")) {
-          return (
-            <p className="check-line is-open" key={key}>
-              <span>[ ]</span>
-              {line.slice(6)}
-            </p>
-          );
-        }
-
-        if (line.startsWith("- ")) {
-          return (
-            <p className="bullet-line" key={key}>
-              <span>&gt;</span>
-              {line.slice(2)}
-            </p>
-          );
-        }
-
-        if (line.startsWith("> ")) {
-          return <blockquote key={key}>{line.slice(2)}</blockquote>;
-        }
-
-        return <p key={key}>{line}</p>;
-      })}
+      {nodes}
     </div>
   );
 }

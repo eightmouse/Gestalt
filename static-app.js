@@ -104,12 +104,23 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     latestNote: "New note",
     tags: ["persona", "games", "jrpg", "play-log"],
     milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
-    body: `## Notes
-### 14 / 05 / 2026 - Opening Note
-Opening this as the main Persona 5 Royal play log.
+    body: `![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
+
+## First Session File
+This note is mostly here to lock in the shape of the Persona 5 Royal play log.
+
+The idea is simple: one game gets one main record, and every longer session can become its own little article inside that record. Newest thoughts stay at the top, with their own banner or screenshots when I have them.
 
 ## Update Index
-- 14 / 05 / 2026 - Play log created.`
+- 14 / 05 / 2026 - First note stack tested.
+- 14 / 05 / 2026 - Play log created.
+
+## Previous Notes
+:::previous-note 14 / 05 / 2026 - Opening Note
+![Persona 5 Royal opening note](public/media/records/persona-5-royal/cover.jpg)
+
+Opening this as the main Persona 5 Royal play log.
+:::`
   }
 ].sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
@@ -365,42 +376,78 @@ function contentOrdinal(record, index) {
 }
 
 function markdownBody(body) {
-  return body
-    .split(/\r?\n/)
-    .map((line, index) => {
-      const key = `data-line="${index}"`;
+  const lines = body.split(/\r?\n/);
+  const output = [];
 
-      if (!line.trim()) {
-        return "<br />";
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const key = `data-line="${index}"`;
+    const previousNotePrefix = ":::previous-note ";
+
+    if (line.startsWith(previousNotePrefix)) {
+      const title = line.slice(previousNotePrefix.length).trim();
+      const innerLines = [];
+
+      index += 1;
+
+      while (index < lines.length && lines[index].trim() !== ":::") {
+        innerLines.push(lines[index]);
+        index += 1;
       }
 
-      if (line.startsWith("## ")) {
-        return `<h4 ${key}>// ${escapeHtml(line.slice(3))}</h4>`;
-      }
+      output.push(`<details class="previous-note" ${key}>
+        <summary><span>${escapeHtml(title || "Previous note")}</span><i>open</i></summary>
+        <div class="previous-note-body">${markdownBody(innerLines.join("\n"))}</div>
+      </details>`);
+      continue;
+    }
 
-      if (line.startsWith("### ")) {
-        return `<h5 ${key}>${escapeHtml(line.slice(4))}</h5>`;
-      }
+    if (!line.trim()) {
+      output.push("<br />");
+      continue;
+    }
 
-      if (line.startsWith("- [x] ")) {
-        return `<p class="check-line" ${key}><span>[x]</span>${escapeHtml(line.slice(6))}</p>`;
-      }
+    if (line.startsWith("## ")) {
+      output.push(`<h4 ${key}>// ${escapeHtml(line.slice(3))}</h4>`);
+      continue;
+    }
 
-      if (line.startsWith("- [ ] ")) {
-        return `<p class="check-line is-open" ${key}><span>[ ]</span>${escapeHtml(line.slice(6))}</p>`;
-      }
+    if (line.startsWith("### ")) {
+      output.push(`<h5 ${key}>${escapeHtml(line.slice(4))}</h5>`);
+      continue;
+    }
 
-      if (line.startsWith("- ")) {
-        return `<p class="bullet-line" ${key}><span>&gt;</span>${escapeHtml(line.slice(2))}</p>`;
-      }
+    const imageMatch = line.match(/^!\[(.*?)]\((.*?)\)$/);
 
-      if (line.startsWith("> ")) {
-        return `<blockquote ${key}>${escapeHtml(line.slice(2))}</blockquote>`;
-      }
+    if (imageMatch) {
+      output.push(`<figure class="note-banner" ${key}><img src="${escapeHtml(imageMatch[2])}" alt="${escapeHtml(imageMatch[1])}" /></figure>`);
+      continue;
+    }
 
-      return `<p ${key}>${escapeHtml(line)}</p>`;
-    })
-    .join("");
+    if (line.startsWith("- [x] ")) {
+      output.push(`<p class="check-line" ${key}><span>[x]</span>${escapeHtml(line.slice(6))}</p>`);
+      continue;
+    }
+
+    if (line.startsWith("- [ ] ")) {
+      output.push(`<p class="check-line is-open" ${key}><span>[ ]</span>${escapeHtml(line.slice(6))}</p>`);
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      output.push(`<p class="bullet-line" ${key}><span>&gt;</span>${escapeHtml(line.slice(2))}</p>`);
+      continue;
+    }
+
+    if (line.startsWith("> ")) {
+      output.push(`<blockquote ${key}>${escapeHtml(line.slice(2))}</blockquote>`);
+      continue;
+    }
+
+    output.push(`<p ${key}>${escapeHtml(line)}</p>`);
+  }
+
+  return output.join("");
 }
 
 function recordBanner(record) {
@@ -497,7 +544,8 @@ function renderSamplePage(record) {
 }
 
 function renderNotesPage(record) {
-  const noteImage = record.banner
+  const bodyHasImage = /^!\[.*?]\(.*?\)$/m.test(record.body);
+  const noteImage = record.banner && !bodyHasImage
     ? `<div class="notes-banner"><img src="${escapeHtml(record.banner)}" alt="" /></div>`
     : "";
 
@@ -605,7 +653,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.4.2</span>
+      <span>v1.5.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -620,7 +668,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.4.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.0</dd></div>
       </dl>
     </div>
   </aside>`;

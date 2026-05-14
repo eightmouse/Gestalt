@@ -2006,7 +2006,8 @@ button:focus-visible {
 }
 
 .media-frame,
-.notes-banner {
+.notes-banner,
+.note-banner {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.13);
@@ -2019,12 +2020,14 @@ button:focus-visible {
   aspect-ratio: 2 / 1;
 }
 
-.notes-banner {
+.notes-banner,
+.note-banner {
   aspect-ratio: 2.72 / 1;
 }
 
 .media-frame img,
-.notes-banner img {
+.notes-banner img,
+.note-banner img {
   inline-size: 100%;
   block-size: 100%;
   display: block;
@@ -2033,12 +2036,14 @@ button:focus-visible {
   opacity: 0.72;
 }
 
-.record-window[aria-label^="Persona 5 Royal"] .notes-banner img {
+.record-window[aria-label^="Persona 5 Royal"] .notes-banner img,
+.record-window[aria-label^="Persona 5 Royal"] .note-banner img {
   object-position: center 58%;
 }
 
 .media-frame::after,
-.notes-banner::after {
+.notes-banner::after,
+.note-banner::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -2056,6 +2061,76 @@ button:focus-visible {
 .notes-page {
   display: grid;
   gap: 16px;
+}
+
+.record-body .note-banner {
+  margin: 0 0 10px;
+}
+
+.previous-note {
+  margin-block-start: 12px;
+  border: 1px solid var(--line);
+  background: rgba(5, 6, 5, 0.36);
+}
+
+.previous-note summary {
+  min-block-size: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 13px;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.previous-note summary::-webkit-details-marker {
+  display: none;
+}
+
+.previous-note summary::before {
+  content: ">";
+  color: var(--accent);
+}
+
+.previous-note summary span {
+  flex: 1;
+}
+
+.previous-note summary i {
+  color: var(--muted-2);
+  font-style: normal;
+  font-size: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.previous-note summary i::before {
+  content: "open";
+  font-size: 11px;
+}
+
+.previous-note[open] summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.previous-note[open] summary i {
+  color: var(--muted);
+}
+
+.previous-note[open] summary i::before {
+  content: "close";
+}
+
+.previous-note-body {
+  padding: 12px;
+}
+
+.previous-note-body > .record-body {
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .status-grid {
