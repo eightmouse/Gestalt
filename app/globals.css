@@ -1026,6 +1026,23 @@ button:focus-visible {
   line-height: 1.55;
 }
 
+.current-game-note {
+  justify-self: start;
+  margin-block-start: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.current-game-note:hover {
+  color: var(--text-strong);
+}
+
 .latest-log p {
   max-inline-size: 34ch;
   text-wrap: balance;
@@ -1454,6 +1471,41 @@ button:focus-visible {
 
 .record-heading {
   position: relative;
+}
+
+.record-heading.has-heading-banner {
+  min-block-size: 178px;
+  display: grid;
+  align-content: end;
+  margin-block-end: 22px;
+  padding: 78px 22px 22px;
+  overflow: hidden;
+  border: 1px solid rgba(217, 213, 193, 0.1);
+  background:
+    linear-gradient(180deg, rgba(5, 6, 5, 0.12), rgba(5, 6, 5, 0.86)),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.82), rgba(5, 6, 5, 0.18) 52%, rgba(5, 6, 5, 0.72)),
+    var(--heading-banner);
+  background-position: center 58%;
+  background-size: cover;
+}
+
+.record-heading.has-heading-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 55%, rgba(5, 6, 5, 0.42)),
+    rgba(5, 6, 5, 0.18);
+}
+
+.record-heading.has-heading-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+.record-heading.has-heading-banner p {
+  margin-block-end: 0;
 }
 
 .record-kind {
@@ -2007,7 +2059,6 @@ button:focus-visible {
 }
 
 .media-frame,
-.notes-banner,
 .note-banner {
   position: relative;
   overflow: hidden;
@@ -2021,13 +2072,11 @@ button:focus-visible {
   aspect-ratio: 2 / 1;
 }
 
-.notes-banner,
 .note-banner {
   aspect-ratio: 2.72 / 1;
 }
 
 .media-frame img,
-.notes-banner img,
 .note-banner img {
   inline-size: 100%;
   block-size: 100%;
@@ -2037,13 +2086,11 @@ button:focus-visible {
   opacity: 0.72;
 }
 
-.record-window[aria-label^="Persona 5 Royal"] .notes-banner img,
 .record-window[aria-label^="Persona 5 Royal"] .note-banner img {
   object-position: center 58%;
 }
 
 .media-frame::after,
-.notes-banner::after,
 .note-banner::after {
   content: "";
   position: absolute;
@@ -2094,6 +2141,36 @@ button:focus-visible {
   color: var(--text);
   border-color: var(--line-strong);
   background: rgba(255, 255, 255, 0.055);
+}
+
+.search-icon {
+  position: relative;
+  inline-size: 14px;
+  block-size: 14px;
+  display: block;
+}
+
+.search-icon::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 1px;
+  inset-inline-start: 1px;
+  inline-size: 8px;
+  block-size: 8px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.search-icon::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 1px;
+  inset-block-end: 2px;
+  inline-size: 6px;
+  block-size: 1px;
+  background: currentColor;
+  transform: rotate(45deg);
+  transform-origin: center;
 }
 
 .note-search-panel {
@@ -2166,15 +2243,6 @@ button:focus-visible {
 .note-entry summary::before {
   content: ">";
   color: var(--accent);
-}
-
-.note-entry summary em {
-  min-inline-size: 84px;
-  color: var(--muted-2);
-  font-style: normal;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .note-entry summary span {

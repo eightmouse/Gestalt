@@ -181,7 +181,7 @@ function selectedRecord() {
   return records.find((record) => record.id === state.selectedId) || records[0];
 }
 
-function openRecord(recordId) {
+function openRecord(recordId, contentKey = "overview") {
   const record = records.find((entry) => entry.id === recordId);
 
   if (!record) {
@@ -193,7 +193,7 @@ function openRecord(recordId) {
   if (record.latestNote && !state.viewedNoteIds.includes(record.id)) {
     state.viewedNoteIds = [...state.viewedNoteIds, record.id];
   }
-  state.activeContent = "overview";
+  state.activeContent = contentKey;
   state.panelOpen = true;
   state.panelMinimized = false;
   state.panelMaximized = false;
@@ -621,8 +621,8 @@ function renderNotesPage(record) {
     ? notes
         .map((note, index) => ({ ...note, index }))
         .map(
-          (note) => `<details class="note-entry" data-note-index="${note.index}">
-            <summary><em>${note.index === 0 ? "New Note" : "Previous Note"}</em><span>${escapeHtml(note.title)}</span><i>open</i></summary>
+          (note) => `<details class="note-entry" data-note-index="${note.index}" ${note.index === 0 ? "open" : ""}>
+            <summary><span>${escapeHtml(note.title)}</span><i>open</i></summary>
             <div class="note-entry-body"><div class="record-body">${markdownBody(note.body)}</div></div>
           </details>`
         )
@@ -632,14 +632,13 @@ function renderNotesPage(record) {
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
       <div class="terminal-title">// NOTES PAGE</div>
-      <button class="note-search-toggle" type="button" aria-label="Search notes" aria-expanded="false" data-note-search-toggle>⌕</button>
+      <button class="note-search-toggle" type="button" aria-label="Search notes" aria-expanded="false" data-note-search-toggle><span class="search-icon" aria-hidden="true"></span></button>
     </div>
     <div class="note-search-panel" hidden>
       <label for="note-search">Search note title or date</label>
       <input id="note-search" type="search" list="note-search-suggestions" value="" data-note-search-input autocomplete="off" />
       <datalist id="note-search-suggestions">${suggestions}</datalist>
     </div>
-    ${record.banner ? `<div class="notes-banner"><img src="${escapeHtml(record.banner)}" alt="" /></div>` : ""}
     <div class="note-stack">${noteList}<p class="notes-empty" ${notes.length ? "hidden" : ""}>No note matches that signal.</p></div>
   </section>`;
 }
@@ -760,7 +759,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.3</span>
+      <span>v1.5.4</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -775,7 +774,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.3</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.4</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -852,6 +851,7 @@ function dashboard() {
           <span>${currentGame.progress}% Complete</span>
           <span>${escapeHtml(currentGame.playtime || "18.7h")} Play Time</span>
           <span>Last Played: ${escapeHtml(currentGame.lastPlayed || "Today")}</span>
+          <button class="current-game-note" type="button" data-open-record="${currentGame.id}" data-open-content="notes">Read note -&gt;</button>
         </div>
       </div>`
     : `<p class="subtle">No session active.</p>`;
@@ -941,7 +941,7 @@ function recordWindow(record) {
 
     <div class="record-layout">
       <div class="record-main">
-        <div class="record-heading">
+        <div class="${record.banner ? "record-heading has-heading-banner" : "record-heading"}" ${record.banner ? `style="--heading-banner: url('${escapeHtml(record.banner)}')"` : ""}>
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span><span class="${cursorClass}" style="--record-title-chars: ${record.title.length}">_</span></h2>
@@ -1286,6 +1286,7 @@ document.addEventListener("click", (event) => {
   }
 
   const recordId = target.dataset.openRecord;
+  const openContent = target.dataset.openContent;
   const sectionId = target.dataset.openSection;
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
@@ -1317,7 +1318,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (recordId) {
-    openRecord(recordId);
+    openRecord(recordId, openContent || "overview");
     return;
   }
 

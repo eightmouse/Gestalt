@@ -83,6 +83,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [panelMaximized, setPanelMaximized] = useState(false);
+  const [initialContent, setInitialContent] = useState<ContentKey>("overview");
   const [now, setNow] = useState<Date | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,8 +177,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   }, [records, selectedId, setSelectedId]);
 
-  const openRecord = (record: RecordEntry) => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview") => {
     setSelectedId(record.id);
+    setInitialContent(content);
     if (typeof record.meta.latestNote === "string") {
       setViewedNoteIds((current) => (current.includes(record.id) ? current : [...current, record.id]));
     }
@@ -275,7 +277,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           </DashboardPanel>
 
           <DashboardPanel title="CURRENT GAME">
-            {currentGame ? <CurrentGame record={currentGame} viewedNoteIds={viewedNoteIds} /> : <p className="subtle">No session active.</p>}
+            {currentGame ? <CurrentGame onOpenNotes={() => openRecord(currentGame, "notes")} record={currentGame} viewedNoteIds={viewedNoteIds} /> : <p className="subtle">No session active.</p>}
           </DashboardPanel>
 
           <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
@@ -329,6 +331,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <RecordWindow
               key={selectedRecord.id}
               maximized={panelMaximized}
+              initialContent={initialContent}
               record={selectedRecord}
               onClose={() => {
                 setPanelOpen(false);
@@ -375,7 +378,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.3</span>
+        <span>v1.5.4</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -420,7 +423,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.3</dd>
+            <dd>GESTALT OS v1.5.4</dd>
           </div>
         </dl>
       </div>
@@ -662,7 +665,15 @@ function SearchPanel({
   );
 }
 
-function CurrentGame({ record, viewedNoteIds }: { record: RecordEntry; viewedNoteIds: string[] }) {
+function CurrentGame({
+  onOpenNotes,
+  record,
+  viewedNoteIds
+}: {
+  onOpenNotes: () => void;
+  record: RecordEntry;
+  viewedNoteIds: string[];
+}) {
   const latestNote = typeof record.meta.latestNote === "string" && !viewedNoteIds.includes(record.id) ? record.meta.latestNote : "";
 
   return (
@@ -677,12 +688,16 @@ function CurrentGame({ record, viewedNoteIds }: { record: RecordEntry; viewedNot
         <span>{record.progress}% Complete</span>
         <span>{String(record.meta.playtime ?? "18.7h")} Play Time</span>
         <span>Last Played: {String(record.meta.lastPlayed ?? "Today")}</span>
+        <button className="current-game-note" type="button" onClick={onOpenNotes}>
+          Read note -&gt;
+        </button>
       </div>
     </div>
   );
 }
 
 type RecordWindowProps = {
+  initialContent: ContentKey;
   maximized: boolean;
   record: RecordEntry;
   onClose: () => void;
@@ -690,16 +705,16 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
-  const [activeContent, setActiveContent] = useState<ContentKey>("overview");
+  const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setActiveContent("overview");
+    setActiveContent(initialContent);
     setUpdateHistoryOpen(false);
-  }, [record.id]);
+  }, [initialContent, record.id]);
 
   useEffect(() => {
     if (!updateHistoryOpen) {
@@ -747,7 +762,10 @@ function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Re
 
       <div className="record-layout">
         <div className="record-main">
-          <div className="record-heading">
+          <div
+            className={record.banner ? "record-heading has-heading-banner" : "record-heading"}
+            style={record.banner ? ({ "--heading-banner": `url("${record.banner}")` } as CSSProperties) : undefined}
+          >
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
@@ -1151,7 +1169,7 @@ function NotesPage({ record }: { record: RecordEntry }) {
             setQuery("");
           }}
         >
-          <Search size={14} />
+          <span className="search-icon" aria-hidden="true" />
         </button>
       </div>
       {searchOpen ? (
@@ -1172,17 +1190,11 @@ function NotesPage({ record }: { record: RecordEntry }) {
           </datalist>
         </div>
       ) : null}
-      {record.banner ? (
-        <div className="notes-banner">
-          <img src={record.banner} alt="" />
-        </div>
-      ) : null}
       <div className="note-stack">
         {filteredNotes.length > 0 ? (
           filteredNotes.map((note) => (
-            <details className="note-entry" key={note.title}>
+            <details className="note-entry" defaultOpen={note.index === 0} key={note.title}>
               <summary>
-                <em>{note.index === 0 ? "New Note" : "Previous Note"}</em>
                 <span>{note.title}</span>
                 <i>open</i>
               </summary>
