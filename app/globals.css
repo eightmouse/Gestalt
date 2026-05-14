@@ -1504,7 +1504,7 @@ button:focus-visible {
   opacity: 0.72;
 }
 
-.record-heading.has-heading-banner > * {
+.record-heading.has-heading-banner > :not(.heading-banner-image) {
   position: relative;
   z-index: 2;
 }
