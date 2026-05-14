@@ -56,6 +56,7 @@ In the coming days I will update the Setup area with my current setup.`
     updated: "2026-05-14",
     mood: "reflective",
     summary: "First update: dashboard polish, performance work, and a clear note about building Gestalt with AI in the loop.",
+    banner: "public/media/records/a-useful-signal/banner.png",
     progress: 100,
     priority: 9,
     tags: ["update", "ai", "performance", "dashboard"],
@@ -571,7 +572,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.3.5</span>
+      <span>v1.3.6</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -586,7 +587,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.3.5</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.3.6</dd></div>
       </dl>
     </div>
   </aside>`;

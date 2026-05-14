@@ -1575,6 +1575,7 @@ button:focus-visible {
   padding: 16px 18px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.018);
+  font-size: 14px;
 }
 
 .record-body h4 {
@@ -1730,12 +1731,13 @@ button:focus-visible {
 }
 
 .record-meta dt {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .record-meta dd {
+  font-size: 13px;
   line-height: 1.45;
   white-space: normal;
 }
