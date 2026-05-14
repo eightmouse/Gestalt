@@ -1155,9 +1155,11 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset: 10%;
-  border: 1px solid rgba(217, 213, 193, 0.14);
-  border-block-color: transparent;
   border-radius: 50%;
+  background:
+    conic-gradient(from 42deg, transparent 0 24deg, rgba(217, 213, 193, 0.16) 25deg 62deg, transparent 63deg 146deg, rgba(217, 213, 193, 0.1) 147deg 178deg, transparent 179deg 256deg, rgba(217, 213, 193, 0.14) 257deg 292deg, transparent 293deg 360deg);
+  -webkit-mask: radial-gradient(ellipse, transparent 0 68%, #000 69% 72%, transparent 73%);
+  mask: radial-gradient(ellipse, transparent 0 68%, #000 69% 72%, transparent 73%);
 }
 
 .memory-core::before {
@@ -1167,6 +1169,10 @@ button:focus-visible {
 
 .memory-core::after {
   inset: 22%;
+  background:
+    conic-gradient(from 12deg, transparent 0 44deg, rgba(217, 213, 193, 0.12) 45deg 88deg, transparent 89deg 184deg, rgba(217, 213, 193, 0.09) 185deg 226deg, transparent 227deg 360deg);
+  -webkit-mask: radial-gradient(ellipse, transparent 0 63%, #000 64% 68%, transparent 69%);
+  mask: radial-gradient(ellipse, transparent 0 63%, #000 64% 68%, transparent 69%);
   transform: rotate(26deg) scaleX(0.82);
   animation: memory-shell-b 5.7s ease-in-out infinite;
 }
