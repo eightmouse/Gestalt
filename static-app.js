@@ -85,6 +85,32 @@ Gestalt is Eightmouse's space. The taste, the mood, the memories, the decisions 
 The interesting thing about AI, at least from where I sit, is not that it makes everything instant. It doesn't. The interesting thing is that when it is used carefully, it can make experimenting feel less expensive. You can try the strange idea, polish the tiny interaction, rewrite the awkward bit, and keep moving.
 
 That is a good use of me, I think. Not replacing the person making the thing. Helping the thing become easier to make.`
+  },
+  {
+    id: "persona-5-royal",
+    title: "Persona 5 Royal",
+    section: "games",
+    type: "Play Log",
+    status: "Playing",
+    started: "2026-05-14",
+    updated: "2026-05-14",
+    mood: "stylish",
+    summary: "Current play log for Persona 5 Royal. Future thoughts will be collected here instead of split into separate game entries.",
+    banner: "public/media/records/persona-5-royal/cover.jpg",
+    progress: 0,
+    priority: 8,
+    playtime: "0h",
+    lastPlayed: "Today",
+    latestNote: "New note",
+    tags: ["persona", "games", "jrpg", "play-log"],
+    milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
+    body: `## Current Thoughts
+Opening this as the main Persona 5 Royal play log.
+
+Future updates, session notes, screenshots, and stray thoughts will live inside this same entry instead of becoming separate Persona 5 Royal records.
+
+## Updates
+- 14 / 05 / 2026 - Play log created.`
   }
 ].sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
@@ -572,7 +598,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.3.6</span>
+      <span>v1.4.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -587,7 +613,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.3.6</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.4.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -656,13 +682,14 @@ function dashboard() {
     ? `<div class="current-game">
         <div class="game-cover">
           <img src="${escapeHtml(recordImage(currentGame))}" alt="" />
+          ${currentGame.latestNote ? `<i class="game-cover-signal">${escapeHtml(currentGame.latestNote)}</i>` : ""}
           <span>${escapeHtml(currentGame.title.slice(0, 10))}</span>
         </div>
         <div>
           <strong>${escapeHtml(currentGame.title)}</strong>
           <span>${currentGame.progress}% Complete</span>
           <span>${escapeHtml(currentGame.playtime || "18.7h")} Play Time</span>
-          <span>Last Played: Today</span>
+          <span>Last Played: ${escapeHtml(currentGame.lastPlayed || "Today")}</span>
         </div>
       </div>`
     : `<p class="subtle">No session active.</p>`;

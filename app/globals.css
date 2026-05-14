@@ -992,6 +992,21 @@ button:focus-visible {
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0 1px, transparent 1px 6px);
 }
 
+.game-cover-signal {
+  position: absolute;
+  inset-block-start: 7px;
+  inset-inline-end: 7px;
+  z-index: 2;
+  padding: 2px 5px;
+  border: 1px solid rgba(217, 213, 193, 0.34);
+  background: rgba(5, 6, 5, 0.64);
+  color: var(--text);
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .game-cover span {
   position: relative;
   z-index: 1;
@@ -1575,7 +1590,7 @@ button:focus-visible {
   padding: 16px 18px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.018);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .record-body h4 {
@@ -1731,13 +1746,13 @@ button:focus-visible {
 }
 
 .record-meta dt {
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .record-meta dd {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.45;
   white-space: normal;
 }

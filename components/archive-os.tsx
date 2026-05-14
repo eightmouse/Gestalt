@@ -371,7 +371,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.3.6</span>
+        <span>v1.4.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -416,7 +416,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.3.6</dd>
+            <dd>GESTALT OS v1.4.0</dd>
           </div>
         </dl>
       </div>
@@ -663,13 +663,14 @@ function CurrentGame({ record }: { record: RecordEntry }) {
     <div className="current-game">
       <div className="game-cover">
         <img src={record.banner || "/images/archive-banner.png"} alt="" />
+        {typeof record.meta.latestNote === "string" ? <i className="game-cover-signal">{record.meta.latestNote}</i> : null}
         <span>{record.title.slice(0, 10)}</span>
       </div>
       <div>
         <strong>{record.title}</strong>
         <span>{record.progress}% Complete</span>
         <span>{String(record.meta.playtime ?? "18.7h")} Play Time</span>
-        <span>Last Played: Today</span>
+        <span>Last Played: {String(record.meta.lastPlayed ?? "Today")}</span>
       </div>
     </div>
   );
