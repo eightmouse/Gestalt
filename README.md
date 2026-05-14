@@ -1,8 +1,7 @@
 ![Status](https://img.shields.io/badge/status-first%20working%20version-d9d5c1)
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Static Preview](https://img.shields.io/badge/static%20preview-no%20install%20needed-6f7667)
-![Version](https://img.shields.io/badge/version-v1.2.6-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.2.7-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -15,69 +14,22 @@ This is the first working version, so there are not many entries yet. I have jus
 
 Currently being extra careful because of the npm ordeal.
 
-## What It Is
+## About This Repo
 
-Gestalt is designed more like an archival interface than a normal blog:
+This is mainly my personal blog/archive, not an app I am packaging for other people to use.
 
-- Projects are active files.
-- Games are play logs.
-- Setup notes cover hardware, peripherals, and software.
-- Logs are short field notes rather than polished articles.
-
-The current static preview can be opened without installing npm or pnpm dependencies.
-
-## Safe Preview
-
-Open `index.html` directly in a browser, or serve the folder locally:
-
-```powershell
-python -m http.server 4173 --bind 127.0.0.1
-```
-
-Then visit:
-
-```text
-http://127.0.0.1:4173/index.html
-```
-
-## Content
-
-The static prototype stores its current records in `static-app.js`.
-
-The Next.js version is scaffolded around editable records in `content/records/*.mdx`, with frontmatter for title, status, mood, dates, progress, tags, and milestones.
-
-## Editing Entries
-
-Create entries with the generator instead of editing UI code:
-
-```powershell
-node scripts/new-entry.mjs --section logs --title "My New Entry"
-node scripts/validate-content.mjs
-```
-
-Entries live in `content/records/*.mdx`. The public site reads them as static content; visitors cannot edit them.
-
-For a visual editor, run the Next app locally and open `/studio`. Studio is disabled outside local development and writes through local-only API routes.
+I am keeping the repo public so it can be backed up, shared, and forked if someone wants to modify it into their own thing. The content, styling, and workflow are built around how I want to write and keep records, so there is no promise that it will be generalized or documented like a reusable template.
 
 ## Public Repo Hygiene
 
-This repo is intended to be safe to publish. Keep personal drafts, real hardware serials, private notes, account names, contact info, and secrets out of committed content.
+This repo is intended to be safe to publish. Personal drafts, private notes, local files, env files, and anything sensitive should stay out of committed content.
 
-Use ignored local-only folders such as `content/private/`, `private/`, or `local-notes/` for anything not meant for the public repo. Environment files are ignored by default; commit only a sanitized `.env.example` if one is ever needed.
+Ignored local-only folders such as `content/private/`, `private/`, and `local-notes/` are reserved for anything that should not end up in the public repo.
 
 ## Supply Chain Guardrails
 
-Dependency installation is intentionally not required for the static prototype.
+Dependency installation is intentionally not required for the current static preview.
 
-For the future pnpm/Next.js path, this repo includes:
+For the future pnpm/Next.js path, this repo keeps exact dependency versions and includes npm/pnpm guardrails such as disabled install scripts, a seven-day release-age buffer, strict dependency builds, and ignored install/build output.
 
-- Exact dependency versions in `package.json` rather than floating `latest` ranges.
-- `.npmrc` with install scripts disabled and a seven-day release-age buffer.
-- `pnpm-workspace.yaml` with release-age, trust policy, strict dependency builds, and blocked exotic transitive deps.
-- `.gitignore` entries for install/build output.
-
-## Versioning
-
-Current public version: `v1.2.6`.
-
-Future changes follow `VERSIONING.md`: patch for fixes/content tweaks, minor for new features, major for breaking structure or publishing workflow changes.
+Current public version: `v1.2.7`.
