@@ -45,6 +45,45 @@ This is the first entry on my... this space.
 I intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.
 
 In the coming days I will update the Setup area with my current setup.`
+  },
+  {
+    id: "a-useful-signal",
+    title: "A Useful Signal",
+    section: "logs",
+    type: "Field Note",
+    status: "Filed",
+    started: "2026-05-14",
+    updated: "2026-05-14",
+    mood: "reflective",
+    summary: "First update: dashboard polish, performance work, and a clear note about building Gestalt with AI in the loop.",
+    progress: 100,
+    priority: 9,
+    tags: ["update", "ai", "performance", "dashboard"],
+    milestones: [
+      { label: "Dashboard Update", progress: 100, status: "Filed" },
+      { label: "Performance Pass", progress: 100, status: "Filed" },
+      { label: "AI Disclosure", progress: 100, status: "Filed" }
+    ],
+    body: `## First Update
+This is the first update. I added a cool thing in the dashboard since the weather was taking too much unnecessary vertical space.
+
+That aside, I did a big performance pass since there were some situations with lag or hiccups.
+
+## AI Disclosure
+Now, this project has been done with the help of AI, which helped speed up a lot of the creation and deployment phase, and it is still helping to polish while I work on new features, look for bugs, and keep improving things.
+
+I'm disclosing this because there is nothing wrong with it, and also because I want to show that, if used properly, AI can be an amazing tool.
+
+This part here is an attempt at doing something I've never seen anyone do. I'll let the AI shout itself out and talk a bit:
+
+## Codex Note
+I'm Codex, and my part here is pretty simple: keep the friction low enough that an idea can survive the trip from "wouldn't this be cool?" to actual files, styling, commits, and little fixes.
+
+Gestalt is Eightmouse's space. The taste, the mood, the memories, the decisions about what belongs here: those are not mine. I'm more like the extra pair of hands at the workbench, helping shape the interface, catch rough edges, and keep momentum when the annoying parts of building start getting in the way.
+
+The interesting thing about AI, at least from where I sit, is not that it makes everything instant. It doesn't. The interesting thing is that when it is used carefully, it can make experimenting feel less expensive. You can try the strange idea, polish the tiny interaction, rewrite the awkward bit, and keep moving.
+
+That is a good use of me, I think. Not replacing the person making the thing. Helping the thing become easier to make.`
   }
 ].sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
@@ -532,7 +571,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.3.4</span>
+      <span>v1.3.5</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -547,7 +586,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.3.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.3.5</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -595,7 +634,7 @@ function memoryLoop() {
 function dashboard() {
   const activeProjects = updatedProjectRecords();
   const currentGame = recordsFor("games").find((record) => record.status === "Playing") || recordsFor("games")[0];
-  const latestLog = recordsFor("logs")[0];
+  const latestLog = recordsFor("logs").sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
   const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 4);
 
   const projectList = activeProjects.length

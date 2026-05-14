@@ -110,7 +110,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     .filter((record) => record.status !== "Archived")
     .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const currentGame = recordsBySection.games.find((record) => record.status === "Playing") ?? recordsBySection.games[0];
-  const latestLog = recordsBySection.logs[0];
+  const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
   const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 4);
   const searchResults = getSearchResults(records, searchQuery);
 
@@ -371,7 +371,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.3.4</span>
+        <span>v1.3.5</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -416,7 +416,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.3.4</dd>
+            <dd>GESTALT OS v1.3.5</dd>
           </div>
         </dl>
       </div>
