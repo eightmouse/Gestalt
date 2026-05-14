@@ -378,7 +378,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.6</span>
+        <span>v1.5.7</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -423,7 +423,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.6</dd>
+            <dd>GESTALT OS v1.5.7</dd>
           </div>
         </dl>
       </div>
@@ -754,8 +754,8 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
         <div className="record-main">
           <div
             className={headerImage ? "record-heading has-heading-banner" : "record-heading"}
-            style={headerImage ? ({ "--heading-banner": `url("${headerImage}")` } as CSSProperties) : undefined}
           >
+            {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" /> : null}
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>

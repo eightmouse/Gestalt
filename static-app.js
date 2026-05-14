@@ -668,12 +668,14 @@ function renderUpdateHistory(record) {
 function renderUpdateHistoryModal(record) {
   const { updates } = splitUpdateIndex(record.body);
 
-  if (!updates.length || !state.updateHistoryOpen) {
+  if (!updates.length) {
     return "";
   }
 
-  return `<button class="update-history-backdrop" type="button" aria-label="Close update index" data-update-history-backdrop></button>
-  <div class="update-history-window" role="dialog" aria-label="Update index">
+  const hidden = state.updateHistoryOpen ? "" : "hidden";
+
+  return `<button class="update-history-backdrop" type="button" aria-label="Close update index" data-update-history-backdrop ${hidden}></button>
+  <div class="update-history-window" role="dialog" aria-label="Update index" ${hidden}>
     <header><span>// UPDATE INDEX</span></header>
     <ol>${updates.map((update) => `<li>${escapeHtml(update)}</li>`).join("")}</ol>
   </div>`;
@@ -776,7 +778,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.6</span>
+      <span>v1.5.7</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -791,7 +793,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.6</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.7</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -959,7 +961,8 @@ function recordWindow(record) {
 
     <div class="record-layout">
       <div class="record-main">
-        <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}" ${headerImage ? `style="--heading-banner: url('${escapeHtml(headerImage)}')"` : ""}>
+        <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}">
+          ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" />` : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span><span class="${cursorClass}" style="--record-title-chars: ${record.title.length}">_</span></h2>
@@ -1199,7 +1202,21 @@ function filterNoteEntries(notesPage, query) {
 
 function setUpdateHistory(open) {
   state.updateHistoryOpen = open;
-  render();
+  const recordWindow = document.querySelector(".record-window");
+  const button = recordWindow?.querySelector("[data-update-history-toggle]");
+  const backdrop = recordWindow?.querySelector(".update-history-backdrop");
+  const modal = recordWindow?.querySelector(".update-history-window");
+
+  recordWindow?.classList.toggle("has-index-modal", open);
+  button?.setAttribute("aria-expanded", String(open));
+
+  if (backdrop instanceof HTMLElement) {
+    backdrop.hidden = !open;
+  }
+
+  if (modal instanceof HTMLElement) {
+    modal.hidden = !open;
+  }
 }
 
 function requestWeather() {

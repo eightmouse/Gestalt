@@ -1477,10 +1477,7 @@ button:focus-visible {
   border: 1px solid rgba(217, 213, 193, 0.08);
   background:
     linear-gradient(180deg, rgba(5, 6, 5, 0.02), rgba(5, 6, 5, 0.9)),
-    linear-gradient(90deg, rgba(5, 6, 5, 0.68), rgba(5, 6, 5, 0.08) 56%, rgba(5, 6, 5, 0.58)),
-    var(--heading-banner);
-  background-position: center 58%;
-  background-size: cover;
+    linear-gradient(90deg, rgba(5, 6, 5, 0.68), rgba(5, 6, 5, 0.08) 56%, rgba(5, 6, 5, 0.58));
 }
 
 .record-heading.has-heading-banner::before {
@@ -1488,14 +1485,28 @@ button:focus-visible {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
   background:
-    linear-gradient(180deg, transparent 52%, rgba(5, 6, 5, 0.48)),
-    rgba(5, 6, 5, 0.08);
+    linear-gradient(180deg, transparent 45%, rgba(5, 6, 5, 0.68)),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.66), transparent 54%, rgba(5, 6, 5, 0.5)),
+    rgba(5, 6, 5, 0.12);
+}
+
+.heading-banner-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center 50%;
+  opacity: 0.72;
 }
 
 .record-heading.has-heading-banner > * {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .record-heading.has-heading-banner p {
@@ -1654,6 +1665,11 @@ button:focus-visible {
   line-height: 1.62;
 }
 
+.note-entry-body .record-body p,
+.note-entry-body .record-body blockquote {
+  max-inline-size: none;
+}
+
 .record-body {
   display: grid;
   gap: 6px;
@@ -1661,6 +1677,8 @@ button:focus-visible {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.018);
   font-size: 15px;
+  inline-size: 100%;
+  max-inline-size: none;
 }
 
 .record-body h4 {
@@ -2293,11 +2311,13 @@ button:focus-visible {
   padding: 0;
   border: 0;
   background: transparent;
+  inline-size: 100%;
 }
 
 .update-history {
   align-self: end;
   margin-block-start: auto;
+  padding-block-start: 24px;
 }
 
 .update-history > button {
@@ -2340,6 +2360,11 @@ button:focus-visible {
   z-index: 5;
   inset: 48px 0 0;
   background: rgba(5, 6, 5, 0.38);
+}
+
+.update-history-backdrop[hidden],
+.update-history-window[hidden] {
+  display: none;
 }
 
 .update-history-window {
