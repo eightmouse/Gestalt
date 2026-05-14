@@ -532,7 +532,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.2.13</span>
+      <span>v1.3.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -547,7 +547,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.2.13</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.3.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -579,6 +579,14 @@ function weatherPanel() {
     </div>
     <p class="weather-note" data-weather-note>${escapeHtml(weatherState.note)}</p>
     <button class="weather-action" type="button" data-weather-action ${weatherState.loading ? "disabled" : ""}>&gt; ${actionLabel}</button>
+  </div>`;
+}
+
+function memoryLoop() {
+  return `<div class="memory-loop" aria-hidden="true">
+    <span class="memory-orbit"></span>
+    <span class="memory-gate"></span>
+    <span class="memory-rain"></span>
   </div>`;
 }
 
@@ -637,6 +645,7 @@ function dashboard() {
   return `<div class="${state.panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}">
     ${dashboardPanel("ACTIVE PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
+    ${dashboardPanel("MEMORY LOOP", memoryLoop(), "", "", "memory-panel")}
     ${dashboardPanel("CURRENT GAME", game, "", "")}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", `data-open-section="logs"`, "wide-panel")}

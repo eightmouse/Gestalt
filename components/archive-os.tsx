@@ -278,6 +278,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <WeatherPanel />
           </DashboardPanel>
 
+          <DashboardPanel title="MEMORY LOOP" className="memory-panel">
+            <MemoryLoop />
+          </DashboardPanel>
+
           <DashboardPanel title="LATEST LOG" footerLabel="Read log" onFooter={() => latestLog && openRecord(latestLog)}>
             {latestLog ? (
               <div className="latest-log">
@@ -367,7 +371,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.2.13</span>
+        <span>v1.3.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -412,7 +416,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.2.13</dd>
+            <dd>GESTALT OS v1.3.0</dd>
           </div>
         </dl>
       </div>
@@ -533,6 +537,16 @@ function WeatherPanel() {
       <button className="weather-action" type="button" disabled={weather.loading} onClick={requestWeather}>
         &gt; {weather.loading ? "Reading signal..." : "Read local sky"}
       </button>
+    </div>
+  );
+}
+
+function MemoryLoop() {
+  return (
+    <div className="memory-loop" aria-hidden="true">
+      <span className="memory-orbit" />
+      <span className="memory-gate" />
+      <span className="memory-rain" />
     </div>
   );
 }

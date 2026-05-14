@@ -884,7 +884,13 @@ button:focus-visible {
 
 .weather-panel {
   grid-column: 3;
-  grid-row: 1 / span 3;
+  grid-row: 1;
+}
+
+.memory-panel {
+  grid-column: 3;
+  grid-row: 2 / span 2;
+  overflow: hidden;
 }
 
 .dashboard-panel h2,
@@ -1042,23 +1048,21 @@ button:focus-visible {
 }
 
 .weather-readout {
-  min-block-size: 100%;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  gap: 14px;
+  gap: 10px;
 }
 
 .weather-primary {
   display: grid;
   gap: 6px;
-  padding-block-end: 12px;
+  padding-block-end: 10px;
   border-bottom: 1px solid rgba(217, 213, 193, 0.1);
 }
 
 .weather-temp {
   color: var(--text-strong);
   font-family: var(--sans);
-  font-size: clamp(34px, 4vw, 52px);
+  font-size: clamp(28px, 3.3vw, 40px);
   font-weight: 300;
   line-height: 0.95;
 }
@@ -1087,6 +1091,82 @@ button:focus-visible {
 
 .weather-action:hover {
   color: var(--text-strong);
+}
+
+.memory-loop {
+  position: relative;
+  min-block-size: 100%;
+  block-size: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(217, 213, 193, 0.12);
+  background:
+    radial-gradient(ellipse at 50% 62%, rgba(200, 189, 159, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 44%),
+    rgba(5, 6, 5, 0.56);
+}
+
+.memory-loop::before,
+.memory-loop::after,
+.memory-loop span {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.memory-loop::before {
+  inset: -22%;
+  background:
+    radial-gradient(circle at 38% 42%, rgba(236, 230, 211, 0.24) 0 1px, transparent 2px),
+    radial-gradient(circle at 67% 54%, rgba(236, 230, 211, 0.18) 0 1px, transparent 2px),
+    radial-gradient(circle at 50% 58%, rgba(200, 189, 159, 0.16), transparent 22%);
+  opacity: 0.74;
+  animation: memory-drift 9s ease-in-out infinite alternate;
+}
+
+.memory-loop::after {
+  opacity: 0.18;
+  background:
+    linear-gradient(90deg, rgba(5, 6, 5, 0.72), transparent 42%, rgba(5, 6, 5, 0.64)),
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 9px);
+}
+
+.memory-orbit {
+  inset: 15% 10%;
+  border: 1px solid rgba(217, 213, 193, 0.18);
+  border-inline-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-8deg);
+  animation: memory-orbit 12s linear infinite;
+}
+
+.memory-gate {
+  inset: 22% 26%;
+  background:
+    linear-gradient(90deg, transparent, rgba(217, 213, 193, 0.18), transparent),
+    linear-gradient(180deg, transparent 0 46%, rgba(217, 213, 193, 0.28) 47% 48%, transparent 49% 100%);
+  opacity: 0.52;
+  transform: scaleX(0.72);
+  animation: memory-pulse 5.4s ease-in-out infinite;
+}
+
+.memory-rain {
+  background-image:
+    linear-gradient(90deg, transparent 0 15%, rgba(217, 213, 193, 0.14) 16%, transparent 17% 38%, rgba(217, 213, 193, 0.09) 39%, transparent 40% 100%);
+  background-size: 46px 100%;
+  opacity: 0.2;
+  transform: translateY(-12%);
+  animation: memory-fall 7s linear infinite;
+}
+
+.archive-shell.has-record .memory-loop::before,
+.archive-shell.has-record .memory-loop::after,
+.archive-shell.has-record .memory-loop span {
+  animation-play-state: paused;
+}
+
+.archive-shell.has-record .memory-loop {
+  opacity: 0.58;
 }
 
 .workspace-footer {
@@ -2219,6 +2299,41 @@ button:focus-visible {
   }
 }
 
+@keyframes memory-drift {
+  from {
+    transform: translate3d(-3%, -1%, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(4%, 2%, 0) scale(1.04);
+  }
+}
+
+@keyframes memory-orbit {
+  to {
+    transform: rotate(352deg);
+  }
+}
+
+@keyframes memory-pulse {
+  0%,
+  100% {
+    opacity: 0.38;
+    transform: scaleX(0.66);
+  }
+
+  48% {
+    opacity: 0.62;
+    transform: scaleX(0.82);
+  }
+}
+
+@keyframes memory-fall {
+  to {
+    transform: translateY(12%);
+  }
+}
+
 @media (max-width: 1180px) {
   .archive-shell {
     --sidebar-width: 292px;
@@ -2230,6 +2345,11 @@ button:focus-visible {
   }
 
   .weather-panel {
+    grid-column: span 2;
+    grid-row: auto;
+  }
+
+  .memory-panel {
     grid-column: span 2;
     grid-row: auto;
   }
@@ -2310,6 +2430,10 @@ button:focus-visible {
   }
 
   .weather-panel {
+    grid-column: auto;
+  }
+
+  .memory-panel {
     grid-column: auto;
   }
 
