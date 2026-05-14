@@ -1,0 +1,1200 @@
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Clock,
+  Cpu,
+  Maximize2,
+  Minimize2,
+  Search,
+  Square,
+  Terminal,
+  X
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { create } from "zustand";
+import type { RecordEntry, RecordSection } from "@/lib/types";
+
+type ContentKey =
+  | "overview"
+  | "samples"
+  | "technical"
+  | "notes"
+  | "changelog"
+  | "recommendation"
+  | "hardware"
+  | "software"
+  | "maintenance"
+  | "attachments";
+
+type ArchiveState = {
+  selectedId: string;
+  activeSection: RecordSection;
+  setSelectedId: (id: string) => void;
+  setActiveSection: (section: RecordSection) => void;
+};
+
+const useArchiveStore = create<ArchiveState>((set) => ({
+  selectedId: "dashboard",
+  activeSection: "system",
+  setSelectedId: (id) => set({ selectedId: id }),
+  setActiveSection: (section) => set({ activeSection: section })
+}));
+
+const sections: Array<{
+  id: RecordSection;
+  code: string;
+  label: string;
+  icon: string;
+}> = [
+  { id: "system", code: "01_SYSTEM", label: "Dashboard", icon: "system" },
+  { id: "projects", code: "02_PROJECTS", label: "Active Processes", icon: "projects" },
+  { id: "games", code: "03_GAMES", label: "Session Logs", icon: "games" },
+  { id: "logs", code: "04_LOGS", label: "Field Notes", icon: "logs" },
+  { id: "setup", code: "05_SETUP", label: "Hardware & Software", icon: "setup" },
+  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", icon: "archive" }
+];
+
+const latinSayings = [
+  { latin: "Festina lente.", english: "Make haste slowly." },
+  { latin: "Per aspera ad astra.", english: "Through hardship to the stars." },
+  { latin: "Nulla dies sine linea.", english: "No day without a line." },
+  { latin: "Ars longa, vita brevis.", english: "Art is long, life is brief." },
+  { latin: "Respice finem.", english: "Consider the end." },
+  { latin: "Non ducor, duco.", english: "I am not led; I lead." },
+  { latin: "Acta non verba.", english: "Deeds, not words." }
+];
+
+type WeatherState = {
+  label: string;
+  temp: string;
+  condition: string;
+  meta: string;
+  note: string;
+  loading: boolean;
+};
+
+type ArchiveOSProps = {
+  records: RecordEntry[];
+};
+
+export function ArchiveOS({ records }: ArchiveOSProps) {
+  const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelMinimized, setPanelMinimized] = useState(false);
+  const [panelMaximized, setPanelMaximized] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLDivElement | null>(null);
+
+  const recordsBySection = useMemo(() => {
+    return sections.reduce<Record<RecordSection, RecordEntry[]>>(
+      (acc, section) => {
+        acc[section.id] = records.filter((record) => record.section === section.id);
+        return acc;
+      },
+      {
+        system: [],
+        projects: [],
+        games: [],
+        logs: [],
+        setup: [],
+        archive: []
+      }
+    );
+  }, [records]);
+
+  const selectedRecord = records.find((record) => record.id === selectedId) ?? records[0];
+  const activeProjects = recordsBySection.projects
+    .filter((record) => record.status !== "Archived")
+    .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const currentGame = recordsBySection.games.find((record) => record.status === "Playing") ?? recordsBySection.games[0];
+  const latestLog = recordsBySection.logs[0];
+  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 4);
+  const searchResults = getSearchResults(records, searchQuery);
+
+  useEffect(() => {
+    const updateClock = () => setNow(new Date());
+    updateClock();
+    const interval = window.setInterval(updateClock, 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!searchOpen) {
+      return;
+    }
+
+    const closeSearch = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (searchRef.current?.contains(target) || target.closest("[data-search-toggle]")) {
+        return;
+      }
+
+      setSearchOpen(false);
+      setSearchQuery("");
+    };
+
+    document.addEventListener("mousedown", closeSearch);
+    return () => document.removeEventListener("mousedown", closeSearch);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    if (!panelOpen) {
+      return;
+    }
+
+    const minimizeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (target.closest(".record-window") || target.closest(".reopen-control")) {
+        return;
+      }
+
+      setPanelOpen(false);
+      setPanelMinimized(true);
+    };
+
+    document.addEventListener("mousedown", minimizeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", minimizeOnOutsideClick);
+  }, [panelOpen]);
+
+  useEffect(() => {
+    if (!records.some((record) => record.id === selectedId) && records[0]) {
+      setSelectedId(records[0].id);
+    }
+  }, [records, selectedId, setSelectedId]);
+
+  const openRecord = (record: RecordEntry) => {
+    setSelectedId(record.id);
+    setPanelOpen(true);
+    setPanelMinimized(false);
+    setPanelMaximized(false);
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const openSection = (section: RecordSection) => {
+    setActiveSection(section);
+    setPanelOpen(false);
+    setPanelMinimized(false);
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
+  const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
+  const headline = activeSection === "system" ? getGreeting(now) : activeSectionConfig.label;
+  const subtext = activeSection === "system" ? dashboardSubtext(now) : "Browse the records filed under this archive.";
+
+  return (
+    <main className="archive-shell">
+      <div className="boot-screen" aria-hidden="true">
+        <span>GESTALT</span>
+        <i>System initializing</i>
+        <b className="boot-meter">
+          <b />
+        </b>
+      </div>
+      <div className="grain-layer" />
+      <div className="scanline-layer" />
+      <Sidebar
+        activeSection={activeSection}
+        onOpenSection={openSection}
+      />
+
+      <section className={panelOpen ? "workspace has-record" : "workspace"} aria-label="Gestalt dashboard">
+        <header className="workspace-header">
+          <div>
+            <p className="route-label">// {routeTitle}</p>
+            <h1>
+              <span
+                className="headline-text is-writing"
+                key={activeSection}
+                style={{ "--headline-chars": headline.length } as CSSProperties}
+              >
+                {headline}
+              </span>
+              <span
+                className="cursor headline-cursor is-delayed"
+                key={`${activeSection}-cursor`}
+                style={{ "--headline-chars": headline.length } as CSSProperties}
+              >
+                _
+              </span>
+            </h1>
+            <p className="subtle">{subtext}</p>
+          </div>
+          <div className="time-block" aria-label="Local time">
+            <Clock size={15} />
+            <span>{formatClock(now)}</span>
+            <span className="dot">.</span>
+            <span>{formatDate(now)}</span>
+            <button
+              className={searchOpen ? "icon-button is-active" : "icon-button"}
+              type="button"
+              aria-label="Search records"
+              data-search-toggle
+              onClick={() => setSearchOpen((current) => !current)}
+            >
+              <Search size={15} />
+            </button>
+          </div>
+          {searchOpen ? (
+            <SearchPanel panelRef={searchRef} query={searchQuery} records={searchResults} onOpenRecord={openRecord} onQueryChange={setSearchQuery} />
+          ) : null}
+        </header>
+
+        {activeSection === "system" ? (
+        <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
+          <DashboardPanel
+            title="ACTIVE PROJECTS"
+            className="wide-panel"
+            footerLabel={`View all (${activeProjects.length})`}
+            onFooter={() => openSection("projects")}
+          >
+            {activeProjects.length > 0 ? (
+              <RecordList records={activeProjects.slice(0, 3)} onOpenRecord={openRecord} />
+            ) : (
+              <p className="subtle">No active projects filed yet.</p>
+            )}
+          </DashboardPanel>
+
+          <DashboardPanel title="CURRENT GAME">
+            {currentGame ? <CurrentGame record={currentGame} /> : <p className="subtle">No session active.</p>}
+          </DashboardPanel>
+
+          <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
+            <WeatherPanel />
+          </DashboardPanel>
+
+          <DashboardPanel title="LATEST LOG" footerLabel="Read log" onFooter={() => latestLog && openRecord(latestLog)}>
+            {latestLog ? (
+              <div className="latest-log">
+                <span>{shortDate(latestLog.updated)}</span>
+                <p>{latestLog.summary}</p>
+              </div>
+            ) : (
+              <p className="subtle">No field notes stored.</p>
+            )}
+          </DashboardPanel>
+
+          <DashboardPanel title="RECENT ACTIVITY" className="wide-panel" footerLabel="View full timeline" onFooter={() => openSection("logs")}>
+            {activity.length > 0 ? (
+              <ol className="activity-feed">
+                {activity.map((record) => (
+                  <li key={record.id}>
+                    <span>[{shortDate(record.updated)}]</span>
+                    <button type="button" onClick={() => openRecord(record)}>
+                      {record.type}: {record.title}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="subtle">No activity filed yet.</p>
+            )}
+          </DashboardPanel>
+        </div>
+        ) : (
+          <SectionPage records={recordsBySection[activeSection]} section={activeSectionConfig} onOpenRecord={openRecord} />
+        )}
+
+        <footer className="workspace-footer">
+          <p>// FOOTER</p>
+          <span>All memories are fragments. We build, thus we are.</span>
+          <Terminal size={16} />
+        </footer>
+
+        <AnimatePresence>
+          {panelOpen && selectedRecord ? (
+            <RecordWindow
+              key={selectedRecord.id}
+              maximized={panelMaximized}
+              record={selectedRecord}
+              onClose={() => {
+                setPanelOpen(false);
+                setPanelMinimized(false);
+              }}
+              onMinimize={() => {
+                setPanelOpen(false);
+                setPanelMinimized(true);
+              }}
+              onMaximize={() => setPanelMaximized((current) => !current)}
+            />
+          ) : panelMinimized ? (
+            <motion.button
+              className="reopen-control"
+              type="button"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 12 }}
+              onClick={() => {
+                setPanelOpen(true);
+                setPanelMinimized(false);
+              }}
+            >
+              <Square size={13} />
+              Restore active record
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
+      </section>
+    </main>
+  );
+}
+
+type SidebarProps = {
+  activeSection: RecordSection;
+  onOpenSection: (section: RecordSection) => void;
+};
+
+function Sidebar({
+  activeSection,
+  onOpenSection
+}: SidebarProps) {
+  return (
+    <aside className="sidebar">
+      <div className="brand-block">
+        <p className="brand">GESTALT</p>
+        <span>v1.2.6</span>
+        <i aria-hidden="true">-</i>
+      </div>
+
+      <nav aria-label="Archive navigation">
+        <p className="sidebar-label">// ARCHIVE NAVIGATION</p>
+        <div className="nav-stack">
+          {sections.map((section) => {
+            return (
+              <div className="nav-group" key={section.id}>
+                <button
+                  type="button"
+                  className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
+                  onClick={() => onOpenSection(section.id)}
+                >
+                  <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+                  <span>
+                    <strong>{section.code}</strong>
+                    <small>{section.label}</small>
+                  </span>
+                  <span className="section-signal" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </nav>
+
+      <div className="system-status">
+        <p>// SYSTEM STATUS</p>
+        <dl>
+          <div>
+            <dt>USER</dt>
+            <dd>Eightmouse</dd>
+          </div>
+          <div>
+            <dt>HOST</dt>
+            <dd>LOCALHOST</dd>
+          </div>
+          <div>
+            <dt>UPTIME</dt>
+            <dd>02:17:43:21</dd>
+          </div>
+          <div>
+            <dt>OS VERSION</dt>
+            <dd>GESTALT OS v1.2.6</dd>
+          </div>
+        </dl>
+      </div>
+    </aside>
+  );
+}
+
+type DashboardPanelProps = {
+  title: string;
+  children: React.ReactNode;
+  footerLabel?: string;
+  className?: string;
+  onFooter?: () => void;
+};
+
+function DashboardPanel({ title, children, footerLabel, className = "", onFooter }: DashboardPanelProps) {
+  return (
+    <article className={`dashboard-panel ${className}`}>
+      <h2>{title}</h2>
+      <div>{children}</div>
+      {footerLabel ? (
+        <button className="panel-link" type="button" onClick={onFooter}>
+          {footerLabel} <span>-&gt;</span>
+        </button>
+      ) : null}
+    </article>
+  );
+}
+
+function WeatherPanel() {
+  const [weather, setWeather] = useState<WeatherState>({
+    label: "LOCAL WEATHER",
+    temp: "--",
+    condition: "Awaiting signal",
+    meta: "Browser permission required",
+    note: "No location is stored. Signal is read client-side only.",
+    loading: false
+  });
+
+  const requestWeather = () => {
+    if (weather.loading) {
+      return;
+    }
+
+    if (!("geolocation" in navigator) || typeof fetch !== "function") {
+      setWeather((current) => ({
+        ...current,
+        condition: "Signal unavailable",
+        meta: "This browser cannot read local weather",
+        note: "Weather remains client-side; no location is stored."
+      }));
+      return;
+    }
+
+    setWeather((current) => ({
+      ...current,
+      loading: true,
+      condition: "Acquiring position",
+      meta: "Waiting for browser permission",
+      note: "Location is used once for this weather lookup only."
+    }));
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude.toFixed(3);
+        const longitude = position.coords.longitude.toFixed(3);
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          const current = data.current ?? {};
+
+          setWeather({
+            label: "LOCAL WEATHER",
+            temp: Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--",
+            condition: weatherCodeLabel(Number(current.weather_code)),
+            meta: `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`,
+            note: "Live signal from Open-Meteo. Nothing is saved.",
+            loading: false
+          });
+        } catch {
+          setWeather({
+            label: "LOCAL WEATHER",
+            temp: "--",
+            condition: "Signal interrupted",
+            meta: "Weather endpoint did not respond",
+            note: "Try again later; the archive remains offline-safe.",
+            loading: false
+          });
+        }
+      },
+      () => {
+        setWeather({
+          label: "LOCAL WEATHER",
+          temp: "--",
+          condition: "Permission denied",
+          meta: "Local weather hidden",
+          note: "Grant location permission to read the current sky.",
+          loading: false
+        });
+      },
+      { enableHighAccuracy: false, maximumAge: 600000, timeout: 10000 }
+    );
+  };
+
+  return (
+    <div className="weather-readout">
+      <div className="weather-primary">
+        <span className="weather-temp">{weather.temp}</span>
+        <span className="weather-condition">{weather.condition}</span>
+      </div>
+      <div className="weather-meta">
+        <span>{weather.label}</span>
+        <span>{weather.meta}</span>
+      </div>
+      <p className="weather-note">{weather.note}</p>
+      <button className="weather-action" type="button" disabled={weather.loading} onClick={requestWeather}>
+        &gt; {weather.loading ? "Reading signal..." : "Read local sky"}
+      </button>
+    </div>
+  );
+}
+
+function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenRecord: (record: RecordEntry) => void }) {
+  return (
+    <div className="record-list">
+      {records.map((record) => (
+        <button key={record.id} type="button" onClick={() => onOpenRecord(record)}>
+          <span>
+            <strong>{record.title}</strong>
+            <small>{record.status}</small>
+          </span>
+          <i>{record.progress}%</i>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SectionPage({
+  records,
+  section,
+  onOpenRecord
+}: {
+  records: RecordEntry[];
+  section: (typeof sections)[number];
+  onOpenRecord: (record: RecordEntry) => void;
+}) {
+  const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
+
+  return (
+    <section className="section-page" aria-label={`${section.code} records`}>
+      <header className="section-page-header">
+        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+        <div>
+          <p>{section.code}</p>
+          <h2>{section.label}</h2>
+        </div>
+        <i>{countLabel}</i>
+      </header>
+
+      <div className="section-record-grid">
+        {sortedRecords.length > 0 ? (
+          sortedRecords.map((record) => (
+            <button className="section-record" key={record.id} type="button" onClick={() => onOpenRecord(record)}>
+              <span className="section-record-kind">{record.type}</span>
+              <strong>{record.title}</strong>
+              <span>{record.summary}</span>
+              <i>
+                {record.status} . {formatReadableDate(record.updated)}
+              </i>
+            </button>
+          ))
+        ) : (
+          <p className="search-empty">No records filed here yet.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SearchPanel({
+  panelRef,
+  query,
+  records,
+  onOpenRecord,
+  onQueryChange
+}: {
+  panelRef: RefObject<HTMLDivElement | null>;
+  query: string;
+  records: RecordEntry[];
+  onOpenRecord: (record: RecordEntry) => void;
+  onQueryChange: (query: string) => void;
+}) {
+  return (
+    <div className="search-panel" ref={panelRef} role="search">
+      <label htmlFor="archive-search">// SEARCH RECORDS</label>
+      <input
+        autoComplete="off"
+        autoFocus
+        id="archive-search"
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder="Project, game, log..."
+        type="search"
+        value={query}
+      />
+      <div className="search-suggestions">
+        {records.length > 0 ? (
+          records.map((record) => (
+            <button key={record.id} type="button" onClick={() => onOpenRecord(record)}>
+              <span>
+                <strong>{record.title}</strong>
+                <small>
+                  {record.type} / {record.status}
+                </small>
+              </span>
+              <i>{record.section.toUpperCase()}</i>
+            </button>
+          ))
+        ) : (
+          <p className="search-empty">No matching record.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CurrentGame({ record }: { record: RecordEntry }) {
+  return (
+    <div className="current-game">
+      <div className="game-cover">
+        <img src={record.banner || "/images/archive-banner.png"} alt="" />
+        <span>{record.title.slice(0, 10)}</span>
+      </div>
+      <div>
+        <strong>{record.title}</strong>
+        <span>{record.progress}% Complete</span>
+        <span>{String(record.meta.playtime ?? "18.7h")} Play Time</span>
+        <span>Last Played: Today</span>
+      </div>
+    </div>
+  );
+}
+
+type RecordWindowProps = {
+  maximized: boolean;
+  record: RecordEntry;
+  onClose: () => void;
+  onMinimize: () => void;
+  onMaximize: () => void;
+};
+
+function RecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+  const contents = getRecordContents(record);
+  const [activeContent, setActiveContent] = useState<ContentKey>("overview");
+
+  useEffect(() => {
+    setActiveContent("overview");
+  }, [record.id]);
+
+  return (
+    <>
+    <motion.article
+      className={maximized ? "record-window is-maximized" : "record-window"}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      aria-label={`${record.title} archive entry`}
+    >
+      <header className="window-bar">
+        <span>// ARCHIVE ENTRY</span>
+        <div className="window-actions">
+          <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
+            <Minimize2 size={14} />
+          </button>
+          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize record">
+            <Maximize2 size={14} />
+          </button>
+          <button type="button" data-window-action="close" onClick={onClose} aria-label="Close record">
+            <X size={15} />
+          </button>
+        </div>
+      </header>
+
+      <div className="record-layout">
+        <div className="record-main">
+          <div className="record-heading">
+            <span className="record-kind">{record.type.toUpperCase()}</span>
+            <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
+            <h2>
+              {record.title}
+              <span className="cursor">_</span>
+            </h2>
+            <p>
+              Status: {record.status}
+              <span>.</span>
+              Type: {record.type}
+              {record.started ? (
+                <>
+                  <span>.</span>
+                  Started: {formatReadableDate(record.started)}
+                </>
+              ) : null}
+            </p>
+          </div>
+
+          <RecordContentPanel activeContent={activeContent} record={record} />
+        </div>
+
+        <aside className="record-aside">
+          <div>
+            <h3>CONTENTS</h3>
+            <ol>
+              {contents.map((item, index) => (
+                <li className={activeContent === item.key ? "is-active" : ""} key={item.key}>
+                  <button type="button" onClick={() => setActiveContent(item.key)}>
+                    {contentOrdinal(record, index)}_{item.label}
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <dl className="record-meta">
+            <div>
+              <dt>Created:</dt>
+              <dd>{record.started ? formatReadableDate(record.started) : "Unknown"}</dd>
+            </div>
+            <div>
+              <dt>Last Updated:</dt>
+              <dd>{formatReadableDate(record.updated)}</dd>
+            </div>
+            {record.mood ? (
+              <div>
+                <dt>Mood:</dt>
+                <dd>{record.mood}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </aside>
+
+      </div>
+    </motion.article>
+    </>
+  );
+}
+
+function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label: string }> {
+  if (record.section === "games") {
+    return [
+      { key: "overview", label: "Overview" },
+      { key: "notes", label: "Notes" },
+      { key: "recommendation", label: "Recommendation" }
+    ];
+  }
+
+  if (record.section === "setup") {
+    return [
+      { key: "overview", label: "Overview" },
+      { key: "hardware", label: "Hardware" },
+      { key: "software", label: "Software" },
+      { key: "maintenance", label: "Maintenance" },
+      { key: "notes", label: "Setup Notes" }
+    ];
+  }
+
+  if (record.section === "logs") {
+    return [
+      { key: "overview", label: "Entry" },
+      { key: "notes", label: "Full Note" },
+      { key: "attachments", label: "Attachments" }
+    ];
+  }
+
+  if (record.section === "projects") {
+    return [
+      { key: "technical", label: "Technical Stack" },
+      { key: "overview", label: "Overview" },
+      { key: "samples", label: "Samples" },
+      { key: "notes", label: "Notes" },
+      { key: "changelog", label: "Change Log" }
+    ];
+  }
+
+  return [
+    { key: "overview", label: "Overview" },
+    { key: "notes", label: "Notes" },
+    { key: "changelog", label: "Change Log" }
+  ];
+}
+
+function contentOrdinal(record: RecordEntry, index: number): string {
+  return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
+}
+
+function RecordContentPanel({ activeContent, record }: { activeContent: ContentKey; record: RecordEntry }) {
+  if (activeContent === "overview") {
+    return <RecordOverviewPage record={record} />;
+  }
+
+  if (activeContent === "samples") {
+    return <SampleGrid record={record} />;
+  }
+
+  if (activeContent === "attachments") {
+    return <MediaPopupField prefix="ATTACH" record={record} title="ATTACHMENTS" />;
+  }
+
+  if (activeContent === "notes") {
+    return <NotesPage record={record} />;
+  }
+
+  if (activeContent === "technical") {
+    return (
+      <section className="content-terminal" aria-label={`${record.title} technical stack`}>
+        <div className="terminal-title">// TECHNICAL STACK</div>
+        <div className="detail-list">
+          <p>&gt; Framework: Next.js App Router</p>
+          <p>&gt; Content: MDX records</p>
+          <p>&gt; Motion: restrained panel transitions</p>
+          <p>&gt; State: lightweight local archive state</p>
+          <p>&gt; Privacy: public-safe content files only</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (activeContent === "hardware" || activeContent === "software" || activeContent === "maintenance") {
+    return (
+      <section className="content-terminal" aria-label={`${record.title} setup details`}>
+        <div className="terminal-title">// {activeContent.toUpperCase()}</div>
+        <RecordBody body={record.body} />
+      </section>
+    );
+  }
+
+  if (activeContent === "recommendation") {
+    return (
+      <section className="content-terminal" aria-label={`${record.title} recommendation`}>
+        <div className="terminal-title">// RECOMMENDATION</div>
+        <div className="status-grid">
+          <div className="status-cell">
+            <span>STATUS</span>
+            <strong>{record.status}</strong>
+          </div>
+          <div className="status-cell">
+            <span>MOOD</span>
+            <strong>{record.mood ?? "unfiled"}</strong>
+          </div>
+          <div className="status-cell">
+            <span>PROGRESS</span>
+            <strong>{record.progress}%</strong>
+          </div>
+        </div>
+        <p className="terminal-copy">
+          Recommendation stays pending until the session has enough time behind it. Current notes are being kept as observations, not a final verdict.
+        </p>
+      </section>
+    );
+  }
+
+  if (activeContent === "changelog") {
+    return (
+      <section className="content-terminal" aria-label={`${record.title} change log`}>
+        <div className="terminal-title">// CHANGE LOG</div>
+        <div className="status-grid">
+          <div className="status-cell">
+            <span>CREATED</span>
+            <strong>{record.started ? formatReadableDate(record.started) : "Unknown"}</strong>
+          </div>
+          <div className="status-cell">
+            <span>UPDATED</span>
+            <strong>{formatReadableDate(record.updated)}</strong>
+          </div>
+          <div className="status-cell">
+            <span>STATE</span>
+            <strong>{record.status}</strong>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return null;
+}
+
+function RecordOverviewPage({ record }: { record: RecordEntry }) {
+  return (
+    <div className="overview-stack">
+      <RecordBanner record={record} />
+
+      <section className="record-section">
+        <h3>// OVERVIEW</h3>
+        <p>{record.summary}</p>
+      </section>
+
+      <section className="record-section">
+        <div className="section-row">
+          <h3>// CURRENT PROGRESS</h3>
+          <span>{record.progress}%</span>
+        </div>
+        <ProgressMeter value={record.progress} />
+        <MilestoneList record={record} />
+      </section>
+    </div>
+  );
+}
+
+function RecordBanner({ record }: { record: RecordEntry }) {
+  if (record.banner) {
+    return (
+      <div className="banner-frame">
+        <img src={record.banner} alt="" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="empty-banner">
+      <Cpu size={28} />
+    </div>
+  );
+}
+
+function MilestoneList({ record }: { record: RecordEntry }) {
+  const milestones = record.milestones.length > 0 ? record.milestones : [{ label: "Observation", progress: record.progress, status: record.status }];
+
+  return (
+    <div className="milestone-list">
+      {milestones.map((milestone) => (
+        <div key={`${record.id}-${milestone.label}`} className="milestone">
+          <span>&gt; {milestone.label}</span>
+          <ProgressBlocks value={milestone.progress} />
+          <em>{milestone.status}</em>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MediaPopupField({ prefix, record, title }: { prefix: string; record: RecordEntry; title: string }) {
+  return (
+    <section className="content-terminal" aria-label={`${record.title} media`}>
+      <div className="terminal-title">// {title}</div>
+      <div className="media-alert-field">
+        <div className="media-alert-header">
+          <span>MEDIA</span>
+          <i>MAX_06</i>
+        </div>
+        <div className="media-popup-layer">
+          {Array.from({ length: 6 }).map((_, index) => {
+            const slot = index + 1;
+            const imageSource = slot === 1 ? record.banner : undefined;
+
+            return (
+              <button className="media-popup" style={{ "--slot": slot } as CSSProperties} type="button" key={`${record.id}-media-${slot}`}>
+                <span>
+                {prefix}_{String(slot).padStart(2, "0")}
+              </span>
+              <div className="media-frame">
+                {imageSource ? <img src={imageSource} alt="" /> : <div className="media-placeholder">NO CAPTURE</div>}
+              </div>
+              <i>{imageSource ? "Primary capture" : "Awaiting media"}</i>
+            </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SampleGrid({ record }: { record: RecordEntry }) {
+  return (
+    <section className="content-terminal" aria-label={`${record.title} sample media`}>
+      <div className="terminal-title">// SAMPLE</div>
+      <div className="sample-kicker">Media</div>
+      <div className="sample-grid" aria-label={`${record.title} media samples`}>
+        {Array.from({ length: 6 }).map((_, index) => {
+          const slot = index + 1;
+          const imageSource = slot === 1 ? record.banner : undefined;
+
+          return (
+            <button className="sample-terminal" type="button" key={`${record.id}-sample-${slot}`}>
+              <span>MEDIA_{String(slot).padStart(2, "0")}</span>
+              <div className="sample-frame">
+                {imageSource ? <img src={imageSource} alt="" /> : <div className="media-placeholder">NO MEDIA</div>}
+              </div>
+              <i>{imageSource ? "Primary sample" : "Awaiting sample"}</i>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function NotesPage({ record }: { record: RecordEntry }) {
+  return (
+    <section className="content-terminal notes-page" aria-label={`${record.title} notes`}>
+      <div className="terminal-title">// NOTES PAGE</div>
+      {record.banner ? (
+        <div className="notes-banner">
+          <img src={record.banner} alt="" />
+        </div>
+      ) : null}
+      <RecordBody body={record.body} />
+    </section>
+  );
+}
+
+function RecordBody({ body }: { body: string }) {
+  const lines = body.split(/\r?\n/);
+
+  return (
+    <div className="record-body">
+      {lines.map((line, index) => {
+        const key = `${index}-${line}`;
+
+        if (!line.trim()) {
+          return <br key={key} />;
+        }
+
+        if (line.startsWith("## ")) {
+          return <h4 key={key}>// {line.slice(3)}</h4>;
+        }
+
+        if (line.startsWith("- [x] ")) {
+          return (
+            <p className="check-line" key={key}>
+              <span>[x]</span>
+              {line.slice(6)}
+            </p>
+          );
+        }
+
+        if (line.startsWith("- [ ] ")) {
+          return (
+            <p className="check-line is-open" key={key}>
+              <span>[ ]</span>
+              {line.slice(6)}
+            </p>
+          );
+        }
+
+        if (line.startsWith("- ")) {
+          return (
+            <p className="bullet-line" key={key}>
+              <span>&gt;</span>
+              {line.slice(2)}
+            </p>
+          );
+        }
+
+        if (line.startsWith("> ")) {
+          return <blockquote key={key}>{line.slice(2)}</blockquote>;
+        }
+
+        return <p key={key}>{line}</p>;
+      })}
+    </div>
+  );
+}
+
+function ProgressMeter({ value }: { value: number }) {
+  return (
+    <div className="progress-meter" aria-label={`${value}%`}>
+      <span style={{ inlineSize: `${value}%` }} />
+    </div>
+  );
+}
+
+function ProgressBlocks({ value }: { value: number }) {
+  const filledBlocks = Math.round((Math.max(0, Math.min(100, value)) / 100) * 24);
+
+  return (
+    <span className="progress-blocks" aria-label={`${value}%`}>
+      {Array.from({ length: 24 }).map((_, index) => (
+        <i className={index < filledBlocks ? "is-filled" : ""} key={index} />
+      ))}
+    </span>
+  );
+}
+
+function getGreeting(date: Date | null): string {
+  if (!date) {
+    return "Opening archive.";
+  }
+
+  const hour = date.getHours();
+
+  if (hour < 12) {
+    return "Good morning.";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon.";
+  }
+
+  return "Good evening.";
+}
+
+function dailyLatinSaying(date: Date | null) {
+  const source = date ?? new Date();
+  const seed = source.getFullYear() * 372 + (source.getMonth() + 1) * 31 + source.getDate();
+
+  return latinSayings[seed % latinSayings.length];
+}
+
+function dashboardSubtext(date: Date | null): string {
+  const saying = dailyLatinSaying(date);
+
+  return `${saying.latin} / ${saying.english}`;
+}
+
+function weatherCodeLabel(code: number): string {
+  if (code === 0) return "Clear sky";
+  if ([1, 2, 3].includes(code)) return "Partly cloudy";
+  if ([45, 48].includes(code)) return "Fog";
+  if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle";
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
+  if ([95, 96, 99].includes(code)) return "Storm";
+
+  return "Weather logged";
+}
+
+function formatClock(date: Date | null): string {
+  if (!date) {
+    return "--:--";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
+}
+
+function formatDate(date: Date | null): string {
+  if (!date) {
+    return "-- / -- / ----";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  })
+    .format(date)
+    .replaceAll("/", " / ");
+}
+
+function shortDate(value: string): string {
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day}/${month}` : "--/--";
+}
+
+function formatReadableDate(value: string): string {
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day} / ${month} / ${year}` : value;
+}
+
+function getSearchResults(records: RecordEntry[], query: string): RecordEntry[] {
+  const normalized = query.trim().toLowerCase();
+
+  if (!normalized) {
+    return [...records].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 5);
+  }
+
+  return records
+    .filter((record) => {
+      const searchable = [record.title, record.type, record.status, record.section, ...record.tags].join(" ").toLowerCase();
+      return searchable.includes(normalized);
+    })
+    .sort((a, b) => {
+      const aStarts = a.title.toLowerCase().startsWith(normalized) ? 0 : 1;
+      const bStarts = b.title.toLowerCase().startsWith(normalized) ? 0 : 1;
+      return aStarts - bStarts || b.updated.localeCompare(a.updated) || a.priority - b.priority;
+    })
+    .slice(0, 6);
+}

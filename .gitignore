@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+dist
+.pnpm-store
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+content/private
+private
+local-notes
+Mockup.png

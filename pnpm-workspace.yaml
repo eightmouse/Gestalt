@@ -1,0 +1,12 @@
+packages:
+  - "."
+
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
+strictDepBuilds: true
+
+overrides:
+  react-server-dom-parcel: 19.2.6
+  react-server-dom-turbopack: 19.2.6
+  react-server-dom-webpack: 19.2.6
