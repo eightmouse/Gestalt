@@ -23,8 +23,6 @@ type ContentKey =
   | "changelog"
   | "recommendation"
   | "hardware"
-  | "software"
-  | "maintenance"
   | "attachments";
 
 type ArchiveState = {
@@ -87,7 +85,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewedNoteIds, setViewedNoteIds] = useState<string[]>([]);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -111,9 +108,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const activeProjects = recordsBySection.projects
     .filter((record) => record.status !== "Archived")
     .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const currentGame = recordsBySection.games.find((record) => record.status === "Playing") ?? recordsBySection.games[0];
+  const currentGame = recordsBySection.games.find((record) => record.meta.dashboardActive === true)
+    ?? recordsBySection.games.find((record) => record.status === "Playing")
+    ?? recordsBySection.games[0];
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 4);
+  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 3);
   const searchResults = getSearchResults(records, searchQuery);
 
   useEffect(() => {
@@ -148,30 +147,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [searchOpen]);
 
   useEffect(() => {
-    if (!panelOpen) {
-      return;
-    }
-
-    const minimizeOnOutsideClick = (event: MouseEvent) => {
-      const target = event.target;
-
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      if (target.closest(".record-window") || target.closest(".reopen-control")) {
-        return;
-      }
-
-      setPanelOpen(false);
-      setPanelMinimized(true);
-    };
-
-    document.addEventListener("mousedown", minimizeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", minimizeOnOutsideClick);
-  }, [panelOpen]);
-
-  useEffect(() => {
     if (!records.some((record) => record.id === selectedId) && records[0]) {
       setSelectedId(records[0].id);
     }
@@ -180,9 +155,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const openRecord = (record: RecordEntry, content: ContentKey = "overview") => {
     setSelectedId(record.id);
     setInitialContent(content);
-    if (typeof record.meta.latestNote === "string") {
-      setViewedNoteIds((current) => (current.includes(record.id) ? current : [...current, record.id]));
-    }
     setPanelOpen(true);
     setPanelMinimized(false);
     setPanelMaximized(false);
@@ -277,7 +249,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           </DashboardPanel>
 
           <DashboardPanel title="CURRENT GAME" footerLabel={currentGame ? "Read note" : undefined} onFooter={() => currentGame && openRecord(currentGame, "notes")}>
-            {currentGame ? <CurrentGame record={currentGame} viewedNoteIds={viewedNoteIds} /> : <p className="subtle">No session active.</p>}
+            {currentGame ? <CurrentGame record={currentGame} /> : <p className="subtle">No session active.</p>}
           </DashboardPanel>
 
           <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
@@ -328,21 +300,35 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
         <AnimatePresence>
           {panelOpen && selectedRecord ? (
-            <RecordWindow
-              key={selectedRecord.id}
-              maximized={panelMaximized}
-              initialContent={initialContent}
-              record={selectedRecord}
-              onClose={() => {
-                setPanelOpen(false);
-                setPanelMinimized(false);
-              }}
-              onMinimize={() => {
-                setPanelOpen(false);
-                setPanelMinimized(true);
-              }}
-              onMaximize={() => setPanelMaximized((current) => !current)}
-            />
+            <>
+              <motion.button
+                aria-label="Minimize active record"
+                className="record-backdrop"
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  setPanelOpen(false);
+                  setPanelMinimized(true);
+                }}
+              />
+              <RecordWindow
+                key={selectedRecord.id}
+                maximized={panelMaximized}
+                initialContent={initialContent}
+                record={selectedRecord}
+                onClose={() => {
+                  setPanelOpen(false);
+                  setPanelMinimized(false);
+                }}
+                onMinimize={() => {
+                  setPanelOpen(false);
+                  setPanelMinimized(true);
+                }}
+                onMaximize={() => setPanelMaximized((current) => !current)}
+              />
+            </>
           ) : panelMinimized ? (
             <motion.button
               className="reopen-control"
@@ -378,7 +364,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.5.10</span>
+        <span>v1.6.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -423,7 +409,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.5.10</dd>
+            <dd>GESTALT OS v1.6.0</dd>
           </div>
         </dl>
       </div>
@@ -665,14 +651,11 @@ function SearchPanel({
   );
 }
 
-function CurrentGame({ record, viewedNoteIds }: { record: RecordEntry; viewedNoteIds: string[] }) {
-  const latestNote = typeof record.meta.latestNote === "string" && !viewedNoteIds.includes(record.id) ? record.meta.latestNote : "";
-
+function CurrentGame({ record }: { record: RecordEntry }) {
   return (
     <div className="current-game">
       <div className="game-cover">
         <img src={record.banner || "/images/archive-banner.png"} alt="" />
-        {latestNote ? <i className="game-cover-signal">{latestNote}</i> : null}
         <span>{record.title.slice(0, 10)}</span>
       </div>
       <div>
@@ -811,12 +794,6 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
               <dt>Last Updated:</dt>
               <dd>{formatReadableDate(record.updated)}</dd>
             </div>
-            {record.mood ? (
-              <div>
-                <dt>Mood:</dt>
-                <dd>{record.mood}</dd>
-              </div>
-            ) : null}
           </dl>
           <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
         </aside>
@@ -841,8 +818,6 @@ function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label:
     return [
       { key: "overview", label: "Overview" },
       { key: "hardware", label: "Hardware" },
-      { key: "software", label: "Software" },
-      { key: "maintenance", label: "Maintenance" },
       { key: "notes", label: "Setup Notes" }
     ];
   }
@@ -859,9 +834,8 @@ function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label:
     return [
       { key: "technical", label: "Technical Stack" },
       { key: "overview", label: "Overview" },
-      { key: "samples", label: "Samples" },
       { key: "notes", label: "Notes" },
-      { key: "changelog", label: "Change Log" }
+      { key: "samples", label: "Samples" }
     ];
   }
 
@@ -940,6 +914,39 @@ function noteEntries(body: string): Array<{ title: string; body: string }> {
   return notes;
 }
 
+function setupHardwareFallback(body: string): string {
+  const notes = noteEntries(body);
+
+  if (!notes.length) {
+    return body;
+  }
+
+  return notes.map((note) => note.body).filter(Boolean).join("\n\n") || body;
+}
+
+function metaText(value: unknown): string {
+  if (typeof value === "string") {
+    return decodeTextBlock(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).join("\n");
+  }
+
+  return "";
+}
+
+function decodeTextBlock(value: string): string {
+  return value.replace(/\\+n/g, "\n");
+}
+
+function getTextList(value: unknown): string[] {
+  return metaText(value)
+    .split(/\r?\n|\|/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function RecordContentPanel({ activeContent, record }: { activeContent: ContentKey; record: RecordEntry }) {
   if (activeContent === "overview") {
     return <RecordOverviewPage record={record} />;
@@ -958,30 +965,34 @@ function RecordContentPanel({ activeContent, record }: { activeContent: ContentK
   }
 
   if (activeContent === "technical") {
+    const stackItems = getTextList(record.meta.technicalStack);
+
     return (
       <section className="content-terminal" aria-label={`${record.title} technical stack`}>
         <div className="terminal-title">// TECHNICAL STACK</div>
         <div className="detail-list">
-          <p>&gt; Framework: Next.js App Router</p>
-          <p>&gt; Content: MDX records</p>
-          <p>&gt; Motion: restrained panel transitions</p>
-          <p>&gt; State: lightweight local archive state</p>
-          <p>&gt; Privacy: public-safe content files only</p>
+          {(stackItems.length > 0 ? stackItems : ["Next.js App Router", "MDX records", "restrained panel transitions", "lightweight local archive state", "public-safe content files only"]).map((item) => (
+            <p key={item}>&gt; {item}</p>
+          ))}
         </div>
       </section>
     );
   }
 
-  if (activeContent === "hardware" || activeContent === "software" || activeContent === "maintenance") {
+  if (activeContent === "hardware") {
+    const hardware = metaText(record.meta.hardware) || setupHardwareFallback(record.body);
+
     return (
       <section className="content-terminal" aria-label={`${record.title} setup details`}>
-        <div className="terminal-title">// {activeContent.toUpperCase()}</div>
-        <RecordBody body={record.body} />
+        <div className="terminal-title">// HARDWARE</div>
+        <RecordBody body={hardware} />
       </section>
     );
   }
 
   if (activeContent === "recommendation") {
+    const recommendation = metaText(record.meta.recommendation) || "Recommendation stays pending until the session has enough time behind it. Current notes are being kept as observations, not a final verdict.";
+
     return (
       <section className="content-terminal" aria-label={`${record.title} recommendation`}>
         <div className="terminal-title">// RECOMMENDATION</div>
@@ -991,17 +1002,11 @@ function RecordContentPanel({ activeContent, record }: { activeContent: ContentK
             <strong>{record.status}</strong>
           </div>
           <div className="status-cell">
-            <span>MOOD</span>
-            <strong>{record.mood ?? "unfiled"}</strong>
-          </div>
-          <div className="status-cell">
             <span>PROGRESS</span>
             <strong>{record.progress}%</strong>
           </div>
         </div>
-        <p className="terminal-copy">
-          Recommendation stays pending until the session has enough time behind it. Current notes are being kept as observations, not a final verdict.
-        </p>
+        <p className="terminal-copy">{recommendation}</p>
       </section>
     );
   }
@@ -1049,7 +1054,7 @@ function RecordOverviewPage({ record }: { record: RecordEntry }) {
           <span>{record.progress}%</span>
         </div>
         <ProgressMeter value={record.progress} />
-        <MilestoneList record={record} />
+        {record.milestones.length > 0 ? <MilestoneList record={record} /> : null}
       </section>
     </div>
   );
@@ -1072,11 +1077,9 @@ function RecordBanner({ record }: { record: RecordEntry }) {
 }
 
 function MilestoneList({ record }: { record: RecordEntry }) {
-  const milestones = record.milestones.length > 0 ? record.milestones : [{ label: "Observation", progress: record.progress, status: record.status }];
-
   return (
     <div className="milestone-list">
-      {milestones.map((milestone) => (
+      {record.milestones.map((milestone) => (
         <div key={`${record.id}-${milestone.label}`} className="milestone">
           <span>&gt; {milestone.label}</span>
           <ProgressBlocks value={milestone.progress} />
@@ -1190,15 +1193,7 @@ function NotesPage({ record }: { record: RecordEntry }) {
       <div className="note-stack">
         {filteredNotes.length > 0 ? (
           filteredNotes.map((note) => (
-            <details className="note-entry" defaultOpen={note.index === 0} key={note.title}>
-              <summary>
-                <span>{note.title}</span>
-                <i>open</i>
-              </summary>
-              <div className="note-entry-body">
-                <RecordBody body={note.body} />
-              </div>
-            </details>
+            <NoteEntry body={note.body} defaultOpen={note.index === 0} key={note.title} title={note.title} />
           ))
         ) : (
           <p className="notes-empty">No note matches that signal.</p>
@@ -1208,7 +1203,40 @@ function NotesPage({ record }: { record: RecordEntry }) {
   );
 }
 
+function NoteEntry({ body, defaultOpen, title }: { body: string; defaultOpen: boolean; title: string }) {
+  const detailsRef = useRef<HTMLDetailsElement | null>(null);
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initializedRef.current && detailsRef.current) {
+      detailsRef.current.open = defaultOpen;
+      initializedRef.current = true;
+    }
+  }, [defaultOpen]);
+
+  return (
+    <details className="note-entry" ref={detailsRef}>
+      <summary>
+        <span>{title}</span>
+        <i>open</i>
+      </summary>
+      <div className="note-entry-body">
+        <RecordBody body={body} />
+      </div>
+    </details>
+  );
+}
+
+type NoteMediaOptions = {
+  align: "left" | "center" | "right";
+  caption: string;
+  fit: "contain" | "crop";
+  position: "top" | "center" | "bottom";
+  size: "default" | "wide" | "banner" | "small";
+};
+
 function RecordBody({ body }: { body: string }) {
+  const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
   const lines = body.split(/\r?\n/);
   const nodes: React.ReactNode[] = [];
 
@@ -1260,9 +1288,14 @@ function RecordBody({ body }: { body: string }) {
     const imageMatch = line.match(/^!\[(.*?)]\((.*?)\)$/);
 
     if (imageMatch) {
+      const media = parseNoteMediaOptions(imageMatch[1]);
+
       nodes.push(
-        <figure className="note-banner" key={key}>
-          <img src={imageMatch[2]} alt={imageMatch[1]} />
+        <figure className={noteMediaClassName(media)} key={key}>
+          <button className="note-media-button" type="button" onClick={() => setExpandedImage({ alt: media.caption, src: imageMatch[2] })}>
+            <img src={imageMatch[2]} alt={media.caption} />
+          </button>
+          {media.caption ? <figcaption>{media.caption}</figcaption> : null}
         </figure>
       );
       continue;
@@ -1309,8 +1342,45 @@ function RecordBody({ body }: { body: string }) {
   return (
     <div className="record-body">
       {nodes}
+      {expandedImage ? (
+        <button className="note-image-lightbox" type="button" aria-label="Close expanded image" onClick={() => setExpandedImage(null)}>
+          <img src={expandedImage.src} alt={expandedImage.alt} />
+        </button>
+      ) : null}
     </div>
   );
+}
+
+function parseNoteMediaOptions(rawAlt: string): NoteMediaOptions {
+  const tokens = rawAlt.split("|").map((token) => token.trim()).filter(Boolean);
+  const caption = tokens[0] && !isNoteMediaToken(tokens[0]) ? tokens[0] : "";
+  const options = new Set(tokens.slice(caption ? 1 : 0).map((token) => token.toLowerCase()));
+  const size = options.has("banner") ? "banner" : options.has("wide") ? "wide" : options.has("small") ? "small" : "default";
+  const align = options.has("left") ? "left" : options.has("right") ? "right" : "center";
+  const position = options.has("top") ? "top" : options.has("bottom") ? "bottom" : "center";
+  const fit = options.has("crop") || size === "banner" ? "crop" : "contain";
+
+  return {
+    align,
+    caption: options.has("no-caption") ? "" : caption,
+    fit: options.has("contain") ? "contain" : fit,
+    position,
+    size
+  };
+}
+
+function isNoteMediaToken(value: string): boolean {
+  return ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(value.toLowerCase());
+}
+
+function noteMediaClassName(media: NoteMediaOptions): string {
+  return [
+    "note-media",
+    `note-media--${media.size}`,
+    `note-media--${media.align}`,
+    `note-media--${media.fit}`,
+    `note-media--${media.position}`
+  ].join(" ");
 }
 
 function UpdateHistory({ body, containerRef, isOpen, onToggle }: { body: string; containerRef: RefObject<HTMLDivElement | null>; isOpen: boolean; onToggle: () => void }) {

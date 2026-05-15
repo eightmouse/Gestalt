@@ -1,4 +1,4 @@
-const records = [
+const records = (window.__GESTALT_RECORDS || [
   {
     id: "dashboard",
     title: "System Dashboard",
@@ -7,7 +7,6 @@ const records = [
     status: "Online",
     started: "2026-05-14",
     updated: "2026-05-14",
-    mood: "quiet",
     summary: "The root index for projects, play sessions, setup notes, and field logs.",
     progress: 100,
     priority: 1,
@@ -23,7 +22,143 @@ const records = [
 - [ ] Add the first official record.
 
 > A quiet place for current work, play, notes, and setup history.`
+
   },
+            {
+    id: "gestalt",
+    title: "Gestalt",
+    section: "projects",
+    type: "Project Log",
+    status: "Active",
+    started: "2026-04-05",
+    updated: "2026-05-14",
+    summary: "Currently working on this blog / portfolio-ish thing. I have not stopped working on the other projects, still working on KiraPatch, but I wanted a dedicated place for the stuff that usually ends up scattered in notes.",
+    banner: "",
+    progress: 80,
+    priority: 1,
+    tags: ["gestalt", "blog", "archive", "portfolio"],
+    milestones: [
+      { label: "Archive Shell", progress: 100, status: "Ready" },
+      { label: "Static Preview", progress: 100, status: "Ready" },
+      { label: "Studio Workflow", progress: 60, status: "In Progress" },
+      { label: "GitHub Pages", progress: 20, status: "Pending" }
+    ],
+    body: `
+## Description
+I use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working.
+Gestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.
+This is the first working version, so there are not many entries yet.
+I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.
+
+Currently being extra careful because of the npm ordeal.`
+  },
+
+          {
+    id: "kira-patch",
+    title: "KiraPatch",
+    section: "projects",
+    type: "Project Log",
+    status: "In Progress",
+    started: "2026-02-03",
+    updated: "2026-03-10",
+    summary: "KiraPatch is a patcher for Generation 3 Pokemon GBA games that raises shiny odds while keeping the game on its normal data-writing path.",
+    banner: "",
+    progress: 85,
+    priority: 2,
+    tags: ["kirapatch", "pokemon", "gba", "patcher"],
+    milestones: [
+      { label: "Method 1 Research", progress: 100, status: "Done" },
+      { label: "Patch Flow", progress: 80, status: "In Progress" },
+      { label: "Verification", progress: 60, status: "In Progress" }
+    ],
+    body: `
+## Description & Thoughts
+This is one of my main projects, currently working on it altough updates are coming in slow as it's not an easy task.
+I've made lots of progeress on it and as I said in the repo I'm in the final stretch of Method 1..
+
+I apologize if the wait has been long but I don't want this to just 'work lol', it has to be near perfection or at least, a shiny pokemon generated through this method has to be near indistinguishable.`
+  },
+
+        {
+    id: "sootopylis",
+    title: "SootoPYlis",
+    section: "projects",
+    type: "Project Log",
+    status: "Paused",
+    started: "2026-01-16",
+    updated: "2026-03-20",
+    summary: "SootoPYlis is my attempt to recreate the feel of PokeSwift for Pokemon Emerald in Python. I'm building it as a native-feeling desktop app with a PySide6/QML shell, a Python gameplay core, and a local import pipeline that works from a user-supplied copy of Pokemon Emerald.",
+    banner: "",
+    progress: 35,
+    priority: 4,
+    tags: ["sootopylis", "pokemon", "python", "desktop"],
+    milestones: [
+      { label: "Prototype Shell", progress: 60, status: "Paused" },
+      { label: "Gameplay Core", progress: 25, status: "Paused" },
+      { label: "Import Pipeline", progress: 20, status: "Paused" }
+    ],
+    body: `
+## Description
+Credit goes to Dimillian for creating PokeSwift. That project is the clearest reference for the kind of polished desktop Pokemon experience I want to build here.
+When I saw Dimillian's PokeSwift, I thought 'Damn, wouldn't it be fun to have this in Python?' So I started it, messed around with it a bit and got a solid base but quickly realized its a very complex project.
+
+I'm not working on this currently, it's on a momentary stall cause I'd like to finish it someday, who knows.`
+  },
+
+      {
+    id: "kira-tally",
+    title: "KiraTally",
+    section: "projects",
+    type: "Project Log",
+    status: "Filed",
+    started: "2026-03-01",
+    updated: "2026-03-5",
+    summary: "A Global, Hotkey-Driven Shiny Counter for Pokémon (3rd Gen). KiraTally is a lightweight, background-running counter designed to track shiny hunting resets. It eliminates the 'false positives' of visual-based counters.",
+    banner: "",
+    progress: 100,
+    priority: 5,
+    tags: ["kiratally", "pokemon", "shiny-hunting", "tools"],
+    milestones: [
+      { label: "Hotkeys", progress: 100, status: "Done" },
+      { label: "Counter Window", progress: 100, status: "Done" },
+      { label: "Release Build", progress: 100, status: "Done" }
+    ],
+    body: `
+## Description
+Overview sums it up pretty well. It's a simple counter app that runs in the background and can be incremented or decremented with hotkeys.
+It was built using Python and Tkinter for the GUI, and it was designed to be as lightweight as possible so it can run on low-end machines without causing any performance issues.
+
+I built this around the release of Fire Red/Leaf Green, to help people shiny hunting.
+
+It's nothing crazy, just a simple counter but.. it works!`
+  },
+
+    {
+    id: "innkeeper",
+    title: "Innkeeper",
+    section: "projects",
+    type: "Project Log",
+    status: "Filed",
+    started: "2026-02-07",
+    updated: "2026-03-10",
+    summary: "Innkeeper is a minimal World of Warcraft app to keep track of character information.",
+    banner: "",
+    progress: 100,
+    priority: 6,
+    tags: ["innkeeper", "wow", "electron", "blizzard-api"],
+    milestones: [
+      { label: "Backend Data Flow", progress: 100, status: "Done" },
+      { label: "Electron Shell", progress: 100, status: "Done" },
+      { label: "Character Tracking", progress: 100, status: "Done" }
+    ],
+    body: `
+## Description
+Built using Python backend for data processing and an Electron frontend for the user interface.
+Utilizing the official Blizzard API and supplemental data from WoWHead, providing a low-latency alternative to traditional web-based armory tools.
+It's a personal project that I started a while ago to push my skills further while taking breaks between WoW sessions.
+Started building it few weeks prior to pushing it to GitHub, mostly due to the fact that I was not planning on actually developing something 'complete' but here we are.`
+  },
+
   {
     id: "first-signal",
     title: "First Signal",
@@ -32,7 +167,6 @@ const records = [
     status: "Filed",
     started: "2026-05-14",
     updated: "2026-05-14",
-    mood: "opening",
     summary: "The first entry for this space: a place for rambles, notes, game thoughts, reviews, project progress, samples, stalls, and setup updates.",
     banner: "public/media/records/first-signal/banner.png",
     progress: 100,
@@ -54,7 +188,6 @@ In the coming days I will update the Setup area with my current setup.`
     status: "Filed",
     started: "2026-05-14",
     updated: "2026-05-14",
-    mood: "reflective",
     summary: "First update: dashboard polish, performance work, and a clear note about building Gestalt with AI in the loop.",
     banner: "public/media/records/a-useful-signal/banner.png",
     progress: 100,
@@ -94,17 +227,16 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     status: "Playing",
     started: "2026-05-14",
     updated: "2026-05-14",
-    mood: "stylish",
     summary: "Play log for Persona 5 Royal, these are my opinions and thoughts as I play through the game. I will update this log with new notes as I play.",
     banner: "public/media/records/persona-5-royal/cover.jpg",
     headerImage: "public/media/records/persona-5-royal/header.jpg",
     progress: 28,
     priority: 8,
+    dashboardActive: true,
     steamAppId: 1687950,
     playtime: "28.9h",
     lastPlayed: "13 / 05 / 2026",
     achievementCount: "15 / 53",
-    latestNote: "New note",
     tags: ["persona", "games", "jrpg", "play-log"],
     milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
     body: `
@@ -138,7 +270,7 @@ Opening this as the main Persona 5 Royal play log, first test of the note stack!
 - 14 / 05 / 2026 - First note stack tested.
 - 14 / 05 / 2026 - Play log created.`
   }
-].sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
+]).sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
 const sections = [
   { id: "system", code: "01_SYSTEM", label: "Dashboard", icon: "system" },
@@ -184,7 +316,7 @@ const state = {
   windowSteady: false,
   recordTitleAnimating: false,
   headlineAnimating: true,
-  viewedNoteIds: []
+  expandedImage: null
 };
 
 const root = document.querySelector("#root");
@@ -206,9 +338,6 @@ function openRecord(recordId, contentKey = "overview") {
 
   state.headlineAnimating = false;
   state.selectedId = record.id;
-  if (record.latestNote && !state.viewedNoteIds.includes(record.id)) {
-    state.viewedNoteIds = [...state.viewedNoteIds, record.id];
-  }
   state.activeContent = contentKey;
   state.panelOpen = true;
   state.panelMinimized = false;
@@ -242,6 +371,21 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function textBlock(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).join("\n");
+  }
+
+  return typeof value === "string" ? value.replace(/\\+n/g, "\n") : "";
+}
+
+function textList(value) {
+  return textBlock(value)
+    .split(/\r?\n|\|/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function shortDate(value) {
@@ -364,8 +508,6 @@ function getRecordContents(record) {
     return [
       { key: "overview", label: "Overview" },
       { key: "hardware", label: "Hardware" },
-      { key: "software", label: "Software" },
-      { key: "maintenance", label: "Maintenance" },
       { key: "notes", label: "Setup Notes" }
     ];
   }
@@ -382,9 +524,8 @@ function getRecordContents(record) {
     return [
       { key: "technical", label: "Technical Stack" },
       { key: "overview", label: "Overview" },
-      { key: "samples", label: "Samples" },
       { key: "notes", label: "Notes" },
-      { key: "changelog", label: "Change Log" }
+      { key: "samples", label: "Samples" }
     ];
   }
 
@@ -464,6 +605,16 @@ function noteEntries(body) {
   return notes;
 }
 
+function setupHardwareFallback(body) {
+  const notes = noteEntries(body);
+
+  if (!notes.length) {
+    return body;
+  }
+
+  return notes.map((note) => note.body).filter(Boolean).join("\n\n") || body;
+}
+
 function markdownBody(body) {
   const lines = body.split(/\r?\n/);
   const output = [];
@@ -509,7 +660,13 @@ function markdownBody(body) {
     const imageMatch = line.match(/^!\[(.*?)]\((.*?)\)$/);
 
     if (imageMatch) {
-      output.push(`<figure class="note-banner" ${key}><img src="${escapeHtml(imageMatch[2])}" alt="${escapeHtml(imageMatch[1])}" /></figure>`);
+      const media = parseNoteMediaOptions(imageMatch[1]);
+      output.push(`<figure class="${noteMediaClassName(media)}" ${key}>
+        <button class="note-media-button" type="button" data-expand-image="${escapeHtml(imageMatch[2])}" data-expand-alt="${escapeHtml(media.caption)}">
+          <img src="${escapeHtml(imageMatch[2])}" alt="${escapeHtml(media.caption)}" />
+        </button>
+        ${media.caption ? `<figcaption>${escapeHtml(media.caption)}</figcaption>` : ""}
+      </figure>`);
       continue;
     }
 
@@ -539,6 +696,38 @@ function markdownBody(body) {
   return output.join("");
 }
 
+function parseNoteMediaOptions(rawAlt) {
+  const tokens = rawAlt.split("|").map((token) => token.trim()).filter(Boolean);
+  const caption = tokens[0] && !isNoteMediaToken(tokens[0]) ? tokens[0] : "";
+  const options = new Set(tokens.slice(caption ? 1 : 0).map((token) => token.toLowerCase()));
+  const size = options.has("banner") ? "banner" : options.has("wide") ? "wide" : options.has("small") ? "small" : "default";
+  const align = options.has("left") ? "left" : options.has("right") ? "right" : "center";
+  const position = options.has("top") ? "top" : options.has("bottom") ? "bottom" : "center";
+  const fit = options.has("crop") || size === "banner" ? "crop" : "contain";
+
+  return {
+    align,
+    caption: options.has("no-caption") ? "" : caption,
+    fit: options.has("contain") ? "contain" : fit,
+    position,
+    size
+  };
+}
+
+function isNoteMediaToken(value) {
+  return ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(value.toLowerCase());
+}
+
+function noteMediaClassName(media) {
+  return [
+    "note-media",
+    `note-media--${media.size}`,
+    `note-media--${media.align}`,
+    `note-media--${media.fit}`,
+    `note-media--${media.position}`
+  ].join(" ");
+}
+
 function recordBanner(record) {
   return record.banner
     ? `<div class="banner-frame"><img src="${escapeHtml(record.banner)}" alt="" /></div>`
@@ -546,7 +735,7 @@ function recordBanner(record) {
 }
 
 function recordMilestones(record) {
-  return (record.milestones.length ? record.milestones : [{ label: "Observation", progress: record.progress, status: record.status }])
+  return record.milestones
     .map(
       (milestone) => `<div class="milestone">
         <span>&gt; ${escapeHtml(milestone.label)}</span>
@@ -559,6 +748,7 @@ function recordMilestones(record) {
 
 function renderOverviewPage(record) {
   const headerImage = recordHeaderImage(record);
+  const milestones = recordMilestones(record);
 
   return `<div class="overview-stack">
     ${headerImage ? "" : recordBanner(record)}
@@ -571,7 +761,7 @@ function renderOverviewPage(record) {
     <section class="record-section">
       <div class="section-row"><h3>// CURRENT PROGRESS</h3><span>${record.progress}%</span></div>
       <div class="progress-meter" aria-label="${record.progress}%"><span style="inline-size: ${record.progress}%"></span></div>
-      <div class="milestone-list">${recordMilestones(record)}</div>
+      ${milestones ? `<div class="milestone-list">${milestones}</div>` : ""}
     </section>
   </div>`;
 }
@@ -697,36 +887,37 @@ function renderUpdateHistoryModal(record) {
 }
 
 function renderTechnicalPage(record) {
+  const stackItems = textList(record.technicalStack);
+
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} technical stack">
     <div class="terminal-title">// TECHNICAL STACK</div>
     <div class="detail-list">
-      <p>&gt; Framework: Next.js App Router</p>
-      <p>&gt; Content: MDX-style records</p>
-      <p>&gt; State: small local archive store</p>
-      <p>&gt; Motion: restrained window transitions</p>
-      <p>&gt; Privacy: public-safe content files only</p>
+      ${(stackItems.length ? stackItems : ["Next.js App Router", "MDX-style records", "small local archive store", "restrained window transitions", "public-safe content files only"])
+        .map((item) => `<p>&gt; ${escapeHtml(item)}</p>`)
+        .join("")}
     </div>
   </section>`;
 }
 
-function renderSetupPage(record, key) {
-  const label = key === "hardware" ? "HARDWARE" : key === "software" ? "SOFTWARE" : "MAINTENANCE";
+function renderSetupPage(record) {
+  const hardware = textBlock(record.hardware) || setupHardwareFallback(record.body);
 
-  return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} ${label.toLowerCase()}">
-    <div class="terminal-title">// ${label}</div>
-    <div class="record-body">${markdownBody(record.body)}</div>
+  return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} hardware">
+    <div class="terminal-title">// HARDWARE</div>
+    <div class="record-body">${markdownBody(hardware)}</div>
   </section>`;
 }
 
 function renderRecommendationPage(record) {
+  const recommendation = textBlock(record.recommendation) || "Recommendation stays pending until the session has enough time behind it. Current notes are being kept as observations, not a final verdict.";
+
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} recommendation">
     <div class="terminal-title">// RECOMMENDATION</div>
     <div class="status-grid">
       <div class="status-cell"><span>STATUS</span><strong>${escapeHtml(record.status)}</strong></div>
-      <div class="status-cell"><span>MOOD</span><strong>${escapeHtml(record.mood || "unfiled")}</strong></div>
       <div class="status-cell"><span>PROGRESS</span><strong>${record.progress}%</strong></div>
     </div>
-    <p class="terminal-copy">Recommendation stays pending until the session has enough time behind it. Current notes are being kept as observations, not a final verdict.</p>
+    <p class="terminal-copy">${escapeHtml(recommendation)}</p>
   </section>`;
 }
 
@@ -762,8 +953,8 @@ function renderRecordContent(record, activeContent) {
     return renderTechnicalPage(record);
   }
 
-  if (activeContent === "hardware" || activeContent === "software" || activeContent === "maintenance") {
-    return renderSetupPage(record, activeContent);
+  if (activeContent === "hardware") {
+    return renderSetupPage(record);
   }
 
   if (activeContent === "recommendation") {
@@ -793,7 +984,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.5.10</span>
+      <span>v1.6.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -808,7 +999,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.5.10</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.6.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -855,9 +1046,11 @@ function memoryLoop() {
 
 function dashboard() {
   const activeProjects = updatedProjectRecords();
-  const currentGame = recordsFor("games").find((record) => record.status === "Playing") || recordsFor("games")[0];
+  const currentGame = recordsFor("games").find((record) => record.dashboardActive)
+    || recordsFor("games").find((record) => record.status === "Playing")
+    || recordsFor("games")[0];
   const latestLog = recordsFor("logs").sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 4);
+  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 3);
 
   const projectList = activeProjects.length
     ? `<div class="record-list">
@@ -877,7 +1070,6 @@ function dashboard() {
     ? `<div class="current-game">
         <div class="game-cover">
           <img src="${escapeHtml(recordImage(currentGame))}" alt="" />
-          ${currentGame.latestNote && !state.viewedNoteIds.includes(currentGame.id) ? `<i class="game-cover-signal">${escapeHtml(currentGame.latestNote)}</i>` : ""}
           <span>${escapeHtml(currentGame.title.slice(0, 10))}</span>
         </div>
         <div>
@@ -1009,7 +1201,6 @@ function recordWindow(record) {
         <dl class="record-meta">
           <div><dt>Created:</dt><dd>${record.started ? readableDate(record.started) : "Unknown"}</dd></div>
           <div><dt>Last Updated:</dt><dd>${readableDate(record.updated)}</dd></div>
-          ${record.mood ? `<div><dt>Mood:</dt><dd>${escapeHtml(record.mood)}</dd></div>` : ""}
         </dl>
 
         ${renderUpdateHistory(record)}
@@ -1017,6 +1208,12 @@ function recordWindow(record) {
     </div>
     ${renderUpdateHistoryModal(record)}
   </article>`;
+}
+
+function recordBackdrop() {
+  return state.panelOpen
+    ? `<button class="record-backdrop" type="button" aria-label="Minimize active record" data-record-backdrop></button>`
+    : "";
 }
 
 function searchPanel() {
@@ -1092,8 +1289,10 @@ function render() {
         <span>⌁</span>
       </footer>
 
+      ${recordBackdrop()}
       ${recordWindow(record)}
     </section>
+    ${state.expandedImage ? `<button class="note-image-lightbox" type="button" aria-label="Close expanded image" data-close-expanded-image><img src="${escapeHtml(state.expandedImage.src)}" alt="${escapeHtml(state.expandedImage.alt)}" /></button>` : ""}
   </main>`;
 
   syncTime();
@@ -1333,6 +1532,28 @@ document.addEventListener("click", (event) => {
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
 
+  if (target.dataset.recordBackdrop !== undefined) {
+    state.panelOpen = false;
+    state.panelMinimized = true;
+    render();
+    return;
+  }
+
+  if (target.dataset.expandImage) {
+    state.expandedImage = {
+      src: target.dataset.expandImage,
+      alt: target.dataset.expandAlt || ""
+    };
+    render();
+    return;
+  }
+
+  if (target.dataset.closeExpandedImage !== undefined) {
+    state.expandedImage = null;
+    render();
+    return;
+  }
+
   if (target.dataset.noteSearchToggle !== undefined) {
     const notesPage = target.closest(".notes-page");
 
@@ -1438,6 +1659,12 @@ document.addEventListener("input", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") {
+    return;
+  }
+
+  if (state.expandedImage) {
+    state.expandedImage = null;
+    render();
     return;
   }
 

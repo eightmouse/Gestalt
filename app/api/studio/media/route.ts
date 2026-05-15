@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     path: publicPath,
     markdown: file.type.startsWith("image/")
-      ? `![${recordId}](${publicPath})`
+      ? `![](${publicPath})`
       : `<video src="${publicPath}" controls></video>`
   });
 }

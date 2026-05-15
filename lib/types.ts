@@ -14,7 +14,6 @@ export type RecordEntry = {
   status: string;
   started?: string;
   updated: string;
-  mood?: string;
   summary: string;
   banner?: string;
   progress: number;

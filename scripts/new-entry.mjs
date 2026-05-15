@@ -29,7 +29,6 @@ mkdirSync(recordsDir, { recursive: true });
 
 const type = args.type || defaultType(args.section);
 const status = args.status || defaultStatus(args.section);
-const mood = args.mood || "unfiled";
 const summary = args.summary || "Short summary goes here.";
 const progress = Number.isFinite(Number(args.progress)) ? Number(args.progress) : 0;
 const priority = Number.isFinite(Number(args.priority)) ? Number(args.priority) : 50;
@@ -42,7 +41,6 @@ type: "${escapeYaml(type)}"
 status: "${escapeYaml(status)}"
 started: "${today}"
 updated: "${today}"
-mood: "${escapeYaml(mood)}"
 summary: "${escapeYaml(summary)}"
 progress: ${Math.max(0, Math.min(100, progress))}
 priority: ${priority}
@@ -127,7 +125,6 @@ Options:
   --type      Optional type label
   --status    Optional status label
   --date      Optional YYYY-MM-DD date
-  --mood      Optional mood label
   --summary   Optional short summary
   --progress  Optional 0-100 number
   --priority  Optional sort number

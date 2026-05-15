@@ -123,7 +123,6 @@ export function getRecords(): RecordEntry[] {
         status: toString(data.status, "Observed"),
         started: toString(data.started),
         updated: toString(data.updated, "2026-05-13"),
-        mood: toString(data.mood),
         summary: toString(data.summary, "No summary recorded."),
         banner: toString(data.banner),
         progress: Math.max(0, Math.min(100, toNumber(data.progress, 0))),

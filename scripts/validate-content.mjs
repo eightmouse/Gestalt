@@ -23,6 +23,14 @@ function parseScalar(rawValue) {
     return Number(value);
   }
 
+  if (value === "true") {
+    return true;
+  }
+
+  if (value === "false") {
+    return false;
+  }
+
   return value.replace(/^["']|["']$/g, "");
 }
 

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse, type NextRequest } from "next/server";
 import {
@@ -8,8 +8,10 @@ import {
   normalizeTags,
   slugify
 } from "@/lib/studio";
+import { writeStaticRecords } from "@/lib/static-export";
 
 type EntryPayload = {
+  originalId?: string;
   id?: string;
   title?: string;
   section?: string;
@@ -17,14 +19,21 @@ type EntryPayload = {
   status?: string;
   started?: string;
   updated?: string;
-  mood?: string;
   summary?: string;
   banner?: string;
+  headerImage?: string;
   progress?: number | string;
   priority?: number | string;
   tags?: string[] | string;
   milestones?: string;
+  hardware?: string;
+  technicalStack?: string;
+  recommendation?: string;
+  dashboardActive?: boolean | string;
+  steamAppId?: number | string;
   playtime?: string;
+  lastPlayed?: string;
+  achievementCount?: string;
   body?: string;
 };
 
@@ -57,7 +66,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Body cannot be empty." }, { status: 400 });
   }
 
-  const id = slugify(clean(payload.id) || title);
+  const originalId = slugify(clean(payload.originalId));
+  const id = slugify(clean(payload.id) || originalId || title);
 
   if (!id) {
     return NextResponse.json({ error: "Could not derive a safe entry id." }, { status: 400 });
@@ -72,7 +82,13 @@ export async function POST(request: NextRequest) {
   const progress = clampNumber(payload.progress, 0, 100, 0);
   const priority = clampNumber(payload.priority, -999, 9999, 50);
   const tags = normalizeTags(payload.tags);
+  const dashboardActive = section === "games" && toBoolean(payload.dashboardActive);
+  const steamAppId = parseOptionalInteger(payload.steamAppId);
   const filePath = path.join(recordsDirectory, `${id}.mdx`);
+
+  if (dashboardActive) {
+    await unsetOtherActiveGames(id);
+  }
 
   const lines = [
     "---",
@@ -82,13 +98,20 @@ export async function POST(request: NextRequest) {
     `status: "${escapeFrontmatter(clean(payload.status) || defaultStatus(section))}"`,
     ...(started ? [`started: "${started}"`] : []),
     `updated: "${updated}"`,
-    `mood: "${escapeFrontmatter(clean(payload.mood) || "unfiled")}"`,
     `summary: "${escapeFrontmatter(clean(payload.summary) || "No summary recorded.")}"`,
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
+    ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
     `progress: ${progress}`,
     `priority: ${priority}`,
-    `tags: [${tags.join(", ")}]`,
+    ...(dashboardActive ? ["dashboardActive: true"] : []),
+    ...(steamAppId ? [`steamAppId: ${steamAppId}`] : []),
     ...(clean(payload.playtime) ? [`playtime: "${escapeFrontmatter(clean(payload.playtime))}"`] : []),
+    ...(clean(payload.lastPlayed) ? [`lastPlayed: "${escapeFrontmatter(clean(payload.lastPlayed))}"`] : []),
+    ...(clean(payload.achievementCount) ? [`achievementCount: "${escapeFrontmatter(clean(payload.achievementCount))}"`] : []),
+    ...(clean(payload.hardware) ? [`hardware: "${encodeFrontmatterTextBlock(clean(payload.hardware))}"`] : []),
+    ...(clean(payload.technicalStack) ? [`technicalStack: "${encodeFrontmatterTextBlock(clean(payload.technicalStack))}"`] : []),
+    ...(clean(payload.recommendation) ? [`recommendation: "${encodeFrontmatterTextBlock(clean(payload.recommendation))}"`] : []),
+    `tags: [${tags.join(", ")}]`,
     `milestones: "${escapeFrontmatter(clean(payload.milestones))}"`,
     "---",
     body,
@@ -98,14 +121,42 @@ export async function POST(request: NextRequest) {
   await mkdir(recordsDirectory, { recursive: true });
   await writeFile(filePath, lines.join("\n"), "utf8");
 
+  if (originalId && originalId !== id) {
+    await removeRecordFile(originalId);
+  }
+
+  await writeStaticRecords();
+
   return NextResponse.json({
     id,
     path: path.relative(process.cwd(), filePath).replaceAll("\\", "/")
   });
 }
 
+export async function DELETE(request: NextRequest) {
+  if (!isLocalStudioRequest(request)) {
+    return NextResponse.json({ error: "Studio writes are local-development only." }, { status: 404 });
+  }
+
+  const payload = (await request.json()) as Pick<EntryPayload, "id" | "originalId">;
+  const id = slugify(clean(payload.id) || clean(payload.originalId));
+
+  if (!id) {
+    return NextResponse.json({ error: "Record id is required." }, { status: 400 });
+  }
+
+  await removeRecordFile(id);
+  await writeStaticRecords();
+
+  return NextResponse.json({ id });
+}
+
 function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function encodeFrontmatterTextBlock(value: string): string {
+  return escapeFrontmatter(value).replace(/\r?\n/g, "\\n");
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
@@ -116,6 +167,59 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   }
 
   return Math.max(min, Math.min(max, Math.round(number)));
+}
+
+function toBoolean(value: unknown): boolean {
+  return value === true || value === "true" || value === "on" || value === "1";
+}
+
+function parseOptionalInteger(value: unknown): number | null {
+  const raw = typeof value === "number" ? String(value) : clean(value);
+
+  if (!/^\d+$/.test(raw)) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+async function unsetOtherActiveGames(activeId: string): Promise<void> {
+  await mkdir(recordsDirectory, { recursive: true });
+  const filenames = await readdir(recordsDirectory);
+
+  await Promise.all(
+    filenames
+      .filter((filename) => filename.endsWith(".mdx") && filename !== `${activeId}.mdx`)
+      .map(async (filename) => {
+        const filePath = path.join(recordsDirectory, filename);
+        const source = await readFile(filePath, "utf8");
+
+        if (!/section:\s*["']?games["']?/.test(source) || !/dashboardActive:\s*true/.test(source)) {
+          return;
+        }
+
+        const next = source.replace(/\r?\ndashboardActive:\s*true\s*(?=\r?\n)/, "\n");
+
+        if (next !== source) {
+          await writeFile(filePath, next, "utf8");
+        }
+      })
+  );
+}
+
+async function removeRecordFile(id: string): Promise<void> {
+  const filePath = path.join(recordsDirectory, `${id}.mdx`);
+
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "ENOENT") {
+      return;
+    }
+
+    throw error;
+  }
 }
 
 function defaultType(section: string): string {
