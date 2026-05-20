@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -172,6 +172,21 @@ function ensureThereAreChanges() {
   }
 }
 
+function refreshStaticCacheBusters() {
+  const indexPath = path.join(root, "index.html");
+  const source = readFileSync(indexPath, "utf8");
+  const token = Date.now();
+  const next = source
+    .replace(/app\/globals\.css(?:\?v=\d+)?/g, `app/globals.css?v=${token}`)
+    .replace(/public\/data\/records\.js(?:\?v=\d+)?/g, `public/data/records.js?v=${token}`)
+    .replace(/static-app\.js(?:\?v=\d+)?/g, `static-app.js?v=${token}`);
+
+  if (next !== source) {
+    writeFileSync(indexPath, next, "utf8");
+    console.log(`Updated index.html cache token: ${token}`);
+  }
+}
+
 const { dryRun, message, skipTypecheck } = parseArgs(process.argv.slice(2));
 
 console.log("Gestalt site publish");
@@ -181,6 +196,7 @@ if (dryRun) {
 }
 
 run("node", ["scripts/export-static-records.mjs"]);
+refreshStaticCacheBusters();
 run("node", ["scripts/validate-content.mjs"]);
 if (skipTypecheck) {
   console.log("\n> TypeScript check skipped for content-only publish");

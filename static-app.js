@@ -1037,7 +1037,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.10.0</span>
+      <span>v1.10.1</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1052,7 +1052,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.10.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.10.1</dd></div>
       </dl>
     </div>
   </aside>`;
