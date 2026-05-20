@@ -3607,6 +3607,93 @@ input.studio-title-edit {
   letter-spacing: 0.08em;
 }
 
+.studio-publish-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(2, 3, 2, 0.72);
+}
+
+.studio-publish-panel {
+  inline-size: min(720px, 100%);
+  max-block-size: min(680px, calc(100vh - 48px));
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(217, 213, 193, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 48%),
+    rgba(7, 8, 7, 0.96);
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.studio-publish-panel p,
+.studio-publish-panel span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.studio-publish-panel h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(28px, 4vw, 46px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+}
+
+.studio-publish-panel pre {
+  max-block-size: 320px;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border: 1px solid rgba(217, 213, 193, 0.14);
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--muted);
+  font: 12px/1.55 var(--mono);
+  white-space: pre-wrap;
+}
+
+.studio-publish-panel button {
+  justify-self: end;
+  min-block-size: 36px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.026);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.studio-publish-panel button:disabled {
+  opacity: 0.48;
+  cursor: wait;
+}
+
+.studio-publish-panel.is-success {
+  border-color: rgba(184, 176, 154, 0.42);
+}
+
+.studio-publish-panel.is-error {
+  border-color: rgba(238, 92, 74, 0.62);
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 1px rgba(238, 92, 74, 0.1);
+}
+
+.studio-publish-panel.is-error h2 {
+  color: #f0b7a8;
+}
+
 @keyframes cursor-blink {
   50% {
     opacity: 0;

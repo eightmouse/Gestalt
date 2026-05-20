@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.7.0-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.8.0-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -15,4 +15,4 @@ This is the first working version, so there are not many entries yet. I have jus
 
 Currently being extra careful because of the npm ordeal.
 
-Current public version: `v1.7.0`.
+Current public version: `v1.8.0`.

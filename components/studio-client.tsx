@@ -37,6 +37,13 @@ type StudioClientProps = {
   records: RecordEntry[];
 };
 
+type PublishState = {
+  phase: "running" | "success" | "error";
+  title: string;
+  detail: string;
+  output?: string;
+};
+
 const studioSections: Array<{
   id: StudioSection;
   code: string;
@@ -62,6 +69,7 @@ export function StudioClient({ records }: StudioClientProps) {
   const [message, setMessage] = useState("Studio edit mode. Changes stay local until you save.");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [publishState, setPublishState] = useState<PublishState | null>(null);
   const bodyDraftRef = useRef(form.body);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const fileTargetRef = useRef<"body" | "banner" | "headerImage">("body");
@@ -127,6 +135,11 @@ export function StudioClient({ records }: StudioClientProps) {
   const save = async () => {
     setSaving(true);
     setMessage("Writing record...");
+    setPublishState({
+      phase: "running",
+      title: "Saving record",
+      detail: "Writing MDX and refreshing static archive data."
+    });
 
     try {
       const response = await fetch("/api/studio/entry", {
@@ -149,9 +162,42 @@ export function StudioClient({ records }: StudioClientProps) {
       update("id", data.id);
       update("originalId", data.id);
       update("body", bodyDraftRef.current);
-      setMessage(`Saved ${data.path}. Refresh the archive to load the updated file.`);
+      setMessage(`Saved ${data.path}. Publishing to GitHub...`);
+      setPublishState({
+        phase: "running",
+        title: "Publishing archive",
+        detail: "Running checks, committing, and pushing to GitHub."
+      });
+
+      const publishResponse = await fetch("/api/studio/publish", { method: "POST" });
+      const publishData = await publishResponse.json();
+
+      if (!publishResponse.ok) {
+        setMessage("Saved locally, but publish failed.");
+        setPublishState({
+          phase: "error",
+          title: "Publish blocked",
+          detail: publishData.error || "The record was saved locally, but GitHub publish failed.",
+          output: publishData.output
+        });
+        return;
+      }
+
+      setMessage("Saved and published to GitHub.");
+      setPublishState({
+        phase: "success",
+        title: "Archive published",
+        detail: publishData.message || "GitHub received the latest archive update.",
+        output: publishData.output
+      });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Save failed.");
+      const detail = error instanceof Error ? error.message : "Save failed.";
+      setMessage(detail);
+      setPublishState({
+        phase: "error",
+        title: "Save failed",
+        detail
+      });
     } finally {
       setSaving(false);
     }
@@ -313,7 +359,7 @@ export function StudioClient({ records }: StudioClientProps) {
             <p className="subtle">A quiet copy of the archive for editing records before saving them to MDX.</p>
           </div>
           <div className="studio-actions">
-            <button type="button" disabled={saving} onClick={save}>{saving ? "Saving..." : "Save Record"}</button>
+            <button type="button" disabled={saving} onClick={save}>{saving ? "Publishing..." : "Save Record"}</button>
             <button type="button" onClick={discard}>Discard</button>
             <a href="/">Return</a>
             {mode === "edit" && selectedId !== "__new" ? (
@@ -379,8 +425,26 @@ export function StudioClient({ records }: StudioClientProps) {
           )}
         </div>
       </section>
+      {publishState ? (
+        <div className="studio-publish-layer" role="alertdialog" aria-modal="true" aria-labelledby="studio-publish-title">
+          <section className={`studio-publish-panel is-${publishState.phase}`}>
+            <p>// PUBLISH STATUS</p>
+            <h2 id="studio-publish-title">{publishState.title}</h2>
+            <span>{publishState.detail}</span>
+            {publishState.output ? <pre>{formatPublishOutput(publishState.output)}</pre> : null}
+            <button type="button" disabled={publishState.phase === "running"} onClick={() => setPublishState(null)}>
+              {publishState.phase === "running" ? "Working..." : "Close"}
+            </button>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
+}
+
+function formatPublishOutput(output: string): string {
+  const lines = output.trim().split(/\r?\n/).filter(Boolean);
+  return lines.slice(-34).join("\n");
 }
 
 const StudioNav = memo(function StudioNav({
