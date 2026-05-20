@@ -1405,18 +1405,18 @@ button:focus-visible {
 }
 
 .memory-core {
-  inset: 23% 26%;
-  border: 1px solid rgba(217, 213, 193, 0.24);
-  border-radius: 50%;
+  inset: 22% 24%;
+  border: 0;
+  clip-path: polygon(20% 16%, 61% 8%, 86% 32%, 78% 68%, 49% 91%, 16% 74%, 8% 38%);
   background:
-    radial-gradient(circle at 50% 50%, rgba(8, 9, 8, 0.62) 0 18%, transparent 19%),
+    linear-gradient(90deg, transparent 0 18%, rgba(217, 213, 193, 0.12) 19% 20%, transparent 21% 78%, rgba(217, 213, 193, 0.09) 79% 80%, transparent 81%),
+    linear-gradient(147deg, transparent 0 31%, rgba(236, 230, 211, 0.2) 32% 33%, transparent 34% 100%),
+    linear-gradient(28deg, transparent 0 56%, rgba(217, 213, 193, 0.12) 57% 58%, transparent 59% 100%),
     radial-gradient(circle at 42% 34%, rgba(236, 230, 211, 0.42) 0 2px, transparent 3px),
     radial-gradient(circle at 58% 58%, rgba(236, 230, 211, 0.22) 0 1px, transparent 2px),
-    radial-gradient(circle at 50% 52%, rgba(217, 213, 193, 0.2), transparent 43%),
-    linear-gradient(115deg, transparent 0 42%, rgba(217, 213, 193, 0.16) 43% 44%, transparent 45% 100%),
-    linear-gradient(25deg, transparent 0 51%, rgba(217, 213, 193, 0.09) 52% 53%, transparent 54% 100%);
+    radial-gradient(circle at 50% 52%, rgba(217, 213, 193, 0.16), transparent 38%);
   opacity: 0.78;
-  transform: translate3d(0, 0, 0) scale(1);
+  transform: translate3d(0, 0, 0);
   animation: memory-sphere 7.5s ease-in-out infinite;
 }
 
@@ -1424,26 +1424,26 @@ button:focus-visible {
 .memory-core::after {
   content: "";
   position: absolute;
-  inset: 10%;
-  border-radius: 50%;
+  inset: 12%;
   background:
-    conic-gradient(from 42deg, transparent 0 24deg, rgba(217, 213, 193, 0.16) 25deg 62deg, transparent 63deg 146deg, rgba(217, 213, 193, 0.1) 147deg 178deg, transparent 179deg 256deg, rgba(217, 213, 193, 0.14) 257deg 292deg, transparent 293deg 360deg);
-  -webkit-mask: radial-gradient(ellipse, transparent 0 68%, #000 69% 72%, transparent 73%);
-  mask: radial-gradient(ellipse, transparent 0 68%, #000 69% 72%, transparent 73%);
+    linear-gradient(118deg, transparent 0 24%, rgba(217, 213, 193, 0.16) 25% 27%, transparent 28% 100%),
+    linear-gradient(31deg, transparent 0 66%, rgba(217, 213, 193, 0.12) 67% 69%, transparent 70% 100%),
+    radial-gradient(circle at 27% 34%, rgba(236, 230, 211, 0.18) 0 1px, transparent 2px);
+  clip-path: polygon(8% 28%, 40% 6%, 89% 19%, 76% 58%, 51% 86%, 18% 70%);
 }
 
 .memory-core::before {
-  transform: rotate(-18deg) scaleX(1.18);
+  transform: rotate(-10deg);
   animation: memory-shell-a 6.2s ease-in-out infinite;
 }
 
 .memory-core::after {
-  inset: 22%;
+  inset: 23%;
   background:
-    conic-gradient(from 12deg, transparent 0 44deg, rgba(217, 213, 193, 0.12) 45deg 88deg, transparent 89deg 184deg, rgba(217, 213, 193, 0.09) 185deg 226deg, transparent 227deg 360deg);
-  -webkit-mask: radial-gradient(ellipse, transparent 0 63%, #000 64% 68%, transparent 69%);
-  mask: radial-gradient(ellipse, transparent 0 63%, #000 64% 68%, transparent 69%);
-  transform: rotate(26deg) scaleX(0.82);
+    linear-gradient(73deg, transparent 0 37%, rgba(217, 213, 193, 0.16) 38% 40%, transparent 41% 100%),
+    linear-gradient(154deg, transparent 0 53%, rgba(217, 213, 193, 0.1) 54% 56%, transparent 57% 100%);
+  clip-path: polygon(23% 12%, 75% 21%, 88% 62%, 48% 87%, 12% 54%);
+  transform: rotate(18deg);
   animation: memory-shell-b 5.7s ease-in-out infinite;
 }
 
@@ -4293,15 +4293,15 @@ input.studio-title-edit {
 @keyframes memory-sphere {
   0%,
   100% {
-    border-radius: 48% 52% 51% 49% / 50% 46% 54% 50%;
     opacity: 0.64;
-    transform: translate3d(-1%, 1%, 0) scale(0.96);
+    clip-path: polygon(20% 16%, 61% 8%, 86% 32%, 78% 68%, 49% 91%, 16% 74%, 8% 38%);
+    transform: translate3d(-1%, 1%, 0) rotate(-1deg);
   }
 
   46% {
-    border-radius: 53% 47% 48% 52% / 45% 53% 47% 55%;
     opacity: 0.86;
-    transform: translate3d(2%, -1%, 0) scale(1.05);
+    clip-path: polygon(16% 21%, 56% 10%, 88% 28%, 82% 63%, 54% 88%, 19% 79%, 10% 43%);
+    transform: translate3d(2%, -1%, 0) rotate(2deg);
   }
 }
 
@@ -4309,12 +4309,12 @@ input.studio-title-edit {
   0%,
   100% {
     opacity: 0.34;
-    transform: rotate(-18deg) scaleX(1.12);
+    transform: rotate(-10deg) translateX(-1%);
   }
 
   50% {
     opacity: 0.58;
-    transform: rotate(14deg) scaleX(1.28);
+    transform: rotate(13deg) translateX(2%);
   }
 }
 
@@ -4322,12 +4322,12 @@ input.studio-title-edit {
   0%,
   100% {
     opacity: 0.22;
-    transform: rotate(26deg) scaleX(0.78);
+    transform: rotate(18deg) translateY(1%);
   }
 
   50% {
     opacity: 0.46;
-    transform: rotate(-22deg) scaleX(0.95);
+    transform: rotate(-18deg) translateY(-2%);
   }
 }
 
