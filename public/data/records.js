@@ -396,7 +396,9 @@ window.__GESTALT_RECORDS = [
     "banner": "",
     "headerImage": "",
     "samples": [],
-    "attachments": [],
+    "attachments": [
+      "public/media/records/a-magnificent-signal/1779291253082-screenshot-2026-05-20-233351.png"
+    ],
     "progress": 100,
     "priority": 50,
     "dashboardActive": false,
