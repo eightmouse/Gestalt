@@ -34,12 +34,9 @@ Thoughts from the session.
 :::note 13 / 05 / 2026 - Older Note Title
 Older note content.
 :::
-
-## Update Index
-- 14 / 05 / 2026 - Short update label.
 ```
 
-Use `:::note ... :::` for each game note. The Notes page turns each note into an expandable record, and `## Update Index` is shown from the right-side history control as a small scrollable window.
+Use `:::note ... :::` for each game note. The Notes page turns each note into an expandable record, and the record sidebar can search notes by title or date.
 
 ## Local Studio
 
@@ -69,6 +66,22 @@ node scripts/validate-content.mjs
 
 The validator checks required frontmatter, section names, date format, progress range, tags, duplicate IDs, and empty bodies.
 
+## Publish To GitHub Pages
+
+After saving in Studio, run:
+
+```powershell
+corepack pnpm run site:publish -- --message "Update archive"
+```
+
+That command exports the static data used by `index.html`, validates content, runs the TypeScript check, checks `static-app.js`, scans for obvious private material, commits, and pushes the current branch.
+
+Use a clear message when you want the GitHub history to say exactly what changed:
+
+```powershell
+corepack pnpm run site:publish -- -m "Add Persona notes"
+```
+
 ## Publishing Model
 
 The public site should stay read-only. Do not add a public admin panel unless there is a strong reason.
@@ -76,9 +89,8 @@ The public site should stay read-only. Do not add a public admin panel unless th
 Recommended flow:
 
 1. Edit or create records locally.
-2. Run content validation.
-3. Commit and push to GitHub.
-4. Let GitHub Pages or Vercel rebuild the public site.
+2. Run `corepack pnpm run site:publish -- --message "Your update message"`.
+3. Let GitHub Pages rebuild the public site.
 
 Only GitHub users with write access to the repository can change entries. Public visitors can read the built site but cannot write content.
 

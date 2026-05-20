@@ -85,7 +85,7 @@ window.__GESTALT_RECORDS = [
         "status": "Pending"
       }
     ],
-    "body": "## Description\nI use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working.\n\nGestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.\n\nThis is the first working version, so there are not many entries yet. I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.\n\nCurrently being extra careful because of the npm ordeal."
+    "body": "## Description\nI use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working.\n\nGestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.\n\nThis is the first working version, so there are not many entries yet. I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.\n\nCurrently being extra careful because of the npm ordeal.\n\n![](public/media/records/gestalt/1779262071066-screenshot-2026-05-20-152713.png)\n\n![](public/media/records/gestalt/1779262080303-screenshot-2026-05-20-152713.png)"
   },
   {
     "id": "kira-patch",
@@ -102,7 +102,7 @@ window.__GESTALT_RECORDS = [
     "priority": 2,
     "dashboardActive": false,
     "hardware": "",
-    "technicalStack": "",
+    "technicalStack": "Lorem ipsum",
     "recommendation": "",
     "tags": [
       "kirapatch",
@@ -127,7 +127,7 @@ window.__GESTALT_RECORDS = [
         "status": "In Progress"
       }
     ],
-    "body": "## Description & Thoughts\nThis is one of my main projects. I am still working on it, although updates are coming in slowly because it is not an easy task.\n\nI have made a lot of progress on it, and as I said in the repo, I am in the final stretch of Method 1.\n\nI apologize if the wait has been long, but I do not want this to just \"work lol\". It has to be near perfection, or at least a shiny Pokemon generated through this method has to be near indistinguishable."
+    "body": ":::note 20 / 05 / 2026 - What happened to KiraPatch?\nHelloo.\nKiraParch is alive and well, I've been working on in this whole time. I took some breaks to finish Gestalt so I can post more in-depth notes and rambles of what is going on with the stuff I'm working on.\nKiraPatch is progressing, I've verified all of the games and having issues only with 2 so far and I can't just release an half update.\nThe big time consuming part is verifying that each Method is producing shinies, legitimately and that they are within odds. It's a boring process that requires lots of trial and errors and even tho I build an harness around it to speed up the process/help, it's not that easy.\n\nInitially I was not planning on going full in and make the shiny '100%' legal, however I also feel like it was an half baked truth, so here we are now.\n\nIt's no possible to make a '100%  legal' shiny, in a sense that Pokemon can any day change the rules and make everything, including pkhex, obsolete or just 'tools'.\nThe goal here is to make shinies that are perfect in every aspect and that pkhex will always consider as legal, unless the aforementioned change by Pokemon.\nCurrently pkhex, checks for specific 'Paths', so when Pokemon are generated using pkhex, they're simulating a real encounter.. HOWEVER:\nUnder scrutiny, those pokemon can be indentified as genned and therefore illegal. So pkhex is not producing perfectly legal, unrecognizable pokemons.\nWe're basically all at the mercy of Pokemon, just accepting genned pokemon without doing a deep check.\n\nWhat does this entail? So long as Pokemon themselves are okay with pokemon being genned, I can make patchers for all the different generations basically, so that people can experience shy hunting without having to deal with huge odds.. but at the same time getting 'legit' shinies.\n\nNB:\nNot throwing shades at pkhex, I just want to clarify cause many people are of the idea that genning Pokemon is 100% legal, safe etc etc.\nIt isn't and the devs of pkhex know too, no devs deals in absolute.. those are sith- jokes aside..\npkhex is an amazing tool to make competitive ready teams/have fun!\n:::\n\n:::note 15 / 05 / 2026 - First note!\n## Description & Thoughts\nThis is one of my main projects. I am still working on it, although updates are coming in slowly because it is not an easy task.\n\nI have made a lot of progress on it, and as I said in the repo, I am in the final stretch of Method 1.\n\nI apologize if the wait has been long, but I do not want this to just \"work lol\". It has to be near perfection, or at least a shiny Pokemon generated through this method has to be near indistinguishable.\n:::"
   },
   {
     "id": "sootopylis",
@@ -372,7 +372,7 @@ window.__GESTALT_RECORDS = [
     "status": "Draft",
     "started": "2026-05-20",
     "updated": "2026-05-20",
-    "summary": "Opening day???????????",
+    "summary": "Ready to open???",
     "banner": "",
     "headerImage": "",
     "progress": 100,
@@ -385,7 +385,7 @@ window.__GESTALT_RECORDS = [
       "logs"
     ],
     "milestones": [],
-    "body": ":::note 20 / 05 / 2026 - Closer than I thought\nI think I can actually host on pages very very soon, I fixed part of the stuff that was bothering me:\nLayering issues\nSearch button misbehaving\nUI/UX spacing/sizing\nAnd more..\n\nNow I'm doing a quick performance check, cause I noticed some duplicates assets and stuff getting painted twice for no reason!\n\nOnce these are done, I'll check very quickly how I wanna get this done and host with pages, then it officially on!\n:::\n\n:::note 20 / 05 / 2026 - An Opening Signal\nSo beside getting my ass kicked in Madarame's palace, I've started doing some fixes in the UI/UX since I've found lots of bugs while adding entries in the '03_Games' section.\nI think I'm gonna host on GitHub today, just doing some minor polishing here and there cause I want this to be usable by people that come by ofc.\n\nThat said, I really like how it is turning out and hopefully I get to implement all the ideas I have without making it into a huge mess!\n:::"
+    "body": ":::note 20 / 05 / 2026 - Page is up!\nPage is up and running!\n\nFor anyone reading this, hi!\nThis is my personal space, I'll post updates and rambles about the different things I'm working on and the games I'm playing/played!\nI expect the space to change a bit overtime, this is just a very solid foundation that I've been building for quite a while~\n\nCheers!\n:::\n\n:::note 20 / 05 / 2026 - An Opening Signal\nSo beside getting my ass kicked in Madarame's palace, I've started doing some fixes in the UI/UX since I've found lots of bugs while adding entries in the '03_Games' section.\nI think I'm gonna host on GitHub today, just doing some minor polishing here and there cause I want this to be usable by people that come by ofc.\n\nThat said, I really like how it is turning out and hopefully I get to implement all the ideas I have without making it into a huge mess!\n:::"
   },
   {
     "id": "a-messy-signal",

@@ -1,0 +1,211 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+
+const root = process.cwd();
+
+function commandFor(command) {
+  if (process.platform === "win32" && ["corepack", "npm", "pnpm"].includes(command)) {
+    return `${command}.cmd`;
+  }
+
+  return command;
+}
+
+function parseArgs(args) {
+  let message = "Update archive content";
+  let dryRun = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if ((arg === "--message" || arg === "-m") && args[index + 1]) {
+      message = args[index + 1];
+      index += 1;
+    } else if (arg === "--dry-run") {
+      dryRun = true;
+    }
+  }
+
+  return { dryRun, message };
+}
+
+function run(command, args, options = {}) {
+  console.log(`\n> ${command} ${args.join(" ")}`);
+  const result = spawnSync(commandFor(command), args, {
+    cwd: root,
+    stdio: "inherit",
+    ...options
+  });
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+}
+
+function capture(command, args) {
+  const result = spawnSync(commandFor(command), args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  if (result.status !== 0) {
+    if (result.stderr) {
+      process.stderr.write(result.stderr);
+    }
+
+    process.exit(result.status ?? 1);
+  }
+
+  return result.stdout;
+}
+
+function listPublishableFiles() {
+  return capture("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"])
+    .split("\0")
+    .filter(Boolean);
+}
+
+function ensureNoTrackedEnvFiles() {
+  const trackedEnvFiles = capture("git", ["ls-files", ".env", ".env.local", ".env.production", ".env.development"])
+    .split(/\r?\n/)
+    .filter(Boolean);
+
+  if (trackedEnvFiles.length > 0) {
+    console.error("\nPublish blocked: environment files are tracked by git:");
+    for (const file of trackedEnvFiles) {
+      console.error(`- ${file}`);
+    }
+    process.exit(1);
+  }
+}
+
+function isLikelyTextFile(file) {
+  const extension = path.extname(file).toLowerCase();
+  const textExtensions = new Set([
+    "",
+    ".css",
+    ".html",
+    ".js",
+    ".json",
+    ".jsx",
+    ".md",
+    ".mdx",
+    ".mjs",
+    ".svg",
+    ".toml",
+    ".ts",
+    ".tsx",
+    ".txt",
+    ".yml",
+    ".yaml"
+  ]);
+
+  return textExtensions.has(extension);
+}
+
+function shouldSkipSecretScan(file) {
+  const normalized = file.replaceAll("\\", "/");
+
+  return (
+    normalized.startsWith(".git/") ||
+    normalized.startsWith(".next/") ||
+    normalized.startsWith(".pnpm-store/") ||
+    normalized.startsWith("node_modules/") ||
+    !isLikelyTextFile(file)
+  );
+}
+
+function scanForPrivateMaterial() {
+  const patterns = [
+    ["Steam API key assignment", /\bSTEAM_API_KEY\s*=\s*["']?[A-Za-z0-9]{16,}/],
+    ["Steam ID assignment", /\bSTEAM_ID\s*=\s*["']?[0-9]{12,}/],
+    ["OpenAI style API key", /\bsk-[A-Za-z0-9_-]{20,}/],
+    ["GitHub classic token", /\bghp_[A-Za-z0-9_]{20,}/],
+    ["GitHub fine-grained token", /\bgithub_pat_[A-Za-z0-9_]{20,}/],
+    ["Google API key", /\bAIza[0-9A-Za-z_-]{20,}/],
+    ["Private key block", /-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----/],
+    ["Local Windows user path", /C:\\Users\\lucam\\/i]
+  ];
+  const findings = [];
+
+  for (const file of listPublishableFiles()) {
+    if (shouldSkipSecretScan(file)) {
+      continue;
+    }
+
+    let source = "";
+
+    try {
+      source = readFileSync(path.join(root, file), "utf8");
+    } catch {
+      continue;
+    }
+
+    for (const [label, pattern] of patterns) {
+      if (pattern.test(source)) {
+        findings.push(`${file}: ${label}`);
+      }
+    }
+  }
+
+  if (findings.length > 0) {
+    console.error("\nPublish blocked: possible private material found:");
+    for (const finding of findings) {
+      console.error(`- ${finding}`);
+    }
+    console.error("\nRemove it or add an intentional ignore before publishing.");
+    process.exit(1);
+  }
+}
+
+function ensureThereAreChanges() {
+  const status = capture("git", ["status", "--porcelain"]).trim();
+
+  if (!status) {
+    console.log("\nNo changes to publish.");
+    process.exit(0);
+  }
+}
+
+const { dryRun, message } = parseArgs(process.argv.slice(2));
+
+console.log("Gestalt site publish");
+console.log(`Commit message: ${message}`);
+if (dryRun) {
+  console.log("Dry run: checks will run, but nothing will be committed or pushed.");
+}
+
+run("node", ["scripts/export-static-records.mjs"]);
+run("node", ["scripts/validate-content.mjs"]);
+run("node", ["node_modules/typescript/bin/tsc", "--noEmit"]);
+run("node", ["--check", "static-app.js"]);
+run("git", ["diff", "--check"]);
+
+ensureNoTrackedEnvFiles();
+scanForPrivateMaterial();
+ensureThereAreChanges();
+
+if (dryRun) {
+  console.log("\nDry run passed. Run without --dry-run to commit and push.");
+  process.exit(0);
+}
+
+run("git", ["add", "-A"]);
+run("git", ["diff", "--cached", "--check"]);
+scanForPrivateMaterial();
+
+const stagedDiff = spawnSync(commandFor("git"), ["diff", "--cached", "--quiet"], { cwd: root });
+
+if (stagedDiff.status === 0) {
+  console.log("\nNo staged changes to publish.");
+  process.exit(0);
+}
+
+run("git", ["commit", "-m", message]);
+
+const branch = capture("git", ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+run("git", ["push", "origin", branch]);
+
+console.log(`\nPublished ${branch} to GitHub.`);
