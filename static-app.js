@@ -1259,7 +1259,7 @@ function weatherPanel() {
 }
 
 function memoryLoop() {
-  return `<div class="memory-loop" aria-hidden="true">
+  return `<div class="memory-loop" aria-hidden="true" data-memory-loop>
     <span class="memory-core"></span>
     <span class="memory-orbit"></span>
     <span class="memory-gate"></span>
@@ -1779,6 +1779,48 @@ async function requestWeather() {
     syncWeather();
   }
 }
+
+function setMemoryPointer(node, x, y) {
+  node.style.setProperty("--memory-core-x", `${(x * 4).toFixed(2)}px`);
+  node.style.setProperty("--memory-core-y", `${(y * 4).toFixed(2)}px`);
+  node.style.setProperty("--memory-orbit-x", `${(x * -6).toFixed(2)}px`);
+  node.style.setProperty("--memory-orbit-y", `${(y * -5).toFixed(2)}px`);
+  node.style.setProperty("--memory-shard-x", `${(x * 7).toFixed(2)}px`);
+  node.style.setProperty("--memory-shard-y", `${(y * 5).toFixed(2)}px`);
+  node.style.setProperty("--memory-axis-x", `${(x * 2).toFixed(2)}px`);
+  node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
+}
+
+let memoryFrame = 0;
+
+document.addEventListener("pointermove", (event) => {
+  const node = event.target instanceof Element ? event.target.closest("[data-memory-loop]") : null;
+
+  if (!(node instanceof HTMLElement)) {
+    return;
+  }
+
+  const rect = node.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+  const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+
+  if (memoryFrame) {
+    window.cancelAnimationFrame(memoryFrame);
+  }
+
+  memoryFrame = window.requestAnimationFrame(() => {
+    setMemoryPointer(node, x, y);
+    memoryFrame = 0;
+  });
+});
+
+document.addEventListener("pointerout", (event) => {
+  const node = event.target instanceof Element ? event.target.closest("[data-memory-loop]") : null;
+
+  if (node instanceof HTMLElement && !node.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) {
+    setMemoryPointer(node, 0, 0);
+  }
+});
 
 document.addEventListener("click", (event) => {
   const clickTarget = event.target;

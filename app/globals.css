@@ -1361,6 +1361,14 @@ button:focus-visible {
 }
 
 .memory-loop {
+  --memory-axis-x: 0px;
+  --memory-axis-y: 0px;
+  --memory-core-x: 0px;
+  --memory-core-y: 0px;
+  --memory-orbit-x: 0px;
+  --memory-orbit-y: 0px;
+  --memory-shard-x: 0px;
+  --memory-shard-y: 0px;
   position: relative;
   min-block-size: 100%;
   block-size: 100%;
@@ -1409,11 +1417,11 @@ button:focus-visible {
   border: 0;
   clip-path: polygon(20% 16%, 61% 8%, 86% 32%, 78% 68%, 49% 91%, 16% 74%, 8% 38%);
   background:
-    linear-gradient(90deg, transparent 0 18%, rgba(217, 213, 193, 0.12) 19% 20%, transparent 21% 78%, rgba(217, 213, 193, 0.09) 79% 80%, transparent 81%),
-    linear-gradient(147deg, transparent 0 31%, rgba(236, 230, 211, 0.2) 32% 33%, transparent 34% 100%),
+    linear-gradient(90deg, transparent 0 23%, rgba(217, 213, 193, 0.1) 24% 25%, transparent 26% 72%, rgba(217, 213, 193, 0.08) 73% 74%, transparent 75%),
+    linear-gradient(147deg, transparent 0 44%, rgba(236, 230, 211, 0.16) 45% 46%, transparent 47% 100%),
     linear-gradient(28deg, transparent 0 56%, rgba(217, 213, 193, 0.12) 57% 58%, transparent 59% 100%),
-    radial-gradient(circle at 42% 34%, rgba(236, 230, 211, 0.42) 0 2px, transparent 3px),
-    radial-gradient(circle at 58% 58%, rgba(236, 230, 211, 0.22) 0 1px, transparent 2px),
+    radial-gradient(circle at 34% 43%, rgba(236, 230, 211, 0.36) 0 2px, transparent 3px),
+    radial-gradient(circle at 62% 56%, rgba(236, 230, 211, 0.22) 0 1px, transparent 2px),
     radial-gradient(circle at 50% 52%, rgba(217, 213, 193, 0.16), transparent 38%);
   opacity: 0.78;
   transform: translate3d(0, 0, 0);
@@ -1426,9 +1434,9 @@ button:focus-visible {
   position: absolute;
   inset: 12%;
   background:
-    linear-gradient(118deg, transparent 0 24%, rgba(217, 213, 193, 0.16) 25% 27%, transparent 28% 100%),
+    linear-gradient(118deg, transparent 0 39%, rgba(217, 213, 193, 0.12) 40% 42%, transparent 43% 100%),
     linear-gradient(31deg, transparent 0 66%, rgba(217, 213, 193, 0.12) 67% 69%, transparent 70% 100%),
-    radial-gradient(circle at 27% 34%, rgba(236, 230, 211, 0.18) 0 1px, transparent 2px);
+    radial-gradient(circle at 43% 30%, rgba(236, 230, 211, 0.16) 0 1px, transparent 2px);
   clip-path: polygon(8% 28%, 40% 6%, 89% 19%, 76% 58%, 51% 86%, 18% 70%);
 }
 
@@ -1454,8 +1462,8 @@ button:focus-visible {
     linear-gradient(32deg, transparent 0 16%, rgba(217, 213, 193, 0.2) 17% 18%, transparent 19% 100%),
     linear-gradient(145deg, transparent 0 28%, rgba(217, 213, 193, 0.16) 29% 30%, transparent 31% 100%),
     linear-gradient(8deg, transparent 0 53%, rgba(217, 213, 193, 0.12) 54% 55%, transparent 56% 100%),
-    radial-gradient(circle at 23% 29%, rgba(217, 213, 193, 0.18) 0 2px, transparent 3px),
-    radial-gradient(circle at 79% 38%, rgba(217, 213, 193, 0.16) 0 1px, transparent 2px),
+    radial-gradient(circle at 31% 36%, rgba(217, 213, 193, 0.14) 0 2px, transparent 3px),
+    radial-gradient(circle at 80% 42%, rgba(217, 213, 193, 0.14) 0 1px, transparent 2px),
     radial-gradient(circle at 61% 78%, rgba(217, 213, 193, 0.14) 0 2px, transparent 3px);
   clip-path: polygon(16% 28%, 42% 9%, 82% 20%, 91% 47%, 74% 73%, 39% 87%, 13% 61%);
   transform: rotate(-6deg);
@@ -1476,8 +1484,8 @@ button:focus-visible {
 .memory-orbit::before {
   inline-size: 42px;
   block-size: 12px;
-  inset-block-start: 18%;
-  inset-inline-start: 18%;
+  inset-block-start: 27%;
+  inset-inline-start: 42%;
   transform: skewX(-18deg);
 }
 
@@ -1505,9 +1513,9 @@ button:focus-visible {
   inset: 19% 17%;
   opacity: 0.58;
   background:
-    linear-gradient(132deg, transparent 0 36%, rgba(236, 230, 211, 0.2) 37% 38%, transparent 39% 100%),
-    linear-gradient(28deg, transparent 0 57%, rgba(236, 230, 211, 0.12) 58% 59%, transparent 60% 100%),
-    radial-gradient(circle at 52% 48%, rgba(236, 230, 211, 0.14) 0 1px, transparent 2px);
+    linear-gradient(132deg, transparent 0 43%, rgba(236, 230, 211, 0.16) 44% 45%, transparent 46% 100%),
+    linear-gradient(28deg, transparent 0 62%, rgba(236, 230, 211, 0.1) 63% 64%, transparent 65% 100%),
+    radial-gradient(circle at 58% 47%, rgba(236, 230, 211, 0.12) 0 1px, transparent 2px);
   clip-path: polygon(9% 40%, 42% 11%, 88% 24%, 78% 65%, 54% 91%, 19% 75%);
   animation: memory-shard 8.8s ease-in-out infinite;
 }
@@ -1550,15 +1558,15 @@ button:focus-visible {
 
 .memory-nodes {
   inset: 18% 17%;
-  opacity: 0.72;
+  opacity: 0.62;
   background:
-    radial-gradient(circle at 23% 31%, rgba(236, 230, 211, 0.82) 0 2px, transparent 3px),
-    radial-gradient(circle at 77% 33%, rgba(236, 230, 211, 0.58) 0 1px, transparent 2px),
-    radial-gradient(circle at 71% 74%, rgba(236, 230, 211, 0.68) 0 2px, transparent 3px),
-    radial-gradient(circle at 33% 69%, rgba(236, 230, 211, 0.5) 0 1px, transparent 2px),
-    linear-gradient(28deg, transparent 0 22%, rgba(236, 230, 211, 0.1) 23% 24%, transparent 25% 100%),
-    linear-gradient(144deg, transparent 0 28%, rgba(236, 230, 211, 0.08) 29% 30%, transparent 31% 100%);
-  clip-path: polygon(18% 27%, 72% 24%, 83% 72%, 39% 83%);
+    radial-gradient(circle at 34% 37%, rgba(236, 230, 211, 0.72) 0 2px, transparent 3px),
+    radial-gradient(circle at 77% 31%, rgba(236, 230, 211, 0.52) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 75%, rgba(236, 230, 211, 0.64) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 68%, rgba(236, 230, 211, 0.46) 0 1px, transparent 2px),
+    linear-gradient(28deg, transparent 0 31%, rgba(236, 230, 211, 0.08) 32% 33%, transparent 34% 100%),
+    linear-gradient(144deg, transparent 0 43%, rgba(236, 230, 211, 0.07) 44% 45%, transparent 46% 100%);
+  clip-path: polygon(24% 32%, 72% 22%, 84% 73%, 37% 84%);
   animation: memory-nodes 6.8s ease-in-out infinite;
 }
 
@@ -4273,19 +4281,19 @@ input.studio-title-edit {
   0%,
   100% {
     opacity: 0.42;
-    transform: translate3d(-1%, 1%, 0) rotate(-6deg);
+    transform: translate3d(calc(var(--memory-orbit-x) - 1%), calc(var(--memory-orbit-y) + 1%), 0) rotate(-6deg);
     clip-path: polygon(16% 28%, 42% 9%, 82% 20%, 91% 47%, 74% 73%, 39% 87%, 13% 61%);
   }
 
   42% {
     opacity: 0.72;
-    transform: translate3d(2%, -1%, 0) rotate(4deg);
+    transform: translate3d(calc(var(--memory-orbit-x) + 2%), calc(var(--memory-orbit-y) - 1%), 0) rotate(4deg);
     clip-path: polygon(20% 23%, 48% 13%, 78% 19%, 88% 50%, 70% 79%, 34% 82%, 10% 55%);
   }
 
   68% {
     opacity: 0.5;
-    transform: translate3d(0, 1%, 0) rotate(-2deg);
+    transform: translate3d(var(--memory-orbit-x), calc(var(--memory-orbit-y) + 1%), 0) rotate(-2deg);
     clip-path: polygon(12% 32%, 39% 12%, 84% 24%, 86% 44%, 77% 69%, 43% 90%, 17% 64%);
   }
 }
@@ -4295,13 +4303,13 @@ input.studio-title-edit {
   100% {
     opacity: 0.64;
     clip-path: polygon(20% 16%, 61% 8%, 86% 32%, 78% 68%, 49% 91%, 16% 74%, 8% 38%);
-    transform: translate3d(-1%, 1%, 0) rotate(-1deg);
+    transform: translate3d(calc(var(--memory-core-x) - 1%), calc(var(--memory-core-y) + 1%), 0) rotate(-1deg);
   }
 
   46% {
     opacity: 0.86;
     clip-path: polygon(16% 21%, 56% 10%, 88% 28%, 82% 63%, 54% 88%, 19% 79%, 10% 43%);
-    transform: translate3d(2%, -1%, 0) rotate(2deg);
+    transform: translate3d(calc(var(--memory-core-x) + 2%), calc(var(--memory-core-y) - 1%), 0) rotate(2deg);
   }
 }
 
@@ -4347,11 +4355,11 @@ input.studio-title-edit {
 @keyframes memory-shard {
   0%,
   100% {
-    transform: translate3d(-2%, 1%, 0) rotate(-3deg);
+    transform: translate3d(calc(var(--memory-shard-x) - 2%), calc(var(--memory-shard-y) + 1%), 0) rotate(-3deg);
   }
 
   50% {
-    transform: translate3d(3%, -2%, 0) rotate(5deg);
+    transform: translate3d(calc(var(--memory-shard-x) + 3%), calc(var(--memory-shard-y) - 2%), 0) rotate(5deg);
   }
 }
 
@@ -4376,17 +4384,17 @@ input.studio-title-edit {
   0%,
   100% {
     opacity: 0.28;
-    transform: rotate(-4deg) scale(0.96);
+    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) rotate(-4deg) scale(0.96);
   }
 
   35% {
     opacity: 0.52;
-    transform: rotate(3deg) scale(1.02);
+    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) rotate(3deg) scale(1.02);
   }
 
   64% {
     opacity: 0.38;
-    transform: rotate(-1deg) scale(0.99);
+    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) rotate(-1deg) scale(0.99);
   }
 }
 
@@ -4417,12 +4425,12 @@ input.studio-title-edit {
   0%,
   100% {
     opacity: 0.46;
-    transform: translate3d(-1%, 1%, 0) scale(0.97);
+    transform: translate3d(calc(var(--memory-shard-x) - 1%), calc(var(--memory-shard-y) + 1%), 0) scale(0.97);
   }
 
   50% {
     opacity: 0.82;
-    transform: translate3d(2%, -1%, 0) scale(1.03);
+    transform: translate3d(calc(var(--memory-shard-x) + 2%), calc(var(--memory-shard-y) - 1%), 0) scale(1.03);
   }
 }
 

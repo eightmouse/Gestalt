@@ -11,7 +11,7 @@ import {
   Terminal,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
 import { create } from "zustand";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
@@ -650,8 +650,59 @@ function WeatherPanel() {
 }
 
 function MemoryLoop() {
+  const memoryRef = useRef<HTMLDivElement | null>(null);
+  const frameRef = useRef<number | null>(null);
+
+  const setMemoryPointer = (x: number, y: number) => {
+    const node = memoryRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    node.style.setProperty("--memory-core-x", `${(x * 4).toFixed(2)}px`);
+    node.style.setProperty("--memory-core-y", `${(y * 4).toFixed(2)}px`);
+    node.style.setProperty("--memory-orbit-x", `${(x * -6).toFixed(2)}px`);
+    node.style.setProperty("--memory-orbit-y", `${(y * -5).toFixed(2)}px`);
+    node.style.setProperty("--memory-shard-x", `${(x * 7).toFixed(2)}px`);
+    node.style.setProperty("--memory-shard-y", `${(y * 5).toFixed(2)}px`);
+    node.style.setProperty("--memory-axis-x", `${(x * 2).toFixed(2)}px`);
+    node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const node = memoryRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const rect = node.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+
+    if (frameRef.current !== null) {
+      window.cancelAnimationFrame(frameRef.current);
+    }
+
+    frameRef.current = window.requestAnimationFrame(() => {
+      setMemoryPointer(x, y);
+      frameRef.current = null;
+    });
+  };
+
+  const resetPointer = () => setMemoryPointer(0, 0);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
   return (
-    <div className="memory-loop" aria-hidden="true">
+    <div className="memory-loop" aria-hidden="true" ref={memoryRef} onPointerLeave={resetPointer} onPointerMove={handlePointerMove}>
       <span className="memory-core" />
       <span className="memory-orbit" />
       <span className="memory-gate" />

@@ -385,6 +385,31 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-magnificent-signal",
+    "title": "A Magnificent Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-05-20",
+    "updated": "2026-05-20",
+    "summary": "Some major changes, from UI/UX to performance ~",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 20 / 05 / 2026 - It is\nSo after pushing this morning and making the site pubblic, I spent a big chunk of the time checking for more bugs, polishing UI/UX a bit and structural changes of the Studio.\nI now have a better, tidy system in-place, easier to create/edit notes and push changes, thanks to some little scripts that Codex helped me to make. Nothing drastic look wise, just some polishing as I said, I don't want to make the site heavy or bloated with nonsense, otherwise it's just bleh.\n\nI still have some big stuff in mind but I'll juggle them between the other projects I'm working on ~\n:::"
+  },
+  {
     "id": "an-opening-signal",
     "title": "An Opening Signal",
     "section": "logs",
