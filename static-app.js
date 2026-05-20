@@ -1125,7 +1125,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.11.2</span>
+      <span>v1.12.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1143,7 +1143,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.11.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.12.0</dd></div>
       </dl>
     </div>
   </aside>`;

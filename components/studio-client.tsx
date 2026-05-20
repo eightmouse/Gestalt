@@ -45,7 +45,18 @@ type PublishState = {
   phase: "running" | "success" | "error";
   title: string;
   detail: string;
+  summary?: PublishSummary;
   output?: string;
+};
+
+type PublishSummary = {
+  branch?: string;
+  cacheToken?: string;
+  changedFiles?: number;
+  commit?: string;
+  mediaAdded?: number;
+  recordsChanged?: string[];
+  staticExported?: boolean;
 };
 
 const studioSections: Array<{
@@ -254,6 +265,7 @@ export function StudioClient({ records }: StudioClientProps) {
         phase: "error",
         title: "Publish blocked",
         detail: publishData.error || "The record changed locally, but GitHub publish failed.",
+        summary: publishData.summary,
         output: publishData.output
       });
       setNotificationOpen(true);
@@ -265,6 +277,7 @@ export function StudioClient({ records }: StudioClientProps) {
       phase: "success",
       title: "Archive published",
       detail: publishData.message || "GitHub received the latest archive update.",
+      summary: publishData.summary,
       output: publishData.output
     });
   };
@@ -478,7 +491,7 @@ class StudioRequestError extends Error {
   }
 }
 
-async function readStudioResponse(response: Response): Promise<{ error?: string; id?: string; message?: string; output?: string; path?: string }> {
+async function readStudioResponse(response: Response): Promise<{ error?: string; id?: string; message?: string; output?: string; path?: string; summary?: PublishSummary }> {
   const text = await response.text();
 
   if (!text) {
@@ -486,7 +499,7 @@ async function readStudioResponse(response: Response): Promise<{ error?: string;
   }
 
   try {
-    return JSON.parse(text) as { error?: string; id?: string; message?: string; output?: string; path?: string };
+    return JSON.parse(text) as { error?: string; id?: string; message?: string; output?: string; path?: string; summary?: PublishSummary };
   } catch {
     return {
       error: text.slice(0, 220),
@@ -514,6 +527,7 @@ function PublishNotificationPanel({
       {notification ? (
         <article className={`studio-notification-card is-${notification.phase}`}>
           <span>{notification.detail}</span>
+          {notification.summary ? <PublishSummaryGrid summary={notification.summary} /> : null}
           {notification.output ? <pre>{formatPublishOutput(notification.output)}</pre> : null}
         </article>
       ) : (
@@ -522,6 +536,29 @@ function PublishNotificationPanel({
         </article>
       )}
     </aside>
+  );
+}
+
+function PublishSummaryGrid({ summary }: { summary: PublishSummary }) {
+  const rows = [
+    ["COMMIT", summary.commit ? summary.commit.slice(0, 7) : "Pending"],
+    ["BRANCH", summary.branch ?? "main"],
+    ["FILES", summary.changedFiles === undefined ? "0" : String(summary.changedFiles)],
+    ["RECORDS", summary.recordsChanged?.length ? summary.recordsChanged.join(", ") : "None"],
+    ["MEDIA", summary.mediaAdded === undefined ? "0" : String(summary.mediaAdded)],
+    ["STATIC", summary.staticExported ? "Exported" : "Not exported"],
+    ["CACHE", summary.cacheToken ? summary.cacheToken.slice(-6) : "None"]
+  ];
+
+  return (
+    <dl className="studio-publish-summary">
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

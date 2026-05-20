@@ -3737,6 +3737,37 @@ input.studio-title-edit {
   gap: 12px;
 }
 
+.studio-publish-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.studio-publish-summary div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid rgba(217, 213, 193, 0.12);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.studio-publish-summary dt {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.studio-publish-summary dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .studio-notification-card pre {
   max-block-size: 320px;
   margin: 0;

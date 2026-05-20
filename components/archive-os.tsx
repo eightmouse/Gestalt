@@ -417,7 +417,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.11.2</span>
+        <span>v1.12.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -474,7 +474,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.11.2</dd>
+            <dd>GESTALT OS v1.12.0</dd>
           </div>
         </dl>
       </div>

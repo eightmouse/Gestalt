@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const title = clean(payload.title);
   const section = payload.section;
   const updated = clean(payload.updated);
-  const body = clean(payload.body);
+  const body = cleanBody(payload.body);
 
   if (!title) {
     return NextResponse.json({ error: "Title is required." }, { status: 400 });
@@ -159,6 +159,14 @@ export async function DELETE(request: NextRequest) {
 
 function clean(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanBody(value: unknown): string {
+  return typeof value === "string"
+    ? value
+        .replace(/[ \t]+$/gm, "")
+        .trim()
+    : "";
 }
 
 function encodeFrontmatterTextBlock(value: string): string {
