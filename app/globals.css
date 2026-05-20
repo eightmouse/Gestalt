@@ -398,6 +398,12 @@ button:focus-visible {
   display: block;
 }
 
+.nav-label {
+  position: relative;
+  min-width: 0;
+  display: grid;
+}
+
 .nav-trigger strong {
   color: var(--text);
   font-weight: 400;
@@ -405,8 +411,135 @@ button:focus-visible {
 }
 
 .nav-trigger small {
+  grid-area: 2 / 1;
   margin-block-start: 5px;
   color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-readable {
+  opacity: 0;
+  transform: translateY(3px);
+  filter: blur(2px);
+  transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
+}
+
+.nav-readable::before {
+  content: attr(data-cipher);
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  inline-size: 100%;
+  color: var(--accent);
+  opacity: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.nav-cipher {
+  color: rgba(217, 213, 193, 0.52);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: none;
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  transition: opacity 160ms ease, transform 160ms ease, filter 160ms ease;
+}
+
+.nav-trigger:hover .nav-readable,
+.nav-trigger:focus-visible .nav-readable {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  animation: glyph-resolve 460ms steps(5, end);
+}
+
+.nav-trigger:hover .nav-readable::before,
+.nav-trigger:focus-visible .nav-readable::before {
+  animation: glyph-scan 420ms steps(4, end);
+}
+
+.nav-trigger:hover .nav-cipher,
+.nav-trigger:focus-visible .nav-cipher {
+  opacity: 0;
+  transform: translateY(-3px);
+  filter: blur(2px);
+  animation: glyph-decay 420ms steps(4, end);
+}
+
+@keyframes glyph-resolve {
+  0% {
+    opacity: 0;
+    clip-path: inset(0 72% 0 0);
+    filter: blur(2px);
+  }
+
+  24% {
+    opacity: 0.8;
+    clip-path: inset(0 42% 0 0);
+    filter: blur(1px);
+  }
+
+  58% {
+    opacity: 0.45;
+    clip-path: inset(0 12% 0 0);
+    transform: translateX(1px);
+  }
+
+  100% {
+    opacity: 1;
+    clip-path: inset(0);
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes glyph-scan {
+  0% {
+    opacity: 0.84;
+    clip-path: inset(0 0 78% 0);
+    transform: translateX(-3px);
+  }
+
+  35% {
+    opacity: 0.62;
+    clip-path: inset(34% 0 38% 0);
+    transform: translateX(2px);
+  }
+
+  70% {
+    opacity: 0.34;
+    clip-path: inset(74% 0 0 0);
+    transform: translateX(-1px);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes glyph-decay {
+  0% {
+    opacity: 1;
+    clip-path: inset(0);
+  }
+
+  50% {
+    opacity: 0.64;
+    clip-path: inset(0 0 0 28%);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0 0 0 100%);
+  }
 }
 
 .nav-trigger.is-active {

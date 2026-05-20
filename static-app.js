@@ -273,12 +273,12 @@ Opening this as the main Persona 5 Royal play log, first test of the note stack!
 ]).sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
 const sections = [
-  { id: "system", code: "01_SYSTEM", label: "Dashboard", icon: "system" },
-  { id: "projects", code: "02_PROJECTS", label: "Active Processes", icon: "projects" },
-  { id: "games", code: "03_GAMES", label: "Session Logs", icon: "games" },
-  { id: "logs", code: "04_LOGS", label: "Field Notes", icon: "logs" },
-  { id: "setup", code: "05_SETUP", label: "Hardware & Software", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", icon: "archive" }
+  { id: "system", code: "01_SYSTEM", label: "Dashboard", cipher: "⌖╳╵⌁⟐⌰╳⟟", icon: "system" },
+  { id: "projects", code: "02_PROJECTS", label: "Active Processes", cipher: "⟐⌰╳⌖╵ / ⌁⟟⌖╳⌰", icon: "projects" },
+  { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "╳⌁⟟⟐⌰ / ╵⌖⌁╳", icon: "games" },
+  { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "⌰╳╵⌖ / ⟟⌁⌰╳╵", icon: "logs" },
+  { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "⌖⟟⌰╳╵ / ⌁⟐⌖", icon: "setup" },
+  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", cipher: "╵⌖⟐⌰⌁ / ╳⟟⌖╵", icon: "archive" }
 ];
 
 const latinSayings = [
@@ -1191,7 +1191,11 @@ function sidebar() {
       (section) => `<div class="nav-group">
         <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" data-open-section="${section.id}">
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
-          <span><strong>${section.code}</strong><small>${section.label}</small></span>
+          <span class="nav-label">
+            <strong>${section.code}</strong>
+            <small class="nav-readable" data-cipher="${escapeHtml(section.cipher)}">${escapeHtml(section.label)}</small>
+            <small class="nav-cipher" aria-hidden="true">${escapeHtml(section.cipher)}</small>
+          </span>
           <span class="section-signal" aria-hidden="true"></span>
         </button>
       </div>`
@@ -1201,7 +1205,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.14.0</span>
+      <span>v1.15.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1219,7 +1223,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.14.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.15.0</dd></div>
       </dl>
     </div>
   </aside>`;

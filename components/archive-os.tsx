@@ -43,14 +43,15 @@ const sections: Array<{
   id: RecordSection;
   code: string;
   label: string;
+  cipher: string;
   icon: string;
 }> = [
-  { id: "system", code: "01_SYSTEM", label: "Dashboard", icon: "system" },
-  { id: "projects", code: "02_PROJECTS", label: "Active Processes", icon: "projects" },
-  { id: "games", code: "03_GAMES", label: "Session Logs", icon: "games" },
-  { id: "logs", code: "04_LOGS", label: "Field Notes", icon: "logs" },
-  { id: "setup", code: "05_SETUP", label: "Hardware & Software", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", icon: "archive" }
+  { id: "system", code: "01_SYSTEM", label: "Dashboard", cipher: "⌖╳╵⌁⟐⌰╳⟟", icon: "system" },
+  { id: "projects", code: "02_PROJECTS", label: "Active Processes", cipher: "⟐⌰╳⌖╵ / ⌁⟟⌖╳⌰", icon: "projects" },
+  { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "╳⌁⟟⟐⌰ / ╵⌖⌁╳", icon: "games" },
+  { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "⌰╳╵⌖ / ⟟⌁⌰╳╵", icon: "logs" },
+  { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "⌖⟟⌰╳╵ / ⌁⟐⌖", icon: "setup" },
+  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", cipher: "╵⌖⟐⌰⌁ / ╳⟟⌖╵", icon: "archive" }
 ];
 
 const latinSayings = [
@@ -474,7 +475,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.14.0</span>
+        <span>v1.15.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -490,9 +491,10 @@ function Sidebar({
                   onClick={() => onOpenSection(section.id)}
                 >
                   <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-                  <span>
+                  <span className="nav-label">
                     <strong>{section.code}</strong>
-                    <small>{section.label}</small>
+                    <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
+                    <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
                   </span>
                   <span className="section-signal" aria-hidden="true" />
                 </button>
@@ -531,7 +533,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.14.0</dd>
+            <dd>GESTALT OS v1.15.0</dd>
           </div>
         </dl>
       </div>
