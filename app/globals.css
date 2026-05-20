@@ -3525,6 +3525,55 @@ input.studio-title-edit {
   object-fit: cover;
 }
 
+.studio-media-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.studio-media-list article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(217, 213, 193, 0.14);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.studio-media-preview-frame {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid rgba(217, 213, 193, 0.1);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.studio-media-preview-frame img,
+.studio-media-preview-frame video {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.studio-media-list span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-media-list button {
+  justify-self: start;
+  border: 1px solid rgba(217, 213, 193, 0.18);
+  background: rgba(255, 255, 255, 0.026);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
 .studio-copy-aside {
   min-width: 0;
   display: grid;

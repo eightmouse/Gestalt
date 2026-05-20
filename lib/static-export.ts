@@ -19,6 +19,8 @@ export async function writeStaticRecords(): Promise<void> {
       summary: record.summary,
       banner: toStaticPath(record.banner),
       headerImage: toStaticPath(typeof meta.headerImage === "string" ? meta.headerImage : ""),
+      samples: toStaticPathList(meta.samples),
+      attachments: toStaticPathList(meta.attachments),
       progress: record.progress,
       priority: record.priority,
       dashboardActive: meta.dashboardActive === true,
@@ -45,6 +47,18 @@ function toStaticPath(value: string | undefined): string {
   }
 
   return value.replace(/^\/media\//, "public/media/").replace(/^\/images\//, "public/images/");
+}
+
+function toStaticPathList(value: unknown): string[] {
+  const list = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/\r?\n|,/)
+      : [];
+
+  return list
+    .map((item) => toStaticPath(String(item).trim()))
+    .filter(Boolean);
 }
 
 function toStaticBody(value: string): string {

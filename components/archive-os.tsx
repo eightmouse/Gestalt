@@ -364,7 +364,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.8.0</span>
+        <span>v1.9.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -409,7 +409,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.8.0</dd>
+            <dd>GESTALT OS v1.9.0</dd>
           </div>
         </dl>
       </div>
@@ -1165,6 +1165,8 @@ function MilestoneList({ record }: { record: RecordEntry }) {
 }
 
 function MediaPopupField({ prefix, record, title }: { prefix: string; record: RecordEntry; title: string }) {
+  const mediaSources = recordMediaSources(record, "attachments");
+
   return (
     <section className="content-terminal" aria-label={`${record.title} media`}>
       <div className="terminal-title">// {title}</div>
@@ -1176,7 +1178,7 @@ function MediaPopupField({ prefix, record, title }: { prefix: string; record: Re
         <div className="media-popup-layer">
           {Array.from({ length: 6 }).map((_, index) => {
             const slot = index + 1;
-            const imageSource = slot === 1 ? record.banner : undefined;
+            const imageSource = mediaSources[index];
 
             return (
               <button className="media-popup" style={{ "--slot": slot } as CSSProperties} type="button" key={`${record.id}-media-${slot}`}>
@@ -1197,6 +1199,8 @@ function MediaPopupField({ prefix, record, title }: { prefix: string; record: Re
 }
 
 function SampleGrid({ record }: { record: RecordEntry }) {
+  const mediaSources = recordMediaSources(record, "samples");
+
   return (
     <section className="content-terminal" aria-label={`${record.title} sample media`}>
       <div className="terminal-title">// SAMPLE</div>
@@ -1204,7 +1208,7 @@ function SampleGrid({ record }: { record: RecordEntry }) {
       <div className="sample-grid" aria-label={`${record.title} media samples`}>
         {Array.from({ length: 6 }).map((_, index) => {
           const slot = index + 1;
-          const imageSource = slot === 1 ? record.banner : undefined;
+          const imageSource = mediaSources[index];
 
           return (
             <button className="sample-terminal" type="button" key={`${record.id}-sample-${slot}`}>
@@ -1219,6 +1223,21 @@ function SampleGrid({ record }: { record: RecordEntry }) {
       </div>
     </section>
   );
+}
+
+function recordMediaSources(record: RecordEntry, key: "attachments" | "samples"): string[] {
+  const sources = record.meta[key];
+  const list = Array.isArray(sources)
+    ? sources.map((item) => String(item))
+    : typeof sources === "string"
+      ? sources.split(/\r?\n|,/)
+      : [];
+
+  if (list.length > 0) {
+    return list.map((item) => item.trim()).filter(Boolean).slice(0, 6);
+  }
+
+  return record.banner ? [record.banner] : [];
 }
 
 function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange: (value: string) => void; query: string; record: RecordEntry }) {

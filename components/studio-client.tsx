@@ -18,6 +18,8 @@ type StudioForm = {
   summary: string;
   banner: string;
   headerImage: string;
+  samples: string;
+  attachments: string;
   progress: number;
   priority: number;
   tags: string;
@@ -36,6 +38,8 @@ type StudioForm = {
 type StudioClientProps = {
   records: RecordEntry[];
 };
+
+type MediaTarget = "body" | "banner" | "headerImage" | "samples" | "attachments";
 
 type PublishState = {
   phase: "running" | "success" | "error";
@@ -72,7 +76,7 @@ export function StudioClient({ records }: StudioClientProps) {
   const [publishState, setPublishState] = useState<PublishState | null>(null);
   const bodyDraftRef = useRef(form.body);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const fileTargetRef = useRef<"body" | "banner" | "headerImage">("body");
+  const fileTargetRef = useRef<MediaTarget>("body");
 
   const sortedRecords = useMemo(() => [...records].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [records]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
@@ -248,7 +252,7 @@ export function StudioClient({ records }: StudioClientProps) {
     }
   };
 
-  const chooseFiles = (target: "body" | "banner" | "headerImage") => {
+  const chooseFiles = (target: MediaTarget) => {
     fileTargetRef.current = target;
     fileInputRef.current?.click();
   };
@@ -302,13 +306,17 @@ export function StudioClient({ records }: StudioClientProps) {
         update("banner", firstPath);
       } else if (target === "headerImage") {
         update("headerImage", firstPath);
+      } else if (target === "samples" || target === "attachments") {
+        const current = mediaListFromText(form[target]);
+        const next = [...current, ...imported.map((item) => item.path)];
+        update(target, mediaListToText(next));
       } else {
         const nextBody = `${bodyDraftRef.current.trim()}\n\n${snippets.join("\n")}\n`;
         bodyDraftRef.current = nextBody;
         update("body", nextBody);
       }
 
-      setMessage(target === "body" ? "Media inserted into the body draft." : "Media path assigned.");
+      setMessage(target === "body" ? "Media inserted into the body draft." : "Media assigned.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Upload failed.");
     } finally {
@@ -581,7 +589,7 @@ function EditableHeading({
   onUpdate
 }: {
   form: StudioForm;
-  onFilePick: (target: "body" | "banner" | "headerImage") => void;
+  onFilePick: (target: MediaTarget) => void;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
   return (
@@ -633,21 +641,25 @@ function StudioContent({
   activeContent: StudioContentKey;
   form: StudioForm;
   onBodyCommit: (value: string) => void;
-  onFileDrop: (files: FileList | File[], target?: "body" | "banner" | "headerImage") => void;
-  onFilePick: (target: "body" | "banner" | "headerImage") => void;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
   record: RecordEntry;
   uploading: boolean;
 }) {
   if (activeContent === "samples" || activeContent === "attachments") {
+    const target = activeContent;
+    const paths = mediaListFromText(form[target]);
+
     return (
       <section className="studio-content-terminal">
         <div className="terminal-title">// {activeContent === "samples" ? "SAMPLES" : "ATTACHMENTS"}</div>
-        <DropZone uploading={uploading} onDrop={(files) => onFileDrop(files, "body")} onPick={() => onFilePick("body")} />
-        <div className="studio-sample-preview">
-          {form.banner ? <img src={form.banner} alt="" decoding="async" loading="lazy" /> : <span>NO PRIMARY MEDIA</span>}
-        </div>
+        <DropZone uploading={uploading} onDrop={(files) => onFileDrop(files, target)} onPick={() => onFilePick(target)} />
+        <MediaPathList
+          paths={paths}
+          onRemove={(pathToRemove) => onUpdate(target, mediaListToText(paths.filter((path) => path !== pathToRemove)))}
+        />
       </section>
     );
   }
@@ -1137,6 +1149,55 @@ function DropZone({
   );
 }
 
+function MediaPathList({
+  onRemove,
+  paths
+}: {
+  onRemove: (path: string) => void;
+  paths: string[];
+}) {
+  if (paths.length === 0) {
+    return (
+      <div className="studio-sample-preview">
+        <span>NO MEDIA ASSIGNED</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="studio-media-list">
+      {paths.map((path) => (
+        <article key={path}>
+          <div className="studio-media-preview-frame">
+            {isVideoPath(path) ? (
+              <video src={path} muted playsInline preload="metadata" />
+            ) : (
+              <img src={path} alt="" decoding="async" loading="lazy" />
+            )}
+          </div>
+          <span>{path.split("/").at(-1)}</span>
+          <button type="button" onClick={() => onRemove(path)}>Remove</button>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function mediaListFromText(value: string): string[] {
+  return value
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function mediaListToText(value: string[]): string {
+  return [...new Set(value)].join("\n");
+}
+
+function isVideoPath(value: string): boolean {
+  return /\.(mp4|webm)$/i.test(value);
+}
+
 function emptyForm(section: StudioSection = "logs"): StudioForm {
   const today = new Date().toISOString().slice(0, 10);
   const noteTitle = new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note";
@@ -1153,6 +1214,8 @@ function emptyForm(section: StudioSection = "logs"): StudioForm {
     summary: "No summary recorded.",
     banner: "",
     headerImage: "",
+    samples: "",
+    attachments: "",
     progress: 0,
     priority: 50,
     tags: section,
@@ -1186,6 +1249,8 @@ function fromRecord(record?: RecordEntry): StudioForm {
     summary: record.summary,
     banner: record.banner ?? "",
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
+    samples: metaMediaList(record.meta.samples),
+    attachments: metaMediaList(record.meta.attachments),
     progress: record.progress,
     priority: record.priority,
     tags: record.tags.join(", "),
@@ -1350,6 +1415,14 @@ function metaTextBlock(value: unknown): string {
   return "";
 }
 
+function metaMediaList(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean).join("\n");
+  }
+
+  return typeof value === "string" ? value.replace(/\\+n/g, "\n") : "";
+}
+
 function getStudioContents(section: StudioSection): Array<{ key: StudioContentKey; label: string }> {
   if (section === "projects") {
     return [
@@ -1399,6 +1472,8 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
     meta: {
       headerImage: form.headerImage,
+      samples: mediaListFromText(form.samples),
+      attachments: mediaListFromText(form.attachments),
       dashboardActive: form.dashboardActive,
       hardware: form.hardware,
       technicalStack: form.technicalStack,

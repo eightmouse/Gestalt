@@ -60,6 +60,18 @@ function toStaticPath(value) {
     .replace(/^\/images\//, "public/images/");
 }
 
+function toStaticPathList(value) {
+  const list = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/\r?\n|,/)
+      : [];
+
+  return list
+    .map((item) => toStaticPath(String(item).trim()))
+    .filter(Boolean);
+}
+
 function toStaticBody(value) {
   return value
     .replaceAll("](/media/", "](public/media/")
@@ -89,6 +101,8 @@ for (const filename of filenames) {
     summary: data.summary || "No summary recorded.",
     banner: toStaticPath(data.banner),
     headerImage: toStaticPath(data.headerImage),
+    samples: toStaticPathList(data.samples),
+    attachments: toStaticPathList(data.attachments),
     progress: Number(data.progress) || 0,
     priority: Number(data.priority) || 99,
     dashboardActive: data.dashboardActive === true,

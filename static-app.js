@@ -792,6 +792,7 @@ function renderOverviewPage(record) {
 
 function renderMediaPage(record, title = "MEDIA", prefix = "MEDIA") {
   const slots = Array.from({ length: 6 }, (_, index) => index + 1);
+  const mediaSources = recordMediaSources(record, "attachments");
 
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} media">
     <div class="terminal-title">// ${title}</div>
@@ -799,19 +800,19 @@ function renderMediaPage(record, title = "MEDIA", prefix = "MEDIA") {
       <div class="media-alert-header"><span>MEDIA</span><i>MAX_06</i></div>
       <div class="media-popup-layer">
         ${slots
-          .map((slot) => {
-            const hasImage = slot === 1 && record.banner;
+          .map((slot, index) => {
+            const mediaSource = mediaSources[index];
 
             return `<button class="media-popup" type="button" style="--slot: ${slot}">
               <span>${prefix}_${String(slot).padStart(2, "0")}</span>
               <div class="media-frame">
                 ${
-                  hasImage
-                    ? `<img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" />`
+                  mediaSource
+                    ? `<img src="${escapeHtml(mediaSource)}" alt="" decoding="async" loading="lazy" />`
                     : `<div class="media-placeholder">NO CAPTURE</div>`
                 }
               </div>
-              <i>${hasImage ? "Primary capture" : "Awaiting media"}</i>
+              <i>${mediaSource ? "Primary capture" : "Awaiting media"}</i>
             </button>`;
           })
           .join("")}
@@ -822,30 +823,47 @@ function renderMediaPage(record, title = "MEDIA", prefix = "MEDIA") {
 
 function renderSamplePage(record) {
   const slots = Array.from({ length: 6 }, (_, index) => index + 1);
+  const mediaSources = recordMediaSources(record, "samples");
 
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} sample media">
     <div class="terminal-title">// SAMPLE</div>
     <div class="sample-kicker">Media</div>
     <div class="sample-grid" aria-label="${escapeHtml(record.title)} media samples">
       ${slots
-        .map((slot) => {
-          const hasImage = slot === 1 && record.banner;
+        .map((slot, index) => {
+          const mediaSource = mediaSources[index];
 
           return `<button class="sample-terminal" type="button">
             <span>MEDIA_${String(slot).padStart(2, "0")}</span>
             <div class="sample-frame">
               ${
-                hasImage
-                  ? `<img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" />`
+                mediaSource
+                  ? `<img src="${escapeHtml(mediaSource)}" alt="" decoding="async" loading="lazy" />`
                   : `<div class="media-placeholder">NO MEDIA</div>`
               }
             </div>
-            <i>${hasImage ? "Primary sample" : "Awaiting sample"}</i>
+            <i>${mediaSource ? "Primary sample" : "Awaiting sample"}</i>
           </button>`;
         })
         .join("")}
     </div>
   </section>`;
+}
+
+function recordMediaSources(record, key) {
+  const rawSources = record[key];
+  const sources = Array.isArray(rawSources)
+    ? rawSources
+    : typeof rawSources === "string"
+      ? rawSources.split(/\r?\n|,/)
+      : [];
+  const cleanSources = sources.map((source) => String(source).trim()).filter(Boolean);
+
+  if (cleanSources.length > 0) {
+    return cleanSources.slice(0, 6);
+  }
+
+  return record.banner ? [record.banner] : [];
 }
 
 function renderNotesPage(record) {
@@ -1019,7 +1037,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.8.0</span>
+      <span>v1.9.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1034,7 +1052,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.8.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.9.0</dd></div>
       </dl>
     </div>
   </aside>`;

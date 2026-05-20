@@ -22,6 +22,8 @@ type EntryPayload = {
   summary?: string;
   banner?: string;
   headerImage?: string;
+  samples?: string[] | string;
+  attachments?: string[] | string;
   progress?: number | string;
   priority?: number | string;
   tags?: string[] | string;
@@ -82,6 +84,8 @@ export async function POST(request: NextRequest) {
   const progress = clampNumber(payload.progress, 0, 100, 0);
   const priority = clampNumber(payload.priority, -999, 9999, 50);
   const tags = normalizeTags(payload.tags);
+  const samples = normalizeMediaList(payload.samples);
+  const attachments = normalizeMediaList(payload.attachments);
   const dashboardActive = section === "games" && toBoolean(payload.dashboardActive);
   const steamAppId = parseOptionalInteger(payload.steamAppId);
   const filePath = path.join(recordsDirectory, `${id}.mdx`);
@@ -101,6 +105,8 @@ export async function POST(request: NextRequest) {
     `summary: "${escapeFrontmatter(clean(payload.summary) || "No summary recorded.")}"`,
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
     ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
+    ...(samples.length ? [`samples: [${samples.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
+    ...(attachments.length ? [`attachments: [${attachments.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
     `progress: ${progress}`,
     `priority: ${priority}`,
     ...(dashboardActive ? ["dashboardActive: true"] : []),
@@ -157,6 +163,18 @@ function clean(value: unknown): string {
 
 function encodeFrontmatterTextBlock(value: string): string {
   return escapeFrontmatter(value).replace(/\r?\n/g, "\\n");
+}
+
+function normalizeMediaList(value: unknown): string[] {
+  const list = Array.isArray(value)
+    ? value.map((item) => String(item))
+    : clean(value).split(/\r?\n|,/);
+
+  return [...new Set(
+    list
+      .map((item) => item.trim())
+      .filter((item) => item.startsWith("/media/") || item.startsWith("/images/") || item.startsWith("public/media/") || item.startsWith("public/images/"))
+  )];
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
