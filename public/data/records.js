@@ -53,7 +53,9 @@ window.__GESTALT_RECORDS = [
     "summary": "Currently working on this blog / portfolio-ish thing. I have not stopped working on the other projects, still working on KiraPatch, but I wanted a dedicated place for the stuff that usually ends up scattered in notes.",
     "banner": "",
     "headerImage": "",
-    "samples": [],
+    "samples": [
+      "public/media/records/gestalt/1779269816210-screenshot-2026-05-20-152713.png"
+    ],
     "attachments": [],
     "progress": 100,
     "priority": 1,
@@ -89,7 +91,7 @@ window.__GESTALT_RECORDS = [
         "status": "Ready"
       }
     ],
-    "body": "## Description\nI use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working.\n\nGestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.\n\nThis is the first working version, so there are not many entries yet. I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.\n\nCurrently being extra careful because of the npm ordeal.\n\n![](public/media/records/gestalt/1779262071066-screenshot-2026-05-20-152713.png)\n\n![](public/media/records/gestalt/1779262080303-screenshot-2026-05-20-152713.png)"
+    "body": ":::note Current note\n## Description\nI use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working.\n\nGestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.\n\nThis is the first working version, so there are not many entries yet. I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.\n\nCurrently being extra careful because of the npm ordeal.\n:::"
   },
   {
     "id": "kira-patch",
