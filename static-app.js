@@ -309,6 +309,7 @@ const state = {
   activeContent: "overview",
   searchOpen: false,
   searchQuery: "",
+  timelineOpen: false,
   noteSearchQuery: "",
   updateHistoryOpen: false,
   bootDismissed: false,
@@ -343,6 +344,7 @@ function openRecord(recordId, contentKey = "overview") {
   state.panelMaximized = false;
   state.searchOpen = false;
   state.searchQuery = "";
+  state.timelineOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   state.recordTitleAnimating = true;
@@ -356,8 +358,20 @@ function openSection(sectionId) {
   state.panelMinimized = false;
   state.searchOpen = false;
   state.searchQuery = "";
+  state.timelineOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
+  render();
+}
+
+function openTimeline() {
+  state.panelOpen = false;
+  state.panelMinimized = false;
+  state.searchOpen = false;
+  state.searchQuery = "";
+  state.noteSearchQuery = "";
+  state.updateHistoryOpen = false;
+  state.timelineOpen = true;
   render();
 }
 
@@ -557,12 +571,52 @@ function countMediaPaths(sourceRecords) {
   return paths.size;
 }
 
+function getTimelineItems(limit) {
+  return records
+    .filter((record) => record.section !== "system")
+    .flatMap((record) => {
+      const date = activityDate(record);
+      const items = [
+        {
+          content: "overview",
+          date,
+          detail: `${record.type} / ${record.status}`,
+          id: `${record.id}-activity-${date}`,
+          record,
+          title: `${record.title} updated`
+        }
+      ];
+
+      noteEntries(record.body).forEach((note, index) => {
+        const noteDate = noteTitleDate(note.title);
+
+        if (!noteDate) {
+          return;
+        }
+
+        items.push({
+          content: "notes",
+          date: noteDate,
+          detail: `${record.title} / Note ${index + 1}`,
+          id: `${record.id}-note-${index}-${noteDate}`,
+          record,
+          title: note.title
+        });
+      });
+
+      return items;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date) || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
+    .slice(0, limit);
+}
+
 function searchResults() {
   const query = state.searchQuery.trim().toLowerCase();
   const currentGame = currentGameRecord();
   const latestLog = latestLogRecord();
   const commands = [
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
+    { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
     { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
@@ -1125,7 +1179,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.12.0</span>
+      <span>v1.13.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1143,7 +1197,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.12.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.13.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1420,7 +1474,9 @@ function searchPanel() {
             if (result.kind === "command") {
               const commandAttrs = result.record
                 ? `data-open-record="${result.record.id}" ${result.content ? `data-open-content="${result.content}"` : ""}`
-                : `data-open-section="${result.section}"`;
+                : result.action === "timeline"
+                  ? "data-open-timeline"
+                  : `data-open-section="${result.section}"`;
 
               return `<button type="button" ${commandAttrs}>
                 <span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
@@ -1451,6 +1507,43 @@ function searchPanel() {
   </div>`;
 }
 
+function timelineWindow() {
+  if (!state.timelineOpen) {
+    return "";
+  }
+
+  const items = getTimelineItems(32);
+  const rows = items
+    .map(
+      (item) => `<li>
+        <time>${readableDate(item.date)}</time>
+        <button type="button" data-open-record="${item.record.id}" data-open-content="${item.content}">
+          <span>${escapeHtml(item.title)}</span>
+          <small>${escapeHtml(item.detail)}</small>
+        </button>
+      </li>`
+    )
+    .join("");
+
+  return `<button class="record-backdrop" type="button" aria-label="Close timeline" data-timeline-close></button>
+    <article class="timeline-window" aria-label="Archive timeline">
+      <header class="window-bar">
+        <span>// TIMELINE RECONSTRUCTION</span>
+        <div class="window-actions">
+          <button type="button" data-window-action="close" data-timeline-close aria-label="Close timeline">close</button>
+        </div>
+      </header>
+      <div class="timeline-body">
+        <div class="timeline-summary">
+          <p>RECENT SIGNALS</p>
+          <strong>${items.length}</strong>
+          <span>records and notes sorted by observed date</span>
+        </div>
+        <ol class="timeline-list">${rows}</ol>
+      </div>
+    </article>`;
+}
+
 function render() {
   const record = selectedRecord();
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
@@ -1459,7 +1552,9 @@ function render() {
   const headlineClass = state.headlineAnimating ? "headline-text is-writing" : "headline-text";
   const cursorClass = state.headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
-  root.innerHTML = `<main class="${state.panelOpen ? "archive-shell has-record" : "archive-shell"}">
+  const hasFocusWindow = state.panelOpen || state.timelineOpen;
+
+  root.innerHTML = `<main class="${hasFocusWindow ? "archive-shell has-record" : "archive-shell"}">
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
       <i>System initializing</i>
@@ -1468,7 +1563,7 @@ function render() {
     <div class="grain-layer"></div>
     <div class="scanline-layer"></div>
     ${sidebar()}
-    <section class="${state.panelOpen ? "workspace has-record" : "workspace"}" aria-label="Gestalt dashboard">
+    <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" aria-label="Gestalt dashboard">
       <header class="workspace-header">
         <div>
           <p class="route-label">// ${escapeHtml(routeTitle)}</p>
@@ -1495,6 +1590,7 @@ function render() {
 
       ${recordBackdrop()}
       ${recordWindow(record)}
+      ${timelineWindow()}
     </section>
     ${state.expandedImage ? `<button class="note-image-lightbox" type="button" aria-label="Close expanded image" data-close-expanded-image><img src="${escapeHtml(state.expandedImage.src)}" alt="${escapeHtml(state.expandedImage.alt)}" decoding="async" /></button>` : ""}
   </main>`;
@@ -1711,6 +1807,17 @@ document.addEventListener("click", (event) => {
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
 
+  if (target.dataset.openTimeline !== undefined) {
+    openTimeline();
+    return;
+  }
+
+  if (target.dataset.timelineClose !== undefined) {
+    state.timelineOpen = false;
+    render();
+    return;
+  }
+
   if (target.dataset.recordBackdrop !== undefined) {
     state.panelOpen = false;
     state.panelMinimized = true;
@@ -1852,6 +1959,12 @@ document.addEventListener("keydown", (event) => {
 
   if (state.expandedImage) {
     state.expandedImage = null;
+    render();
+    return;
+  }
+
+  if (state.timelineOpen) {
+    state.timelineOpen = false;
     render();
     return;
   }

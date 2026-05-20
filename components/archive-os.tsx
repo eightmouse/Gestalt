@@ -80,8 +80,17 @@ type ArchiveMetrics = {
   recordCount: number;
 };
 
+type TimelineItem = {
+  content: ContentKey;
+  date: string;
+  detail: string;
+  id: string;
+  record: RecordEntry;
+  title: string;
+};
+
 type SearchResult =
-  | { kind: "command"; id: string; title: string; detail: string; section?: RecordSection; record?: RecordEntry; content?: ContentKey }
+  | { kind: "command"; id: string; title: string; detail: string; action?: "timeline"; section?: RecordSection; record?: RecordEntry; content?: ContentKey }
   | { kind: "record"; record: RecordEntry; detail: string };
 type SearchCommand = Extract<SearchResult, { kind: "command" }>;
 
@@ -98,6 +107,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [now, setNow] = useState<Date | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -192,6 +202,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setPanelMaximized(false);
     setSearchOpen(false);
     setSearchQuery("");
+    setTimelineOpen(false);
   };
 
   const openSection = (section: RecordSection) => {
@@ -200,11 +211,25 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setPanelMinimized(false);
     setSearchOpen(false);
     setSearchQuery("");
+    setTimelineOpen(false);
+  };
+
+  const openTimeline = () => {
+    setPanelOpen(false);
+    setPanelMinimized(false);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setTimelineOpen(true);
   };
 
   const openSearchResult = (result: SearchResult) => {
     if (result.kind === "record") {
       openRecord(result.record);
+      return;
+    }
+
+    if (result.action === "timeline") {
+      openTimeline();
       return;
     }
 
@@ -219,14 +244,16 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
 
   const searchResults = getSearchResults(records, searchQuery, currentGame, latestLog);
+  const timelineItems = getTimelineItems(records, 32);
 
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
   const headline = activeSection === "system" ? getGreeting(now) : activeSectionConfig.label;
   const subtext = activeSection === "system" ? dashboardSubtext(now) : "Browse the records filed under this archive.";
+  const hasFocusWindow = panelOpen || timelineOpen;
 
   return (
-    <main className={panelOpen ? "archive-shell has-record" : "archive-shell"}>
+    <main className={hasFocusWindow ? "archive-shell has-record" : "archive-shell"}>
       <div className="boot-screen" aria-hidden="true">
         <span>GESTALT</span>
         <i>System initializing</i>
@@ -242,7 +269,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         onOpenSection={openSection}
       />
 
-      <section className={panelOpen ? "workspace has-record" : "workspace"} aria-label="Gestalt dashboard">
+      <section className={hasFocusWindow ? "workspace has-record" : "workspace"} aria-label="Gestalt dashboard">
         <header className="workspace-header">
           <div>
             <p className="route-label">// {routeTitle}</p>
@@ -397,6 +424,30 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </motion.button>
           ) : null}
         </AnimatePresence>
+
+        <AnimatePresence>
+          {timelineOpen ? (
+            <>
+              <motion.button
+                aria-label="Close timeline"
+                className="record-backdrop"
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setTimelineOpen(false)}
+              />
+              <TimelineWindow
+                items={timelineItems}
+                onClose={() => setTimelineOpen(false)}
+                onOpenRecord={(record, content) => {
+                  setTimelineOpen(false);
+                  openRecord(record, content);
+                }}
+              />
+            </>
+          ) : null}
+        </AnimatePresence>
       </section>
     </main>
   );
@@ -417,7 +468,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.12.0</span>
+        <span>v1.13.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -474,7 +525,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.12.0</dd>
+            <dd>GESTALT OS v1.13.0</dd>
           </div>
         </dl>
       </div>
@@ -777,6 +828,54 @@ function SearchPanel({
         )}
       </div>
     </div>
+  );
+}
+
+function TimelineWindow({
+  items,
+  onClose,
+  onOpenRecord
+}: {
+  items: TimelineItem[];
+  onClose: () => void;
+  onOpenRecord: (record: RecordEntry, content: ContentKey) => void;
+}) {
+  return (
+    <motion.article
+      className="timeline-window"
+      aria-label="Archive timeline"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 14 }}
+      transition={{ duration: 0.18 }}
+    >
+      <header className="window-bar">
+        <span>// TIMELINE RECONSTRUCTION</span>
+        <div className="window-actions">
+          <button type="button" data-window-action="close" aria-label="Close timeline" onClick={onClose}>
+            close
+          </button>
+        </div>
+      </header>
+      <div className="timeline-body">
+        <div className="timeline-summary">
+          <p>RECENT SIGNALS</p>
+          <strong>{items.length}</strong>
+          <span>records and notes sorted by observed date</span>
+        </div>
+        <ol className="timeline-list">
+          {items.map((item) => (
+            <li key={item.id}>
+              <time>{formatReadableDate(item.date)}</time>
+              <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
+                <span>{item.title}</span>
+                <small>{item.detail}</small>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </motion.article>
   );
 }
 
@@ -1751,10 +1850,49 @@ function countMediaPaths(records: RecordEntry[]): number {
   return paths.size;
 }
 
+function getTimelineItems(records: RecordEntry[], limit: number): TimelineItem[] {
+  return records
+    .filter((record) => record.section !== "system")
+    .flatMap((record) => {
+      const items: TimelineItem[] = [
+        {
+          content: "overview",
+          date: activityDate(record),
+          detail: `${record.type} / ${record.status}`,
+          id: `${record.id}-activity-${activityDate(record)}`,
+          record,
+          title: `${record.title} updated`
+        }
+      ];
+
+      noteEntries(record.body).forEach((note, index) => {
+        const date = noteTitleDate(note.title);
+
+        if (!date) {
+          return;
+        }
+
+        items.push({
+          content: "notes",
+          date,
+          detail: `${record.title} / Note ${index + 1}`,
+          id: `${record.id}-note-${index}-${date}`,
+          record,
+          title: note.title
+        });
+      });
+
+      return items;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date) || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
+    .slice(0, limit);
+}
+
 function getSearchResults(records: RecordEntry[], query: string, currentGame?: RecordEntry, latestLog?: RecordEntry): SearchResult[] {
   const normalized = query.trim().toLowerCase();
   const commands: SearchCommand[] = [
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
+    { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
     { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
