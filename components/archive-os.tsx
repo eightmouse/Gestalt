@@ -160,21 +160,22 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [searchOpen]);
 
   useEffect(() => {
-    const openPalette = (event: KeyboardEvent) => {
+    const togglePalette = (event: KeyboardEvent) => {
       const target = event.target;
+      const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || event.metaKey || event.ctrlKey || event.altKey) {
+      if (event.metaKey || event.ctrlKey || event.altKey || (isInputTarget && event.key !== "`")) {
         return;
       }
 
       if (event.key === "/" || event.key === "`") {
         event.preventDefault();
-        setSearchOpen(true);
+        setSearchOpen((current) => !current);
       }
     };
 
-    document.addEventListener("keydown", openPalette);
-    return () => document.removeEventListener("keydown", openPalette);
+    document.addEventListener("keydown", togglePalette);
+    return () => document.removeEventListener("keydown", togglePalette);
   }, []);
 
   useEffect(() => {
@@ -416,7 +417,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.11.1</span>
+        <span>v1.11.2</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -473,7 +474,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.11.1</dd>
+            <dd>GESTALT OS v1.11.2</dd>
           </div>
         </dl>
       </div>
