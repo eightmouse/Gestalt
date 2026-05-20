@@ -72,6 +72,12 @@ type WeatherState = {
   loading: boolean;
 };
 
+type WeatherLocation = {
+  label: string;
+  latitude: number;
+  longitude: number;
+};
+
 type ArchiveMetrics = {
   activeGame?: RecordEntry;
   activeProjects: number;
@@ -468,7 +474,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.13.0</span>
+        <span>v1.14.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -525,7 +531,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.13.0</dd>
+            <dd>GESTALT OS v1.14.0</dd>
           </div>
         </dl>
       </div>
@@ -557,24 +563,24 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
 
 function WeatherPanel() {
   const [weather, setWeather] = useState<WeatherState>({
-    label: "LOCAL WEATHER",
+    label: "AUTO WEATHER",
     temp: "--",
     condition: "Awaiting signal",
-    meta: "Browser permission required",
-    note: "No location is stored. Signal is read client-side only.",
+    meta: "Approximate network signal",
+    note: "No browser location prompt. Gestalt stores nothing.",
     loading: false
   });
 
-  const requestWeather = () => {
+  const requestWeather = async () => {
     if (weather.loading) {
       return;
     }
 
-    if (!("geolocation" in navigator) || typeof fetch !== "function") {
+    if (typeof fetch !== "function") {
       setWeather((current) => ({
         ...current,
         condition: "Signal unavailable",
-        meta: "This browser cannot read local weather",
+        meta: "This browser cannot read weather",
         note: "Weather remains client-side; no location is stored."
       }));
       return;
@@ -583,54 +589,45 @@ function WeatherPanel() {
     setWeather((current) => ({
       ...current,
       loading: true,
-      condition: "Acquiring position",
-      meta: "Waiting for browser permission",
-      note: "Location is used once for this weather lookup only."
+      condition: "Reading signal",
+      meta: "Resolving approximate sky",
+      note: "No browser permission dialog is required."
     }));
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const latitude = position.coords.latitude.toFixed(3);
-        const longitude = position.coords.longitude.toFixed(3);
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+    try {
+      const location = await resolveWeatherLocation();
+      const latitude = location.latitude.toFixed(3);
+      const longitude = location.longitude.toFixed(3);
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+      const response = await fetch(url);
+      const data = await response.json();
+      const current = data.current ?? {};
 
-        try {
-          const response = await fetch(url);
-          const data = await response.json();
-          const current = data.current ?? {};
-
-          setWeather({
-            label: "LOCAL WEATHER",
-            temp: Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--",
-            condition: weatherCodeLabel(Number(current.weather_code)),
-            meta: `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`,
-            note: "Live signal from Open-Meteo. Nothing is saved.",
-            loading: false
-          });
-        } catch {
-          setWeather({
-            label: "LOCAL WEATHER",
-            temp: "--",
-            condition: "Signal interrupted",
-            meta: "Weather endpoint did not respond",
-            note: "Try again later; the archive remains offline-safe.",
-            loading: false
-          });
-        }
-      },
-      () => {
-        setWeather({
-          label: "LOCAL WEATHER",
-          temp: "--",
-          condition: "Permission denied",
-          meta: "Local weather hidden",
-          note: "Grant location permission to read the current sky.",
-          loading: false
-        });
-      },
-      { enableHighAccuracy: false, maximumAge: 600000, timeout: 10000 }
-    );
+      setWeather({
+        label: "AUTO WEATHER",
+        temp: Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--",
+        condition: weatherCodeLabel(Number(current.weather_code)),
+        meta: `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`,
+        note: `Approximate sky: ${location.label}. Nothing is saved by Gestalt.`,
+        loading: false
+      });
+    } catch {
+      setWeather({
+        label: "AUTO WEATHER",
+        temp: "--",
+        condition: "Signal interrupted",
+        meta: "Weather endpoints did not respond",
+        note: "Try again later; the archive remains offline-safe.",
+        loading: false
+      });
+    }
   };
+
+  useEffect(() => {
+    void requestWeather();
+    // The first read should happen once on mount; the refresh button handles later reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="weather-readout">
@@ -644,7 +641,7 @@ function WeatherPanel() {
       </div>
       <p className="weather-note">{weather.note}</p>
       <button className="weather-action" type="button" disabled={weather.loading} onClick={requestWeather}>
-        &gt; {weather.loading ? "Reading signal..." : "Read local sky"}
+        &gt; {weather.loading ? "Reading signal..." : "Refresh sky"}
       </button>
     </div>
   );
@@ -1364,6 +1361,7 @@ function MediaPopupField({ prefix, record, title }: { prefix: string; record: Re
 
 function SampleGrid({ record }: { record: RecordEntry }) {
   const mediaSources = recordMediaSources(record, "samples");
+  const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
 
   return (
     <section className="content-terminal" aria-label={`${record.title} sample media`}>
@@ -1375,7 +1373,13 @@ function SampleGrid({ record }: { record: RecordEntry }) {
           const imageSource = mediaSources[index];
 
           return (
-            <button className="sample-terminal" type="button" key={`${record.id}-sample-${slot}`}>
+            <button
+              className="sample-terminal"
+              disabled={!imageSource}
+              type="button"
+              key={`${record.id}-sample-${slot}`}
+              onClick={() => imageSource && setExpandedImage({ alt: `${record.title} sample ${slot}`, src: imageSource })}
+            >
               <span>MEDIA_{String(slot).padStart(2, "0")}</span>
               <div className="sample-frame">
                 {imageSource ? <img src={imageSource} alt="" decoding="async" loading="lazy" /> : <div className="media-placeholder">NO MEDIA</div>}
@@ -1385,6 +1389,11 @@ function SampleGrid({ record }: { record: RecordEntry }) {
           );
         })}
       </div>
+      {expandedImage ? (
+        <button className="note-image-lightbox" type="button" aria-label="Close expanded sample" onClick={() => setExpandedImage(null)}>
+          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -1738,6 +1747,33 @@ function weatherCodeLabel(code: number): string {
   if ([95, 96, 99].includes(code)) return "Storm";
 
   return "Weather logged";
+}
+
+async function resolveWeatherLocation(): Promise<WeatherLocation> {
+  const response = await fetch("https://ipapi.co/json/");
+
+  if (!response.ok) {
+    throw new Error("Weather location lookup failed");
+  }
+
+  const data = await response.json() as {
+    city?: string;
+    country_code?: string;
+    latitude?: number | string;
+    longitude?: number | string;
+  };
+  const latitude = Number(data.latitude);
+  const longitude = Number(data.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error("Weather location missing coordinates");
+  }
+
+  return {
+    label: [data.city, data.country_code].filter(Boolean).join(", ") || "network location",
+    latitude,
+    longitude
+  };
 }
 
 function formatClock(date: Date | null): string {

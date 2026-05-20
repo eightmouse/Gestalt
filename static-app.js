@@ -292,11 +292,11 @@ const latinSayings = [
 ];
 
 const weatherState = {
-  label: "LOCAL WEATHER",
+  label: "AUTO WEATHER",
   temp: "--",
   condition: "Awaiting signal",
-  meta: "Browser permission required",
-  note: "No location is stored. Signal is read client-side only.",
+  meta: "Approximate network signal",
+  note: "No browser location prompt. Gestalt stores nothing.",
   loading: false
 };
 
@@ -492,6 +492,28 @@ function weatherCodeLabel(code) {
   if ([95, 96, 99].includes(code)) return "Storm";
 
   return "Weather logged";
+}
+
+async function resolveWeatherLocation() {
+  const response = await fetch("https://ipapi.co/json/");
+
+  if (!response.ok) {
+    throw new Error("Weather location lookup failed");
+  }
+
+  const data = await response.json();
+  const latitude = Number(data.latitude);
+  const longitude = Number(data.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error("Weather location missing coordinates");
+  }
+
+  return {
+    label: [data.city, data.country_code].filter(Boolean).join(", ") || "network location",
+    latitude,
+    longitude
+  };
 }
 
 function progressBlocks(value) {
@@ -974,7 +996,7 @@ function renderSamplePage(record) {
         .map((slot, index) => {
           const mediaSource = mediaSources[index];
 
-          return `<button class="sample-terminal" type="button">
+          return `<button class="sample-terminal" type="button" ${mediaSource ? `data-expand-image="${escapeHtml(mediaSource)}" data-expand-alt="${escapeHtml(`${record.title} sample ${slot}`)}"` : "disabled"}>
             <span>MEDIA_${String(slot).padStart(2, "0")}</span>
             <div class="sample-frame">
               ${
@@ -1179,7 +1201,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.13.0</span>
+      <span>v1.14.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1197,7 +1219,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.13.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.14.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1216,7 +1238,7 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
 }
 
 function weatherPanel() {
-  const actionLabel = weatherState.loading ? "Reading signal..." : "Read local sky";
+  const actionLabel = weatherState.loading ? "Reading signal..." : "Refresh sky";
 
   return `<div class="weather-readout" data-weather-module>
     <div class="weather-primary">
@@ -1659,7 +1681,7 @@ function syncWeather() {
   if (meta) meta.textContent = weatherState.meta;
   if (note) note.textContent = weatherState.note;
   if (action) {
-    action.textContent = weatherState.loading ? "> Reading signal..." : "> Read local sky";
+    action.textContent = weatherState.loading ? "> Reading signal..." : "> Refresh sky";
     action.disabled = weatherState.loading;
   }
 }
@@ -1708,58 +1730,47 @@ function setUpdateHistory(open) {
   }
 }
 
-function requestWeather() {
+async function requestWeather() {
   if (weatherState.loading) {
     return;
   }
 
-  if (!("geolocation" in navigator) || typeof fetch !== "function") {
+  if (typeof fetch !== "function") {
     weatherState.condition = "Signal unavailable";
-    weatherState.meta = "This browser cannot read local weather";
+    weatherState.meta = "This browser cannot read weather";
     weatherState.note = "Weather remains client-side; no location is stored.";
     syncWeather();
     return;
   }
 
   weatherState.loading = true;
-  weatherState.condition = "Acquiring position";
-  weatherState.meta = "Waiting for browser permission";
-  weatherState.note = "Location is used once for this weather lookup only.";
+  weatherState.condition = "Reading signal";
+  weatherState.meta = "Resolving approximate sky";
+  weatherState.note = "No browser permission dialog is required.";
   syncWeather();
 
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const latitude = position.coords.latitude.toFixed(3);
-      const longitude = position.coords.longitude.toFixed(3);
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+  try {
+    const location = await resolveWeatherLocation();
+    const latitude = location.latitude.toFixed(3);
+    const longitude = location.longitude.toFixed(3);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const current = data.current || {};
 
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        const current = data.current || {};
-
-        weatherState.temp = Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--";
-        weatherState.condition = weatherCodeLabel(Number(current.weather_code));
-        weatherState.meta = `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`;
-        weatherState.note = "Live signal from Open-Meteo. Nothing is saved.";
-      } catch {
-        weatherState.condition = "Signal interrupted";
-        weatherState.meta = "Weather endpoint did not respond";
-        weatherState.note = "Try again later; the archive remains offline-safe.";
-      } finally {
-        weatherState.loading = false;
-        syncWeather();
-      }
-    },
-    () => {
-      weatherState.loading = false;
-      weatherState.condition = "Permission denied";
-      weatherState.meta = "Local weather hidden";
-      weatherState.note = "Grant location permission to read the current sky.";
-      syncWeather();
-    },
-    { enableHighAccuracy: false, maximumAge: 600000, timeout: 10000 }
-  );
+    weatherState.temp = Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--";
+    weatherState.condition = weatherCodeLabel(Number(current.weather_code));
+    weatherState.meta = `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`;
+    weatherState.note = `Approximate sky: ${location.label}. Nothing is saved by Gestalt.`;
+  } catch {
+    weatherState.temp = "--";
+    weatherState.condition = "Signal interrupted";
+    weatherState.meta = "Weather endpoints did not respond";
+    weatherState.note = "Try again later; the archive remains offline-safe.";
+  } finally {
+    weatherState.loading = false;
+    syncWeather();
+  }
 }
 
 document.addEventListener("click", (event) => {
@@ -1999,4 +2010,5 @@ document.addEventListener("keydown", (event) => {
 });
 
 render();
+void requestWeather();
 window.setInterval(syncTime, 30_000);
