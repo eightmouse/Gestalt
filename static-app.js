@@ -309,7 +309,6 @@ const state = {
   activeContent: "overview",
   searchOpen: false,
   searchQuery: "",
-  noteSearchOpen: false,
   noteSearchQuery: "",
   updateHistoryOpen: false,
   bootDismissed: false,
@@ -344,7 +343,6 @@ function openRecord(recordId, contentKey = "overview") {
   state.panelMaximized = false;
   state.searchOpen = false;
   state.searchQuery = "";
-  state.noteSearchOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   state.recordTitleAnimating = true;
@@ -358,7 +356,6 @@ function openSection(sectionId) {
   state.panelMinimized = false;
   state.searchOpen = false;
   state.searchQuery = "";
-  state.noteSearchOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   render();
@@ -396,6 +393,33 @@ function shortDate(value) {
 function readableDate(value) {
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day} / ${month} / ${year}` : value;
+}
+
+function recentActivity(limit) {
+  return records
+    .filter((record) => record.section !== "system")
+    .map((record) => ({ date: activityDate(record), record }))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
+    .slice(0, limit);
+}
+
+function activityDate(record) {
+  const noteDates = noteEntries(record.body)
+    .map((note) => noteTitleDate(note.title))
+    .filter(Boolean);
+
+  return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] || record.updated;
+}
+
+function noteTitleDate(title) {
+  const match = title.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\b/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, day, month, year] = match;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
 function formatClock() {
@@ -663,7 +687,7 @@ function markdownBody(body) {
       const media = parseNoteMediaOptions(imageMatch[1]);
       output.push(`<figure class="${noteMediaClassName(media)}" ${key}>
         <button class="note-media-button" type="button" data-expand-image="${escapeHtml(imageMatch[2])}" data-expand-alt="${escapeHtml(media.caption)}">
-          <img src="${escapeHtml(imageMatch[2])}" alt="${escapeHtml(media.caption)}" />
+          <img src="${escapeHtml(imageMatch[2])}" alt="${escapeHtml(media.caption)}" decoding="async" loading="lazy" />
         </button>
         ${media.caption ? `<figcaption>${escapeHtml(media.caption)}</figcaption>` : ""}
       </figure>`);
@@ -730,7 +754,7 @@ function noteMediaClassName(media) {
 
 function recordBanner(record) {
   return record.banner
-    ? `<div class="banner-frame"><img src="${escapeHtml(record.banner)}" alt="" /></div>`
+    ? `<div class="banner-frame"><img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" /></div>`
     : `<div class="empty-banner"><span class="line-icon">âŒ</span></div>`;
 }
 
@@ -783,7 +807,7 @@ function renderMediaPage(record, title = "MEDIA", prefix = "MEDIA") {
               <div class="media-frame">
                 ${
                   hasImage
-                    ? `<img src="${escapeHtml(record.banner)}" alt="" />`
+                    ? `<img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" />`
                     : `<div class="media-placeholder">NO CAPTURE</div>`
                 }
               </div>
@@ -812,7 +836,7 @@ function renderSamplePage(record) {
             <div class="sample-frame">
               ${
                 hasImage
-                  ? `<img src="${escapeHtml(record.banner)}" alt="" />`
+                  ? `<img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" />`
                   : `<div class="media-placeholder">NO MEDIA</div>`
               }
             </div>
@@ -826,11 +850,10 @@ function renderSamplePage(record) {
 
 function renderNotesPage(record) {
   const notes = noteEntries(record.body);
-  const suggestions = notes
-    .map((note) => `<option value="${escapeHtml(note.title)}"></option>`)
-    .join("");
+  const cleanQuery = state.noteSearchQuery.trim().toLowerCase();
+  const filteredNotes = cleanQuery ? notes.filter((note) => note.title.toLowerCase().includes(cleanQuery)) : notes;
   const noteList = notes.length
-    ? notes
+    ? filteredNotes
         .map((note, index) => ({ ...note, index }))
         .map(
           (note) => `<details class="note-entry" data-note-index="${note.index}" ${note.index === 0 ? "open" : ""}>
@@ -844,15 +867,27 @@ function renderNotesPage(record) {
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
       <div class="terminal-title">// NOTES PAGE</div>
-      <button class="note-search-toggle" type="button" aria-label="Search notes" aria-expanded="false" data-note-search-toggle><span class="search-icon" aria-hidden="true"></span></button>
     </div>
-    <div class="note-search-panel" hidden>
-      <label for="note-search">Search note title or date</label>
-      <input id="note-search" type="search" list="note-search-suggestions" value="" data-note-search-input autocomplete="off" />
-      <datalist id="note-search-suggestions">${suggestions}</datalist>
-    </div>
-    <div class="note-stack">${noteList}<p class="notes-empty" ${notes.length ? "hidden" : ""}>No note matches that signal.</p></div>
+    <div class="note-stack">${noteList}<p class="notes-empty" ${filteredNotes.length ? "hidden" : ""}>No note matches that signal.</p></div>
   </section>`;
+}
+
+function renderNoteSearch(record) {
+  const notes = noteEntries(record.body);
+
+  if (!notes.length) {
+    return "";
+  }
+
+  const suggestions = notes
+    .map((note) => `<option value="${escapeHtml(note.title)}"></option>`)
+    .join("");
+
+  return `<div class="note-search-panel">
+    <label for="note-search">Search note</label>
+    <input id="note-search" type="search" list="note-search-suggestions" value="${escapeHtml(state.noteSearchQuery)}" data-note-search-input autocomplete="off" placeholder="Title or date" />
+    <datalist id="note-search-suggestions">${suggestions}</datalist>
+  </div>`;
 }
 
 function renderUpdateHistory(record) {
@@ -984,7 +1019,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.6.0</span>
+      <span>v1.6.1</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -999,7 +1034,7 @@ function sidebar() {
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
         <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
         <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.6.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.6.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1050,7 +1085,7 @@ function dashboard() {
     || recordsFor("games").find((record) => record.status === "Playing")
     || recordsFor("games")[0];
   const latestLog = recordsFor("logs").sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 3);
+  const activity = recentActivity(4);
 
   const projectList = activeProjects.length
     ? `<div class="record-list">
@@ -1069,7 +1104,7 @@ function dashboard() {
   const game = currentGame
     ? `<div class="current-game">
         <div class="game-cover">
-          <img src="${escapeHtml(recordImage(currentGame))}" alt="" />
+          <img src="${escapeHtml(recordImage(currentGame))}" alt="" decoding="async" />
           <span>${escapeHtml(currentGame.title.slice(0, 10))}</span>
         </div>
         <div>
@@ -1089,9 +1124,9 @@ function dashboard() {
     ? `<ol class="activity-feed">
       ${activity
         .map(
-          (record) => `<li>
-          <span>[${shortDate(record.updated)}]</span>
-          <button type="button" data-open-record="${record.id}">${escapeHtml(record.type)}: ${escapeHtml(record.title)}</button>
+          (item) => `<li>
+          <span>[${shortDate(item.date)}]</span>
+          <button type="button" data-open-record="${item.record.id}">${escapeHtml(item.record.type)}: ${escapeHtml(item.record.title)}</button>
         </li>`
         )
         .join("")}
@@ -1104,7 +1139,7 @@ function dashboard() {
     ${dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel")}
     ${dashboardPanel("CURRENT GAME", game, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "")}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "")}
-    ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", `data-open-section="logs"`, "wide-panel")}
+    ${dashboardPanel("RECENT ACTIVITY", feed, "", "", "wide-panel")}
   </div>`;
 }
 
@@ -1112,7 +1147,46 @@ function sectionPage(sectionId) {
   const section = sections.find((entry) => entry.id === sectionId) || sections[0];
   const sectionRecords = recordsFor(sectionId).sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sectionRecords.length} ${sectionRecords.length === 1 ? "record" : "records"}`;
-  const rows = sectionRecords.length
+  const splitSection = splitSectionRecords(sectionId, sectionRecords);
+
+  if (splitSection) {
+    return `<section class="section-page section-page--split" aria-label="${escapeHtml(section.code)} records">
+      <header class="section-page-header">
+        <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+        <div>
+          <p>${escapeHtml(section.code)}</p>
+          <h2>${escapeHtml(section.label)}</h2>
+        </div>
+        <i>${countLabel}</i>
+      </header>
+      <div class="section-split-grid">
+        ${splitSection
+          .map(
+            (group) => `<section class="section-record-column" aria-label="${escapeHtml(group.title)}">
+              <header><h3>${escapeHtml(group.title)}</h3><span>${group.records.length}</span></header>
+              <div class="section-record-grid">${renderSectionRows(group.records)}</div>
+            </section>`
+          )
+          .join("")}
+      </div>
+    </section>`;
+  }
+
+  return `<section class="section-page" aria-label="${escapeHtml(section.code)} records">
+    <header class="section-page-header">
+      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+      <div>
+        <p>${escapeHtml(section.code)}</p>
+        <h2>${escapeHtml(section.label)}</h2>
+      </div>
+      <i>${countLabel}</i>
+    </header>
+    <div class="section-record-grid">${renderSectionRows(sectionRecords)}</div>
+  </section>`;
+}
+
+function renderSectionRows(sectionRecords) {
+  return sectionRecords.length
     ? sectionRecords
         .map(
           (record) => `<button class="section-record" type="button" data-open-record="${record.id}">
@@ -1124,18 +1198,28 @@ function sectionPage(sectionId) {
         )
         .join("")
     : `<p class="search-empty">No records filed here yet.</p>`;
+}
 
-  return `<section class="section-page" aria-label="${escapeHtml(section.code)} records">
-    <header class="section-page-header">
-      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
-      <div>
-        <p>${escapeHtml(section.code)}</p>
-        <h2>${escapeHtml(section.label)}</h2>
-      </div>
-      <i>${countLabel}</i>
-    </header>
-    <div class="section-record-grid">${rows}</div>
-  </section>`;
+function splitSectionRecords(sectionId, sectionRecords) {
+  if (sectionId === "projects") {
+    const activeStatuses = new Set(["active", "in progress", "planning", "blocked"]);
+
+    return [
+      { title: "ACTIVE PROJECTS", records: sectionRecords.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
+      { title: "OTHER PROCESSES", records: sectionRecords.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+    ];
+  }
+
+  if (sectionId === "games") {
+    const activeStatuses = new Set(["playing", "on hold", "in progress"]);
+
+    return [
+      { title: "SESSION LOGS", records: sectionRecords.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
+      { title: "PAST LOGS", records: sectionRecords.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+    ];
+  }
+
+  return null;
 }
 
 function workspaceContent() {
@@ -1169,7 +1253,7 @@ function recordWindow(record) {
     <div class="record-layout">
       <div class="record-main">
         <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}">
-          ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" />` : ""}
+          ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" decoding="async" />` : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span><span class="${cursorClass}" style="--record-title-chars: ${record.title.length}">_</span></h2>
@@ -1203,10 +1287,10 @@ function recordWindow(record) {
           <div><dt>Last Updated:</dt><dd>${readableDate(record.updated)}</dd></div>
         </dl>
 
-        ${renderUpdateHistory(record)}
+        ${state.activeContent === "notes" ? renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
       </aside>
     </div>
-    ${renderUpdateHistoryModal(record)}
+    ${record.section === "games" ? "" : renderUpdateHistoryModal(record)}
   </article>`;
 }
 
@@ -1292,7 +1376,7 @@ function render() {
       ${recordBackdrop()}
       ${recordWindow(record)}
     </section>
-    ${state.expandedImage ? `<button class="note-image-lightbox" type="button" aria-label="Close expanded image" data-close-expanded-image><img src="${escapeHtml(state.expandedImage.src)}" alt="${escapeHtml(state.expandedImage.alt)}" /></button>` : ""}
+    ${state.expandedImage ? `<button class="note-image-lightbox" type="button" aria-label="Close expanded image" data-close-expanded-image><img src="${escapeHtml(state.expandedImage.src)}" alt="${escapeHtml(state.expandedImage.alt)}" decoding="async" /></button>` : ""}
   </main>`;
 
   syncTime();
@@ -1361,31 +1445,6 @@ function syncWeather() {
   if (action) {
     action.textContent = weatherState.loading ? "> Reading signal..." : "> Read local sky";
     action.disabled = weatherState.loading;
-  }
-}
-
-function setNoteSearch(notesPage, open) {
-  const button = notesPage.querySelector("[data-note-search-toggle]");
-  const panel = notesPage.querySelector(".note-search-panel");
-  const input = notesPage.querySelector("[data-note-search-input]");
-
-  notesPage.classList.toggle("is-searching", open);
-  state.noteSearchOpen = open;
-  button?.classList.toggle("is-active", open);
-  button?.setAttribute("aria-expanded", String(open));
-
-  if (panel instanceof HTMLElement) {
-    panel.hidden = !open;
-  }
-
-  if (input instanceof HTMLInputElement) {
-    if (!open) {
-      input.value = "";
-      filterNoteEntries(notesPage, "");
-      return;
-    }
-
-    window.requestAnimationFrame(() => input.focus());
   }
 }
 
@@ -1554,16 +1613,6 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (target.dataset.noteSearchToggle !== undefined) {
-    const notesPage = target.closest(".notes-page");
-
-    if (notesPage instanceof HTMLElement) {
-      setNoteSearch(notesPage, !notesPage.classList.contains("is-searching"));
-    }
-
-    return;
-  }
-
   if (target.dataset.updateHistoryToggle !== undefined) {
     setUpdateHistory(!state.updateHistoryOpen);
     return;
@@ -1598,7 +1647,6 @@ document.addEventListener("click", (event) => {
   if (contentKey) {
     state.activeContent = contentKey;
     state.windowSteady = true;
-    state.noteSearchOpen = false;
     state.noteSearchQuery = "";
     state.updateHistoryOpen = false;
     render();
@@ -1649,7 +1697,8 @@ document.addEventListener("input", (event) => {
   }
 
   if (target.dataset.noteSearchInput !== undefined) {
-    const notesPage = target.closest(".notes-page");
+    state.noteSearchQuery = target.value;
+    const notesPage = document.querySelector(".notes-page");
 
     if (notesPage instanceof HTMLElement) {
       filterNoteEntries(notesPage, target.value);
@@ -1673,12 +1722,19 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.noteSearchOpen) {
+  if (state.noteSearchQuery) {
     const notesPage = document.querySelector(".notes-page");
+    const input = document.querySelector("[data-note-search-input]");
 
     if (notesPage instanceof HTMLElement) {
-      setNoteSearch(notesPage, false);
+      filterNoteEntries(notesPage, "");
     }
+
+    if (input instanceof HTMLInputElement) {
+      input.value = "";
+    }
+
+    state.noteSearchQuery = "";
 
     return;
   }

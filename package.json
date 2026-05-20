@@ -1,6 +1,6 @@
 {
   "name": "gestalt-archive",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "engines": {
@@ -14,7 +14,8 @@
     "install:safe": "pnpm install --ignore-scripts",
     "content:new": "node scripts/new-entry.mjs",
     "content:check": "node scripts/validate-content.mjs",
-    "content:export-static": "node scripts/export-static-records.mjs"
+    "content:export-static": "node scripts/export-static-records.mjs",
+    "steam:sync": "node scripts/sync-steam.mjs"
   },
   "dependencies": {
     "framer-motion": "12.23.12",

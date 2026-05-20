@@ -427,9 +427,10 @@ function StudioSectionPage({
   section: (typeof studioSections)[number];
 }) {
   const countLabel = `${records.length} ${records.length === 1 ? "record" : "records"}`;
+  const splitSection = splitStudioSectionRecords(section.id, records);
 
   return (
-    <section className="section-page studio-section-copy" aria-label={`${section.code} studio records`}>
+    <section className={splitSection ? "section-page section-page--split studio-section-copy" : "section-page studio-section-copy"} aria-label={`${section.code} studio records`}>
       <header className="section-page-header">
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>
@@ -442,22 +443,72 @@ function StudioSectionPage({
         </div>
       </header>
 
-      <div className="section-record-grid">
-        {records.length > 0 ? (
-          records.map((record) => (
-            <button className="section-record" key={record.id} type="button" onClick={() => onEdit(record.id)}>
-              <span className="section-record-kind">{record.type}</span>
-              <strong>{record.title}</strong>
-              <span>{record.summary}</span>
-              <i>{record.status} . {record.updated}</i>
-            </button>
-          ))
-        ) : (
-          <p className="search-empty">No records filed here yet.</p>
-        )}
-      </div>
+      {splitSection ? (
+        <div className="section-split-grid">
+          {splitSection.map((group) => (
+            <section className="section-record-column" key={group.title} aria-label={group.title}>
+              <header>
+                <h3>{group.title}</h3>
+                <span>{group.records.length}</span>
+              </header>
+              <div className="section-record-grid">
+                {group.records.length > 0 ? (
+                  group.records.map((record) => (
+                    <StudioSectionRecordButton key={record.id} record={record} onEdit={onEdit} />
+                  ))
+                ) : (
+                  <p className="search-empty">No records filed here yet.</p>
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="section-record-grid">
+          {records.length > 0 ? (
+            records.map((record) => (
+              <StudioSectionRecordButton key={record.id} record={record} onEdit={onEdit} />
+            ))
+          ) : (
+            <p className="search-empty">No records filed here yet.</p>
+          )}
+        </div>
+      )}
     </section>
   );
+}
+
+function StudioSectionRecordButton({ onEdit, record }: { onEdit: (id: string) => void; record: RecordEntry }) {
+  return (
+    <button className="section-record" type="button" onClick={() => onEdit(record.id)}>
+      <span className="section-record-kind">{record.type}</span>
+      <strong>{record.title}</strong>
+      <span>{record.summary}</span>
+      <i>{record.status} . {formatStudioDate(record.updated)}</i>
+    </button>
+  );
+}
+
+function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
+  if (section === "projects") {
+    const activeStatuses = new Set(["active", "in progress", "planning", "blocked"]);
+
+    return [
+      { title: "ACTIVE PROJECTS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
+      { title: "OTHER PROCESSES", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+    ];
+  }
+
+  if (section === "games") {
+    const activeStatuses = new Set(["playing", "on hold", "in progress"]);
+
+    return [
+      { title: "SESSION LOGS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
+      { title: "PAST LOGS", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+    ];
+  }
+
+  return null;
 }
 
 function EditableHeading({
@@ -471,7 +522,7 @@ function EditableHeading({
 }) {
   return (
     <div className={form.headerImage ? "studio-entry-heading has-heading-banner" : "studio-entry-heading"}>
-      {form.headerImage ? <img src={form.headerImage} alt="" /> : null}
+      {form.headerImage ? <img src={form.headerImage} alt="" decoding="async" /> : null}
       <div className="studio-heading-content">
         <div className="studio-heading-topline">
           <EditableText className="studio-kind-edit" label="Type" value={form.type} onChange={(value) => onUpdate("type", value)} />
@@ -531,7 +582,7 @@ function StudioContent({
         <div className="terminal-title">// {activeContent === "samples" ? "SAMPLES" : "ATTACHMENTS"}</div>
         <DropZone uploading={uploading} onDrop={(files) => onFileDrop(files, "body")} onPick={() => onFilePick("body")} />
         <div className="studio-sample-preview">
-          {form.banner ? <img src={form.banner} alt="" /> : <span>NO PRIMARY MEDIA</span>}
+          {form.banner ? <img src={form.banner} alt="" decoding="async" loading="lazy" /> : <span>NO PRIMARY MEDIA</span>}
         </div>
       </section>
     );
@@ -1098,6 +1149,11 @@ function groupRecords(records: RecordEntry[]): Record<StudioSection, RecordEntry
     setup: [],
     archive: []
   });
+}
+
+function formatStudioDate(value: string): string {
+  const [year, month, day] = value.split("-");
+  return year && month && day ? `${day} / ${month} / ${year}` : value;
 }
 
 function defaultType(section: StudioSection): string {

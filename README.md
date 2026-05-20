@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.6.0-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.6.1-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -13,10 +13,4 @@ This is the first working version, so there are not many entries yet. I have jus
 
 Currently being extra careful because of the npm ordeal.
 
-## Supply Chain Guardrails
-
-Dependency installation is intentionally not required for the current static preview.
-
-For the future pnpm/Next.js path, this repo keeps exact dependency versions and includes npm/pnpm guardrails such as disabled install scripts, a seven-day release-age buffer, strict dependency builds, and ignored install/build output.
-
-Current public version: `v1.6.0`.
+Current public version: `v1.6.1`.

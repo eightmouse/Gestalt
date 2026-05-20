@@ -539,16 +539,12 @@ button:focus-visible {
   inset: 0;
   z-index: 0;
   border: 0;
-  background-image:
+  background:
+    radial-gradient(ellipse at 55% 34%, rgba(217, 213, 193, 0.03), transparent 36%),
     linear-gradient(90deg, rgba(5, 6, 5, 0.9), rgba(5, 6, 5, 0.38) 52%, rgba(5, 6, 5, 0.82)),
-    var(--archive-image),
-    var(--archive-image-static);
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  box-shadow: inset 0 0 80px rgba(5, 6, 5, 0.74), inset 0 0 55px rgba(255, 255, 255, 0.018);
-  filter: grayscale(1) contrast(0.9) brightness(0.62);
-  opacity: 0.48;
+    rgba(5, 6, 5, 0.16);
+  box-shadow: inset 0 0 80px rgba(5, 6, 5, 0.58), inset 0 0 55px rgba(255, 255, 255, 0.014);
+  opacity: 0.76;
 }
 
 .workspace::after {
@@ -567,7 +563,7 @@ button:focus-visible {
 
 .workspace-header {
   position: relative;
-  z-index: 1;
+  z-index: 20;
   flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
@@ -655,7 +651,7 @@ button:focus-visible {
   position: absolute;
   inset-block-start: 42px;
   inset-inline-end: 0;
-  z-index: 12;
+  z-index: 40;
   inline-size: min(430px, calc(100vw - var(--sidebar-width) - 96px));
   display: grid;
   gap: 12px;
@@ -663,7 +659,6 @@ button:focus-visible {
   border: 1px solid var(--line-strong);
   background: rgba(8, 9, 8, 0.96);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58);
-  backdrop-filter: blur(14px);
 }
 
 .search-panel label {
@@ -758,7 +753,7 @@ button:focus-visible {
 .record-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: 45;
   display: block;
   padding: 0;
   border: 0;
@@ -777,6 +772,11 @@ button:focus-visible {
   gap: 18px;
   contain: layout paint;
   transition: opacity 90ms linear;
+}
+
+.section-page--split {
+  inline-size: min(100%, 1180px);
+  max-inline-size: 1180px;
 }
 
 .section-page-header {
@@ -820,6 +820,107 @@ button:focus-visible {
   overflow: auto;
   overscroll-behavior: contain;
   padding-inline-end: 6px;
+}
+
+.section-split-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.section-record-column {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(217, 213, 193, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%),
+    rgba(0, 0, 0, 0.16);
+}
+
+.section-record-column > header {
+  min-block-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--muted);
+  border-block-end: 1px solid rgba(217, 213, 193, 0.1);
+  padding-block-end: 10px;
+}
+
+.section-record-column h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+.section-record-column > header span {
+  color: var(--muted-2);
+  font-size: 12px;
+}
+
+.section-record-column .section-record-grid {
+  gap: 8px;
+  grid-auto-rows: 118px;
+}
+
+.section-record-column .section-record {
+  block-size: 118px;
+  min-block-size: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "kind date"
+    "title title"
+    "summary summary";
+  align-content: center;
+  column-gap: 12px;
+  row-gap: 5px;
+  padding: 14px 12px;
+  overflow: hidden;
+}
+
+.section-record-column .section-record-kind {
+  grid-area: kind;
+}
+
+.section-record-column .section-record strong {
+  grid-area: title;
+  display: block;
+  line-height: 1.25;
+  margin-block: 0 2px;
+}
+
+.section-record-column .section-record > span:not(.section-record-kind) {
+  grid-area: summary;
+  min-block-size: 0;
+  padding-block-start: 7px;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+}
+
+.section-record-column .section-record i {
+  grid-area: date;
+  max-inline-size: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.section-record-column .section-record strong,
+.section-record-column .section-record > span:not(.section-record-kind),
+.section-record-column .section-record i {
+  min-width: 0;
 }
 
 .section-record {
@@ -1295,7 +1396,7 @@ button:focus-visible {
 
 .record-window {
   position: fixed;
-  z-index: 10;
+  z-index: 60;
   inset-block-start: clamp(36px, 8vh, 82px);
   inset-block-end: clamp(24px, 4vh, 44px);
   inset-inline-start: var(--sidebar-width);
@@ -1315,7 +1416,6 @@ button:focus-visible {
   contain: layout paint style;
   transform: translateZ(0);
   animation: window-in 200ms ease-out;
-  will-change: opacity;
 }
 
 .record-window.is-steady {
@@ -2224,6 +2324,12 @@ button:focus-visible {
   background: rgba(5, 6, 5, 0.38);
 }
 
+.record-aside .note-search-panel {
+  align-self: end;
+  margin-block-start: auto;
+  padding-block-start: 12px;
+}
+
 .note-search-panel label {
   color: var(--muted-2);
   font-size: 11px;
@@ -2846,14 +2952,16 @@ button:focus-visible {
 }
 
 .studio-os-grid {
+  block-size: calc(100vh - 150px);
+  min-block-size: 0;
   display: grid;
   grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
   gap: 16px;
-  min-block-size: calc(100vh - 150px);
 }
 
 .studio-nav-copy {
   min-width: 0;
+  min-block-size: 0;
   display: grid;
   align-content: start;
   gap: 8px;
@@ -2876,6 +2984,8 @@ button:focus-visible {
 
 .studio-record-copy {
   min-width: 0;
+  min-block-size: 0;
+  overflow: hidden;
   border: 1px solid var(--line);
   background: rgba(6, 7, 6, 0.78);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
@@ -2884,7 +2994,8 @@ button:focus-visible {
 .studio-section-copy {
   min-width: 0;
   align-self: start;
-  min-block-size: calc(100vh - 150px);
+  block-size: 100%;
+  min-block-size: 0;
   padding: 22px;
   border: 1px solid var(--line);
   background: rgba(6, 7, 6, 0.72);
@@ -3819,9 +3930,26 @@ input.studio-title-edit {
     max-inline-size: none;
   }
 
+  .section-split-grid {
+    grid-template-columns: 1fr;
+  }
+
   .section-page-header,
   .section-record {
     grid-template-columns: 1fr;
+  }
+
+  .section-record-column .section-record {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "kind"
+      "title"
+      "summary"
+      "date";
+  }
+
+  .section-record-column .section-record i {
+    max-inline-size: none;
   }
 
   .section-record i {

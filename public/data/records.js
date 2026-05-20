@@ -266,13 +266,13 @@ window.__GESTALT_RECORDS = [
     "summary": "Play log for Persona 5 Royal. These are personal opinions and thoughts as I experience the game ~",
     "banner": "public/media/records/persona-5-royal/cover.jpg",
     "headerImage": "public/media/records/persona-5-royal/header.jpg",
-    "progress": 28,
+    "progress": 30,
     "priority": 8,
     "dashboardActive": true,
     "steamAppId": 1687950,
-    "playtime": "28.9h",
-    "lastPlayed": "13 / 05 / 2026",
-    "achievementCount": "15 / 53",
+    "playtime": "35.0h",
+    "lastPlayed": "20 / 05 / 2026",
+    "achievementCount": "16 / 53",
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
@@ -289,7 +289,7 @@ window.__GESTALT_RECORDS = [
         "status": "Filed"
       }
     ],
-    "body": ":::note 14 / 05 / 2026 - Where am I at?\n![Persona 5 Royal opening note](public/media/records/persona-5-royal/test.png)\n\nSo, screenshot is from few days ago, using it to mostly test + update with some actual in-game stuff.\n\nI just entered the second palace, explored it as I have no clue if it will be an actual palace or not, I yet have to find out if Madarame is a bad guy or not lulz.\nHave to admit, I thought at some point I would get bothered by the amount of text and dialogue, especially early on but I think they did a crazy good job with the plot for me to be invested.\n\nBeside, these long yapping sessions are balanced with an equal amount of fights/exploration ~\n:::\n\n:::note 14 / 05 / 2026 - First Session File\n![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)\n\nThis note is mostly here to lock in the shape of the Persona 5 Royal play log.\n\nThe idea is simple: one game gets one main record, and every longer session can become its own little article inside that record. Newest thoughts stay at the top, with their own banner or screenshots when I have them.\n:::\n\n:::note 14 / 05 / 2026 - Opening Note\n![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)\n\nOpening this as the main Persona 5 Royal play log, first test of the note stack!\n:::\n\n## Update Index\n- 14 / 05 / 2026 - Added first real Persona session note.\n- 14 / 05 / 2026 - First note stack tested.\n- 14 / 05 / 2026 - Play log created."
+    "body": ":::note 18 / 05 / 2026 - Aight, I was wrong\n![Look at Madarame goofy ahh](public/media/records/persona-5-royal/1779106132693-screenshot-2026-05-17-225919.png)\nYeah I admit it, I was wrong..\nThey absolutely did a good job in making Madarame looking somewhat innocent, like I said in the previous note.. if the peak of this bs was just plagiarizing, doesn't really make that bad..\nHowever, with all the new info gathered after getting into the palace and confronting Madarame, yep... he's quite something.\n\nNow, for the crazy COOL looking part that I kinda expected but not fully, was not sure..\nYusuke, GETTING. A . PERSONA(?).\nLike I said, I was half expecting/hoping for something like this but I kinda give up the idea cause I was like 'Nah, he's just one of the victim, we will help him and that's it\"\n![The coolest character so far, after Joker and Ann](public/media/records/persona-5-royal/1779106403416-screenshot-2026-05-17-230300.png)\n\nFirst off Yusuke's Persona reminds me of Oden, so that's already a 10 in my book.. on top of that Yusuke also looks crazy cool both aesthetically and personality wise after getting the persona.\nI already put him on the team and play around with his ability a little, he's very cool, love it!\n\nThis session wasn't particularly long but surely packed ~\n:::\n\n:::note 16 / 05 / 2026 - Madarame, no steal my art pls\n![Palace timee](public/media/records/persona-5-royal/1778932974348-20260516174657-1.jpg)\nYeah this is the second palace, was not sure but I guess it's confirmed.\n\nI don't know how long the game is or what's the average completion time but I can say, I'm 30+ hours in and the game looks HUGE.\nCan't complain, I've been craving for something to sink my time in and get obsessed over.. so, yeah.\n\nSo, new palace.. Madarame.\nThey're very good at hiding characters real intentions/personality, cause I don't necessarily hate this guy yet.. although someone suicide.\nMy point is.. I hope there's more to it than just him plagiarizing, cause yes it is bad.. It just doesn't feel as 'emotionally' charged as the first palace reason, kinda.\nBut hey, I just arrived here.. I might be jumping to conclusion and be in awe next session, who knows.\n\nThat aside, AOE + Weak spots are BUSTED.\nI'm abusing the hell out of AOE skills.\n\nPS: My progress is not updating for some reason, might have to do with the API, I'll fix in the coming days, for now I'm resting ~\n:::\n\n:::note 14 / 05 / 2026 - Where am I at?\n![Persona 5 Royal opening note](public/media/records/persona-5-royal/test.png)\n\nSo, screenshot is from few days ago, using it to mostly test + update with some actual in-game stuff.\n\nI just entered the second palace, explored it as I have no clue if it will be an actual palace or not, I yet have to find out if Madarame is a bad guy or not lulz.\nHave to admit, I thought at some point I would get bothered by the amount of text and dialogue, especially early on but I think they did a crazy good job with the plot for me to be invested.\n\nBeside, these long yapping sessions are balanced with an equal amount of fights/exploration ~\n:::\n\n:::note 14 / 05 / 2026 - First Session File\n![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)\n\nThis note is mostly here to lock in the shape of the Persona 5 Royal play log.\n\nThe idea is simple: one game gets one main record, and every longer session can become its own little article inside that record. Newest thoughts stay at the top, with their own banner or screenshots when I have them.\n:::\n\n:::note 14 / 05 / 2026 - Opening Note\n![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)\n\nOpening this as the main Persona 5 Royal play log, first test of the note stack!\n:::\n\n## Update Index\n- 14 / 05 / 2026 - Added first real Persona session note.\n- 14 / 05 / 2026 - First note stack tested.\n- 14 / 05 / 2026 - Play log created."
   },
   {
     "id": "a-useful-signal",
@@ -365,6 +365,29 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "an-opening-signal",
+    "title": "An Opening Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-05-20",
+    "updated": "2026-05-20",
+    "summary": "Opening day???????????",
+    "banner": "",
+    "headerImage": "",
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 20 / 05 / 2026 - Closer than I thought\nI think I can actually host on pages very very soon, I fixed part of the stuff that was bothering me:\nLayering issues\nSearch button misbehaving\nUI/UX spacing/sizing\nAnd more..\n\nNow I'm doing a quick performance check, cause I noticed some duplicates assets and stuff getting painted twice for no reason!\n\nOnce these are done, I'll check very quickly how I wanna get this done and host with pages, then it officially on!\n:::\n\n:::note 20 / 05 / 2026 - An Opening Signal\nSo beside getting my ass kicked in Madarame's palace, I've started doing some fixes in the UI/UX since I've found lots of bugs while adding entries in the '03_Games' section.\nI think I'm gonna host on GitHub today, just doing some minor polishing here and there cause I want this to be usable by people that come by ofc.\n\nThat said, I really like how it is turning out and hopefully I get to implement all the ideas I have without making it into a huge mess!\n:::"
+  },
+  {
     "id": "a-messy-signal",
     "title": "A Messy Signal",
     "section": "logs",
@@ -408,7 +431,7 @@ window.__GESTALT_RECORDS = [
       "games"
     ],
     "milestones": [],
-    "body": ":::note This was good, this was sad..\nSo, this game came after Kingdom Hearts 2.\nIt answered a lot of unanswered question but at the same time, opened up a whole other world.. I don't remember the game very well, since I played 1 time a long time ago, I remember the plot, somewhat.. I have an idea of what happens generally, beside the point since I'm not doing a review anyway or judging.\n\nFirst off, I was absolutely in love with the fact that I could've played Kingdom Hearts on my DS, yes graphically if we looked at it with today's eyes, does not look  impressive but at that time, I was literally so happy.\nGameplay is pretty much the same with the addition of other stuff on the side that powers up abilities and skills, won't go into much details cause its somewhat of a complex system even for today standards.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n\nPlot wise, it's set before KH2 and lots of the characters you'll see you know already after playing KH2, its a deep dive into what goes on inside the organization.\nBecause of that, you'll get to know each character better plus a ton of other details that may or may not break your brain...\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828643669-kingdom-hearts-358-2-days-ice-cream-644x483.jpg)\n\nI haven't mention OSTs or Themes much, but just assume they're good even if I'm no talking about them, this IP has one of the best OSTs/music in the gaming industry and they still deliver to this day with each new release.\nHence why I said 'This was sad' in the title, plot + soundtrack hits hard.. and despite not remembering everything 100% I remember enough to say that it was a very very pleasant surprise..\n\nOh, and... you could play multyplayer.\nYep, that was insane and I have no clue why they stopped doing it, cause it was crazy good.\nIt was a Monster Hunter like gameplay, you had quest and then match up with people if I remember correclty, dope no joke.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828653898-kingdom-hearts-358-2-days-1.jpg)\n:::"
+    "body": ":::note This was good, this was sad..\nSo, this game came after Kingdom Hearts 2.\nIt answered a lot of unanswered question but at the same time, opened up a whole other world.. I don't remember the game very well, since I played 1 time a long time ago, I remember the plot, somewhat.. I have an idea of what happens generally, beside the point since I'm not doing a review anyway or judging.\n\nFirst off, I was absolutely in love with the fact that I could've played Kingdom Hearts on my DS, yes graphically if we looked at it with today's eyes, does not look  impressive but at that time, I was literally so happy.\nGameplay is pretty much the same with the addition of other stuff on the side that powers up abilities and skills, won't go into much details cause its somewhat of a complex system even for today standards.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n\nPlot wise, it's set before KH2 and lots of the characters you'll see you know already after playing KH2, its a deep dive into what goes on inside the organization.\nBecause of that, you'll get to know each character better plus a ton of other details that may or may not break your brain...\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828643669-kingdom-hearts-358-2-days-ice-cream-644x483.jpg)\n\nI haven't mention OSTs or Themes much, but just assume they're good even if I'm no talking about them, this IP has one of the best OSTs/music in the gaming industry and they still deliver to this day with each new release.\nHence why I said 'This was sad' in the title, plot + soundtrack hits hard.. and despite not remembering everything 100% I remember enough to say that it was a very very pleasant surprise..\n\nOh, and... you could play multyplayer.\nYep, that was insane and I have no clue why they stopped doing it, cause it was crazy good.\nIt was a Monster Hunter like gameplay, you had quest and then match up with people if I remember correclty, dope no joke.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n:::"
   },
   {
     "id": "kingdom-hearts-birth-by-sleep",
@@ -438,23 +461,23 @@ window.__GESTALT_RECORDS = [
     "title": "Kingdom Hearts Dream Drop Distance",
     "section": "games",
     "type": "Play Log",
-    "status": "Draft",
+    "status": "Abandoned",
     "started": "2026-05-15",
     "updated": "2026-05-15",
-    "summary": "No summary recorded.",
+    "summary": "The 'Updated' experience for DS, new game made for 3DS and more plot locked behind another console.",
     "banner": "",
-    "headerImage": "",
+    "headerImage": "public/media/records/kingdom-hearts-dream-drop-distance/1778852653941-mv5bowrkmzexmditzwzmyi00nje4lwiymgetzjg5zgqxnjzhmte1xkeyxkfqcgc-v1-fmjpg-ux1000.jpg",
     "progress": 0,
     "priority": 50,
     "dashboardActive": false,
     "hardware": "",
     "technicalStack": "",
-    "recommendation": "",
+    "recommendation": "If you're looking to play the game in 2026, chances are you have the full collection so you can't really skip it.\nIf you were one of the people like me, who could not afford to just buy consoles for exclusives , I'm sure you felt my same frustration.\n\nThat said, would have I recommended it back then? I would have, if you had the money for the console or if you had the console already, why not.",
     "tags": [
       "games"
     ],
     "milestones": [],
-    "body": ":::note 15 / 05 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": ":::note Why, Nomura?\nI don't have much to say here, I had not intention of buying a whole new console for this game and I did not.\nI watched a full play through on youtube and called it a day.\n\nI have to admit, gameplay was fun and it used the 3DS tech + touch screen and dual screen, in a clever way.. however it was once again a slap in the face from Nomura, releasing very important plot info into another console, AGAIN.\n\nAs I said, gameplay wise it was fun.. plot was interesting and quite important to understand everything before and after.\nI yet have to play this game, I'm sure I will as I have the steam collection but I don't plan on doing it anytime soon.\nAll I have to say is that, I was very disappointed back then as I am now, I'll probably carry it with me forever.\n:::"
   },
   {
     "id": "kingdom-hearts-ii",
@@ -484,23 +507,23 @@ window.__GESTALT_RECORDS = [
     "title": "Kingdom Hearts III + re:Mind",
     "section": "games",
     "type": "Play Log",
-    "status": "Draft",
+    "status": "Completed",
     "started": "2026-05-15",
     "updated": "2026-05-15",
-    "summary": "No summary recorded.",
+    "summary": "The long awaited, long suffered Kingdom Hearts 3 and its ups and downs, between delays and whatnot.",
     "banner": "",
-    "headerImage": "",
-    "progress": 0,
+    "headerImage": "public/media/records/kingdom-hearts-iii-re-mind/1778855727157-re-mind-logo.webp",
+    "progress": 100,
     "priority": 50,
     "dashboardActive": false,
     "hardware": "",
     "technicalStack": "",
-    "recommendation": "",
+    "recommendation": "Personally, it was PEAK.\nI do recommend it, combat is not as good as previous titles but it's way funnier in a way, so it doesn't really matter.\n\nLoved it.",
     "tags": [
       "games"
     ],
     "milestones": [],
-    "body": ":::note 15 / 05 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": ":::note I've been having these weird thoughts lately.. like.. is any of this for real.. or not?\nUnpopular, maybe not so much, opinion:\nThis game, for ME.. was it.\nYes, the combat was very problematic and floaty.\nThey did improve it quite a bit although it was nothing compared to what we have in Kingdom Hearts 2.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778855981058-450px-counter-kick-khiii.gif)\n\nWhy is this my favorite then?\nOkay so, it's a mix of.. being starved for a mainline game for 15 years and, the fact that visually it's very good, gameplay is fun and cool and some worlds are GOOD.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778855870276-kh3-sora-donald-goofy-flynn-via-disney.jpg)\n\nPlot wise, this Arc is finally OVER.\nAfter many years of theory crafting, replaying all the games, mods, videos, rambles.. it was over.\nYes.. the Arc is over but a plethora of questions have not been answered, in fact there are even more and its even more confusing.\nThis game is a mess plot wise, to be fair I could even say everything past KH2 is a mess plot wise... cause time travelling, paradoxes and the spin-offs being onto different consoles made it incredibly hard to follow and be understood.\n\n\nThat said, I think it was overall an improvement from all the other games at least tech wise, visuals, audio.. they did a very good job.\nObviously, gameplay as I said briefly was not the best that it could've been but I personally liked it a lot regardless, I think all the other new mechanics, flows, summons etc.. basically covered for it(?).\nIt's definitely not as hard as KH2, nothing that far off from it.. it's just not as hard, close to it in terms of difficulty but KH2FM was different.. maybe it was due to the different stack used, engine.. I don't know.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778855823229-kingdom-hearts-3-remind-dlc-screenshots-sora-double-form-keyblades-oathkeeper-ob.jpg)\n\nThe DLC though... well forget everything I just said about difficulty, cause the DLC was insanity.\nYes the Org. fights were hard, I'm not saying they were easy cause I'd lie..\nBut the real MVP is Yozora, that fight was a VERY GOOD fight and challenging like no others.\nIt was even more fun watching people speed run through it, with different strats or the fellas being cracked and just bullying him for fun.\n\nThe 2 endings are, beautiful and confusing like always.\nNot gonna mention the 'box' ending cause it gives me headache even thinking of it.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778856267414-tumblr-c937959e1eaa54224100e9f6767241eb-0d82f0aa-640.webp)\n\nOverall, this was for me the best KH3 PROBABLY due to nostalgia, having waited for long and the visuals being very good.\nI loved it and I hope I live long enough for Kingdom Hearts 4.\n:::"
   },
   {
     "id": "kingdom-hearts-melody-of-memory",
@@ -530,36 +553,36 @@ window.__GESTALT_RECORDS = [
     "title": "Kingdom Hearts Re:Chain of Memories",
     "section": "games",
     "type": "Play Log",
-    "status": "Draft",
+    "status": "Completed",
     "started": "2026-05-15",
     "updated": "2026-05-15",
-    "summary": "No summary recorded.",
+    "summary": "Kingdom Hearts but with cards?? Where do I sign?",
     "banner": "",
-    "headerImage": "",
-    "progress": 0,
+    "headerImage": "public/media/records/kingdom-hearts-re-chain-of-memories/1778852814512-kingdom-hearts-re-chain-of-memories-button-crop-1642793763008.jpg",
+    "progress": 100,
     "priority": 50,
     "dashboardActive": false,
     "hardware": "",
     "technicalStack": "",
-    "recommendation": "",
+    "recommendation": "Yes, just play it.\nIt's very cool and the steam version with the graphical improvement it's even more worth it.",
     "tags": [
       "games"
     ],
     "milestones": [],
-    "body": ":::note 15 / 05 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": ":::note Believe in the heart of the cards.\nThis is one of THE best entries in the series, not only cause they somehow experimented with a completely different system and made it work, but also because of the plot.\nYes, there is a GBA version and no, I'll end it at that.\n\nGame was pretty straight forward, its Kingdom Heart 1.5 so we're not in Kingdom Hearts 2 but the even prior to it or at least a parallel story to what was happening in other titles.\nGameplay was different, they replaced the action combat from the first one and made it more strategic but still action.\nYou have a deck of cards, that you can edit with different cards that you find around the world, unlock or buy.\nCards can heal you, refresh the deck, debuff, buff.. sounds familiar? Yeah I think KH Union X definitely was doing something.\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854180957-level-up-menu-from-rcom.webp)\n\nYour deck had to be clever, you can't just have random cards or you'll waste time and do no damage... so you had to mix and match, have multiple copies of some cards.. it's a lot.\nBefore attacking, you could stack up to 3 cards, to make a big value and have different effect/stronger attack.\nStacking different cards, sometimes gave you special attack.. so some deck revolved around stacking as many copies of specific cards as possible.\nDuring bosses, you'd have to cancel their attack by either matching the value of their attack:\nIf they played 2 cards for the value of 18, you could stop them by playing something equal.\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854139954-screenshot-2025-02-06-6-20-36-pm-1200x676.jpg)\n\nSoo.....the fun was managing your deck, while also controlling the character, cause you can't just stand still.. duh.\nAnd it was definitely something.\n\nPlot wise, we see lots of faces that we know already if you played the DS game and some new ones.\nSora is wandering through this castle and the deeper he gets, the more memories he loses.\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854163662-kingdom-hearts-re-chain-of-memories-sony-playstation-2-ps2-video-game-5.webp)\n\nIt was definitely a different story from what we were used to and it was getting more intricate but more interesting too ~\nThe very cool thing they did is.. game was not done once you beat it with sora, you could now play through Riku's POV!\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854260705-450px-mm-miracle-lv3-khrecom.gif)\n\nNow, it would be hypocritical of me if I didn't mention BBB, since I complained about it having pretty much same story with different POVs and repeating same game world loop.\nThis one wasn't gamebreaking but I think it was handled differently, yes Riku had different cards and powers compared to Sora but boss fights were also different, so you were playing a completely different game almost.\nBBB main issue is that it was pretty much a 1:1 but with different characters, which for ME.. wasn't enough to justify replaying the game 2 whole times.\n\nI think up until this point, it felt like (at least back then) that what they envisioned/path was different, because this games and KH2 are still giving me that KH vibes that is somewhat... I wouldn't say lost replaced/overshadowed by something else.\nPlus it felt like a very well thought game.\n:::"
   },
   {
     "id": "kingdom-hearts-re-coded",
     "title": "Kingdom Hearts re:Coded",
     "section": "games",
     "type": "Play Log",
-    "status": "Draft",
+    "status": "Dropped",
     "started": "2026-05-15",
     "updated": "2026-05-15",
-    "summary": "No summary recorded.",
+    "summary": "A pretty forgettable experience for me",
     "banner": "",
-    "headerImage": "",
-    "progress": 0,
+    "headerImage": "public/media/records/kingdom-hearts-re-coded/1778854615457-si-nds-kingdomheartsrecoded-image1600w.jpg",
+    "progress": 20,
     "priority": 50,
     "dashboardActive": false,
     "hardware": "",
@@ -569,30 +592,30 @@ window.__GESTALT_RECORDS = [
       "games"
     ],
     "milestones": [],
-    "body": ":::note 15 / 05 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": ":::note It's probably a me issue\nI did not like it, I played some of it because of the plot being relevant of course... but I did not like it.\nFor me it was just easier to watch the rest of the game through YouTube and call it a day.\nPersonally, I don't know why this game feels boring but it's just not it.. I don't know why they even made it in the first place.\n\nThat's it I guess, don't really have much to say.,\n:::"
   },
   {
     "id": "kingdom-hearts-union-x",
     "title": "Kingdom Hearts Union X",
     "section": "games",
     "type": "Play Log",
-    "status": "Draft",
+    "status": "Completed",
     "started": "2026-05-15",
     "updated": "2026-05-15",
-    "summary": "No summary recorded.",
+    "summary": "Square Enix response to the rise of gatcha games, Union X.",
     "banner": "",
-    "headerImage": "",
-    "progress": 0,
+    "headerImage": "public/media/records/kingdom-hearts-union-x/1778848629139-ul-062220-khucdr-avail-now-v2-i7y4vjc2p.jpg",
+    "progress": 100,
     "priority": 50,
     "dashboardActive": false,
     "hardware": "",
     "technicalStack": "",
-    "recommendation": "",
+    "recommendation": "I obviously can't recommend this game as it doesn't exist anymore, you had to be there.\nWould have I recommended it? Yes, in-fact I did recommend it to my friends and we had lots of fun times and sad ones too, gatcha rates were baaad.",
     "tags": [
       "games"
     ],
     "milestones": [],
-    "body": ":::note 15 / 05 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": ":::note I've been having this weird thoughts lately\nI played this game from the moment in came out and all the way till it died... I even spent money, not much of course but still.\nI'm not gonna talk about Dark Road, as I simply gave up at that point and just checked the updates from other people.\n![](public/media/records/kingdom-hearts-union-x/1778851730951-wp-1472869322835.png)\n\nThis game was simple, move your character around by dragging your finger across the screen, engage with enemies on the map and it would then be a turn based fight.\nTo attack, you had medals that once you swiped up would activate and do something, a skill which did damage or buffed you, debuffed the enemy or as game went by, all 3 of those.\n![](public/media/records/kingdom-hearts-union-x/1778850306027-maxresdefault.jpg)\n\nThen, what's special about it?\nCustomization, you could make your own character and make it look goofy as hell or mix and match different outfits, if you were lame you could've just looked like Sora, Riku or whoever.\nIn this game, you pulled for 'medals' the equivalent of an SSR Card or an SSR Character, effects where not particularly crazy, pretty simple but cool looking stuff..\nIt was the numbers and the effect that came with them.\n![](public/media/records/kingdom-hearts-union-x/1778850314682-kingdomheartsunion-2475703b.png)\n\nSo, early on medals were pretty straight forward, they'd either:\nDamage, Heal, Buff you, Debuff enemy or a combination of those, until they became crazy later on.\nThis game had elements, each medal carried an element so you had to play around advantages, not just that.. you had keyblades and they were all different and, late game it was pretty much a must to use the correct combination of keyblade/medals.\n![](public/media/records/kingdom-hearts-union-x/1778850278749-kh-union-x-header.jpg)\n\nNow, it's a gacha.. don't get excited.\nThat meant, if you pulled the newest medal, you'd be set for this rotation of weekly/monthly content, get all the cool resources, free pulls and cosmetic with ease.\nIf you didn't.. ggs you're screwed.\n\nAnd did I mention PVP? lets just.. lets just move on.\n![](public/media/records/kingdom-hearts-union-x/1778851190523-pvp-sample3.png)\n\nBUT HOLD ON, you thought pulling the medal was it? XDDDD LMAOOOO\nNuh uh, you needed copies and the only alternative to that was an item, that could've been used instead of a copy BUT, it was extremely rare and scarce.\nSo even if you got the medal, you'd have to pull for copies or it would simply not perform as it should.\n\nNow, game was quite dry in terms of content and very very greedy, I remember seeing videos of people dropping 5-10k to pull for medals, clearing the newest event and then.. just nothing.\nOvertime it got better.. more rewards, more freebies but at the same time more greed Square Enix.\nIt was absolutely way better half way through its life, events were somewhat doable, lots of free resources distributed, guilds meant something.\nLike, there was a lot and the game was actually enjoyable.\nObviously though, if you were not strong enough you could NOT progress, which meant important story parts were locked behind luck and money.\n![](public/media/records/kingdom-hearts-union-x/1778851622616-kingdom-hearts-backup-data.jpg)\n\nAt that time, we were all collectively waiting for KH3.. so outside of the gacha, replaying old titles with mods and theory crafting, we had nothing.\nDespite that, I really liked this game and I wish Square Enix made a replacement for it.\nThe game ran for quite a while, however they basically ran the game as a placeholder for KH3, it was something to entertain and make money while people were waiting for the main title.\nLike I said, it was a gacha and a greedy one at that but nothing as bad as some gatchas we have today.\n\nBecause there were factions and a leader board, pvp, raids etc.. the game was basically a weekly chore where you had to keep up with new releases or get thrashed by the last boss with 191239 bars of HP and the people in PVP.\nThat meant less rewards, less pulls, more FOMO.\n\nThe game was genuinely fun and it made people feel part of KH world, despite the greed I think it was a very fun experience and I'm glad that I can say I was there.\n:::"
   },
   {
     "id": "kingdom-hearts",

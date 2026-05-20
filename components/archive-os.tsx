@@ -112,7 +112,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     ?? recordsBySection.games.find((record) => record.status === "Playing")
     ?? recordsBySection.games[0];
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = records.filter((record) => record.section !== "system").sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 3);
+  const activity = recentActivity(records, 4);
   const searchResults = getSearchResults(records, searchQuery);
 
   useEffect(() => {
@@ -271,14 +271,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             )}
           </DashboardPanel>
 
-          <DashboardPanel title="RECENT ACTIVITY" className="wide-panel" footerLabel="View full timeline" onFooter={() => openSection("logs")}>
+          <DashboardPanel title="RECENT ACTIVITY" className="wide-panel">
             {activity.length > 0 ? (
               <ol className="activity-feed">
-                {activity.map((record) => (
-                  <li key={record.id}>
-                    <span>[{shortDate(record.updated)}]</span>
-                    <button type="button" onClick={() => openRecord(record)}>
-                      {record.type}: {record.title}
+                {activity.map((item) => (
+                  <li key={item.record.id}>
+                    <span>[{shortDate(item.date)}]</span>
+                    <button type="button" onClick={() => openRecord(item.record)}>
+                      {item.record.type}: {item.record.title}
                     </button>
                   </li>
                 ))}
@@ -364,7 +364,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.6.0</span>
+        <span>v1.6.1</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -409,7 +409,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.6.0</dd>
+            <dd>GESTALT OS v1.6.1</dd>
           </div>
         </dl>
       </div>
@@ -573,6 +573,42 @@ function SectionPage({
 }) {
   const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
+  const splitSection = splitSectionRecords(section.id, sortedRecords);
+
+  if (splitSection) {
+    return (
+      <section className="section-page section-page--split" aria-label={`${section.code} records`}>
+        <header className="section-page-header">
+          <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+          <div>
+            <p>{section.code}</p>
+            <h2>{section.label}</h2>
+          </div>
+          <i>{countLabel}</i>
+        </header>
+
+        <div className="section-split-grid">
+          {splitSection.map((group) => (
+            <section className="section-record-column" key={group.title} aria-label={group.title}>
+              <header>
+                <h3>{group.title}</h3>
+                <span>{group.records.length}</span>
+              </header>
+              <div className="section-record-grid">
+                {group.records.length > 0 ? (
+                  group.records.map((record) => (
+                    <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
+                  ))
+                ) : (
+                  <p className="search-empty">No records filed here yet.</p>
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="section-page" aria-label={`${section.code} records`}>
@@ -588,14 +624,7 @@ function SectionPage({
       <div className="section-record-grid">
         {sortedRecords.length > 0 ? (
           sortedRecords.map((record) => (
-            <button className="section-record" key={record.id} type="button" onClick={() => onOpenRecord(record)}>
-              <span className="section-record-kind">{record.type}</span>
-              <strong>{record.title}</strong>
-              <span>{record.summary}</span>
-              <i>
-                {record.status} . {formatReadableDate(record.updated)}
-              </i>
-            </button>
+            <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
           ))
         ) : (
           <p className="search-empty">No records filed here yet.</p>
@@ -603,6 +632,41 @@ function SectionPage({
       </div>
     </section>
   );
+}
+
+function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
+  return (
+    <button className="section-record" type="button" onClick={() => onOpenRecord(record)}>
+      <span className="section-record-kind">{record.type}</span>
+      <strong>{record.title}</strong>
+      <span>{record.summary}</span>
+      <i>
+        {record.status} . {formatReadableDate(record.updated)}
+      </i>
+    </button>
+  );
+}
+
+function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
+  if (section === "projects") {
+    const activeStatuses = new Set(["active", "in progress", "planning", "blocked"]);
+
+    return [
+      { title: "ACTIVE PROJECTS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
+      { title: "OTHER PROCESSES", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+    ];
+  }
+
+  if (section === "games") {
+    const activeStatuses = new Set(["playing", "on hold", "in progress"]);
+
+    return [
+      { title: "SESSION LOGS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
+      { title: "PAST LOGS", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+    ];
+  }
+
+  return null;
 }
 
 function SearchPanel({
@@ -655,7 +719,7 @@ function CurrentGame({ record }: { record: RecordEntry }) {
   return (
     <div className="current-game">
       <div className="game-cover">
-        <img src={record.banner || "/images/archive-banner.png"} alt="" />
+        <img src={record.banner || "/images/archive-banner.png"} alt="" decoding="async" />
         <span>{record.title.slice(0, 10)}</span>
       </div>
       <div>
@@ -680,12 +744,14 @@ type RecordWindowProps = {
 function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
+  const [noteSearchQuery, setNoteSearchQuery] = useState("");
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
   const headerImage = recordHeaderImage(record);
 
   useEffect(() => {
     setActiveContent(initialContent);
+    setNoteSearchQuery("");
     setUpdateHistoryOpen(false);
   }, [initialContent, record.id]);
 
@@ -738,7 +804,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
           <div
             className={headerImage ? "record-heading has-heading-banner" : "record-heading"}
           >
-            {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" /> : null}
+            {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" decoding="async" /> : null}
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
@@ -762,7 +828,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
             </p>
           </div>
 
-          <RecordContentPanel activeContent={activeContent} record={record} />
+          <RecordContentPanel activeContent={activeContent} noteSearchQuery={noteSearchQuery} record={record} />
         </div>
 
         <aside className="record-aside">
@@ -775,6 +841,9 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
                     type="button"
                     onClick={() => {
                       setActiveContent(item.key);
+                      if (item.key !== "notes") {
+                        setNoteSearchQuery("");
+                      }
                       setUpdateHistoryOpen(false);
                     }}
                   >
@@ -795,11 +864,16 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
               <dd>{formatReadableDate(record.updated)}</dd>
             </div>
           </dl>
-          <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
+          {activeContent === "notes" ? (
+            <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} />
+          ) : null}
+          {record.section === "games" || activeContent === "notes" ? null : (
+            <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
+          )}
         </aside>
 
       </div>
-      {updateHistoryOpen ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
+      {updateHistoryOpen && record.section !== "games" ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
     </motion.article>
     </>
   );
@@ -947,7 +1021,7 @@ function getTextList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function RecordContentPanel({ activeContent, record }: { activeContent: ContentKey; record: RecordEntry }) {
+function RecordContentPanel({ activeContent, noteSearchQuery, record }: { activeContent: ContentKey; noteSearchQuery: string; record: RecordEntry }) {
   if (activeContent === "overview") {
     return <RecordOverviewPage record={record} />;
   }
@@ -961,7 +1035,7 @@ function RecordContentPanel({ activeContent, record }: { activeContent: ContentK
   }
 
   if (activeContent === "notes") {
-    return <NotesPage record={record} />;
+    return <NotesPage query={noteSearchQuery} record={record} />;
   }
 
   if (activeContent === "technical") {
@@ -1064,7 +1138,7 @@ function RecordBanner({ record }: { record: RecordEntry }) {
   if (record.banner) {
     return (
       <div className="banner-frame">
-        <img src={record.banner} alt="" />
+        <img src={record.banner} alt="" decoding="async" loading="lazy" />
       </div>
     );
   }
@@ -1110,7 +1184,7 @@ function MediaPopupField({ prefix, record, title }: { prefix: string; record: Re
                 {prefix}_{String(slot).padStart(2, "0")}
               </span>
               <div className="media-frame">
-                {imageSource ? <img src={imageSource} alt="" /> : <div className="media-placeholder">NO CAPTURE</div>}
+                {imageSource ? <img src={imageSource} alt="" decoding="async" loading="lazy" /> : <div className="media-placeholder">NO CAPTURE</div>}
               </div>
               <i>{imageSource ? "Primary capture" : "Awaiting media"}</i>
             </button>
@@ -1136,7 +1210,7 @@ function SampleGrid({ record }: { record: RecordEntry }) {
             <button className="sample-terminal" type="button" key={`${record.id}-sample-${slot}`}>
               <span>MEDIA_{String(slot).padStart(2, "0")}</span>
               <div className="sample-frame">
-                {imageSource ? <img src={imageSource} alt="" /> : <div className="media-placeholder">NO MEDIA</div>}
+                {imageSource ? <img src={imageSource} alt="" decoding="async" loading="lazy" /> : <div className="media-placeholder">NO MEDIA</div>}
               </div>
               <i>{imageSource ? "Primary sample" : "Awaiting sample"}</i>
             </button>
@@ -1147,9 +1221,35 @@ function SampleGrid({ record }: { record: RecordEntry }) {
   );
 }
 
-function NotesPage({ record }: { record: RecordEntry }) {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
+function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange: (value: string) => void; query: string; record: RecordEntry }) {
+  const notes = noteEntries(record.body);
+
+  if (!notes.length) {
+    return null;
+  }
+
+  return (
+    <div className="note-search-panel">
+      <label htmlFor={`${record.id}-note-search`}>Search note</label>
+      <input
+        autoComplete="off"
+        id={`${record.id}-note-search`}
+        list={`${record.id}-note-suggestions`}
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder="Title or date"
+        type="search"
+        value={query}
+      />
+      <datalist id={`${record.id}-note-suggestions`}>
+        {notes.map((note) => (
+          <option key={note.title} value={note.title} />
+        ))}
+      </datalist>
+    </div>
+  );
+}
+
+function NotesPage({ query, record }: { query: string; record: RecordEntry }) {
   const notes = noteEntries(record.body);
   const indexedNotes = notes.map((note, index) => ({ ...note, index }));
   const cleanQuery = query.trim().toLowerCase();
@@ -1159,37 +1259,7 @@ function NotesPage({ record }: { record: RecordEntry }) {
     <section className="content-terminal notes-page" aria-label={`${record.title} notes`}>
       <div className="notes-page-header">
         <div className="terminal-title">// NOTES PAGE</div>
-        <button
-          aria-label="Search notes"
-          aria-expanded={searchOpen}
-          className={searchOpen ? "note-search-toggle is-active" : "note-search-toggle"}
-          type="button"
-          onClick={() => {
-            setSearchOpen((current) => !current);
-            setQuery("");
-          }}
-        >
-          <span className="search-icon" aria-hidden="true" />
-        </button>
       </div>
-      {searchOpen ? (
-        <div className="note-search-panel">
-          <label htmlFor={`${record.id}-note-search`}>Search note title or date</label>
-          <input
-            autoComplete="off"
-            id={`${record.id}-note-search`}
-            list={`${record.id}-note-suggestions`}
-            onChange={(event) => setQuery(event.target.value)}
-            type="search"
-            value={query}
-          />
-          <datalist id={`${record.id}-note-suggestions`}>
-            {notes.map((note) => (
-              <option key={note.title} value={note.title} />
-            ))}
-          </datalist>
-        </div>
-      ) : null}
       <div className="note-stack">
         {filteredNotes.length > 0 ? (
           filteredNotes.map((note) => (
@@ -1293,7 +1363,7 @@ function RecordBody({ body }: { body: string }) {
       nodes.push(
         <figure className={noteMediaClassName(media)} key={key}>
           <button className="note-media-button" type="button" onClick={() => setExpandedImage({ alt: media.caption, src: imageMatch[2] })}>
-            <img src={imageMatch[2]} alt={media.caption} />
+            <img src={imageMatch[2]} alt={media.caption} decoding="async" loading="lazy" />
           </button>
           {media.caption ? <figcaption>{media.caption}</figcaption> : null}
         </figure>
@@ -1344,7 +1414,7 @@ function RecordBody({ body }: { body: string }) {
       {nodes}
       {expandedImage ? (
         <button className="note-image-lightbox" type="button" aria-label="Close expanded image" onClick={() => setExpandedImage(null)}>
-          <img src={expandedImage.src} alt={expandedImage.alt} />
+          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
         </button>
       ) : null}
     </div>
@@ -1521,6 +1591,33 @@ function shortDate(value: string): string {
 function formatReadableDate(value: string): string {
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day} / ${month} / ${year}` : value;
+}
+
+function recentActivity(records: RecordEntry[], limit: number): Array<{ date: string; record: RecordEntry }> {
+  return records
+    .filter((record) => record.section !== "system")
+    .map((record) => ({ date: activityDate(record), record }))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
+    .slice(0, limit);
+}
+
+function activityDate(record: RecordEntry): string {
+  const noteDates = noteEntries(record.body)
+    .map((note) => noteTitleDate(note.title))
+    .filter((value): value is string => Boolean(value));
+
+  return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] ?? record.updated;
+}
+
+function noteTitleDate(title: string): string | null {
+  const match = title.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\b/);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, day, month, year] = match;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
 function getSearchResults(records: RecordEntry[], query: string): RecordEntry[] {
