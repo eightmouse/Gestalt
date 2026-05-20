@@ -167,7 +167,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         return;
       }
 
-      if (event.key === "/") {
+      if (event.key === "/" || event.key === "`") {
         event.preventDefault();
         setSearchOpen(true);
       }
@@ -416,7 +416,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.11.0</span>
+        <span>v1.11.1</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -460,8 +460,12 @@ function Sidebar({
             <dd>{metrics.mediaCount}</dd>
           </div>
           <div>
-            <dt>ACTIVE</dt>
-            <dd>{metrics.activeProjects} / {metrics.activeGame?.title ?? "None"}</dd>
+            <dt>ACTIVE PRJ</dt>
+            <dd>{metrics.activeProjects}</dd>
+          </div>
+          <div>
+            <dt>ACTIVE GAME</dt>
+            <dd>{metrics.activeGame?.title ?? "None"}</dd>
           </div>
           <div>
             <dt>LAST FILED</dt>
@@ -469,7 +473,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.11.0</dd>
+            <dd>GESTALT OS v1.11.1</dd>
           </div>
         </dl>
       </div>
