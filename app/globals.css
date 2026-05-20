@@ -2520,7 +2520,11 @@ button:focus-visible {
   inset-inline-end: 9%;
 }
 
-.media-popup:hover {
+.media-popup:disabled {
+  cursor: default;
+}
+
+.media-popup:not(:disabled):hover {
   z-index: 3;
   border-color: var(--line-strong);
   color: var(--text);

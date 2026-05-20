@@ -966,7 +966,7 @@ function renderMediaPage(record, title = "MEDIA", prefix = "MEDIA") {
           .map((slot, index) => {
             const mediaSource = mediaSources[index];
 
-            return `<button class="media-popup" type="button" style="--slot: ${slot}">
+            return `<button class="media-popup" type="button" style="--slot: ${slot}" ${mediaSource ? `data-expand-image="${escapeHtml(mediaSource)}" data-expand-alt="${escapeHtml(`${record.title} attachment ${slot}`)}"` : "disabled"}>
               <span>${prefix}_${String(slot).padStart(2, "0")}</span>
               <div class="media-frame">
                 ${
@@ -1205,7 +1205,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.17.0</span>
+      <span>v1.18.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1223,7 +1223,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.17.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.18.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1794,15 +1794,15 @@ function setMemoryPointer(node, x, y) {
 let memoryFrame = 0;
 
 document.addEventListener("pointermove", (event) => {
-  const node = event.target instanceof Element ? event.target.closest("[data-memory-loop]") : null;
+  const node = document.querySelector("[data-memory-loop]");
 
   if (!(node instanceof HTMLElement)) {
     return;
   }
 
   const rect = node.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-  const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+  const x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
+  const y = Math.max(-1, Math.min(1, (event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2)));
 
   if (memoryFrame) {
     window.cancelAnimationFrame(memoryFrame);
@@ -1812,14 +1812,6 @@ document.addEventListener("pointermove", (event) => {
     setMemoryPointer(node, x, y);
     memoryFrame = 0;
   });
-});
-
-document.addEventListener("pointerout", (event) => {
-  const node = event.target instanceof Element ? event.target.closest("[data-memory-loop]") : null;
-
-  if (node instanceof HTMLElement && !node.contains(event.relatedTarget instanceof Node ? event.relatedTarget : null)) {
-    setMemoryPointer(node, 0, 0);
-  }
 });
 
 document.addEventListener("click", (event) => {

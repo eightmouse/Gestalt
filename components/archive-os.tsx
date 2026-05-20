@@ -11,7 +11,7 @@ import {
   Terminal,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { create } from "zustand";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
@@ -475,7 +475,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.17.0</span>
+        <span>v1.18.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -533,7 +533,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.17.0</dd>
+            <dd>GESTALT OS v1.18.0</dd>
           </div>
         </dl>
       </div>
@@ -669,8 +669,9 @@ function MemoryLoop() {
     node.style.setProperty("--memory-axis-x", `${(x * 2).toFixed(2)}px`);
     node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
   };
+  const clampPointer = (value: number) => Math.max(-1, Math.min(1, value));
 
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = (event: globalThis.PointerEvent) => {
     const node = memoryRef.current;
 
     if (!node) {
@@ -678,8 +679,8 @@ function MemoryLoop() {
     }
 
     const rect = node.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    const x = clampPointer((event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2));
+    const y = clampPointer((event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2));
 
     if (frameRef.current !== null) {
       window.cancelAnimationFrame(frameRef.current);
@@ -691,10 +692,12 @@ function MemoryLoop() {
     });
   };
 
-  const resetPointer = () => setMemoryPointer(0, 0);
-
   useEffect(() => {
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+
     return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
       }
@@ -702,7 +705,7 @@ function MemoryLoop() {
   }, []);
 
   return (
-    <div className="memory-loop" aria-hidden="true" ref={memoryRef} onPointerLeave={resetPointer} onPointerMove={handlePointerMove}>
+    <div className="memory-loop" aria-hidden="true" ref={memoryRef}>
       <span className="memory-core" />
       <span className="memory-orbit" />
       <span className="memory-gate" />
@@ -1383,6 +1386,7 @@ function MilestoneList({ record }: { record: RecordEntry }) {
 
 function MediaPopupField({ prefix, record, title }: { prefix: string; record: RecordEntry; title: string }) {
   const mediaSources = recordMediaSources(record, "attachments");
+  const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
 
   return (
     <section className="content-terminal" aria-label={`${record.title} media`}>
@@ -1398,7 +1402,14 @@ function MediaPopupField({ prefix, record, title }: { prefix: string; record: Re
             const imageSource = mediaSources[index];
 
             return (
-              <button className="media-popup" style={{ "--slot": slot } as CSSProperties} type="button" key={`${record.id}-media-${slot}`}>
+              <button
+                className="media-popup"
+                disabled={!imageSource}
+                style={{ "--slot": slot } as CSSProperties}
+                type="button"
+                key={`${record.id}-media-${slot}`}
+                onClick={() => imageSource && setExpandedImage({ alt: `${record.title} attachment ${slot}`, src: imageSource })}
+              >
                 <span>
                 {prefix}_{String(slot).padStart(2, "0")}
               </span>
@@ -1411,6 +1422,11 @@ function MediaPopupField({ prefix, record, title }: { prefix: string; record: Re
           })}
         </div>
       </div>
+      {expandedImage ? (
+        <button className="note-image-lightbox" type="button" aria-label="Close expanded attachment" onClick={() => setExpandedImage(null)}>
+          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
+        </button>
+      ) : null}
     </section>
   );
 }
