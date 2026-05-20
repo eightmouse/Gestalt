@@ -1367,8 +1367,9 @@ button:focus-visible {
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.12);
   background:
-    radial-gradient(ellipse at 50% 62%, rgba(200, 189, 159, 0.18), transparent 37%),
-    radial-gradient(circle at 52% 48%, rgba(217, 213, 193, 0.07), transparent 18%),
+    radial-gradient(ellipse at 50% 58%, rgba(200, 189, 159, 0.19), transparent 34%),
+    radial-gradient(circle at 52% 47%, rgba(217, 213, 193, 0.1), transparent 17%),
+    linear-gradient(90deg, rgba(217, 213, 193, 0.055), transparent 24% 76%, rgba(217, 213, 193, 0.045)),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 44%),
     rgba(5, 6, 5, 0.56);
 }
@@ -1385,6 +1386,7 @@ button:focus-visible {
 .memory-loop::before {
   inset: -22%;
   background:
+    radial-gradient(circle at 50% 50%, transparent 0 16%, rgba(236, 230, 211, 0.08) 17% 18%, transparent 19% 33%, rgba(236, 230, 211, 0.05) 34% 35%, transparent 36%),
     radial-gradient(circle at 38% 42%, rgba(236, 230, 211, 0.24) 0 1px, transparent 2px),
     radial-gradient(circle at 67% 54%, rgba(236, 230, 211, 0.18) 0 1px, transparent 2px),
     radial-gradient(circle at 44% 68%, rgba(236, 230, 211, 0.16) 0 1px, transparent 2px),
@@ -1403,10 +1405,11 @@ button:focus-visible {
 }
 
 .memory-core {
-  inset: 25% 27%;
+  inset: 23% 26%;
   border: 1px solid rgba(217, 213, 193, 0.24);
   border-radius: 50%;
   background:
+    radial-gradient(circle at 50% 50%, rgba(8, 9, 8, 0.62) 0 18%, transparent 19%),
     radial-gradient(circle at 42% 34%, rgba(236, 230, 211, 0.42) 0 2px, transparent 3px),
     radial-gradient(circle at 58% 58%, rgba(236, 230, 211, 0.22) 0 1px, transparent 2px),
     radial-gradient(circle at 50% 52%, rgba(217, 213, 193, 0.2), transparent 43%),
@@ -1445,10 +1448,10 @@ button:focus-visible {
 }
 
 .memory-orbit {
-  inset: 12% 7%;
+  inset: 10% 6%;
   border-radius: 50%;
   background:
-    conic-gradient(from 14deg, transparent 0 12deg, rgba(217, 213, 193, 0.22) 13deg 35deg, transparent 36deg 92deg, rgba(217, 213, 193, 0.14) 93deg 118deg, transparent 119deg 186deg, rgba(217, 213, 193, 0.2) 187deg 207deg, transparent 208deg 284deg, rgba(217, 213, 193, 0.12) 285deg 306deg, transparent 307deg 360deg);
+    conic-gradient(from 14deg, transparent 0 12deg, rgba(217, 213, 193, 0.25) 13deg 35deg, transparent 36deg 92deg, rgba(217, 213, 193, 0.14) 93deg 118deg, transparent 119deg 186deg, rgba(217, 213, 193, 0.21) 187deg 207deg, transparent 208deg 284deg, rgba(217, 213, 193, 0.13) 285deg 306deg, transparent 307deg 360deg);
   -webkit-mask: radial-gradient(ellipse, transparent 0 64%, #000 65% 67%, transparent 68%);
   mask: radial-gradient(ellipse, transparent 0 64%, #000 65% 67%, transparent 68%);
   transform: rotate(-8deg);
@@ -1479,6 +1482,7 @@ button:focus-visible {
 .memory-gate {
   inset: 18% 18%;
   background:
+    linear-gradient(0deg, transparent 0 19%, rgba(217, 213, 193, 0.08) 20% 21%, transparent 22% 78%, rgba(217, 213, 193, 0.06) 79% 80%, transparent 81%),
     linear-gradient(90deg, transparent 0 10%, rgba(217, 213, 193, 0.11) 11% 12%, transparent 13% 88%, rgba(217, 213, 193, 0.1) 89% 90%, transparent 91%),
     linear-gradient(90deg, transparent, rgba(217, 213, 193, 0.16), transparent),
     linear-gradient(180deg, transparent 0 45%, rgba(217, 213, 193, 0.26) 46% 47%, transparent 48% 100%);
@@ -1505,6 +1509,47 @@ button:focus-visible {
   opacity: 0.18;
   transform: translateY(-12%);
   animation: memory-fall 7s linear infinite;
+}
+
+.memory-axis {
+  inset: 10% 13%;
+  opacity: 0.44;
+  background:
+    linear-gradient(90deg, transparent 0 49%, rgba(217, 213, 193, 0.22) 50%, transparent 51%),
+    linear-gradient(180deg, transparent 0 49%, rgba(217, 213, 193, 0.18) 50%, transparent 51%),
+    radial-gradient(circle at 50% 50%, transparent 0 35%, rgba(217, 213, 193, 0.14) 36% 37%, transparent 38% 51%, rgba(217, 213, 193, 0.08) 52% 53%, transparent 54%);
+  transform: rotate(0deg);
+  animation: memory-axis 9.5s steps(7, end) infinite;
+}
+
+.memory-cipher {
+  inset: auto 12px 10px 12px;
+  block-size: 18px;
+  color: rgba(217, 213, 193, 0.52);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-transform: none;
+  opacity: 0.78;
+  animation: memory-cipher 5.8s steps(2, end) infinite;
+}
+
+.memory-cipher::before {
+  content: "⌖╳╵⌁⟐  MEMORY  ⌰╳⟟⌖";
+}
+
+.memory-nodes {
+  inset: 18% 17%;
+  opacity: 0.72;
+  background:
+    radial-gradient(circle at 23% 31%, rgba(236, 230, 211, 0.82) 0 2px, transparent 3px),
+    radial-gradient(circle at 77% 33%, rgba(236, 230, 211, 0.58) 0 1px, transparent 2px),
+    radial-gradient(circle at 71% 74%, rgba(236, 230, 211, 0.68) 0 2px, transparent 3px),
+    radial-gradient(circle at 33% 69%, rgba(236, 230, 211, 0.5) 0 1px, transparent 2px),
+    linear-gradient(28deg, transparent 0 22%, rgba(236, 230, 211, 0.1) 23% 24%, transparent 25% 100%),
+    linear-gradient(144deg, transparent 0 28%, rgba(236, 230, 211, 0.08) 29% 30%, transparent 31% 100%);
+  clip-path: polygon(18% 27%, 72% 24%, 83% 72%, 39% 83%);
+  animation: memory-nodes 6.8s ease-in-out infinite;
 }
 
 .archive-shell.has-record .memory-loop::before,
@@ -4299,6 +4344,60 @@ input.studio-title-edit {
 @keyframes memory-fall {
   to {
     transform: translateY(12%);
+  }
+}
+
+@keyframes memory-axis {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: rotate(-4deg) scale(0.96);
+  }
+
+  35% {
+    opacity: 0.52;
+    transform: rotate(3deg) scale(1.02);
+  }
+
+  64% {
+    opacity: 0.38;
+    transform: rotate(-1deg) scale(0.99);
+  }
+}
+
+@keyframes memory-cipher {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translateX(-2px);
+  }
+
+  38% {
+    opacity: 0.82;
+    transform: translateX(1px);
+  }
+
+  44% {
+    opacity: 0.24;
+    transform: translateX(4px);
+  }
+
+  48% {
+    opacity: 0.74;
+    transform: translateX(0);
+  }
+}
+
+@keyframes memory-nodes {
+  0%,
+  100% {
+    opacity: 0.46;
+    transform: translate3d(-1%, 1%, 0) scale(0.97);
+  }
+
+  50% {
+    opacity: 0.82;
+    transform: translate3d(2%, -1%, 0) scale(1.03);
   }
 }
 
