@@ -74,6 +74,7 @@ export function StudioClient({ records }: StudioClientProps) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [publishState, setPublishState] = useState<PublishState | null>(null);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const bodyDraftRef = useRef(form.body);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const fileTargetRef = useRef<MediaTarget>("body");
@@ -144,6 +145,7 @@ export function StudioClient({ records }: StudioClientProps) {
       title: "Saving record",
       detail: "Writing MDX and refreshing static archive data."
     });
+    setNotificationOpen(false);
 
     try {
       const response = await fetch("/api/studio/entry", {
@@ -156,10 +158,14 @@ export function StudioClient({ records }: StudioClientProps) {
           tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
         })
       });
-      const data = await response.json();
+      const data = await readStudioResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Save failed.");
+        throw new StudioRequestError(data.error || "Save failed.", data.output);
+      }
+
+      if (!data.id || !data.path) {
+        throw new StudioRequestError("Save response was missing record details.", data.output);
       }
 
       setSelectedId(data.id);
@@ -167,49 +173,20 @@ export function StudioClient({ records }: StudioClientProps) {
       update("originalId", data.id);
       update("body", bodyDraftRef.current);
       setMessage(`Saved ${data.path}. Publishing to GitHub...`);
-      setPublishState({
-        phase: "running",
-        title: "Publishing archive",
-        detail: "Running checks, committing, and pushing to GitHub."
-      });
-
-      const publishResponse = await fetch("/api/studio/publish", { method: "POST" });
-      const publishData = await publishResponse.json();
-
-      if (!publishResponse.ok) {
-        setMessage("Saved locally, but publish failed.");
-        setPublishState({
-          phase: "error",
-          title: "Publish blocked",
-          detail: publishData.error || "The record was saved locally, but GitHub publish failed.",
-          output: publishData.output
-        });
-        return;
-      }
-
-      setMessage("Saved and published to GitHub.");
-      setPublishState({
-        phase: "success",
-        title: "Archive published",
-        detail: publishData.message || "GitHub received the latest archive update.",
-        output: publishData.output
-      });
+      await publishArchive("Saved and published to GitHub.");
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Save failed.";
       setMessage(detail);
       setPublishState({
         phase: "error",
         title: "Save failed",
-        detail
+        detail,
+        output: error instanceof StudioRequestError ? error.output : undefined
       });
+      setNotificationOpen(true);
     } finally {
       setSaving(false);
     }
-  };
-
-  const discard = () => {
-    loadRecord(selectedId);
-    setMessage("Draft changes discarded.");
   };
 
   const deleteRecord = async () => {
@@ -218,7 +195,7 @@ export function StudioClient({ records }: StudioClientProps) {
       return;
     }
 
-    const confirmed = window.confirm(`Delete "${form.title}" from content/records? This cannot be undone from Studio.`);
+    const confirmed = window.confirm(`This will delete "${form.title}" ${form.type.toLowerCase()} from Gestalt. Are you sure?`);
 
     if (!confirmed) {
       return;
@@ -233,10 +210,10 @@ export function StudioClient({ records }: StudioClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: form.originalId })
       });
-      const data = await response.json();
+      const data = await readStudioResponse(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Delete failed.");
+        throw new StudioRequestError(data.error || "Delete failed.", data.output);
       }
 
       const next = emptyForm(activeSection);
@@ -244,12 +221,52 @@ export function StudioClient({ records }: StudioClientProps) {
       setSelectedId("__new");
       setMode("section");
       setForm(next);
-      setMessage(`Deleted ${data.id}. Refresh the archive to remove it from the list.`);
+      setMessage(`Deleted ${data.id}. Publishing removal to GitHub...`);
+      await publishArchive("Deleted and published to GitHub.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Delete failed.");
+      const detail = error instanceof Error ? error.message : "Delete failed.";
+      setMessage(detail);
+      setPublishState({
+        phase: "error",
+        title: "Delete failed",
+        detail,
+        output: error instanceof StudioRequestError ? error.output : undefined
+      });
+      setNotificationOpen(true);
     } finally {
       setSaving(false);
     }
+  };
+
+  const publishArchive = async (successMessage: string) => {
+    setPublishState({
+      phase: "running",
+      title: "Publishing archive",
+      detail: "Running checks, committing, and pushing to GitHub."
+    });
+
+    const publishResponse = await fetch("/api/studio/publish", { method: "POST" });
+    const publishData = await readStudioResponse(publishResponse);
+
+    if (!publishResponse.ok) {
+      setMessage("Saved locally, but publish failed.");
+      setPublishState({
+        phase: "error",
+        title: "Publish blocked",
+        detail: publishData.error || "The record changed locally, but GitHub publish failed.",
+        output: publishData.output
+      });
+      setNotificationOpen(true);
+      return;
+    }
+
+    setMessage(successMessage);
+    setPublishState({
+      phase: "success",
+      title: "Archive published",
+      detail: publishData.message || "GitHub received the latest archive update.",
+      output: publishData.output
+    });
   };
 
   const chooseFiles = (target: MediaTarget) => {
@@ -368,11 +385,16 @@ export function StudioClient({ records }: StudioClientProps) {
           </div>
           <div className="studio-actions">
             <button type="button" disabled={saving} onClick={save}>{saving ? "Publishing..." : "Save Record"}</button>
-            <button type="button" onClick={discard}>Discard</button>
-            <a href="/">Return</a>
-            {mode === "edit" && selectedId !== "__new" ? (
-              <button className="studio-danger-action" type="button" disabled={saving} onClick={deleteRecord}>Delete</button>
-            ) : null}
+            <button
+              className={`studio-notification-button ${publishState ? `is-${publishState.phase}` : ""}`}
+              type="button"
+              aria-label="Open publish notifications"
+              aria-expanded={notificationOpen}
+              onClick={() => setNotificationOpen((current) => !current)}
+            >
+              <span>NOTIFY</span>
+              <i>{publishState?.phase === "error" ? "!" : publishState?.phase === "running" ? "..." : publishState ? "1" : "0"}</i>
+            </button>
           </div>
         </header>
 
@@ -426,27 +448,80 @@ export function StudioClient({ records }: StudioClientProps) {
                   </ol>
                 </div>
 
-                <Inspector form={form} onUpdate={update} />
+                <Inspector
+                  canDelete={mode === "edit" && selectedId !== "__new"}
+                  form={form}
+                  saving={saving}
+                  onDelete={deleteRecord}
+                  onUpdate={update}
+                />
               </aside>
             </div>
           </section>
           )}
         </div>
       </section>
-      {publishState ? (
-        <div className="studio-publish-layer" role="alertdialog" aria-modal="true" aria-labelledby="studio-publish-title">
-          <section className={`studio-publish-panel is-${publishState.phase}`}>
-            <p>// PUBLISH STATUS</p>
-            <h2 id="studio-publish-title">{publishState.title}</h2>
-            <span>{publishState.detail}</span>
-            {publishState.output ? <pre>{formatPublishOutput(publishState.output)}</pre> : null}
-            <button type="button" disabled={publishState.phase === "running"} onClick={() => setPublishState(null)}>
-              {publishState.phase === "running" ? "Working..." : "Close"}
-            </button>
-          </section>
-        </div>
+      {notificationOpen ? (
+        <PublishNotificationPanel notification={publishState} onClose={() => setNotificationOpen(false)} />
       ) : null}
     </main>
+  );
+}
+
+class StudioRequestError extends Error {
+  output?: string;
+
+  constructor(message: string, output?: string) {
+    super(message);
+    this.name = "StudioRequestError";
+    this.output = output;
+  }
+}
+
+async function readStudioResponse(response: Response): Promise<{ error?: string; id?: string; message?: string; output?: string; path?: string }> {
+  const text = await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as { error?: string; id?: string; message?: string; output?: string; path?: string };
+  } catch {
+    return {
+      error: text.slice(0, 220),
+      output: text
+    };
+  }
+}
+
+function PublishNotificationPanel({
+  notification,
+  onClose
+}: {
+  notification: PublishState | null;
+  onClose: () => void;
+}) {
+  return (
+    <aside className="studio-notification-panel" aria-label="Publish notifications">
+      <div className="studio-notification-head">
+        <div>
+          <p>// NOTIFICATIONS</p>
+          <h2>{notification?.title ?? "No publish events"}</h2>
+        </div>
+        <button type="button" onClick={onClose}>Close</button>
+      </div>
+      {notification ? (
+        <article className={`studio-notification-card is-${notification.phase}`}>
+          <span>{notification.detail}</span>
+          {notification.output ? <pre>{formatPublishOutput(notification.output)}</pre> : null}
+        </article>
+      ) : (
+        <article className="studio-notification-card">
+          <span>No save or publish event has been recorded in this Studio session.</span>
+        </article>
+      )}
+    </aside>
   );
 }
 
@@ -726,10 +801,16 @@ function StudioContent({
 }
 
 function Inspector({
+  canDelete,
   form,
+  onDelete,
+  saving,
   onUpdate
 }: {
+  canDelete: boolean;
   form: StudioForm;
+  onDelete: () => void;
+  saving: boolean;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
   return (
@@ -756,6 +837,12 @@ function Inspector({
         <div><dt>Created</dt><dd>{form.started || "Unknown"}</dd></div>
         <div><dt>Updated</dt><dd>{form.updated || "Unknown"}</dd></div>
       </dl>
+      {canDelete ? (
+        <div className="studio-inspector-danger">
+          <span>Danger Zone</span>
+          <button className="studio-danger-action" type="button" disabled={saving} onClick={onDelete}>Delete Record</button>
+        </div>
+      ) : null}
     </div>
   );
 }

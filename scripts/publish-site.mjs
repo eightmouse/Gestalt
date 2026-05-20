@@ -15,6 +15,7 @@ function commandFor(command) {
 function parseArgs(args) {
   let message = "Update archive content";
   let dryRun = false;
+  let skipTypecheck = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -24,10 +25,12 @@ function parseArgs(args) {
       index += 1;
     } else if (arg === "--dry-run") {
       dryRun = true;
+    } else if (arg === "--skip-typecheck") {
+      skipTypecheck = true;
     }
   }
 
-  return { dryRun, message };
+  return { dryRun, message, skipTypecheck };
 }
 
 function run(command, args, options = {}) {
@@ -169,7 +172,7 @@ function ensureThereAreChanges() {
   }
 }
 
-const { dryRun, message } = parseArgs(process.argv.slice(2));
+const { dryRun, message, skipTypecheck } = parseArgs(process.argv.slice(2));
 
 console.log("Gestalt site publish");
 console.log(`Commit message: ${message}`);
@@ -179,7 +182,11 @@ if (dryRun) {
 
 run("node", ["scripts/export-static-records.mjs"]);
 run("node", ["scripts/validate-content.mjs"]);
-run("node", ["node_modules/typescript/bin/tsc", "--noEmit"]);
+if (skipTypecheck) {
+  console.log("\n> TypeScript check skipped for content-only publish");
+} else {
+  run("corepack", ["pnpm", "run", "check"]);
+}
 run("node", ["--check", "static-app.js"]);
 run("git", ["diff", "--check"]);
 

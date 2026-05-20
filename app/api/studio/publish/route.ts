@@ -7,14 +7,6 @@ export const dynamic = "force-dynamic";
 
 let publishRunning = false;
 
-function commandFor(command: string): string {
-  if (process.platform === "win32" && ["corepack", "npm", "pnpm"].includes(command)) {
-    return `${command}.cmd`;
-  }
-
-  return command;
-}
-
 export async function POST(request: NextRequest) {
   if (!isLocalStudioRequest(request)) {
     return NextResponse.json({ error: "Studio publishing is local-development only." }, { status: 404 });
@@ -28,8 +20,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = spawnSync(
-      commandFor("corepack"),
-      ["pnpm", "run", "site:publish", "--", "--message", "Update archive"],
+      process.execPath,
+      ["scripts/publish-site.mjs", "--message", "Update archive", "--skip-typecheck"],
       {
         cwd: process.cwd(),
         encoding: "utf8",
