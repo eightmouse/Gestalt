@@ -11,8 +11,4 @@ Currently working on this blog / portfolio-ish thing. I have not stopped working
 
 I use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working. Gestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.
 
-This is the first working version, so there are not many entries yet. I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.
-
-Currently being extra careful because of the npm ordeal.
-
 Current public version: `v1.17.0`.
