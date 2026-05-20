@@ -661,6 +661,10 @@ button:focus-visible {
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.58);
 }
 
+.command-panel {
+  inline-size: min(500px, calc(100vw - var(--sidebar-width) - 96px));
+}
+
 .search-panel label {
   color: var(--muted);
   font-size: 12px;
@@ -722,6 +726,11 @@ button:focus-visible {
   color: var(--muted);
   font-style: normal;
   font-size: 12px;
+}
+
+.command-panel .search-suggestions i {
+  min-inline-size: 44px;
+  text-align: right;
 }
 
 .dashboard-grid {

@@ -499,16 +499,100 @@ function updatedProjectRecords() {
     .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
 }
 
-function searchResults() {
-  const query = state.searchQuery.trim().toLowerCase();
+function currentGameRecord() {
+  return recordsFor("games").find((record) => record.dashboardActive)
+    || recordsFor("games").find((record) => record.status === "Playing")
+    || recordsFor("games")[0];
+}
 
-  if (!query) {
-    return [...records].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 5);
+function latestLogRecord() {
+  return recordsFor("logs").sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
+}
+
+function archiveMetrics() {
+  const publicRecords = records.filter((record) => record.section !== "system");
+  const activeGame = currentGameRecord();
+  const latestActivity = recentActivity(1)[0];
+
+  return {
+    activeGame,
+    activeProjects: recordsFor("projects").filter((record) => ["active", "in progress", "planning"].includes(record.status.toLowerCase())).length,
+    latestActivityDate: latestActivity?.date || publicRecords[0]?.updated || "",
+    mediaCount: countMediaPaths(publicRecords),
+    recordCount: publicRecords.length
+  };
+}
+
+function countMediaPaths(sourceRecords) {
+  const paths = new Set();
+  const imagePattern = /!\[(?:.*?)]\((.*?)\)/g;
+
+  for (const record of sourceRecords) {
+    for (const value of [record.banner, record.headerImage]) {
+      if (value) {
+        paths.add(value);
+      }
+    }
+
+    for (const key of ["samples", "attachments"]) {
+      const value = record[key];
+      const list = Array.isArray(value) ? value : typeof value === "string" ? value.split(/\r?\n|,/) : [];
+
+      for (const item of list) {
+        const path = String(item).trim();
+
+        if (path) {
+          paths.add(path);
+        }
+      }
+    }
+
+    for (const match of record.body.matchAll(imagePattern)) {
+      if (match[1]) {
+        paths.add(match[1]);
+      }
+    }
   }
 
-  return records
+  return paths.size;
+}
+
+function searchResults() {
+  const query = state.searchQuery.trim().toLowerCase();
+  const currentGame = currentGameRecord();
+  const latestLog = latestLogRecord();
+  const commands = [
+    { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
+    { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
+    { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
+    { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
+    ...(currentGame ? [{ kind: "command", id: "cmd-active-game", title: "Open active game", detail: currentGame.title, record: currentGame, content: "notes" }] : []),
+    ...(latestLog ? [{ kind: "command", id: "cmd-latest-log", title: "Open latest log", detail: latestLog.title, record: latestLog }] : [])
+  ];
+
+  if (!query) {
+    const recentRecords = [...records]
+      .filter((record) => record.section !== "system")
+      .sort((a, b) => b.updated.localeCompare(a.updated))
+      .slice(0, 4)
+      .map((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
+
+    return [...commands.slice(0, 4), ...recentRecords].slice(0, 8);
+  }
+
+  const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(query));
+  const recordResults = records
+    .filter((record) => record.section !== "system")
     .filter((record) => {
-      const searchable = [record.title, record.type, record.status, record.section, ...(record.tags || [])].join(" ").toLowerCase();
+      const searchable = [
+        record.title,
+        record.type,
+        record.status,
+        record.section,
+        record.summary,
+        noteEntries(record.body).map((note) => note.title).join(" ")
+      ].join(" ").toLowerCase();
+
       return searchable.includes(query);
     })
     .sort((a, b) => {
@@ -516,7 +600,10 @@ function searchResults() {
       const bStarts = b.title.toLowerCase().startsWith(query) ? 0 : 1;
       return aStarts - bStarts || b.updated.localeCompare(a.updated) || a.priority - b.priority;
     })
-    .slice(0, 6);
+    .slice(0, 6)
+    .map((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
+
+  return [...commandResults, ...recordResults].slice(0, 8);
 }
 
 function getRecordContents(record) {
@@ -1022,6 +1109,7 @@ function renderRecordContent(record, activeContent) {
 }
 
 function sidebar() {
+  const metrics = archiveMetrics();
   const groups = sections
     .map(
       (section) => `<div class="nav-group">
@@ -1037,7 +1125,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.10.1</span>
+      <span>v1.11.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1050,9 +1138,11 @@ function sidebar() {
       <p>// SYSTEM STATUS</p>
       <dl>
         <div><dt>USER</dt><dd>Eightmouse</dd></div>
-        <div><dt>HOST</dt><dd>LOCALHOST</dd></div>
-        <div><dt>UPTIME</dt><dd>02:17:43:21</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.10.1</dd></div>
+        <div><dt>RECORDS</dt><dd>${metrics.recordCount}</dd></div>
+        <div><dt>MEDIA</dt><dd>${metrics.mediaCount}</dd></div>
+        <div><dt>ACTIVE</dt><dd>${metrics.activeProjects} / ${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
+        <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.11.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1099,10 +1189,8 @@ function memoryLoop() {
 
 function dashboard() {
   const activeProjects = updatedProjectRecords();
-  const currentGame = recordsFor("games").find((record) => record.dashboardActive)
-    || recordsFor("games").find((record) => record.status === "Playing")
-    || recordsFor("games")[0];
-  const latestLog = recordsFor("logs").sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
+  const currentGame = currentGameRecord();
+  const latestLog = latestLogRecord();
   const activity = recentActivity(4);
 
   const projectList = activeProjects.length
@@ -1327,21 +1415,34 @@ function searchPanel() {
   const resultList = results.length
     ? results
         .map(
-          (record) => `<button type="button" data-open-record="${record.id}">
-            <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.type)} / ${escapeHtml(record.status)}</small></span>
-            <i>${escapeHtml(record.section.toUpperCase())}</i>
+          (result) => {
+            if (result.kind === "command") {
+              const commandAttrs = result.record
+                ? `data-open-record="${result.record.id}" ${result.content ? `data-open-content="${result.content}"` : ""}`
+                : `data-open-section="${result.section}"`;
+
+              return `<button type="button" ${commandAttrs}>
+                <span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
+                <i>CMD</i>
+              </button>`;
+            }
+
+            return `<button type="button" data-open-record="${result.record.id}">
+            <span><strong>${escapeHtml(result.record.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
+            <i>${escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
+          }
         )
         .join("")
-    : `<p class="search-empty">No matching record.</p>`;
+    : `<p class="search-empty">No matching command or record.</p>`;
 
-  return `<div class="search-panel" role="search">
-    <label for="archive-search">// SEARCH RECORDS</label>
+  return `<div class="search-panel command-panel" role="search">
+    <label for="archive-search">// COMMAND PALETTE</label>
     <input
       id="archive-search"
       type="search"
       value="${escapeHtml(state.searchQuery)}"
-      placeholder="Project, game, log..."
+      placeholder="Search records or type a command"
       autocomplete="off"
       data-search-input
     />
@@ -1725,6 +1826,22 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  const target = event.target;
+
+  if (
+    event.key === "/" &&
+    !(target instanceof HTMLInputElement) &&
+    !(target instanceof HTMLTextAreaElement) &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  ) {
+    event.preventDefault();
+    state.searchOpen = true;
+    render();
+    return;
+  }
+
   if (event.key !== "Escape") {
     return;
   }

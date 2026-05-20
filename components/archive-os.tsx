@@ -72,6 +72,19 @@ type WeatherState = {
   loading: boolean;
 };
 
+type ArchiveMetrics = {
+  activeGame?: RecordEntry;
+  activeProjects: number;
+  latestActivityDate: string;
+  mediaCount: number;
+  recordCount: number;
+};
+
+type SearchResult =
+  | { kind: "command"; id: string; title: string; detail: string; section?: RecordSection; record?: RecordEntry; content?: ContentKey }
+  | { kind: "record"; record: RecordEntry; detail: string };
+type SearchCommand = Extract<SearchResult, { kind: "command" }>;
+
 type ArchiveOSProps = {
   records: RecordEntry[];
 };
@@ -113,7 +126,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     ?? recordsBySection.games[0];
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
   const activity = recentActivity(records, 4);
-  const searchResults = getSearchResults(records, searchQuery);
+  const metrics = getArchiveMetrics(records, currentGame);
 
   useEffect(() => {
     const updateClock = () => setNow(new Date());
@@ -147,6 +160,24 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [searchOpen]);
 
   useEffect(() => {
+    const openPalette = (event: KeyboardEvent) => {
+      const target = event.target;
+
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      if (event.key === "/") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    document.addEventListener("keydown", openPalette);
+    return () => document.removeEventListener("keydown", openPalette);
+  }, []);
+
+  useEffect(() => {
     if (!records.some((record) => record.id === selectedId) && records[0]) {
       setSelectedId(records[0].id);
     }
@@ -170,6 +201,24 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchQuery("");
   };
 
+  const openSearchResult = (result: SearchResult) => {
+    if (result.kind === "record") {
+      openRecord(result.record);
+      return;
+    }
+
+    if (result.record) {
+      openRecord(result.record, result.content ?? "overview");
+      return;
+    }
+
+    if (result.section) {
+      openSection(result.section);
+    }
+  };
+
+  const searchResults = getSearchResults(records, searchQuery, currentGame, latestLog);
+
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
   const headline = activeSection === "system" ? getGreeting(now) : activeSectionConfig.label;
@@ -188,6 +237,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       <div className="scanline-layer" />
       <Sidebar
         activeSection={activeSection}
+        metrics={metrics}
         onOpenSection={openSection}
       />
 
@@ -229,7 +279,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </button>
           </div>
           {searchOpen ? (
-            <SearchPanel panelRef={searchRef} query={searchQuery} records={searchResults} onOpenRecord={openRecord} onQueryChange={setSearchQuery} />
+            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} />
           ) : null}
         </header>
 
@@ -353,18 +403,20 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
 type SidebarProps = {
   activeSection: RecordSection;
+  metrics: ArchiveMetrics;
   onOpenSection: (section: RecordSection) => void;
 };
 
 function Sidebar({
   activeSection,
+  metrics,
   onOpenSection
 }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.10.1</span>
+        <span>v1.11.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -400,16 +452,24 @@ function Sidebar({
             <dd>Eightmouse</dd>
           </div>
           <div>
-            <dt>HOST</dt>
-            <dd>LOCALHOST</dd>
+            <dt>RECORDS</dt>
+            <dd>{metrics.recordCount}</dd>
           </div>
           <div>
-            <dt>UPTIME</dt>
-            <dd>02:17:43:21</dd>
+            <dt>MEDIA</dt>
+            <dd>{metrics.mediaCount}</dd>
+          </div>
+          <div>
+            <dt>ACTIVE</dt>
+            <dd>{metrics.activeProjects} / {metrics.activeGame?.title ?? "None"}</dd>
+          </div>
+          <div>
+            <dt>LAST FILED</dt>
+            <dd>{formatReadableDate(metrics.latestActivityDate)}</dd>
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.10.1</dd>
+            <dd>GESTALT OS v1.11.0</dd>
           </div>
         </dl>
       </div>
@@ -672,43 +732,43 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
 function SearchPanel({
   panelRef,
   query,
-  records,
-  onOpenRecord,
+  results,
+  onOpenResult,
   onQueryChange
 }: {
   panelRef: RefObject<HTMLDivElement | null>;
   query: string;
-  records: RecordEntry[];
-  onOpenRecord: (record: RecordEntry) => void;
+  results: SearchResult[];
+  onOpenResult: (result: SearchResult) => void;
   onQueryChange: (query: string) => void;
 }) {
   return (
-    <div className="search-panel" ref={panelRef} role="search">
-      <label htmlFor="archive-search">// SEARCH RECORDS</label>
+    <div className="search-panel command-panel" ref={panelRef} role="search">
+      <label htmlFor="archive-search">// COMMAND PALETTE</label>
       <input
         autoComplete="off"
         autoFocus
         id="archive-search"
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Project, game, log..."
+        placeholder="Search records or type a command"
         type="search"
         value={query}
       />
       <div className="search-suggestions">
-        {records.length > 0 ? (
-          records.map((record) => (
-            <button key={record.id} type="button" onClick={() => onOpenRecord(record)}>
+        {results.length > 0 ? (
+          results.map((result) => (
+            <button key={result.kind === "record" ? result.record.id : result.id} type="button" onClick={() => onOpenResult(result)}>
               <span>
-                <strong>{record.title}</strong>
+                <strong>{result.kind === "record" ? result.record.title : result.title}</strong>
                 <small>
-                  {record.type} / {record.status}
+                  {result.detail}
                 </small>
               </span>
-              <i>{record.section.toUpperCase()}</i>
+              <i>{result.kind === "record" ? result.record.section.toUpperCase() : "CMD"}</i>
             </button>
           ))
         ) : (
-          <p className="search-empty">No matching record.</p>
+          <p className="search-empty">No matching command or record.</p>
         )}
       </div>
     </div>
@@ -1639,16 +1699,87 @@ function noteTitleDate(title: string): string | null {
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 }
 
-function getSearchResults(records: RecordEntry[], query: string): RecordEntry[] {
-  const normalized = query.trim().toLowerCase();
+function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEntry): ArchiveMetrics {
+  const publicRecords = records.filter((record) => record.section !== "system");
+  const latestActivityDate = recentActivity(records, 1)[0]?.date ?? publicRecords[0]?.updated ?? "";
 
-  if (!normalized) {
-    return [...records].sort((a, b) => b.updated.localeCompare(a.updated)).slice(0, 5);
+  return {
+    activeGame,
+    activeProjects: records.filter((record) => record.section === "projects" && ["active", "in progress", "planning"].includes(record.status.toLowerCase())).length,
+    latestActivityDate,
+    mediaCount: countMediaPaths(publicRecords),
+    recordCount: publicRecords.length
+  };
+}
+
+function countMediaPaths(records: RecordEntry[]): number {
+  const paths = new Set<string>();
+  const markdownImagePattern = /!\[(?:.*?)]\((.*?)\)/g;
+
+  for (const record of records) {
+    for (const value of [record.banner, record.meta.headerImage]) {
+      if (typeof value === "string" && value) {
+        paths.add(value);
+      }
+    }
+
+    for (const key of ["samples", "attachments"] as const) {
+      const value = record.meta[key];
+      const list = Array.isArray(value) ? value : typeof value === "string" ? value.split(/\r?\n|,/) : [];
+
+      for (const item of list) {
+        const path = String(item).trim();
+
+        if (path) {
+          paths.add(path);
+        }
+      }
+    }
+
+    for (const match of record.body.matchAll(markdownImagePattern)) {
+      if (match[1]) {
+        paths.add(match[1]);
+      }
+    }
   }
 
-  return records
+  return paths.size;
+}
+
+function getSearchResults(records: RecordEntry[], query: string, currentGame?: RecordEntry, latestLog?: RecordEntry): SearchResult[] {
+  const normalized = query.trim().toLowerCase();
+  const commands: SearchCommand[] = [
+    { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
+    { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
+    { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
+    { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
+    ...(currentGame ? [{ kind: "command" as const, id: "cmd-active-game", title: "Open active game", detail: currentGame.title, record: currentGame, content: "notes" as ContentKey }] : []),
+    ...(latestLog ? [{ kind: "command" as const, id: "cmd-latest-log", title: "Open latest log", detail: latestLog.title, record: latestLog }] : [])
+  ];
+
+  if (!normalized) {
+    const recentRecords = [...records]
+      .filter((record) => record.section !== "system")
+      .sort((a, b) => b.updated.localeCompare(a.updated))
+      .slice(0, 4)
+      .map<SearchResult>((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
+
+    return [...commands.slice(0, 4), ...recentRecords].slice(0, 8);
+  }
+
+  const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(normalized));
+  const recordResults = records
+    .filter((record) => record.section !== "system")
     .filter((record) => {
-      const searchable = [record.title, record.type, record.status, record.section, ...record.tags].join(" ").toLowerCase();
+      const searchable = [
+        record.title,
+        record.type,
+        record.status,
+        record.section,
+        record.summary,
+        noteEntries(record.body).map((note) => note.title).join(" ")
+      ].join(" ").toLowerCase();
+
       return searchable.includes(normalized);
     })
     .sort((a, b) => {
@@ -1656,5 +1787,8 @@ function getSearchResults(records: RecordEntry[], query: string): RecordEntry[] 
       const bStarts = b.title.toLowerCase().startsWith(normalized) ? 0 : 1;
       return aStarts - bStarts || b.updated.localeCompare(a.updated) || a.priority - b.priority;
     })
-    .slice(0, 6);
+    .slice(0, 6)
+    .map<SearchResult>((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
+
+  return [...commandResults, ...recordResults].slice(0, 8);
 }
