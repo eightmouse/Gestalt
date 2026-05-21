@@ -4492,8 +4492,8 @@ input.studio-title-edit {
     top: 0;
     z-index: 35;
     height: auto;
-    gap: 16px;
-    padding: 18px;
+    gap: 10px;
+    padding: 12px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
     background:
@@ -4503,16 +4503,16 @@ input.studio-title-edit {
   }
 
   .brand-block {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
     gap: 8px 14px;
-    padding-block-end: 12px;
+    padding-block-end: 8px;
     border-block-end: 1px dashed rgba(217, 213, 193, 0.18);
   }
 
   .brand {
-    font-size: clamp(25px, 8vw, 34px);
-    letter-spacing: 0.32em;
+    font-size: clamp(22px, 6vw, 30px);
+    letter-spacing: 0.28em;
   }
 
   .brand-block i {
@@ -4521,12 +4521,12 @@ input.studio-title-edit {
 
   .brand-block span {
     justify-self: end;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .sidebar nav {
     display: grid;
-    gap: 10px;
+    gap: 7px;
   }
 
   .sidebar-label {
@@ -4536,7 +4536,7 @@ input.studio-title-edit {
 
   .nav-stack {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
     overflow: visible;
     padding: 0;
   }
@@ -4549,29 +4549,29 @@ input.studio-title-edit {
   }
 
   .nav-trigger {
-    min-block-size: 92px;
-    grid-template-columns: 1fr;
-    grid-template-rows: 28px 1fr;
-    justify-items: start;
-    align-content: start;
-    gap: 10px;
-    padding: 12px;
+    min-block-size: 58px;
+    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    justify-items: stretch;
+    align-content: center;
+    gap: 8px;
+    padding: 8px;
   }
 
   .nav-mark {
-    inline-size: 28px;
-    block-size: 28px;
+    inline-size: 24px;
+    block-size: 24px;
   }
 
   .nav-trigger strong {
-    font-size: 11px;
-    letter-spacing: 0.06em;
+    font-size: 10px;
+    letter-spacing: 0.04em;
   }
 
   .nav-trigger small {
     max-inline-size: 100%;
-    margin-block-start: 4px;
-    font-size: 11px;
+    margin-block-start: 2px;
+    font-size: 10px;
     letter-spacing: 0.04em;
   }
 
@@ -4579,6 +4579,12 @@ input.studio-title-edit {
     opacity: 1;
     transform: none;
     filter: none;
+    animation: none;
+    clip-path: none;
+  }
+
+  .nav-readable::before {
+    display: none;
   }
 
   .nav-cipher {
@@ -4590,23 +4596,22 @@ input.studio-title-edit {
   }
 
   .system-status {
-    padding-block-start: 12px;
+    padding-block-start: 8px;
   }
 
   .system-status > p {
-    margin-block-end: 10px;
-    font-size: 11px;
+    display: none;
   }
 
   .system-status dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
   }
 
   .system-status div {
     grid-template-columns: 1fr;
     gap: 2px;
-    padding: 8px;
+    padding: 5px 6px;
     border: 1px solid rgba(217, 213, 193, 0.1);
     background: rgba(255, 255, 255, 0.016);
   }
@@ -4861,24 +4866,39 @@ input.studio-title-edit {
   }
 
   .sidebar {
-    padding: 16px 12px 14px;
+    padding: 10px 10px 11px;
   }
 
   .nav-stack {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .nav-trigger {
-    min-block-size: 84px;
-    padding: 11px;
-  }
-
-  .system-status dl {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .system-status div {
+  .nav-trigger {
+    min-block-size: 54px;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 6px;
     padding: 7px;
+  }
+
+  .nav-mark {
+    inline-size: 22px;
+    block-size: 22px;
+  }
+
+  .nav-trigger strong {
+    font-size: 9px;
+  }
+
+  .nav-trigger small {
+    font-size: 9px;
+  }
+
+  .system-status dl {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .system-status div {
+    padding: 5px;
   }
 
   .system-status dt {
@@ -4887,7 +4907,7 @@ input.studio-title-edit {
   }
 
   .system-status dd {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .workspace {
@@ -5091,6 +5111,28 @@ input.studio-title-edit {
 
   .archive-shell.has-record .mobile-dock {
     display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nav-trigger {
+    min-block-size: 48px;
+  }
+
+  .nav-trigger strong {
+    font-size: 8px;
+  }
+
+  .nav-trigger small {
+    font-size: 8px;
+  }
+
+  .system-status dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
