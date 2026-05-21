@@ -349,7 +349,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         <header className="workspace-header">
           <div>
             <p className="route-label">// {routeTitle}</p>
-            <h1>
+            <h1 style={{ "--headline-chars": headline.length } as CSSProperties}>
               <span
                 aria-hidden="true"
                 className="headline-cipher-fragment"
@@ -360,7 +360,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
               <span
                 className="headline-text is-writing"
                 key={activeSection}
-                style={{ "--headline-chars": headline.length } as CSSProperties}
               >
                 {headline}
               </span>
@@ -611,7 +610,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.6</span>
+          <span>v1.24.7</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -634,7 +633,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.6</span>
+        <span className="version-label">v1.24.7</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -690,7 +689,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.6</dd>
+            <dd>GESTALT OS v1.24.7</dd>
           </div>
         </dl>
       </div>

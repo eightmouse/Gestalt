@@ -1238,7 +1238,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.6</span>
+        <span>v1.24.7</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1251,7 +1251,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.6</span>
+      <span class="version-label">v1.24.7</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1269,7 +1269,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.6</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.7</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1693,7 +1693,7 @@ function render() {
       <header class="workspace-header">
         <div>
           <p class="route-label">// ${escapeHtml(routeTitle)}</p>
-          <h1><span class="headline-cipher-fragment" aria-hidden="true">${escapeHtml(headlineCipher)}</span><span class="${headlineClass}" style="--headline-chars: ${headline.length}" data-time-greeting>${escapeHtml(headline)}</span><span class="${cursorClass}">_</span></h1>
+          <h1 style="--headline-chars: ${headline.length}"><span class="headline-cipher-fragment" aria-hidden="true">${escapeHtml(headlineCipher)}</span><span class="${headlineClass}" data-time-greeting>${escapeHtml(headline)}</span><span class="${cursorClass}">_</span></h1>
           <p class="subtle">${escapeHtml(state.activeSection === "system" ? dashboardSubtext() : "Browse the records filed under this archive.")}</p>
         </div>
         <div class="time-block" aria-label="Local time">

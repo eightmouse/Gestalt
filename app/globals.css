@@ -1040,6 +1040,8 @@ button:focus-visible {
 .workspace-header h1 {
   position: relative;
   margin: 0;
+  --headline-duration: clamp(520ms, calc(var(--headline-chars, 16) * 44ms), 1120ms);
+  --headline-start-delay: 120ms;
   color: var(--text);
   font-size: clamp(28px, 3.5vw, 44px);
   font-weight: 300;
@@ -1056,7 +1058,7 @@ button:focus-visible {
   overflow: hidden;
   white-space: nowrap;
   pointer-events: none;
-  animation: headline-decode 320ms steps(4, end) both;
+  animation: headline-decode var(--headline-duration) steps(var(--headline-chars, 16), end) both;
 }
 
 .headline-text {
@@ -1070,8 +1072,8 @@ button:focus-visible {
 .headline-text.is-writing {
   clip-path: inset(0 100% 0 0);
   animation:
-    headline-write clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) steps(var(--headline-chars, 16), end) 210ms both,
-    headline-signal 120ms steps(2, end) 2 210ms;
+    headline-write var(--headline-duration) steps(var(--headline-chars, 16), end) var(--headline-start-delay) both,
+    headline-signal 120ms steps(2, end) 2 var(--headline-start-delay);
 }
 
 .record-title-text {
@@ -2436,8 +2438,8 @@ button:focus-visible {
 .headline-cursor.is-delayed {
   opacity: 0;
   animation:
-    headline-cursor-enter 1ms linear calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 250ms) both,
-    cursor-blink 780ms steps(1, end) calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 250ms) infinite;
+    headline-cursor-enter 1ms linear calc(var(--headline-duration) + var(--headline-start-delay) + 60ms) both,
+    cursor-blink 780ms steps(1, end) calc(var(--headline-duration) + var(--headline-start-delay) + 60ms) infinite;
 }
 
 .record-title-cursor.is-delayed {
@@ -4584,22 +4586,31 @@ input.studio-title-edit {
 
 @keyframes headline-decode {
   0% {
-    opacity: 0.72;
-    clip-path: inset(0 68% 0 0);
+    opacity: 0.86;
+    clip-path: inset(0 42% 0 0);
     filter: blur(1px);
     transform: translateX(-2px);
   }
 
-  42% {
-    opacity: 0.55;
-    clip-path: inset(0 28% 0 0);
+  18% {
+    opacity: 0.9;
+    clip-path: inset(0);
+    filter: blur(0.5px);
     transform: translateX(2px);
   }
 
-  72% {
-    opacity: 0.28;
-    clip-path: inset(0 4% 0 0);
+  66% {
+    opacity: 0.64;
+    clip-path: inset(0);
+    filter: blur(0.2px);
     transform: translateX(-1px);
+  }
+
+  88% {
+    opacity: 0.18;
+    clip-path: inset(0 0 0 58%);
+    filter: blur(0);
+    transform: translateX(1px);
   }
 
   100% {
