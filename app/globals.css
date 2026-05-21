@@ -58,13 +58,13 @@ button:focus-visible {
 }
 
 .archive-shell {
-  --sidebar-width: 340px;
+  --sidebar-width: 252px;
   position: relative;
   isolation: isolate;
   height: 100vh;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(260px, var(--sidebar-width)) 1fr;
+  grid-template-columns: minmax(220px, var(--sidebar-width)) 1fr;
   overflow: hidden;
   background:
     linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.24));
@@ -201,24 +201,71 @@ button:focus-visible {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 48px 28px 28px;
+  gap: 24px;
+  padding: 44px 22px 28px;
   background: rgba(4, 5, 4, 0.84);
   border-right: 1px solid var(--line);
 }
 
 .brand-block {
   display: grid;
-  gap: 22px;
+  gap: 18px;
+}
+
+.brand-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
 }
 
 .brand {
   margin: 0;
   color: var(--text-strong);
   font-family: var(--sans);
-  font-size: clamp(28px, 3vw, 42px);
+  font-size: clamp(25px, 2.6vw, 36px);
   font-weight: 300;
   letter-spacing: 0.42em;
+}
+
+.archive-menu-toggle {
+  min-inline-size: 42px;
+  block-size: 36px;
+  display: inline-grid;
+  grid-template-columns: 16px minmax(0, auto);
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid rgba(217, 213, 193, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 64%),
+    rgba(255, 255, 255, 0.016);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.archive-menu-toggle svg {
+  inline-size: 15px;
+  block-size: 15px;
+  stroke-width: 1.5;
+}
+
+.brand-block .archive-menu-toggle span {
+  max-inline-size: 9ch;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-menu-toggle:hover,
+.archive-menu-toggle.is-active {
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
 }
 
 .brand-block span,
@@ -226,6 +273,162 @@ button:focus-visible {
   color: var(--muted);
   font-size: 14px;
   font-style: normal;
+}
+
+.archive-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 48;
+  display: block;
+  padding: 0;
+  border: 0;
+  background:
+    radial-gradient(ellipse at 30% 24%, rgba(217, 213, 193, 0.045), transparent 32%),
+    rgba(2, 3, 2, 0.42);
+  cursor: default;
+  backdrop-filter: blur(2px);
+}
+
+.archive-nav-panel {
+  position: fixed;
+  z-index: 58;
+  inset-block-start: clamp(54px, 9vh, 92px);
+  inset-block-end: clamp(34px, 6vh, 64px);
+  inset-inline-start: calc(var(--sidebar-width) + 24px);
+  inline-size: min(650px, calc(100vw - var(--sidebar-width) - 72px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.034), transparent 42%),
+    rgba(7, 8, 7, 0.97);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.68),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  overflow: hidden;
+}
+
+.archive-nav-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.034;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0 1px, transparent 1px 9px);
+}
+
+.archive-nav-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.archive-nav-panel header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-block-end: 16px;
+  border-block-end: 1px dashed rgba(217, 213, 193, 0.18);
+}
+
+.archive-nav-panel header p {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+}
+
+.archive-nav-panel header span {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.archive-nav-panel .nav-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  overflow: auto;
+  padding: 0 4px 0 0;
+}
+
+.archive-nav-panel .nav-group {
+  min-width: 0;
+  border-color: rgba(217, 213, 193, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 68%),
+    rgba(255, 255, 255, 0.018);
+}
+
+.archive-nav-panel .nav-trigger {
+  min-block-size: 118px;
+  grid-template-columns: 42px minmax(0, 1fr) 18px;
+  gap: 20px;
+  padding: 22px;
+}
+
+.archive-nav-panel .nav-mark {
+  inline-size: 30px;
+  block-size: 30px;
+}
+
+.archive-nav-panel .nav-trigger strong {
+  font-size: 13px;
+  letter-spacing: 0.11em;
+}
+
+.archive-nav-panel .nav-trigger small {
+  margin-block-start: 10px;
+  font-size: 13px;
+}
+
+.archive-nav-panel .nav-readable {
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(3px);
+  filter: blur(2px);
+  animation: none;
+}
+
+.archive-nav-panel .nav-readable::before {
+  display: block !important;
+  content: attr(data-cipher);
+}
+
+.archive-nav-panel .nav-cipher {
+  position: static;
+  z-index: auto;
+  display: block;
+  max-inline-size: none;
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.archive-nav-panel .nav-trigger:hover .nav-readable,
+.archive-nav-panel .nav-trigger:focus-visible .nav-readable {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+  animation: glyph-resolve 460ms steps(5, end);
+}
+
+.archive-nav-panel .nav-trigger:hover .nav-readable::before,
+.archive-nav-panel .nav-trigger:focus-visible .nav-readable::before {
+  animation: glyph-scan 420ms steps(4, end);
+}
+
+.archive-nav-panel .nav-trigger:hover .nav-cipher,
+.archive-nav-panel .nav-trigger:focus-visible .nav-cipher {
+  opacity: 0;
+  transform: translateY(-3px);
+  filter: blur(2px);
+  animation: glyph-decay 420ms steps(4, end);
 }
 
 .sidebar-label,
@@ -4644,7 +4847,7 @@ input.studio-title-edit {
 
 @media (max-width: 1180px) {
   .archive-shell {
-    --sidebar-width: 292px;
+    --sidebar-width: 236px;
   }
 
   .dashboard-grid {
@@ -4664,6 +4867,11 @@ input.studio-title-edit {
 
   .record-window {
     inline-size: min(820px, calc(100vw - var(--sidebar-width) - 36px));
+  }
+
+  .archive-nav-panel {
+    inline-size: min(610px, calc(100vw - var(--sidebar-width) - 48px));
+    inset-inline-start: calc(var(--sidebar-width) + 18px);
   }
 
   .record-layout {
@@ -4703,11 +4911,14 @@ input.studio-title-edit {
   }
 
   .brand-block {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
     gap: 6px 12px;
     padding-block-end: 6px;
     border-block-end: 1px dashed rgba(217, 213, 193, 0.18);
+  }
+
+  .brand-row {
+    grid-template-columns: minmax(0, auto) auto;
+    justify-content: space-between;
   }
 
   .brand {
@@ -4722,6 +4933,81 @@ input.studio-title-edit {
   .brand-block span {
     justify-self: end;
     font-size: 10px;
+  }
+
+  .archive-menu-toggle {
+    block-size: 32px;
+    grid-template-columns: 14px minmax(0, auto);
+  }
+
+  .brand-block .archive-menu-toggle span {
+    font-size: 9px;
+  }
+
+  .archive-nav-panel {
+    inset: 74px 12px 82px;
+    inline-size: auto;
+    padding: 16px;
+  }
+
+  .archive-nav-panel header {
+    align-items: start;
+    display: grid;
+    gap: 6px;
+  }
+
+  .archive-nav-panel .nav-stack {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    overflow: auto;
+    padding-inline-end: 2px;
+  }
+
+  .archive-nav-panel .nav-group {
+    flex: initial;
+  }
+
+  .archive-nav-panel .nav-trigger {
+    min-block-size: 94px;
+    grid-template-columns: 28px minmax(0, 1fr) 14px;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .archive-nav-panel .nav-mark {
+    inline-size: 24px;
+    block-size: 24px;
+  }
+
+  .archive-nav-panel .nav-label {
+    min-block-size: auto;
+    padding-inline-end: 0;
+  }
+
+  .archive-nav-panel .nav-trigger strong {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .archive-nav-panel .nav-trigger small,
+  .archive-nav-panel .nav-cipher {
+    margin-block-start: 7px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  .archive-nav-panel .nav-readable {
+    opacity: 0;
+    transform: translateY(3px);
+    filter: blur(2px);
+  }
+
+  .archive-nav-panel .nav-cipher {
+    position: static;
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 
   .sidebar nav {

@@ -323,6 +323,7 @@ const state = {
   searchOpen: false,
   searchQuery: "",
   timelineOpen: false,
+  navOpen: false,
   noteSearchQuery: "",
   updateHistoryOpen: false,
   bootDismissed: false,
@@ -358,6 +359,7 @@ function openRecord(recordId, contentKey = "overview") {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   state.recordTitleAnimating = true;
@@ -372,6 +374,7 @@ function openSection(sectionId) {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   render();
@@ -385,6 +388,7 @@ function openTimeline() {
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   state.timelineOpen = true;
+  state.navOpen = false;
   render();
 }
 
@@ -1199,6 +1203,41 @@ function renderRecordContent(record, activeContent) {
 
 function sidebar() {
   const metrics = archiveMetrics();
+  const activeConfig = sections.find((section) => section.id === state.activeSection) || sections[0];
+
+  return `<aside class="sidebar">
+    <div class="brand-block">
+      <div class="brand-row">
+        <p class="brand">GESTALT</p>
+        <button class="archive-menu-toggle ${state.navOpen ? "is-active" : ""}" type="button" aria-expanded="${state.navOpen ? "true" : "false"}" aria-label="Open archive navigation" data-nav-toggle>
+          <span aria-hidden="true">☰</span>
+          <span>${escapeHtml(activeConfig.code)}</span>
+        </button>
+      </div>
+      <span>v1.23.0</span>
+      <i aria-hidden="true">-</i>
+    </div>
+
+    <div class="system-status">
+      <p>// SYSTEM STATUS</p>
+      <dl>
+        <div><dt>USER</dt><dd>Eightmouse</dd></div>
+        <div><dt>RECORDS</dt><dd>${metrics.recordCount}</dd></div>
+        <div><dt>MEDIA</dt><dd>${metrics.mediaCount}</dd></div>
+        <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
+        <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
+        <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.23.0</dd></div>
+      </dl>
+    </div>
+  </aside>`;
+}
+
+function archiveNavigationMenu() {
+  if (!state.navOpen) {
+    return "";
+  }
+
   const groups = sections
     .map(
       (section) => `<div class="nav-group">
@@ -1215,31 +1254,14 @@ function sidebar() {
     )
     .join("");
 
-  return `<aside class="sidebar">
-    <div class="brand-block">
-      <p class="brand">GESTALT</p>
-      <span>v1.22.1</span>
-      <i aria-hidden="true">-</i>
-    </div>
-
-    <nav aria-label="Archive navigation">
-      <p class="sidebar-label">// ARCHIVE NAVIGATION</p>
+  return `<button class="archive-nav-backdrop" type="button" aria-label="Close archive navigation" data-nav-backdrop></button>
+    <nav class="archive-nav-panel" aria-label="Archive navigation">
+      <header>
+        <p>// ARCHIVE NAVIGATION</p>
+        <span>${String(sections.length).padStart(2, "0")} RECORD GROUPS</span>
+      </header>
       <div class="nav-stack">${groups}</div>
-    </nav>
-
-    <div class="system-status">
-      <p>// SYSTEM STATUS</p>
-      <dl>
-        <div><dt>USER</dt><dd>Eightmouse</dd></div>
-        <div><dt>RECORDS</dt><dd>${metrics.recordCount}</dd></div>
-        <div><dt>MEDIA</dt><dd>${metrics.mediaCount}</dd></div>
-        <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
-        <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
-        <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.22.1</dd></div>
-      </dl>
-    </div>
-  </aside>`;
+    </nav>`;
 }
 
 function dashboardPanel(title, body, footerLabel, action, className = "") {
@@ -1617,6 +1639,7 @@ function render() {
     <div class="grain-layer"></div>
     <div class="scanline-layer"></div>
     ${sidebar()}
+    ${archiveNavigationMenu()}
     <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" aria-label="Gestalt dashboard">
       <header class="workspace-header">
         <div>
@@ -1939,6 +1962,18 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.navToggle !== undefined) {
+    state.navOpen = !state.navOpen;
+    render();
+    return;
+  }
+
+  if (target.dataset.navBackdrop !== undefined) {
+    state.navOpen = false;
+    render();
+    return;
+  }
+
   if (recordId) {
     openRecord(recordId, openContent || "overview");
     return;
@@ -2043,6 +2078,12 @@ document.addEventListener("keydown", (event) => {
 
   if (state.timelineOpen) {
     state.timelineOpen = false;
+    render();
+    return;
+  }
+
+  if (state.navOpen) {
+    state.navOpen = false;
     render();
     return;
   }

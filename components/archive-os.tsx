@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Clock,
   Cpu,
+  Menu,
   Maximize2,
   Minimize2,
   Search,
@@ -128,6 +129,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -209,6 +211,21 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, []);
 
   useEffect(() => {
+    if (!navOpen) {
+      return;
+    }
+
+    const closeNavigation = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNavOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", closeNavigation);
+    return () => document.removeEventListener("keydown", closeNavigation);
+  }, [navOpen]);
+
+  useEffect(() => {
     if (!records.some((record) => record.id === selectedId) && records[0]) {
       setSelectedId(records[0].id);
     }
@@ -223,6 +240,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(false);
+    setNavOpen(false);
   };
 
   const openSection = (section: RecordSection) => {
@@ -232,6 +250,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(false);
+    setNavOpen(false);
   };
 
   const openTimeline = () => {
@@ -240,6 +259,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(true);
+    setNavOpen(false);
   };
 
   const openSearchResult = (result: SearchResult) => {
@@ -287,8 +307,19 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       <Sidebar
         activeSection={activeSection}
         metrics={metrics}
-        onOpenSection={openSection}
+        navOpen={navOpen}
+        onToggleNav={() => setNavOpen((current) => !current)}
       />
+
+      <AnimatePresence>
+        {navOpen ? (
+          <ArchiveNavigationMenu
+            activeSection={activeSection}
+            onClose={() => setNavOpen(false)}
+            onOpenSection={openSection}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <section className={hasFocusWindow ? "workspace has-record" : "workspace"} aria-label="Gestalt dashboard">
         <header className="workspace-header">
@@ -534,46 +565,37 @@ function MobileDock({
 type SidebarProps = {
   activeSection: RecordSection;
   metrics: ArchiveMetrics;
-  onOpenSection: (section: RecordSection) => void;
+  navOpen: boolean;
+  onToggleNav: () => void;
 };
 
 function Sidebar({
   activeSection,
   metrics,
-  onOpenSection
+  navOpen,
+  onToggleNav
 }: SidebarProps) {
+  const activeConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
+
   return (
     <aside className="sidebar">
       <div className="brand-block">
-        <p className="brand">GESTALT</p>
-        <span>v1.22.1</span>
+        <div className="brand-row">
+          <p className="brand">GESTALT</p>
+          <button
+            className={navOpen ? "archive-menu-toggle is-active" : "archive-menu-toggle"}
+            type="button"
+            aria-expanded={navOpen}
+            aria-label="Open archive navigation"
+            onClick={onToggleNav}
+          >
+            <Menu size={16} />
+            <span>{activeConfig.code}</span>
+          </button>
+        </div>
+        <span>v1.23.0</span>
         <i aria-hidden="true">-</i>
       </div>
-
-      <nav aria-label="Archive navigation">
-        <p className="sidebar-label">// ARCHIVE NAVIGATION</p>
-        <div className="nav-stack">
-          {sections.map((section) => {
-            return (
-              <div className="nav-group" key={section.id}>
-                <button
-                  type="button"
-                  className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
-                  onClick={() => onOpenSection(section.id)}
-                >
-                  <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-                  <span className="nav-label">
-                    <strong>{section.code}</strong>
-                    <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
-                    <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
-                  </span>
-                  <span className="section-signal" aria-hidden="true" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </nav>
 
       <div className="system-status">
         <p>// SYSTEM STATUS</p>
@@ -604,11 +626,67 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.22.1</dd>
+            <dd>GESTALT OS v1.23.0</dd>
           </div>
         </dl>
       </div>
     </aside>
+  );
+}
+
+function ArchiveNavigationMenu({
+  activeSection,
+  onClose,
+  onOpenSection
+}: {
+  activeSection: RecordSection;
+  onClose: () => void;
+  onOpenSection: (section: RecordSection) => void;
+}) {
+  return (
+    <>
+      <motion.button
+        aria-label="Close archive navigation"
+        className="archive-nav-backdrop"
+        type="button"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.nav
+        aria-label="Archive navigation"
+        className="archive-nav-panel"
+        initial={{ opacity: 0, x: -18, filter: "blur(2px)" }}
+        animate={{ opacity: 1, x: 0, filter: "blur(0)" }}
+        exit={{ opacity: 0, x: -18, filter: "blur(2px)" }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        <header>
+          <p>// ARCHIVE NAVIGATION</p>
+          <span>{sections.length.toString().padStart(2, "0")} RECORD GROUPS</span>
+        </header>
+        <div className="nav-stack">
+          {sections.map((section) => (
+            <div className="nav-group" key={section.id}>
+              <button
+                type="button"
+                className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
+                onClick={() => onOpenSection(section.id)}
+              >
+                <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+                <span className="nav-label">
+                  <strong>{section.code}</strong>
+                  <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
+                  <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
+                </span>
+                <span className="section-signal" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </motion.nav>
+    </>
   );
 }
 
