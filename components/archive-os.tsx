@@ -455,8 +455,58 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </>
           ) : null}
         </AnimatePresence>
+        <MobileDock
+          activeSection={activeSection}
+          currentGame={currentGame}
+          onOpenCurrent={() => currentGame && openRecord(currentGame, "notes")}
+          onOpenLogs={() => openSection("logs")}
+          onOpenTimeline={openTimeline}
+          onSearch={() => setSearchOpen((current) => !current)}
+          searchOpen={searchOpen}
+        />
       </section>
     </main>
+  );
+}
+
+type MobileDockProps = {
+  activeSection: RecordSection;
+  currentGame?: RecordEntry;
+  onOpenCurrent: () => void;
+  onOpenLogs: () => void;
+  onOpenTimeline: () => void;
+  onSearch: () => void;
+  searchOpen: boolean;
+};
+
+function MobileDock({
+  activeSection,
+  currentGame,
+  onOpenCurrent,
+  onOpenLogs,
+  onOpenTimeline,
+  onSearch,
+  searchOpen
+}: MobileDockProps) {
+  return (
+    <nav className="mobile-dock" aria-label="Mobile quick actions">
+      <button className={searchOpen ? "is-active" : ""} type="button" onClick={onSearch}>
+        <span>⌕</span>
+        Search
+      </button>
+      <button type="button" onClick={onOpenTimeline}>
+        <span>⌬</span>
+        Trace
+      </button>
+      <button disabled={!currentGame} type="button" onClick={onOpenCurrent}>
+        <span>◇</span>
+        Current
+      </button>
+      <button className={activeSection === "logs" ? "is-active" : ""} type="button" onClick={onOpenLogs}>
+        <span>▤</span>
+        Logs
+      </button>
+    </nav>
   );
 }
 
@@ -475,7 +525,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.19.0</span>
+        <span>v1.20.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -533,7 +583,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.19.0</dd>
+            <dd>GESTALT OS v1.20.0</dd>
           </div>
         </dl>
       </div>

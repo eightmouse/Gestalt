@@ -1205,7 +1205,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.19.0</span>
+      <span>v1.20.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1223,7 +1223,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.19.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.20.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1573,6 +1573,17 @@ function timelineWindow() {
     </article>`;
 }
 
+function mobileDock() {
+  const currentGame = currentGameRecord();
+
+  return `<nav class="mobile-dock" aria-label="Mobile quick actions">
+    <button class="${state.searchOpen ? "is-active" : ""}" type="button" data-search-toggle><span>⌕</span>Search</button>
+    <button type="button" data-open-timeline><span>⌬</span>Trace</button>
+    <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
+    <button class="${state.activeSection === "logs" ? "is-active" : ""}" type="button" data-open-section="logs"><span>▤</span>Logs</button>
+  </nav>`;
+}
+
 function render() {
   const record = selectedRecord();
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
@@ -1620,6 +1631,7 @@ function render() {
       ${recordBackdrop()}
       ${recordWindow(record)}
       ${timelineWindow()}
+      ${mobileDock()}
     </section>
     ${state.expandedImage ? `<button class="note-image-lightbox" type="button" aria-label="Close expanded image" data-close-expanded-image><img src="${escapeHtml(state.expandedImage.src)}" alt="${escapeHtml(state.expandedImage.alt)}" decoding="async" /></button>` : ""}
   </main>`;

@@ -3033,6 +3033,10 @@ button:focus-visible {
   backdrop-filter: blur(12px);
 }
 
+.mobile-dock {
+  display: none;
+}
+
 .studio-shell {
   display: block;
   overflow: auto;
@@ -4967,6 +4971,63 @@ input.studio-title-edit {
     inset-inline: 12px;
     inset-block-end: 14px;
     justify-content: center;
+  }
+
+  .mobile-dock {
+    position: fixed;
+    inset-inline: 12px;
+    inset-block-end: 12px;
+    z-index: 34;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 7px;
+    border: 1px solid rgba(217, 213, 193, 0.2);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.046), transparent 58%),
+      rgba(5, 6, 5, 0.92);
+    box-shadow:
+      0 20px 54px rgba(0, 0, 0, 0.58),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(16px);
+  }
+
+  .mobile-dock button {
+    min-width: 0;
+    min-block-size: 54px;
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    padding: 7px 3px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.018);
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .mobile-dock button span {
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .mobile-dock button:hover,
+  .mobile-dock button.is-active {
+    border-color: rgba(217, 213, 193, 0.3);
+    background: rgba(255, 255, 255, 0.052);
+    color: var(--text);
+  }
+
+  .mobile-dock button:disabled {
+    opacity: 0.38;
+    cursor: default;
+  }
+
+  .archive-shell.has-record .mobile-dock {
+    display: none;
   }
 }
 
