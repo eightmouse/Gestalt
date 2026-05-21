@@ -4484,13 +4484,135 @@ input.studio-title-edit {
   }
 
   .sidebar {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 35;
     height: auto;
-    padding: 28px 18px;
+    gap: 16px;
+    padding: 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 56%),
+      rgba(4, 5, 4, 0.94);
+    backdrop-filter: blur(14px);
+  }
+
+  .brand-block {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px 14px;
+    padding-block-end: 12px;
+    border-block-end: 1px dashed rgba(217, 213, 193, 0.18);
   }
 
   .brand {
-    font-size: 30px;
+    font-size: clamp(25px, 8vw, 34px);
+    letter-spacing: 0.32em;
+  }
+
+  .brand-block i {
+    display: none;
+  }
+
+  .brand-block span {
+    justify-self: end;
+    font-size: 12px;
+  }
+
+  .sidebar nav {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sidebar-label {
+    margin-block-end: 0;
+    font-size: 11px;
+  }
+
+  .nav-stack {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .nav-group {
+    min-width: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.026), transparent 58%),
+      rgba(255, 255, 255, 0.014);
+  }
+
+  .nav-trigger {
+    min-block-size: 92px;
+    grid-template-columns: 1fr;
+    grid-template-rows: 28px 1fr;
+    justify-items: start;
+    align-content: start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .nav-mark {
+    inline-size: 28px;
+    block-size: 28px;
+  }
+
+  .nav-trigger strong {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .nav-trigger small {
+    max-inline-size: 100%;
+    margin-block-start: 4px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .nav-readable {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+
+  .nav-cipher {
+    display: none;
+  }
+
+  .section-signal {
+    display: none;
+  }
+
+  .system-status {
+    padding-block-start: 12px;
+  }
+
+  .system-status > p {
+    margin-block-end: 10px;
+    font-size: 11px;
+  }
+
+  .system-status dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .system-status div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid rgba(217, 213, 193, 0.1);
+    background: rgba(255, 255, 255, 0.016);
+  }
+
+  .system-status dt,
+  .system-status dd {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
   }
 
   .workspace {
@@ -4509,10 +4631,31 @@ input.studio-title-edit {
     inset: 10px;
   }
 
-  .workspace-header,
+  .workspace-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: grid;
+    gap: 14px;
+    margin: -8px -4px 18px;
+    padding: 14px;
+    border: 1px solid rgba(217, 213, 193, 0.12);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.036), transparent 62%),
+      rgba(5, 6, 5, 0.9);
+    backdrop-filter: blur(12px);
+  }
+
+  .workspace-header h1 {
+    font-size: clamp(30px, 10vw, 48px);
+  }
+
   .time-block {
-    align-items: flex-start;
+    align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
+    inline-size: 100%;
+    margin-inline-start: 0;
   }
 
   .search-panel {
@@ -4531,6 +4674,8 @@ input.studio-title-edit {
   .wide-panel {
     grid-template-columns: 1fr;
     grid-column: auto;
+    inline-size: 100%;
+    max-inline-size: none;
   }
 
   .weather-panel {
@@ -4539,6 +4684,7 @@ input.studio-title-edit {
 
   .memory-panel {
     grid-column: auto;
+    min-block-size: 220px;
   }
 
   .section-page {
@@ -4552,6 +4698,16 @@ input.studio-title-edit {
   .section-page-header,
   .section-record {
     grid-template-columns: 1fr;
+  }
+
+  .section-page-header {
+    padding: 16px;
+  }
+
+  .section-record {
+    min-block-size: 118px;
+    gap: 10px;
+    padding: 16px;
   }
 
   .section-record-column .section-record {
@@ -4597,6 +4753,15 @@ input.studio-title-edit {
   .record-layout {
     block-size: 100%;
     padding: 22px 18px;
+  }
+
+  .window-bar {
+    padding-inline: 18px 14px;
+  }
+
+  .window-actions button {
+    inline-size: 34px;
+    block-size: 34px;
   }
 
   .record-heading h2 {
@@ -4677,6 +4842,132 @@ input.studio-title-edit {
     grid-column: auto;
   }
 
+}
+
+@media (max-width: 720px) {
+  body {
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) 0 0 / 54px 54px,
+      linear-gradient(0deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px) 0 0 / 54px 54px,
+      #050605;
+  }
+
+  .archive-shell::before {
+    opacity: 0.24;
+  }
+
+  .sidebar {
+    padding: 16px 12px 14px;
+  }
+
+  .nav-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nav-trigger {
+    min-block-size: 84px;
+    padding: 11px;
+  }
+
+  .system-status dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .system-status div {
+    padding: 7px;
+  }
+
+  .system-status dt {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+
+  .system-status dd {
+    font-size: 10px;
+  }
+
+  .workspace {
+    padding: 20px 12px 84px;
+  }
+
+  .workspace-header {
+    margin: -4px 0 16px;
+  }
+
+  .dashboard-panel {
+    min-block-size: 116px;
+    padding: 15px;
+    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
+  }
+
+  .current-game {
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+  }
+
+  .section-page {
+    gap: 12px;
+  }
+
+  .section-record-column {
+    padding: 12px;
+  }
+
+  .section-record-column .section-record-grid {
+    grid-auto-rows: 128px;
+  }
+
+  .section-record-column .section-record {
+    block-size: 128px;
+  }
+
+  .record-window,
+  .record-window.is-maximized,
+  .timeline-window {
+    inset: 0;
+    max-block-size: 100dvh;
+    border-inline: 0;
+    border-block: 0;
+  }
+
+  .record-layout {
+    padding: 18px 14px 24px;
+  }
+
+  .record-heading.has-heading-banner {
+    min-block-size: 240px;
+    padding: 86px 16px 22px;
+  }
+
+  .record-heading h2 {
+    font-size: clamp(30px, 11vw, 42px);
+  }
+
+  .record-heading p {
+    line-height: 1.55;
+  }
+
+  .record-aside {
+    gap: 16px;
+  }
+
+  .record-aside ol {
+    grid-template-columns: 1fr;
+  }
+
+  .note-search-panel {
+    position: static;
+  }
+
+  .note-image-lightbox {
+    padding: 12px;
+  }
+
+  .reopen-control {
+    inset-inline: 12px;
+    inset-block-end: 14px;
+    justify-content: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
