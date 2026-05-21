@@ -628,14 +628,13 @@ function Sidebar({
           </button>
         </div>
         <div className="mobile-brand-meta">
-          <span>v1.24.3</span>
+          <span>v1.24.4</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
-        <div className="mobile-clock" aria-label="Local time">
-          <span>{formatClock(now)}</span>
+        <div className="mobile-clock" aria-label="Archive date">
           <span>{formatDate(now)}</span>
         </div>
-        <span className="version-label">v1.24.3</span>
+        <span className="version-label">v1.24.4</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -691,7 +690,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.3</dd>
+            <dd>GESTALT OS v1.24.4</dd>
           </div>
         </dl>
       </div>
