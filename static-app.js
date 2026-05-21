@@ -950,7 +950,7 @@ function noteMediaClassName(media) {
 function recordBanner(record) {
   return record.banner
     ? `<div class="banner-frame"><img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" /></div>`
-    : `<div class="empty-banner"><span class="line-icon">âŒ</span></div>`;
+    : `<div class="empty-banner"><svg class="empty-banner-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="9" width="14" height="14" rx="1.5"></rect><path d="M12 5v4M16 5v4M20 5v4M12 23v4M16 23v4M20 23v4M5 12h4M5 16h4M5 20h4M23 12h4M23 16h4M23 20h4"></path><path d="M13 13h6v6h-6z"></path></svg></div>`;
 }
 
 function recordMilestones(record) {
@@ -1238,7 +1238,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.5</span>
+        <span>v1.24.6</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1251,7 +1251,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.5</span>
+      <span class="version-label">v1.24.6</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1269,7 +1269,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.5</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.6</dd></div>
       </dl>
     </div>
   </aside>`;
