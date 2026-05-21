@@ -1040,8 +1040,10 @@ button:focus-visible {
 .workspace-header h1 {
   position: relative;
   margin: 0;
-  --headline-duration: clamp(520ms, calc(var(--headline-chars, 16) * 44ms), 1120ms);
-  --headline-start-delay: 120ms;
+  --headline-step: 58ms;
+  --headline-settle: 380ms;
+  --headline-duration: calc((var(--headline-chars, 16) * var(--headline-step)) + var(--headline-settle));
+  --headline-start-delay: 80ms;
   color: var(--text);
   font-size: clamp(28px, 3.5vw, 44px);
   font-weight: 300;
@@ -1049,36 +1051,47 @@ button:focus-visible {
   letter-spacing: 0.08em;
 }
 
-.headline-cipher-fragment {
-  position: absolute;
-  inset-inline-start: 0;
-  inset-block-start: 0;
+.headline-decode-text {
+  display: inline-flex;
   max-inline-size: 100%;
-  color: var(--accent);
-  overflow: hidden;
+  align-items: baseline;
   white-space: nowrap;
-  pointer-events: none;
-  animation: headline-decode var(--headline-duration) steps(var(--headline-chars, 16), end) both;
 }
 
-.headline-cipher-fragment.is-idle {
-  opacity: 0;
-  animation: none;
-}
-
-.headline-text {
+.headline-char {
   position: relative;
-  display: inline-block;
-  max-inline-size: 100%;
-  vertical-align: bottom;
-  white-space: nowrap;
+  display: inline-grid;
+  min-inline-size: 0.58em;
 }
 
-.headline-text.is-writing {
-  clip-path: inset(0 100% 0 0);
-  animation:
-    headline-write var(--headline-duration) steps(var(--headline-chars, 16), end) var(--headline-start-delay) both,
-    headline-signal 120ms steps(2, end) 2 var(--headline-start-delay);
+.headline-char.is-space {
+  min-inline-size: 0.42em;
+}
+
+.headline-char-cipher,
+.headline-char-readable {
+  grid-area: 1 / 1;
+  display: inline-block;
+}
+
+.headline-char-cipher {
+  color: var(--accent);
+  opacity: 0;
+}
+
+.headline-char-readable {
+  color: var(--text);
+  opacity: 1;
+}
+
+.headline-decode-text.is-resolving .headline-char-cipher {
+  opacity: 0;
+  animation: headline-letter-cipher 520ms steps(4, end) calc(var(--headline-start-delay) + (var(--headline-index) * var(--headline-step))) both;
+}
+
+.headline-decode-text.is-resolving .headline-char-readable {
+  opacity: 0;
+  animation: headline-letter-readable 360ms steps(2, end) calc(var(--headline-start-delay) + (var(--headline-index) * var(--headline-step)) + 300ms) both;
 }
 
 .record-title-text {
@@ -1152,45 +1165,12 @@ button:focus-visible {
   animation: command-panel-decode 220ms steps(3, end) both;
 }
 
-.command-panel::before {
-  content: "\2316 \2573 \2575 \2301 \27D0 \2330 \2573 \27DF  / \25A4 \25CC \25C7 \2301 \2575 ";
-  position: absolute;
-  inset-block-start: 6px;
-  inset-inline-end: 14px;
-  max-inline-size: 42%;
-  overflow: hidden;
-  color: var(--accent);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  animation: command-cipher-sweep 420ms steps(4, end) both;
-}
-
 .search-panel label {
   position: relative;
   display: inline-block;
-  --command-readable-color: var(--muted);
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.12em;
-}
-
-.command-panel label::before,
-.search-suggestions strong::before {
-  content: attr(data-cipher);
-  position: absolute;
-  inset: 0;
-  color: var(--accent);
-  overflow: hidden;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-}
-
-.command-panel label::before {
-  animation: command-title-decode 780ms steps(6, end) 220ms both;
 }
 
 .search-panel input {
@@ -1239,22 +1219,44 @@ button:focus-visible {
 
 .search-suggestions strong {
   position: relative;
-  --command-readable-color: var(--text);
   color: var(--text);
   font-weight: 400;
-}
-
-.command-panel label,
-.command-panel .search-suggestions strong {
-  animation: command-readable-resolve 780ms steps(1, end) 220ms both;
 }
 
 .command-panel .search-suggestions button {
   animation: command-result-enter 360ms steps(4, end) both;
 }
 
-.command-panel .search-suggestions strong::before {
-  animation: command-title-decode 780ms steps(6, end) 220ms both;
+.command-panel .search-suggestions small {
+  position: relative;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  color: transparent;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.command-panel .search-suggestions small::before {
+  content: attr(data-cipher);
+  position: absolute;
+  inset: 0;
+  color: var(--accent);
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.78;
+  transition: opacity 160ms linear, clip-path 260ms steps(5, end);
+}
+
+.command-panel .search-suggestions button:hover small,
+.command-panel .search-suggestions button:focus-visible small {
+  color: var(--muted);
+}
+
+.command-panel .search-suggestions button:hover small::before,
+.command-panel .search-suggestions button:focus-visible small::before {
+  opacity: 0;
+  clip-path: inset(0 0 0 100%);
 }
 
 .search-suggestions small,
@@ -4589,38 +4591,47 @@ input.studio-title-edit {
   }
 }
 
-@keyframes headline-decode {
+@keyframes headline-letter-cipher {
   0% {
-    opacity: 0.86;
-    clip-path: inset(0 42% 0 0);
+    opacity: 0;
     filter: blur(1px);
-    transform: translateX(-2px);
-  }
-
-  18% {
-    opacity: 0.9;
-    clip-path: inset(0);
-    filter: blur(0.5px);
-    transform: translateX(2px);
-  }
-
-  66% {
-    opacity: 0.64;
-    clip-path: inset(0);
-    filter: blur(0.2px);
     transform: translateX(-1px);
   }
 
-  88% {
-    opacity: 0.18;
-    clip-path: inset(0 0 0 58%);
+  12%,
+  64% {
+    opacity: 0.92;
+    filter: blur(0.2px);
+    transform: translateX(0);
+  }
+
+  82% {
+    opacity: 0.42;
     filter: blur(0);
     transform: translateX(1px);
   }
 
   100% {
     opacity: 0;
-    clip-path: inset(0);
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes headline-letter-readable {
+  0% {
+    opacity: 0;
+    filter: blur(1px);
+    transform: translateX(1px);
+  }
+
+  55% {
+    opacity: 0.72;
+    filter: blur(0.3px);
+  }
+
+  100% {
+    opacity: 1;
     filter: blur(0);
     transform: translateX(0);
   }
@@ -4639,69 +4650,6 @@ input.studio-title-edit {
     filter: blur(0);
     transform: translateY(0);
     clip-path: inset(0);
-  }
-}
-
-@keyframes command-cipher-sweep {
-  0% {
-    opacity: 0.9;
-    clip-path: inset(0 72% 0 0);
-    transform: translateX(-3px);
-  }
-
-  54% {
-    opacity: 0.68;
-    clip-path: inset(0 18% 0 0);
-    transform: translateX(2px);
-  }
-
-  100% {
-    opacity: 0;
-    clip-path: inset(0);
-    transform: translateX(0);
-  }
-}
-
-@keyframes command-title-decode {
-  0% {
-    opacity: 0;
-    clip-path: inset(0 0 0 0);
-    filter: blur(0);
-    transform: translateX(0);
-  }
-
-  8% {
-    opacity: 0.98;
-    clip-path: inset(0);
-    filter: blur(0.3px);
-    transform: translateX(-1px);
-  }
-
-  68% {
-    opacity: 0.92;
-    clip-path: inset(0);
-    filter: blur(0.2px);
-    transform: translateX(1px);
-  }
-
-  100% {
-    opacity: 0;
-    clip-path: inset(0);
-    filter: blur(0);
-    transform: translateX(0);
-  }
-}
-
-@keyframes command-readable-resolve {
-  0%,
-  72% {
-    color: transparent;
-    text-shadow: none;
-  }
-
-  73%,
-  100% {
-    color: var(--command-readable-color);
   }
 }
 
@@ -5450,21 +5398,6 @@ input.studio-title-edit {
 
   .command-panel {
     animation-duration: 320ms;
-  }
-
-  .command-panel::before {
-    inset-block-start: 9px;
-    inset-inline-end: 12px;
-    max-inline-size: 58%;
-    color: var(--accent);
-    font-size: 12px;
-    opacity: 0;
-    animation-duration: 620ms;
-  }
-
-  .command-panel label::before,
-  .command-panel .search-suggestions strong::before {
-    animation-duration: 680ms;
   }
 
   .workspace-footer {

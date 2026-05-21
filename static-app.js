@@ -291,7 +291,7 @@ const latinSayings = [
   { latin: "Acta non verba.", english: "Deeds, not words." }
 ];
 
-const cipherGlyphs = ["⌖", "╳", "╵", "⌁", "⟐", "⌰", "⟟", "◇", "▤", "◌"];
+const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
 
 function cipherizeText(value) {
   return value
@@ -300,6 +300,21 @@ function cipherizeText(value) {
       if (char === " ") return " ";
       if (char === "/" || char === "&" || char === "." || char === "-") return char;
       return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
+    })
+    .join("");
+}
+
+function renderHeadlineLetters(value) {
+  const cipher = cipherizeText(value).split("");
+
+  return value
+    .split("")
+    .map((char, index) => {
+      const isSpace = char === " ";
+      const display = isSpace ? "&nbsp;" : escapeHtml(char);
+      const cipherDisplay = isSpace ? "&nbsp;" : escapeHtml(cipher[index] || char);
+
+      return `<span class="headline-char${isSpace ? " is-space" : ""}" style="--headline-index: ${index}" aria-hidden="true"><span class="headline-char-cipher">${cipherDisplay}</span><span class="headline-char-readable">${display}</span></span>`;
     })
     .join("");
 }
@@ -1238,7 +1253,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.8</span>
+        <span>v1.24.9</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1251,7 +1266,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.8</span>
+      <span class="version-label">v1.24.9</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1269,7 +1284,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.8</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.9</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1592,13 +1607,13 @@ function searchPanel() {
                   : `data-open-section="${result.section}"`;
 
               return `<button type="button" ${commandAttrs}>
-                <span><strong data-cipher="${escapeHtml(cipherizeText(result.title))}">${escapeHtml(result.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
+                <span><strong>${escapeHtml(result.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
                 <i>CMD</i>
               </button>`;
             }
 
             return `<button type="button" data-open-record="${result.record.id}">
-            <span><strong data-cipher="${escapeHtml(cipherizeText(result.record.title))}">${escapeHtml(result.record.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
+            <span><strong>${escapeHtml(result.record.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
             <i>${escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
           }
@@ -1673,9 +1688,7 @@ function render() {
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
   const routeTitle = state.activeSection === "system" ? "DASHBOARD" : section.code;
   const headline = state.activeSection === "system" ? greeting() : section.label;
-  const headlineCipher = state.activeSection === "system" ? cipherizeText(headline) : section.cipher;
-  const headlineClass = state.headlineAnimating ? "headline-text is-writing" : "headline-text";
-  const headlineCipherClass = state.headlineAnimating ? "headline-cipher-fragment" : "headline-cipher-fragment is-idle";
+  const headlineClass = state.headlineAnimating ? "headline-decode-text is-resolving" : "headline-decode-text";
   const cursorClass = state.headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
   const hasFocusWindow = state.panelOpen || state.timelineOpen;
@@ -1694,7 +1707,7 @@ function render() {
       <header class="workspace-header">
         <div>
           <p class="route-label">// ${escapeHtml(routeTitle)}</p>
-          <h1 style="--headline-chars: ${headline.length}"><span class="${headlineCipherClass}" aria-hidden="true">${escapeHtml(headlineCipher)}</span><span class="${headlineClass}" data-time-greeting>${escapeHtml(headline)}</span><span class="${cursorClass}">_</span></h1>
+          <h1 class="${headlineClass}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}">${renderHeadlineLetters(headline)}<span class="${cursorClass}">_</span></h1>
           <p class="subtle">${escapeHtml(state.activeSection === "system" ? dashboardSubtext() : "Browse the records filed under this archive.")}</p>
         </div>
         <div class="time-block" aria-label="Local time">
@@ -1750,13 +1763,8 @@ function render() {
 }
 
 function syncTime() {
-  const greetingTarget = document.querySelector("[data-time-greeting]");
   const clockTarget = document.querySelector("[data-time-clock]");
   const dateTarget = document.querySelector("[data-time-date]");
-
-  if (greetingTarget && state.activeSection === "system") {
-    greetingTarget.textContent = greeting();
-  }
 
   if (clockTarget) {
     clockTarget.textContent = formatClock();
