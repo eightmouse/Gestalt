@@ -64,6 +64,19 @@ const latinSayings = [
   { latin: "Acta non verba.", english: "Deeds, not words." }
 ];
 
+const cipherGlyphs = ["⌖", "╳", "╵", "⌁", "⟐", "⌰", "⟟", "◇", "▤", "◌"];
+
+function cipherizeText(value: string): string {
+  return value
+    .split("")
+    .map((char, index) => {
+      if (char === " ") return " ";
+      if (char === "/" || char === "&" || char === "." || char === "-") return char;
+      return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
+    })
+    .join("");
+}
+
 type WeatherState = {
   label: string;
   temp: string;
@@ -256,6 +269,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
   const headline = activeSection === "system" ? getGreeting(now) : activeSectionConfig.label;
+  const headlineCipher = activeSection === "system" ? cipherizeText(headline) : activeSectionConfig.cipher;
   const subtext = activeSection === "system" ? dashboardSubtext(now) : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen;
 
@@ -281,6 +295,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           <div>
             <p className="route-label">// {routeTitle}</p>
             <h1>
+              <span
+                aria-hidden="true"
+                className="headline-cipher-fragment"
+                key={`${activeSection}-cipher`}
+              >
+                {headlineCipher}
+              </span>
               <span
                 className="headline-text is-writing"
                 key={activeSection}
@@ -525,7 +546,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.21.2</span>
+        <span>v1.22.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -583,7 +604,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.21.2</dd>
+            <dd>GESTALT OS v1.22.0</dd>
           </div>
         </dl>
       </div>
@@ -906,7 +927,7 @@ function SearchPanel({
 }) {
   return (
     <div className="search-panel command-panel" ref={panelRef} role="search">
-      <label htmlFor="archive-search">// COMMAND PALETTE</label>
+      <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>// COMMAND PALETTE</label>
       <input
         autoComplete="off"
         autoFocus
@@ -921,7 +942,9 @@ function SearchPanel({
           results.map((result) => (
             <button key={result.kind === "record" ? result.record.id : result.id} type="button" onClick={() => onOpenResult(result)}>
               <span>
-                <strong>{result.kind === "record" ? result.record.title : result.title}</strong>
+                <strong data-cipher={cipherizeText(result.kind === "record" ? result.record.title : result.title)}>
+                  {result.kind === "record" ? result.record.title : result.title}
+                </strong>
                 <small>
                   {result.detail}
                 </small>

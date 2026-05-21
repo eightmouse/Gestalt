@@ -291,6 +291,19 @@ const latinSayings = [
   { latin: "Acta non verba.", english: "Deeds, not words." }
 ];
 
+const cipherGlyphs = ["⌖", "╳", "╵", "⌁", "⟐", "⌰", "⟟", "◇", "▤", "◌"];
+
+function cipherizeText(value) {
+  return value
+    .split("")
+    .map((char, index) => {
+      if (char === " ") return " ";
+      if (char === "/" || char === "&" || char === "." || char === "-") return char;
+      return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
+    })
+    .join("");
+}
+
 const weatherState = {
   label: "AUTO WEATHER",
   temp: "--",
@@ -1205,7 +1218,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <p class="brand">GESTALT</p>
-      <span>v1.21.2</span>
+      <span>v1.22.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1223,7 +1236,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.21.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.22.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1508,13 +1521,13 @@ function searchPanel() {
                   : `data-open-section="${result.section}"`;
 
               return `<button type="button" ${commandAttrs}>
-                <span><strong>${escapeHtml(result.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
+                <span><strong data-cipher="${escapeHtml(cipherizeText(result.title))}">${escapeHtml(result.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
                 <i>CMD</i>
               </button>`;
             }
 
             return `<button type="button" data-open-record="${result.record.id}">
-            <span><strong>${escapeHtml(result.record.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
+            <span><strong data-cipher="${escapeHtml(cipherizeText(result.record.title))}">${escapeHtml(result.record.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
             <i>${escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
           }
@@ -1523,7 +1536,7 @@ function searchPanel() {
     : `<p class="search-empty">No matching command or record.</p>`;
 
   return `<div class="search-panel command-panel" role="search">
-    <label for="archive-search">// COMMAND PALETTE</label>
+    <label for="archive-search" data-cipher="${escapeHtml(cipherizeText("COMMAND PALETTE"))}">// COMMAND PALETTE</label>
     <input
       id="archive-search"
       type="search"
@@ -1589,6 +1602,7 @@ function render() {
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
   const routeTitle = state.activeSection === "system" ? "DASHBOARD" : section.code;
   const headline = state.activeSection === "system" ? greeting() : section.label;
+  const headlineCipher = state.activeSection === "system" ? cipherizeText(headline) : section.cipher;
   const headlineClass = state.headlineAnimating ? "headline-text is-writing" : "headline-text";
   const cursorClass = state.headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
@@ -1607,7 +1621,7 @@ function render() {
       <header class="workspace-header">
         <div>
           <p class="route-label">// ${escapeHtml(routeTitle)}</p>
-          <h1><span class="${headlineClass}" style="--headline-chars: ${headline.length}" data-time-greeting>${escapeHtml(headline)}</span><span class="${cursorClass}">_</span></h1>
+          <h1><span class="headline-cipher-fragment" aria-hidden="true">${escapeHtml(headlineCipher)}</span><span class="${headlineClass}" style="--headline-chars: ${headline.length}" data-time-greeting>${escapeHtml(headline)}</span><span class="${cursorClass}">_</span></h1>
           <p class="subtle">${escapeHtml(state.activeSection === "system" ? dashboardSubtext() : "Browse the records filed under this archive.")}</p>
         </div>
         <div class="time-block" aria-label="Local time">

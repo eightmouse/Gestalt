@@ -420,6 +420,8 @@ button:focus-visible {
 }
 
 .nav-readable {
+  position: relative;
+  z-index: 2;
   opacity: 0;
   transform: translateY(3px);
   filter: blur(2px);
@@ -706,6 +708,7 @@ button:focus-visible {
 }
 
 .workspace-header h1 {
+  position: relative;
   margin: 0;
   color: var(--text);
   font-size: clamp(28px, 3.5vw, 44px);
@@ -714,7 +717,20 @@ button:focus-visible {
   letter-spacing: 0.08em;
 }
 
+.headline-cipher-fragment {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  max-inline-size: 100%;
+  color: var(--accent);
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: headline-decode 320ms steps(4, end) both;
+}
+
 .headline-text {
+  position: relative;
   display: inline-block;
   max-inline-size: 100%;
   vertical-align: bottom;
@@ -724,8 +740,8 @@ button:focus-visible {
 .headline-text.is-writing {
   clip-path: inset(0 100% 0 0);
   animation:
-    headline-write clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) steps(var(--headline-chars, 16), end) 40ms both,
-    headline-signal 120ms steps(2, end) 2;
+    headline-write clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) steps(var(--headline-chars, 16), end) 210ms both,
+    headline-signal 120ms steps(2, end) 2 210ms;
 }
 
 .record-title-text {
@@ -796,12 +812,47 @@ button:focus-visible {
 
 .command-panel {
   inline-size: min(500px, calc(100vw - var(--sidebar-width) - 96px));
+  animation: command-panel-decode 220ms steps(3, end) both;
+}
+
+.command-panel::before {
+  content: "⌖╳╵⌁⟐⌰╳⟟ / ▤◌◇⌁╵";
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-end: 14px;
+  max-inline-size: 42%;
+  overflow: hidden;
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  animation: command-cipher-sweep 420ms steps(4, end) both;
 }
 
 .search-panel label {
+  position: relative;
+  display: inline-block;
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.12em;
+}
+
+.command-panel label::before,
+.search-suggestions strong::before {
+  content: attr(data-cipher);
+  position: absolute;
+  inset: 0;
+  color: var(--accent);
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.command-panel label::before {
+  animation: command-title-decode 520ms steps(4, end) both;
 }
 
 .search-panel input {
@@ -849,8 +900,17 @@ button:focus-visible {
 }
 
 .search-suggestions strong {
+  position: relative;
   color: var(--text);
   font-weight: 400;
+}
+
+.command-panel .search-suggestions button {
+  animation: command-result-enter 360ms steps(4, end) both;
+}
+
+.command-panel .search-suggestions strong::before {
+  animation: command-title-decode 520ms steps(4, end) both;
 }
 
 .search-suggestions small,
@@ -2034,8 +2094,8 @@ button:focus-visible {
 .headline-cursor.is-delayed {
   opacity: 0;
   animation:
-    headline-cursor-enter 1ms linear calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 80ms) both,
-    cursor-blink 780ms steps(1, end) calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 80ms) infinite;
+    headline-cursor-enter 1ms linear calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 250ms) both,
+    cursor-blink 780ms steps(1, end) calc(clamp(420ms, calc(var(--headline-chars, 16) * 42ms), 980ms) + 250ms) infinite;
 }
 
 .record-title-cursor.is-delayed {
@@ -4177,6 +4237,100 @@ input.studio-title-edit {
   50% {
     opacity: 0.58;
     transform: translateX(1px);
+  }
+}
+
+@keyframes headline-decode {
+  0% {
+    opacity: 0.72;
+    clip-path: inset(0 68% 0 0);
+    filter: blur(1px);
+    transform: translateX(-2px);
+  }
+
+  42% {
+    opacity: 0.55;
+    clip-path: inset(0 28% 0 0);
+    transform: translateX(2px);
+  }
+
+  72% {
+    opacity: 0.28;
+    clip-path: inset(0 4% 0 0);
+    transform: translateX(-1px);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0);
+    filter: blur(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes command-panel-decode {
+  0% {
+    opacity: 0.72;
+    filter: blur(1px);
+    transform: translateY(-2px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes command-cipher-sweep {
+  0% {
+    opacity: 0.64;
+    clip-path: inset(0 72% 0 0);
+    transform: translateX(-3px);
+  }
+
+  54% {
+    opacity: 0.46;
+    clip-path: inset(0 18% 0 0);
+    transform: translateX(2px);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes command-title-decode {
+  0% {
+    opacity: 0.7;
+    clip-path: inset(0 62% 0 0);
+    transform: translateX(-1px);
+  }
+
+  55% {
+    opacity: 0.42;
+    clip-path: inset(0 18% 0 0);
+    transform: translateX(1px);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes command-result-enter {
+  0% {
+    opacity: 0.62;
+    filter: blur(1px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
   }
 }
 
