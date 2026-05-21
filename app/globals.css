@@ -4898,15 +4898,75 @@ input.studio-title-edit {
     margin: -4px 0 16px;
   }
 
+  .workspace-header::after {
+    content: "HANDHELD FIELD MODE";
+    justify-self: start;
+    padding: 3px 7px;
+    border: 1px solid rgba(217, 213, 193, 0.16);
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+  }
+
   .dashboard-panel {
     min-block-size: 116px;
+    position: relative;
     padding: 15px;
+    overflow: hidden;
     box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
+  }
+
+  .dashboard-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.34;
+    background:
+      linear-gradient(90deg, rgba(217, 213, 193, 0.12), transparent 22% 78%, rgba(217, 213, 193, 0.08)),
+      repeating-linear-gradient(90deg, transparent 0 18px, rgba(217, 213, 193, 0.045) 19px, transparent 20px 48px);
+  }
+
+  .dashboard-panel > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dashboard-panel h2 {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .dashboard-panel h2::before {
+    content: "";
+    inline-size: 7px;
+    block-size: 7px;
+    border: 1px solid currentColor;
+    transform: rotate(45deg);
+    opacity: 0.75;
+  }
+
+  .dashboard-grid {
+    gap: 12px;
+  }
+
+  .wide-panel:first-child {
+    min-block-size: 178px;
+  }
+
+  .record-list button {
+    min-block-size: 54px;
   }
 
   .current-game {
     grid-template-columns: 64px 1fr;
     gap: 14px;
+  }
+
+  .latest-log p,
+  .activity-feed {
+    font-size: 12px;
   }
 
   .section-page {
@@ -4980,11 +5040,12 @@ input.studio-title-edit {
     z-index: 34;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    padding: 7px;
+    gap: 7px;
+    padding: 8px;
     border: 1px solid rgba(217, 213, 193, 0.2);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.046), transparent 58%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.052), transparent 54%),
+      linear-gradient(90deg, rgba(217, 213, 193, 0.07), transparent 22% 78%, rgba(217, 213, 193, 0.05)),
       rgba(5, 6, 5, 0.92);
     box-shadow:
       0 20px 54px rgba(0, 0, 0, 0.58),
@@ -4994,13 +5055,15 @@ input.studio-title-edit {
 
   .mobile-dock button {
     min-width: 0;
-    min-block-size: 54px;
+    min-block-size: 56px;
     display: grid;
     place-items: center;
     gap: 3px;
     padding: 7px 3px;
     border: 1px solid transparent;
-    background: rgba(255, 255, 255, 0.018);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.026), transparent 68%),
+      rgba(255, 255, 255, 0.018);
     color: var(--muted);
     font-size: 10px;
     letter-spacing: 0.08em;
@@ -5010,7 +5073,7 @@ input.studio-title-edit {
 
   .mobile-dock button span {
     color: var(--text);
-    font-size: 17px;
+    font-size: 18px;
     line-height: 1;
   }
 
