@@ -4492,8 +4492,8 @@ input.studio-title-edit {
     top: 0;
     z-index: 35;
     height: auto;
-    gap: 10px;
-    padding: 12px;
+    gap: 8px;
+    padding: 10px 12px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
     background:
@@ -4503,16 +4503,16 @@ input.studio-title-edit {
   }
 
   .brand-block {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px 14px;
-    padding-block-end: 8px;
+    gap: 6px 12px;
+    padding-block-end: 6px;
     border-block-end: 1px dashed rgba(217, 213, 193, 0.18);
   }
 
   .brand {
-    font-size: clamp(22px, 6vw, 30px);
-    letter-spacing: 0.28em;
+    font-size: clamp(20px, 5.5vw, 28px);
+    letter-spacing: 0.24em;
   }
 
   .brand-block i {
@@ -4521,27 +4521,33 @@ input.studio-title-edit {
 
   .brand-block span {
     justify-self: end;
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .sidebar nav {
     display: grid;
-    gap: 7px;
+    gap: 6px;
   }
 
   .sidebar-label {
-    margin-block-end: 0;
-    font-size: 11px;
+    display: none;
   }
 
   .nav-stack {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
     gap: 6px;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
     padding: 0;
+    scrollbar-width: none;
+  }
+
+  .nav-stack::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-group {
+    flex: 0 0 clamp(104px, 30vw, 132px);
     min-width: 0;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.026), transparent 58%),
@@ -4549,46 +4555,86 @@ input.studio-title-edit {
   }
 
   .nav-trigger {
-    min-block-size: 58px;
-    grid-template-columns: 24px minmax(0, 1fr);
+    min-block-size: 46px;
+    grid-template-columns: 20px minmax(0, 1fr);
     grid-template-rows: 1fr;
     justify-items: stretch;
     align-content: center;
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px 7px;
   }
 
   .nav-mark {
-    inline-size: 24px;
-    block-size: 24px;
+    inline-size: 20px;
+    block-size: 20px;
+  }
+
+  .nav-label {
+    min-block-size: 28px;
+    padding-inline-end: 16px;
   }
 
   .nav-trigger strong {
-    font-size: 10px;
-    letter-spacing: 0.04em;
+    font-size: 8px;
+    letter-spacing: 0.03em;
   }
 
   .nav-trigger small {
     max-inline-size: 100%;
-    margin-block-start: 2px;
-    font-size: 10px;
-    letter-spacing: 0.04em;
+    margin-block-start: 1px;
+    font-size: 9px;
+    letter-spacing: 0.03em;
   }
 
   .nav-readable {
+    position: relative;
+    z-index: 2;
+    opacity: 1;
+    transform: none;
+    filter: none;
+    animation: none !important;
+    clip-path: none;
+    pointer-events: none;
+  }
+
+  .nav-readable::before {
+    display: none !important;
+    content: none;
+  }
+
+  .nav-cipher {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    z-index: 1;
+    display: block;
+    max-inline-size: 24px;
+    overflow: hidden;
+    color: rgba(217, 213, 193, 0.34);
+    font-size: 7px;
+    letter-spacing: 0.08em;
+    text-overflow: clip;
+    white-space: nowrap;
+    opacity: 0.34;
+    transform: none;
+    filter: none;
+    animation: none !important;
+  }
+
+  .nav-trigger:hover .nav-readable,
+  .nav-trigger:focus-visible .nav-readable {
     opacity: 1;
     transform: none;
     filter: none;
     animation: none;
-    clip-path: none;
   }
 
-  .nav-readable::before {
-    display: none;
-  }
-
-  .nav-cipher {
-    display: none;
+  .nav-trigger:hover .nav-cipher,
+  .nav-trigger:focus-visible .nav-cipher {
+    opacity: 0.34;
+    transform: none;
+    filter: none;
+    animation: none;
   }
 
   .section-signal {
@@ -4596,32 +4642,7 @@ input.studio-title-edit {
   }
 
   .system-status {
-    padding-block-start: 8px;
-  }
-
-  .system-status > p {
     display: none;
-  }
-
-  .system-status dl {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 5px;
-  }
-
-  .system-status div {
-    grid-template-columns: 1fr;
-    gap: 2px;
-    padding: 5px 6px;
-    border: 1px solid rgba(217, 213, 193, 0.1);
-    background: rgba(255, 255, 255, 0.016);
-  }
-
-  .system-status dt,
-  .system-status dd {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 11px;
   }
 
   .workspace {
@@ -4693,7 +4714,11 @@ input.studio-title-edit {
 
   .memory-panel {
     grid-column: auto;
-    min-block-size: 220px;
+    min-block-size: 260px;
+  }
+
+  .memory-loop {
+    min-block-size: 238px;
   }
 
   .section-page {
@@ -4866,48 +4891,44 @@ input.studio-title-edit {
   }
 
   .sidebar {
-    padding: 10px 10px 11px;
+    padding: 8px 10px 9px;
   }
 
   .nav-stack {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
   }
 
   .nav-trigger {
-    min-block-size: 54px;
-    grid-template-columns: 22px minmax(0, 1fr);
-    gap: 6px;
-    padding: 7px;
+    min-block-size: 44px;
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 5px;
+    padding: 6px;
   }
 
   .nav-mark {
-    inline-size: 22px;
-    block-size: 22px;
+    inline-size: 18px;
+    block-size: 18px;
+  }
+
+  .nav-label {
+    min-block-size: 26px;
+    padding-inline-end: 12px;
   }
 
   .nav-trigger strong {
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .nav-trigger small {
-    font-size: 9px;
+    font-size: 8px;
   }
 
-  .system-status dl {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .nav-cipher {
+    max-inline-size: 18px;
   }
 
-  .system-status div {
-    padding: 5px;
-  }
-
-  .system-status dt {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-  }
-
-  .system-status dd {
-    font-size: 9px;
+  .system-status {
+    display: none;
   }
 
   .workspace {
@@ -4973,6 +4994,15 @@ input.studio-title-edit {
 
   .wide-panel:first-child {
     min-block-size: 178px;
+  }
+
+  .memory-panel {
+    min-block-size: 280px;
+  }
+
+  .memory-loop {
+    block-size: 250px;
+    min-block-size: 250px;
   }
 
   .record-list button {
@@ -5116,11 +5146,15 @@ input.studio-title-edit {
 
 @media (max-width: 420px) {
   .nav-stack {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .nav-group {
+    flex-basis: 106px;
   }
 
   .nav-trigger {
-    min-block-size: 48px;
+    min-block-size: 42px;
   }
 
   .nav-trigger strong {
@@ -5131,8 +5165,8 @@ input.studio-title-edit {
     font-size: 8px;
   }
 
-  .system-status dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .nav-cipher {
+    display: none;
   }
 }
 
