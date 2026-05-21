@@ -308,6 +308,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         activeSection={activeSection}
         metrics={metrics}
         navOpen={navOpen}
+        onOpenSection={openSection}
         onToggleNav={() => setNavOpen((current) => !current)}
       />
 
@@ -566,6 +567,7 @@ type SidebarProps = {
   activeSection: RecordSection;
   metrics: ArchiveMetrics;
   navOpen: boolean;
+  onOpenSection: (section: RecordSection) => void;
   onToggleNav: () => void;
 };
 
@@ -573,6 +575,7 @@ function Sidebar({
   activeSection,
   metrics,
   navOpen,
+  onOpenSection,
   onToggleNav
 }: SidebarProps) {
   const activeConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
@@ -593,9 +596,32 @@ function Sidebar({
             <span>{activeConfig.code}</span>
           </button>
         </div>
-        <span>v1.23.0</span>
+        <span>v1.23.1</span>
         <i aria-hidden="true">-</i>
       </div>
+
+      <nav aria-label="Archive navigation">
+        <p className="sidebar-label">// ARCHIVE NAVIGATION</p>
+        <div className="nav-stack">
+          {sections.map((section) => (
+            <div className="nav-group" key={section.id}>
+              <button
+                type="button"
+                className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
+                onClick={() => onOpenSection(section.id)}
+              >
+                <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+                <span className="nav-label">
+                  <strong>{section.code}</strong>
+                  <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
+                  <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
+                </span>
+                <span className="section-signal" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </nav>
 
       <div className="system-status">
         <p>// SYSTEM STATUS</p>
@@ -626,7 +652,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.23.0</dd>
+            <dd>GESTALT OS v1.23.1</dd>
           </div>
         </dl>
       </div>

@@ -58,13 +58,13 @@ button:focus-visible {
 }
 
 .archive-shell {
-  --sidebar-width: 252px;
+  --sidebar-width: 340px;
   position: relative;
   isolation: isolate;
   height: 100vh;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(220px, var(--sidebar-width)) 1fr;
+  grid-template-columns: minmax(260px, var(--sidebar-width)) 1fr;
   overflow: hidden;
   background:
     linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.24));
@@ -201,15 +201,15 @@ button:focus-visible {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 44px 22px 28px;
+  gap: 28px;
+  padding: 48px 28px 28px;
   background: rgba(4, 5, 4, 0.84);
   border-right: 1px solid var(--line);
 }
 
 .brand-block {
   display: grid;
-  gap: 18px;
+  gap: 22px;
 }
 
 .brand-row {
@@ -223,7 +223,7 @@ button:focus-visible {
   margin: 0;
   color: var(--text-strong);
   font-family: var(--sans);
-  font-size: clamp(25px, 2.6vw, 36px);
+  font-size: clamp(28px, 3vw, 42px);
   font-weight: 300;
   letter-spacing: 0.42em;
 }
@@ -231,7 +231,7 @@ button:focus-visible {
 .archive-menu-toggle {
   min-inline-size: 42px;
   block-size: 36px;
-  display: inline-grid;
+  display: none;
   grid-template-columns: 16px minmax(0, auto);
   align-items: center;
   justify-content: center;
@@ -4847,7 +4847,7 @@ input.studio-title-edit {
 
 @media (max-width: 1180px) {
   .archive-shell {
-    --sidebar-width: 236px;
+    --sidebar-width: 292px;
   }
 
   .dashboard-grid {
@@ -4936,6 +4936,7 @@ input.studio-title-edit {
   }
 
   .archive-menu-toggle {
+    display: inline-grid;
     block-size: 32px;
     grid-template-columns: 14px minmax(0, auto);
   }
@@ -5011,7 +5012,7 @@ input.studio-title-edit {
   }
 
   .sidebar nav {
-    display: grid;
+    display: none;
     gap: 6px;
   }
 
