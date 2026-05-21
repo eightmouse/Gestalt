@@ -136,11 +136,24 @@ button:focus-visible {
 }
 
 .boot-screen i {
+  position: relative;
   inline-size: var(--boot-width);
   color: var(--muted);
   font-style: normal;
   letter-spacing: 0.14em;
   text-align: center;
+}
+
+.boot-screen i::before {
+  content: attr(data-cipher);
+  position: absolute;
+  inset: 0;
+  color: var(--accent);
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  animation: boot-decode 860ms steps(6, end) 520ms both;
 }
 
 .boot-meter {
@@ -1069,12 +1082,12 @@ button:focus-visible {
 }
 
 .section-record-column .section-record-grid {
-  gap: 8px;
-  grid-auto-rows: 118px;
+  gap: 10px;
+  grid-auto-rows: 126px;
 }
 
 .section-record-column .section-record {
-  block-size: 118px;
+  block-size: 126px;
   min-block-size: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -1083,8 +1096,8 @@ button:focus-visible {
     "summary summary";
   align-content: center;
   column-gap: 12px;
-  row-gap: 5px;
-  padding: 14px 12px;
+  row-gap: 7px;
+  padding: 16px 14px;
   overflow: hidden;
 }
 
@@ -1096,13 +1109,13 @@ button:focus-visible {
   grid-area: title;
   display: block;
   line-height: 1.25;
-  margin-block: 0 2px;
+  margin-block: 2px 4px;
 }
 
 .section-record-column .section-record > span:not(.section-record-kind) {
   grid-area: summary;
   min-block-size: 0;
-  padding-block-start: 7px;
+  padding-block-start: 9px;
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1116,7 +1129,7 @@ button:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
-  line-height: 1.25;
+  line-height: 1.35;
 }
 
 .section-record-column .section-record strong,
@@ -1128,10 +1141,10 @@ button:focus-visible {
 .section-record {
   display: grid;
   grid-template-columns: 110px minmax(0, 0.62fr) minmax(220px, 1fr) auto;
-  gap: 16px;
+  gap: 18px;
   align-items: center;
-  min-block-size: 66px;
-  padding: 12px 14px;
+  min-block-size: 74px;
+  padding: 14px 16px;
   border: 1px solid rgba(217, 213, 193, 0.12);
   background: rgba(255, 255, 255, 0.018);
   color: var(--muted);
@@ -1176,6 +1189,7 @@ button:focus-visible {
   justify-self: end;
   color: var(--muted);
   font-style: normal;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
@@ -2057,7 +2071,7 @@ button:focus-visible {
 }
 
 .record-heading h2 {
-  margin: 0 0 16px;
+  margin: 0 0 22px;
   color: var(--text-strong);
   font-size: clamp(34px, 4.2vw, 48px);
   font-weight: 300;
@@ -2066,13 +2080,17 @@ button:focus-visible {
 }
 
 .record-heading p {
-  margin: 0 0 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0 0 28px;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .record-heading p span {
-  margin-inline: 12px;
+  margin-inline: 2px;
   color: var(--muted-2);
 }
 
@@ -4388,6 +4406,34 @@ input.studio-title-edit {
   50% {
     opacity: 0.42;
     transform: translateX(1px);
+  }
+}
+
+@keyframes boot-decode {
+  0% {
+    opacity: 0.72;
+    clip-path: inset(0 82% 0 0);
+    filter: blur(1px);
+    transform: translateX(-2px);
+  }
+
+  28% {
+    opacity: 0.58;
+    clip-path: inset(0 48% 0 0);
+    transform: translateX(2px);
+  }
+
+  62% {
+    opacity: 0.34;
+    clip-path: inset(0 12% 0 0);
+    transform: translateX(-1px);
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: inset(0);
+    filter: blur(0);
+    transform: translateX(0);
   }
 }
 

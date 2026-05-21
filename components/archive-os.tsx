@@ -277,7 +277,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     <main className={hasFocusWindow ? "archive-shell has-record" : "archive-shell"}>
       <div className="boot-screen" aria-hidden="true">
         <span>GESTALT</span>
-        <i>System initializing</i>
+        <i data-cipher={cipherizeText("System initializing")}>System initializing</i>
         <b className="boot-meter">
           <b />
         </b>
@@ -546,7 +546,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <p className="brand">GESTALT</p>
-        <span>v1.22.0</span>
+        <span>v1.22.1</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -604,7 +604,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.22.0</dd>
+            <dd>GESTALT OS v1.22.1</dd>
           </div>
         </dl>
       </div>
