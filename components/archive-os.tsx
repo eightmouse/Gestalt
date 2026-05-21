@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Clock,
   Cpu,
-  Menu,
   Maximize2,
   Minimize2,
   Search,
@@ -262,6 +261,22 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setNavOpen(false);
   };
 
+  const openHome = () => {
+    setActiveSection("system");
+    setPanelOpen(false);
+    setPanelMinimized(false);
+    setPanelMaximized(false);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setTimelineOpen(false);
+    setNavOpen(false);
+  };
+
+  const openSearchFromNavigation = () => {
+    setNavOpen(false);
+    setSearchOpen(true);
+  };
+
   const openSearchResult = (result: SearchResult) => {
     if (result.kind === "record") {
       openRecord(result.record);
@@ -308,6 +323,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         activeSection={activeSection}
         metrics={metrics}
         navOpen={navOpen}
+        onHome={openHome}
         onOpenSection={openSection}
         onToggleNav={() => setNavOpen((current) => !current)}
       />
@@ -316,8 +332,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         {navOpen ? (
           <ArchiveNavigationMenu
             activeSection={activeSection}
+            currentGame={currentGame}
             onClose={() => setNavOpen(false)}
+            onOpenCurrent={() => currentGame && openRecord(currentGame, "notes")}
+            onOpenLogs={() => openSection("logs")}
+            onOpenSearch={openSearchFromNavigation}
             onOpenSection={openSection}
+            onOpenTimeline={openTimeline}
+            searchOpen={searchOpen}
           />
         ) : null}
       </AnimatePresence>
@@ -567,6 +589,7 @@ type SidebarProps = {
   activeSection: RecordSection;
   metrics: ArchiveMetrics;
   navOpen: boolean;
+  onHome: () => void;
   onOpenSection: (section: RecordSection) => void;
   onToggleNav: () => void;
 };
@@ -575,6 +598,7 @@ function Sidebar({
   activeSection,
   metrics,
   navOpen,
+  onHome,
   onOpenSection,
   onToggleNav
 }: SidebarProps) {
@@ -584,7 +608,9 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="brand-row">
-          <p className="brand">GESTALT</p>
+          <button className="brand" type="button" onClick={onHome}>
+            GESTALT
+          </button>
           <button
             className={navOpen ? "archive-menu-toggle is-active" : "archive-menu-toggle"}
             type="button"
@@ -592,11 +618,13 @@ function Sidebar({
             aria-label="Open archive navigation"
             onClick={onToggleNav}
           >
-            <Menu size={16} />
-            <span>{activeConfig.code}</span>
+            <span className="archive-menu-glyph" aria-hidden="true">
+              <i />
+            </span>
+            <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span>v1.23.1</span>
+        <span>v1.24.0</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -652,7 +680,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.23.1</dd>
+            <dd>GESTALT OS v1.24.0</dd>
           </div>
         </dl>
       </div>
@@ -662,12 +690,24 @@ function Sidebar({
 
 function ArchiveNavigationMenu({
   activeSection,
+  currentGame,
   onClose,
-  onOpenSection
+  onOpenCurrent,
+  onOpenLogs,
+  onOpenSearch,
+  onOpenSection,
+  onOpenTimeline,
+  searchOpen
 }: {
   activeSection: RecordSection;
+  currentGame?: RecordEntry;
   onClose: () => void;
+  onOpenCurrent: () => void;
+  onOpenLogs: () => void;
+  onOpenSearch: () => void;
   onOpenSection: (section: RecordSection) => void;
+  onOpenTimeline: () => void;
+  searchOpen: boolean;
 }) {
   return (
     <>
@@ -692,6 +732,24 @@ function ArchiveNavigationMenu({
           <p>// ARCHIVE NAVIGATION</p>
           <span>{sections.length.toString().padStart(2, "0")} RECORD GROUPS</span>
         </header>
+        <div className="archive-nav-actions" aria-label="Quick archive actions">
+          <button className={searchOpen ? "is-active" : ""} type="button" onClick={onOpenSearch}>
+            <span>⌕</span>
+            Search
+          </button>
+          <button type="button" onClick={onOpenTimeline}>
+            <span>⌬</span>
+            Trace
+          </button>
+          <button disabled={!currentGame} type="button" onClick={onOpenCurrent}>
+            <span>◇</span>
+            Current
+          </button>
+          <button className={activeSection === "logs" ? "is-active" : ""} type="button" onClick={onOpenLogs}>
+            <span>▤</span>
+            Logs
+          </button>
+        </div>
         <div className="nav-stack">
           {sections.map((section) => (
             <div className="nav-group" key={section.id}>

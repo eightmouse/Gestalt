@@ -392,6 +392,21 @@ function openTimeline() {
   render();
 }
 
+function openHome() {
+  state.headlineAnimating = state.activeSection !== "system";
+  state.activeSection = "system";
+  state.panelOpen = false;
+  state.panelMinimized = false;
+  state.panelMaximized = false;
+  state.searchOpen = false;
+  state.searchQuery = "";
+  state.timelineOpen = false;
+  state.navOpen = false;
+  state.noteSearchQuery = "";
+  state.updateHistoryOpen = false;
+  render();
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -1223,13 +1238,13 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="brand-row">
-        <p class="brand">GESTALT</p>
+        <button class="brand" type="button" data-home>GESTALT</button>
         <button class="archive-menu-toggle ${state.navOpen ? "is-active" : ""}" type="button" aria-expanded="${state.navOpen ? "true" : "false"}" aria-label="Open archive navigation" data-nav-toggle>
-          <span aria-hidden="true">☰</span>
-          <span>${escapeHtml(activeConfig.code)}</span>
+          <span class="archive-menu-glyph" aria-hidden="true"><i></i></span>
+          <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span>v1.23.1</span>
+      <span>v1.24.0</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1247,7 +1262,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.23.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1273,6 +1288,7 @@ function archiveNavigationMenu() {
       </div>`
     )
     .join("");
+  const currentGame = currentGameRecord();
 
   return `<button class="archive-nav-backdrop" type="button" aria-label="Close archive navigation" data-nav-backdrop></button>
     <nav class="archive-nav-panel" aria-label="Archive navigation">
@@ -1280,6 +1296,12 @@ function archiveNavigationMenu() {
         <p>// ARCHIVE NAVIGATION</p>
         <span>${String(sections.length).padStart(2, "0")} RECORD GROUPS</span>
       </header>
+      <div class="archive-nav-actions" aria-label="Quick archive actions">
+        <button class="${state.searchOpen ? "is-active" : ""}" type="button" data-search-toggle><span>⌕</span>Search</button>
+        <button type="button" data-open-timeline><span>⌬</span>Trace</button>
+        <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
+        <button class="${state.activeSection === "logs" ? "is-active" : ""}" type="button" data-open-section="logs"><span>▤</span>Logs</button>
+      </div>
       <div class="nav-stack">${groups}</div>
     </nav>`;
 }
@@ -1928,6 +1950,11 @@ document.addEventListener("click", (event) => {
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
 
+  if (target.dataset.home !== undefined) {
+    openHome();
+    return;
+  }
+
   if (target.dataset.openTimeline !== undefined) {
     openTimeline();
     return;
@@ -1978,12 +2005,17 @@ document.addEventListener("click", (event) => {
 
   if (target.dataset.searchToggle !== undefined) {
     state.searchOpen = !state.searchOpen;
+    state.navOpen = false;
     render();
     return;
   }
 
   if (target.dataset.navToggle !== undefined) {
     state.navOpen = !state.navOpen;
+    if (state.navOpen) {
+      state.searchOpen = false;
+      state.searchQuery = "";
+    }
     render();
     return;
   }
