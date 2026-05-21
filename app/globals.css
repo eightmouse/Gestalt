@@ -5097,8 +5097,9 @@ input.studio-title-edit {
 
   .archive-menu-toggle:hover,
   .archive-menu-toggle.is-active {
-    border-color: rgba(217, 213, 193, 0.18);
-    background: rgba(255, 255, 255, 0.035);
+    border-color: transparent;
+    background: transparent;
+    color: var(--text);
   }
 
   .archive-menu-glyph {
@@ -5326,9 +5327,9 @@ input.studio-title-edit {
     top: 64px;
     z-index: 30;
     display: grid;
-    gap: 14px;
+    gap: 0;
     margin: 0 -4px 18px;
-    padding: 14px;
+    padding: 9px 10px;
     border: 1px solid rgba(217, 213, 193, 0.12);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.036), transparent 62%),
@@ -5340,13 +5341,17 @@ input.studio-title-edit {
     display: none;
   }
 
+  .workspace-header > div:first-child {
+    display: none;
+  }
+
   .workspace-header h1 {
     font-size: clamp(30px, 10vw, 48px);
   }
 
   .time-block {
     align-items: center;
-    justify-content: flex-start;
+    justify-content: flex-end;
     flex-wrap: wrap;
     inline-size: 100%;
     margin-inline-start: 0;
@@ -5426,9 +5431,12 @@ input.studio-title-edit {
   }
 
   .section-record {
-    min-block-size: 136px;
-    gap: 12px;
-    padding: 17px 16px;
+    min-block-size: 168px;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    align-content: stretch;
+    gap: 0;
+    row-gap: 11px;
+    padding: 18px 16px;
   }
 
   .section-record-column .section-record {
@@ -5440,23 +5448,39 @@ input.studio-title-edit {
       "date";
     grid-template-rows: auto auto minmax(0, 1fr) auto;
     align-content: stretch;
-    row-gap: 9px;
+    row-gap: 11px;
+  }
+
+  .section-record strong {
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .section-record span:not(.section-record-kind) {
+    white-space: normal;
+    line-height: 1.48;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
   }
 
   .section-record-column .section-record > span:not(.section-record-kind) {
-    padding-block-start: 2px;
-    line-height: 1.46;
+    padding-block-start: 0;
+    line-height: 1.48;
     -webkit-line-clamp: 3;
   }
 
   .section-record-column .section-record i {
     max-inline-size: none;
-    padding-block-start: 2px;
+    padding-block-start: 4px;
     line-height: 1.45;
   }
 
   .section-record i {
     justify-self: start;
+    align-self: end;
+    padding-block-start: 4px;
+    line-height: 1.45;
   }
 
   .record-window,
@@ -5639,13 +5663,7 @@ input.studio-title-edit {
   }
 
   .workspace-header::after {
-    content: "HANDHELD FIELD MODE";
-    justify-self: start;
-    padding: 3px 7px;
-    border: 1px solid rgba(217, 213, 193, 0.16);
-    color: var(--muted);
-    font-size: 10px;
-    letter-spacing: 0.14em;
+    display: none;
   }
 
   .dashboard-panel {
@@ -5727,11 +5745,17 @@ input.studio-title-edit {
   }
 
   .section-record-column .section-record-grid {
-    grid-auto-rows: 156px;
+    grid-auto-rows: 184px;
   }
 
   .section-record-column .section-record {
-    block-size: 156px;
+    block-size: 184px;
+    row-gap: 12px;
+  }
+
+  .section-record {
+    min-block-size: 184px;
+    row-gap: 12px;
   }
 
   .record-window,

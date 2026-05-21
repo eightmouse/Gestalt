@@ -624,7 +624,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span>v1.24.1</span>
+        <span>v1.24.2</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -680,7 +680,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.1</dd>
+            <dd>GESTALT OS v1.24.2</dd>
           </div>
         </dl>
       </div>
