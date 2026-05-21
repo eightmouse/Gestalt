@@ -1061,6 +1061,11 @@ button:focus-visible {
   animation: headline-decode var(--headline-duration) steps(var(--headline-chars, 16), end) both;
 }
 
+.headline-cipher-fragment.is-idle {
+  opacity: 0;
+  animation: none;
+}
+
 .headline-text {
   position: relative;
   display: inline-block;
