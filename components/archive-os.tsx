@@ -610,6 +610,13 @@ function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand-block">
+        <div className="mobile-brand-meta">
+          <span>v1.24.5</span>
+          <span>HANDHELD FIELD MODE</span>
+        </div>
+        <div className="mobile-clock" aria-label="Archive date">
+          <span>{formatDate(now)}</span>
+        </div>
         <div className="brand-row">
           <button className="brand" type="button" onClick={onHome}>
             GESTALT
@@ -627,14 +634,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <div className="mobile-brand-meta">
-          <span>v1.24.4</span>
-          <span>HANDHELD FIELD MODE</span>
-        </div>
-        <div className="mobile-clock" aria-label="Archive date">
-          <span>{formatDate(now)}</span>
-        </div>
-        <span className="version-label">v1.24.4</span>
+        <span className="version-label">v1.24.5</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -690,7 +690,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.4</dd>
+            <dd>GESTALT OS v1.24.5</dd>
           </div>
         </dl>
       </div>
