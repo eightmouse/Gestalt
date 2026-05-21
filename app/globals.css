@@ -329,6 +329,11 @@ button:focus-visible {
   font-style: normal;
 }
 
+.mobile-brand-meta,
+.mobile-clock {
+  display: none;
+}
+
 .archive-nav-backdrop {
   position: fixed;
   inset: 0;
@@ -5058,12 +5063,15 @@ input.studio-title-edit {
   }
 
   .brand-block {
-    gap: 6px 12px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
     padding-block-end: 6px;
     border-block-end: 1px dashed rgba(217, 213, 193, 0.18);
   }
 
   .brand-row {
+    grid-column: 1 / -1;
     grid-template-columns: minmax(0, auto) auto;
     justify-content: space-between;
     align-items: center;
@@ -5078,9 +5086,34 @@ input.studio-title-edit {
     display: none;
   }
 
-  .brand-block span {
-    justify-self: start;
+  .brand-block .version-label {
+    display: none;
+  }
+
+  .mobile-brand-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: var(--muted);
     font-size: 10px;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+
+  .mobile-brand-meta span + span {
+    padding-inline-start: 8px;
+    border-inline-start: 1px solid rgba(217, 213, 193, 0.18);
+  }
+
+  .mobile-clock {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    color: var(--text);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
   }
 
   .archive-menu-toggle {
@@ -5118,7 +5151,7 @@ input.studio-title-edit {
   }
 
   .archive-nav-panel {
-    inset: 74px 12px 82px;
+    inset: 82px 12px 82px;
     inline-size: auto;
     padding: 16px;
   }
@@ -5323,18 +5356,14 @@ input.studio-title-edit {
   }
 
   .workspace-header {
-    position: sticky;
-    top: 64px;
+    position: static;
     z-index: 30;
-    display: grid;
-    gap: 0;
-    margin: 0 -4px 18px;
-    padding: 9px 10px;
-    border: 1px solid rgba(217, 213, 193, 0.12);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.036), transparent 62%),
-      rgba(5, 6, 5, 0.9);
-    backdrop-filter: blur(12px);
+    display: block;
+    margin: 0 0 14px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    backdrop-filter: none;
   }
 
   .workspace-header .route-label {
@@ -5350,11 +5379,7 @@ input.studio-title-edit {
   }
 
   .time-block {
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    inline-size: 100%;
-    margin-inline-start: 0;
+    display: none;
   }
 
   .time-block .icon-button {
@@ -5658,7 +5683,6 @@ input.studio-title-edit {
   }
 
   .workspace-header {
-    top: 60px;
     margin: 0 0 16px;
   }
 

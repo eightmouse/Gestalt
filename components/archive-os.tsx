@@ -323,6 +323,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         activeSection={activeSection}
         metrics={metrics}
         navOpen={navOpen}
+        now={now}
         onHome={openHome}
         onOpenSection={openSection}
         onToggleNav={() => setNavOpen((current) => !current)}
@@ -589,6 +590,7 @@ type SidebarProps = {
   activeSection: RecordSection;
   metrics: ArchiveMetrics;
   navOpen: boolean;
+  now: Date | null;
   onHome: () => void;
   onOpenSection: (section: RecordSection) => void;
   onToggleNav: () => void;
@@ -598,6 +600,7 @@ function Sidebar({
   activeSection,
   metrics,
   navOpen,
+  now,
   onHome,
   onOpenSection,
   onToggleNav
@@ -624,7 +627,15 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span>v1.24.2</span>
+        <div className="mobile-brand-meta">
+          <span>v1.24.3</span>
+          <span>HANDHELD FIELD MODE</span>
+        </div>
+        <div className="mobile-clock" aria-label="Local time">
+          <span>{formatClock(now)}</span>
+          <span>{formatDate(now)}</span>
+        </div>
+        <span className="version-label">v1.24.3</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -680,7 +691,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.2</dd>
+            <dd>GESTALT OS v1.24.3</dd>
           </div>
         </dl>
       </div>
