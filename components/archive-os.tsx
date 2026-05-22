@@ -418,7 +418,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
           <DashboardPanel
             title="ACTIVE PROJECTS"
-            className="wide-panel"
+            className="wide-panel active-projects-panel"
             footerLabel={`View all (${activeProjects.length})`}
             onFooter={() => openSection("projects")}
           >
@@ -631,7 +631,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.12</span>
+          <span>v1.24.13</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -654,7 +654,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.12</span>
+        <span className="version-label">v1.24.13</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -710,7 +710,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.12</dd>
+            <dd>GESTALT OS v1.24.13</dd>
           </div>
         </dl>
       </div>

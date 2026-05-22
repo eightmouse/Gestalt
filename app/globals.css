@@ -1282,13 +1282,10 @@ button:focus-visible {
 .dashboard-grid {
   position: relative;
   z-index: 1;
-  flex: 0 1 min(520px, 100%);
-  block-size: min(520px, 100%);
-  min-block-size: 0;
+  flex: 0 0 auto;
   max-inline-size: 1180px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr) minmax(210px, 0.72fr);
-  grid-template-rows: minmax(0, 1.05fr) minmax(0, 0.78fr) minmax(0, 0.78fr);
   gap: clamp(12px, 2vh, 18px);
   contain: layout paint;
   transition: opacity 90ms linear;
@@ -1537,11 +1534,11 @@ button:focus-visible {
 }
 
 .dashboard-panel {
-  min-block-size: 0;
+  min-block-size: clamp(106px, 15vh, 144px);
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 10px;
-  padding: clamp(12px, 1.8vh, 16px) 18px clamp(10px, 1.5vh, 14px);
+  gap: 12px;
+  padding: clamp(14px, 2vh, 18px) 20px clamp(12px, 1.8vh, 16px);
   border: 1px solid var(--line);
   overflow: hidden;
   background:
@@ -1552,6 +1549,11 @@ button:focus-visible {
 
 .wide-panel {
   grid-column: span 2;
+}
+
+.active-projects-panel {
+  gap: 8px;
+  padding-block: clamp(12px, 1.6vh, 15px);
 }
 
 .weather-panel {
@@ -1590,7 +1592,7 @@ button:focus-visible {
 }
 
 .record-list button {
-  min-block-size: clamp(34px, 4.4vh, 40px);
+  min-block-size: clamp(42px, 5.8vh, 52px);
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
@@ -1601,6 +1603,15 @@ button:focus-visible {
   color: var(--text);
   text-align: left;
   cursor: pointer;
+}
+
+.active-projects-panel .record-list button {
+  min-block-size: clamp(32px, 4vh, 38px);
+}
+
+.active-projects-panel .record-list small,
+.active-projects-panel .record-list i {
+  margin-block-start: 2px;
 }
 
 .record-list button:hover {

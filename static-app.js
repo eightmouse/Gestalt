@@ -1253,7 +1253,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.12</span>
+        <span>v1.24.13</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1266,7 +1266,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.12</span>
+      <span class="version-label">v1.24.13</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1284,7 +1284,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.12</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.13</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1423,7 +1423,7 @@ function dashboard() {
     : `<p class="subtle">No activity filed yet.</p>`;
 
   return `<div class="${state.panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}">
-    ${dashboardPanel("ACTIVE PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel")}
+    ${dashboardPanel("ACTIVE PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
     ${dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel")}
     ${dashboardPanel("CURRENT GAME", game, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "")}
