@@ -423,7 +423,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onFooter={() => openSection("projects")}
           >
             {activeProjects.length > 0 ? (
-              <RecordList records={activeProjects.slice(0, 3)} onOpenRecord={openRecord} />
+              <RecordList records={activeProjects.slice(0, 2)} onOpenRecord={openRecord} />
             ) : (
               <p className="subtle">No active projects filed yet.</p>
             )}
@@ -631,7 +631,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.10</span>
+          <span>v1.24.11</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -654,7 +654,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.10</span>
+        <span className="version-label">v1.24.11</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -710,7 +710,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.10</dd>
+            <dd>GESTALT OS v1.24.11</dd>
           </div>
         </dl>
       </div>

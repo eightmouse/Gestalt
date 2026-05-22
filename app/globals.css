@@ -1540,6 +1540,7 @@ button:focus-visible {
   gap: 12px;
   padding: clamp(14px, 2vh, 18px) 20px clamp(12px, 1.8vh, 16px);
   border: 1px solid var(--line);
+  overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 48%),
     var(--panel);
@@ -1611,11 +1612,19 @@ button:focus-visible {
 }
 
 .record-list strong {
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 400;
 }
 
 .record-list small,
 .record-list i {
+  max-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-block-start: 5px;
   color: var(--muted);
   font-style: normal;

@@ -1253,7 +1253,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.10</span>
+        <span>v1.24.11</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1266,7 +1266,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.10</span>
+      <span class="version-label">v1.24.11</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1284,7 +1284,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.10</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.11</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1379,7 +1379,7 @@ function dashboard() {
   const projectList = activeProjects.length
     ? `<div class="record-list">
       ${activeProjects
-        .slice(0, 3)
+        .slice(0, 2)
         .map(
           (record) => `<button type="button" data-open-record="${record.id}">
           <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.status)}</small></span>
