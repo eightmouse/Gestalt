@@ -435,7 +435,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onFooter={() => openSection("projects")}
           >
             {projectDashboardRecords.length > 0 ? (
-              <RecordList records={projectDashboardRecords.slice(0, 5)} onOpenRecord={openRecord} />
+              <RecordList records={projectDashboardRecords.slice(0, 4)} onOpenRecord={openRecord} />
             ) : (
               <p className="subtle">No projects filed yet.</p>
             )}
@@ -643,7 +643,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.17</span>
+          <span>v1.24.18</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -666,7 +666,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.17</span>
+        <span className="version-label">v1.24.18</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -722,7 +722,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.17</dd>
+            <dd>GESTALT OS v1.24.18</dd>
           </div>
         </dl>
       </div>
@@ -1090,7 +1090,7 @@ function SectionPage({
 
 function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
   return (
-    <button className={record.title.length > 28 ? "section-record has-long-title" : "section-record"} type="button" onClick={() => onOpenRecord(record)}>
+    <button className="section-record" type="button" onClick={() => onOpenRecord(record)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.summary}</span>

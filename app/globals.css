@@ -139,10 +139,11 @@ button:focus-visible {
   position: relative;
   inline-size: var(--boot-width);
   color: transparent;
+  clip-path: inset(0 100% 0 0);
   font-style: normal;
   letter-spacing: 0.14em;
   text-align: center;
-  animation: boot-copy-enter 1ms linear 1500ms both;
+  animation: boot-copy-enter 680ms steps(6, end) 940ms both;
 }
 
 .boot-screen i::before {
@@ -1170,7 +1171,7 @@ button:focus-visible {
 
 .command-panel {
   inline-size: min(500px, calc(100vw - var(--sidebar-width) - 96px));
-  animation: command-panel-decode 220ms steps(3, end) both;
+  animation: command-panel-decode 150ms ease-out both;
 }
 
 .search-panel label {
@@ -1451,13 +1452,6 @@ button:focus-visible {
   display: block;
   line-height: 1.25;
   margin-block: 2px 4px;
-}
-
-.section-record-column .section-record.has-long-title strong,
-.section-record.has-long-title strong {
-  font-size: 12px;
-  line-height: 1.16;
-  letter-spacing: 0.02em;
 }
 
 .section-record-column .section-record > span:not(.section-record-kind) {
@@ -4668,17 +4662,13 @@ input.studio-title-edit {
 
 @keyframes command-panel-decode {
   0% {
-    opacity: 0.56;
-    filter: blur(2px);
-    transform: translateY(-3px);
-    clip-path: inset(0 18% 0 0);
+    opacity: 0;
+    transform: translateY(-4px);
   }
 
   100% {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0);
-    clip-path: inset(0);
   }
 }
 
@@ -4792,8 +4782,22 @@ input.studio-title-edit {
 }
 
 @keyframes boot-copy-enter {
-  to {
+  0% {
+    color: transparent;
+    clip-path: inset(0 100% 0 0);
+    filter: blur(1px);
+  }
+
+  58% {
+    color: rgba(217, 213, 193, 0.64);
+    clip-path: inset(0 18% 0 0);
+    filter: blur(0.3px);
+  }
+
+  100% {
     color: var(--muted);
+    clip-path: inset(0);
+    filter: blur(0);
   }
 }
 
