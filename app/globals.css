@@ -320,6 +320,22 @@ button:focus-visible {
   font-style: normal;
 }
 
+.desktop-brand-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.brand-block .desktop-mode-label {
+  padding-inline-start: 10px;
+  border-inline-start: 1px solid rgba(217, 213, 193, 0.18);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
 .mobile-brand-meta,
 .mobile-clock {
   display: none;
@@ -2023,14 +2039,42 @@ button:focus-visible {
   max-inline-size: 900px;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 1px 10px;
+  gap: 6px 10px;
   color: var(--muted);
   transition: opacity 120ms ease;
 }
 
 .workspace-footer p {
   grid-column: 1 / -1;
-  margin: 0;
+  margin-block-end: 2px;
+}
+
+:where(.record-layout, .timeline-body, .update-history-window ol, .section-record-grid, .archive-nav-panel .nav-stack) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 213, 193, 0.34) rgba(255, 255, 255, 0.035);
+}
+
+:where(.record-layout, .timeline-body, .update-history-window ol, .section-record-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar {
+  inline-size: 10px;
+  block-size: 10px;
+}
+
+:where(.record-layout, .timeline-body, .update-history-window ol, .section-record-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-track {
+  background:
+    linear-gradient(90deg, transparent 0 4px, rgba(217, 213, 193, 0.08) 4px 5px, transparent 5px),
+    rgba(255, 255, 255, 0.02);
+}
+
+:where(.record-layout, .timeline-body, .update-history-window ol, .section-record-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-thumb {
+  min-block-size: 44px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(rgba(217, 213, 193, 0.48), rgba(130, 127, 116, 0.36)) padding-box;
+}
+
+:where(.record-layout, .timeline-body, .update-history-window ol, .section-record-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(rgba(236, 230, 211, 0.7), rgba(200, 189, 159, 0.46)) padding-box;
 }
 
 .record-window {
@@ -5066,6 +5110,7 @@ input.studio-title-edit {
     display: none;
   }
 
+  .desktop-brand-meta,
   .brand-block .version-label {
     display: none;
   }
