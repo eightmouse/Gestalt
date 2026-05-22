@@ -385,6 +385,31 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-weak-signal",
+    "title": "A Weak Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-05-22",
+    "updated": "2026-05-22",
+    "summary": "Life, what an experience huh",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 22 / 05 / 2026 - A Weak Signal\nThis week has been something, we definitely live in a society. Jokes aside, very tiring week, I spent lots of time between work and fixing Gestalt on my free time. I did not have enough brain power to work on KiraPatch, that requires lots of patience and focus.\n\nLike I said in the Gestalt note, I'm really happy how the site is turning out, it feels cozy and personal and its exactly how I envisioned it pretty much. I'm thinking of different ways to improve it now, between tags and also a way to display what other games I play.. like gatcha games or MMOs.\nObviously the active game, I want it to be a game that I'm experiencing fully.. doesn't have to be single player necessarily but the focus is to play games that I've missed on and track them this way, it helps!\n\nSpeaking of games, my rotation for mobile/gatcha is Nikke, Wuthering Waves, Dokkan, Granblue Fantasy. I mostly roll between them, sometimes I'm active on 2 or 3 at a times, sometimes I take a break and only play 1 of those. These games, especially GBF are chores and repetitive, which I wish they'd improve to make them feel like games and not jobs.\nWuthering Waves is back on rotation because of the Anniversary. I'm a 1.0 player, I played all the way untill first anniversary, then I started being seasonal or log in sporadically, mostly cause I felt tired of the daily routine.\nNikke similar situation, I play it a lot and farm for a while then stack resources and log in occasionally until big events to dump all the resources. I'm really looking forward for a Crown rerun, I don't have her yet.. so annoying.\nThat's pretty much it for other gatcha games too, I basically play seasonal or for long periods and then go back to seasonal. I'm planning on having a way for me to display these differntly, so I can show each of my accounts, what characters I have etc etc.\n\nI'm also going to rework the Hardware and Software area, cause I want to share my setup properly and tools I use. It's going to take time and for now I mostly aimed at making the site usable and polioshed, somewhat.\n\nThat's it for now, this was a spree of random things but that's exactly what I want the log to be about, random stuff!\n:::"
+  },
+  {
     "id": "a-magnificent-signal",
     "title": "A Magnificent Signal",
     "section": "logs",
