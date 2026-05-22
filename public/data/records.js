@@ -591,25 +591,25 @@ window.__GESTALT_RECORDS = [
     "title": "Kingdom Hearts Melody of Memory",
     "section": "games",
     "type": "Play Log",
-    "status": "Draft",
+    "status": "Complete",
     "started": "2026-05-15",
     "updated": "2026-05-15",
-    "summary": "No summary recorded.",
+    "summary": "Hands down how spin-off should've been!",
     "banner": "",
-    "headerImage": "",
+    "headerImage": "public/media/records/kingdom-hearts-melody-of-memory/1779457175235-5rfxcqryznn70sww6itoueef.jpg",
     "samples": [],
     "attachments": [],
-    "progress": 0,
+    "progress": 100,
     "priority": 50,
     "dashboardActive": false,
     "hardware": "",
     "technicalStack": "",
-    "recommendation": "",
+    "recommendation": "Definitely recommended, it's a breath of fresh air. Kingdom Hearts music is amazing and enjoying them this way it's a peak experience!",
     "tags": [
       "games"
     ],
     "milestones": [],
-    "body": ":::note 15 / 05 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": ":::note 15 / 05 / 2026 - A surprise\nI'll start by saying that this IS, unironically, the only spin-off and a good one too. Yes it is a very simple game and they managed to add some tidbits of lore here BUT, you can simply watch the video on youtube and call it a day. It's not the typical Kingdom Heart game with same gameplay loop but unique features tied to the console, which honestly is what they should've done with all the non main line games.\n![Would you look at that](public/media/records/kingdom-hearts-melody-of-memory/1779457182514-maxresdefault.jpg)\n\nGame is fun, runs well, experience is smooth and you could even use it to introduce people to the IP. I wish they'd explore and experiment more, with ideas like this.. It doesn't always have to be a JRPG on a different consoles that costs 500 bucks. Sometimes it is that simple but I know they have restraints for different reasons that probably no one would agree with.\n\nRambles aside, this is about the game. There's really not much to say, it's a music game using all the OSTs from the game. Nowadays it's available for PC too, thanks to the huge releases they did for Epic, Steam etc etc.\n:::"
   },
   {
     "id": "kingdom-hearts-re-chain-of-memories",
