@@ -1263,7 +1263,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.18</span>
+        <span>v1.24.19</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1276,7 +1276,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.18</span>
+      <span class="version-label">v1.24.19</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1294,7 +1294,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.18</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.19</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1705,7 +1705,7 @@ function render() {
   root.innerHTML = `<main class="${hasFocusWindow ? "archive-shell has-record" : "archive-shell"}">
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
-      <i data-cipher="${escapeHtml(cipherizeText("System initializing"))}">System initializing</i>
+      <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
       <b class="boot-meter"><b></b></b>
     </div>`}
     <div class="grain-layer"></div>

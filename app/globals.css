@@ -135,27 +135,17 @@ button:focus-visible {
     boot-flicker 130ms steps(2, end) 90ms 5;
 }
 
-.boot-screen i {
-  position: relative;
+.boot-status {
+  --headline-step: 44ms;
+  --headline-settle: 280ms;
+  --headline-duration: calc((var(--headline-chars, 19) * var(--headline-step)) + var(--headline-settle));
+  --headline-start-delay: 740ms;
   inline-size: var(--boot-width);
-  color: transparent;
-  clip-path: inset(0 100% 0 0);
+  justify-content: center;
   font-style: normal;
+  font-size: 13px;
   letter-spacing: 0.14em;
   text-align: center;
-  animation: boot-copy-enter 680ms steps(6, end) 940ms both;
-}
-
-.boot-screen i::before {
-  content: attr(data-cipher);
-  position: absolute;
-  inset: 0;
-  color: var(--accent);
-  overflow: hidden;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  animation: boot-decode 860ms steps(6, end) 520ms both;
 }
 
 .boot-meter {
@@ -1061,6 +1051,7 @@ button:focus-visible {
 
 .headline-char {
   position: relative;
+  flex: 0 0 auto;
   display: inline-block;
   line-height: inherit;
   vertical-align: baseline;
@@ -4674,13 +4665,13 @@ input.studio-title-edit {
 
 @keyframes command-result-enter {
   0% {
-    opacity: 0.62;
-    filter: blur(1px);
+    opacity: 0;
+    transform: translateY(-2px);
   }
 
   100% {
     opacity: 1;
-    filter: blur(0);
+    transform: translateY(0);
   }
 }
 
@@ -4778,54 +4769,6 @@ input.studio-title-edit {
   50% {
     opacity: 0.42;
     transform: translateX(1px);
-  }
-}
-
-@keyframes boot-copy-enter {
-  0% {
-    color: transparent;
-    clip-path: inset(0 100% 0 0);
-    filter: blur(1px);
-  }
-
-  58% {
-    color: rgba(217, 213, 193, 0.64);
-    clip-path: inset(0 18% 0 0);
-    filter: blur(0.3px);
-  }
-
-  100% {
-    color: var(--muted);
-    clip-path: inset(0);
-    filter: blur(0);
-  }
-}
-
-@keyframes boot-decode {
-  0% {
-    opacity: 0.72;
-    clip-path: inset(0 82% 0 0);
-    filter: blur(1px);
-    transform: translateX(-2px);
-  }
-
-  28% {
-    opacity: 0.58;
-    clip-path: inset(0 48% 0 0);
-    transform: translateX(2px);
-  }
-
-  62% {
-    opacity: 0.34;
-    clip-path: inset(0 12% 0 0);
-    transform: translateX(-1px);
-  }
-
-  100% {
-    opacity: 0;
-    clip-path: inset(0);
-    filter: blur(0);
-    transform: translateX(0);
   }
 }
 
@@ -5430,7 +5373,7 @@ input.studio-title-edit {
   }
 
   .command-panel {
-    animation-duration: 320ms;
+    animation-duration: 180ms;
   }
 
   .workspace-footer {
