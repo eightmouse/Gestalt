@@ -1108,6 +1108,14 @@ button:focus-visible {
   white-space: nowrap;
 }
 
+.record-title-text.is-long-title {
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.08;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .record-title-text.is-writing {
   clip-path: inset(0 100% 0 0);
   animation:
@@ -1507,9 +1515,12 @@ button:focus-visible {
 .section-record strong {
   color: var(--text);
   font-weight: 400;
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.22;
+  white-space: normal;
 }
 
 .section-record span:not(.section-record-kind) {
@@ -2466,23 +2477,11 @@ button:focus-visible {
   vertical-align: bottom;
 }
 
-.record-title-cursor {
-  display: inline-block;
-  vertical-align: bottom;
-}
-
 .headline-cursor.is-delayed {
   opacity: 0;
   animation:
     headline-cursor-enter 1ms linear calc(var(--headline-duration) + var(--headline-start-delay) + 60ms) both,
     cursor-blink 780ms steps(1, end) calc(var(--headline-duration) + var(--headline-start-delay) + 60ms) infinite;
-}
-
-.record-title-cursor.is-delayed {
-  opacity: 0;
-  animation:
-    headline-cursor-enter 1ms linear calc(clamp(360ms, calc(var(--record-title-chars, 12) * 46ms), 920ms) + 110ms) both,
-    cursor-blink 780ms steps(1, end) calc(clamp(360ms, calc(var(--record-title-chars, 12) * 46ms), 920ms) + 110ms) infinite;
 }
 
 .banner-frame,

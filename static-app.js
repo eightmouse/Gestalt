@@ -292,6 +292,14 @@ const latinSayings = [
 ];
 
 const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
+const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
+const sectionRegistryLabels = {
+  archive: "Deprecated Index",
+  games: "Play Log Registry",
+  logs: "Field Note Index",
+  projects: "Process Registry",
+  setup: "Setup Manifest"
+};
 
 function cipherizeText(value) {
   return value
@@ -302,6 +310,11 @@ function cipherizeText(value) {
       return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
     })
     .join("");
+}
+
+function projectStatusRank(status) {
+  const rank = projectStatusOrder.indexOf(status.toLowerCase());
+  return rank === -1 ? projectStatusOrder.length : rank;
 }
 
 function renderHeadlineLetters(value) {
@@ -578,8 +591,7 @@ function recordHeaderImage(record) {
 
 function updatedProjectRecords() {
   return recordsFor("projects")
-    .filter((record) => record.status !== "Archived")
-    .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+    .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
 }
 
 function currentGameRecord() {
@@ -1253,7 +1265,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.14</span>
+        <span>v1.24.15</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1266,7 +1278,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.14</span>
+      <span class="version-label">v1.24.15</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1284,7 +1296,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.14</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.15</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1388,7 +1400,7 @@ function dashboard() {
         )
         .join("")}
     </div>`
-    : `<p class="subtle">No active projects filed yet.</p>`;
+    : `<p class="subtle">No projects filed yet.</p>`;
 
   const game = currentGame
     ? `<div class="current-game">
@@ -1423,7 +1435,7 @@ function dashboard() {
     : `<p class="subtle">No activity filed yet.</p>`;
 
   return `<div class="${state.panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}">
-    ${dashboardPanel("ACTIVE PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
+    ${dashboardPanel("PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
     ${dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel")}
     ${dashboardPanel("CURRENT GAME", game, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "")}
@@ -1444,7 +1456,7 @@ function sectionPage(sectionId) {
         <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
         <div>
           <p>${escapeHtml(section.code)}</p>
-          <h2>${escapeHtml(section.label)}</h2>
+            <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
         </div>
         <i>${countLabel}</i>
       </header>
@@ -1466,7 +1478,7 @@ function sectionPage(sectionId) {
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div>
         <p>${escapeHtml(section.code)}</p>
-        <h2>${escapeHtml(section.label)}</h2>
+          <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
       </div>
       <i>${countLabel}</i>
     </header>
@@ -1524,8 +1536,7 @@ function recordWindow(record) {
 
   const contents = getRecordContents(record);
   const activeContent = normalizeContentKey(record);
-  const titleClass = state.recordTitleAnimating ? "record-title-text is-writing" : "record-title-text";
-  const cursorClass = state.recordTitleAnimating ? "cursor record-title-cursor is-delayed" : "cursor record-title-cursor";
+  const titleClass = `${state.recordTitleAnimating ? "record-title-text is-writing" : "record-title-text"}${record.title.length > 32 ? " is-long-title" : ""}`;
 
   const headerImage = recordHeaderImage(record);
 
@@ -1545,7 +1556,7 @@ function recordWindow(record) {
           ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" decoding="async" />` : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
-          <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span><span class="${cursorClass}" style="--record-title-chars: ${record.title.length}">_</span></h2>
+          <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span></h2>
           <p>
             Status: ${escapeHtml(record.status)}
             <span>.</span>

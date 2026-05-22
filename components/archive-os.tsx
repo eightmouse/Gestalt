@@ -65,6 +65,14 @@ const latinSayings = [
 ];
 
 const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
+const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
+const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
+  archive: "Deprecated Index",
+  games: "Play Log Registry",
+  logs: "Field Note Index",
+  projects: "Process Registry",
+  setup: "Setup Manifest"
+};
 
 function cipherizeText(value: string): string {
   return value
@@ -75,6 +83,11 @@ function cipherizeText(value: string): string {
       return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
     })
     .join("");
+}
+
+function projectStatusRank(status: string): number {
+  const rank = projectStatusOrder.indexOf(status.toLowerCase());
+  return rank === -1 ? projectStatusOrder.length : rank;
 }
 
 function renderHeadlineLetters(value: string) {
@@ -172,9 +185,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [records]);
 
   const selectedRecord = records.find((record) => record.id === selectedId) ?? records[0];
-  const activeProjects = recordsBySection.projects
-    .filter((record) => record.status !== "Archived")
-    .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const projectDashboardRecords = recordsBySection.projects
+    .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const currentGame = recordsBySection.games.find((record) => record.meta.dashboardActive === true)
     ?? recordsBySection.games.find((record) => record.status === "Playing")
     ?? recordsBySection.games[0];
@@ -417,15 +429,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         {activeSection === "system" ? (
         <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
           <DashboardPanel
-            title="ACTIVE PROJECTS"
+            title="PROJECTS"
             className="wide-panel active-projects-panel"
-            footerLabel={`View all (${activeProjects.length})`}
+            footerLabel={`View all (${projectDashboardRecords.length})`}
             onFooter={() => openSection("projects")}
           >
-            {activeProjects.length > 0 ? (
-              <RecordList records={activeProjects.slice(0, 3)} onOpenRecord={openRecord} />
+            {projectDashboardRecords.length > 0 ? (
+              <RecordList records={projectDashboardRecords.slice(0, 3)} onOpenRecord={openRecord} />
             ) : (
-              <p className="subtle">No active projects filed yet.</p>
+              <p className="subtle">No projects filed yet.</p>
             )}
           </DashboardPanel>
 
@@ -631,7 +643,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.14</span>
+          <span>v1.24.15</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -654,7 +666,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.14</span>
+        <span className="version-label">v1.24.15</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -710,7 +722,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.14</dd>
+            <dd>GESTALT OS v1.24.15</dd>
           </div>
         </dl>
       </div>
@@ -1024,7 +1036,7 @@ function SectionPage({
           <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
           <div>
             <p>{section.code}</p>
-            <h2>{section.label}</h2>
+            <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
           </div>
           <i>{countLabel}</i>
         </header>
@@ -1058,7 +1070,7 @@ function SectionPage({
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>
           <p>{section.code}</p>
-          <h2>{section.label}</h2>
+          <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
         </div>
         <i>{countLabel}</i>
       </header>
@@ -1300,11 +1312,11 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
-              <span className="record-title-text is-writing" style={{ "--record-title-chars": record.title.length } as CSSProperties}>
+              <span
+                className={record.title.length > 32 ? "record-title-text is-writing is-long-title" : "record-title-text is-writing"}
+                style={{ "--record-title-chars": record.title.length } as CSSProperties}
+              >
                 {record.title}
-              </span>
-              <span className="cursor record-title-cursor is-delayed" style={{ "--record-title-chars": record.title.length } as CSSProperties}>
-                _
               </span>
             </h2>
             <p>
