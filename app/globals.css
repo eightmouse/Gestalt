@@ -1617,12 +1617,13 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list button {
-  min-block-size: clamp(36px, 4.6vh, 44px);
+  min-block-size: clamp(34px, 4.25vh, 40px);
+  padding-block: 4px;
 }
 
 .active-projects-panel .record-list small,
 .active-projects-panel .record-list i {
-  margin-block-start: 3px;
+  margin-block-start: 4px;
 }
 
 .record-list button:hover {
@@ -2037,14 +2038,14 @@ button:focus-visible {
   max-inline-size: 900px;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 6px 10px;
+  gap: 1px 10px;
   color: var(--muted);
   transition: opacity 120ms ease;
 }
 
 .workspace-footer p {
   grid-column: 1 / -1;
-  margin-block-end: 2px;
+  margin: 0;
 }
 
 .record-window {
