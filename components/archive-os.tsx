@@ -191,7 +191,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     ?? recordsBySection.games.find((record) => record.status === "Playing")
     ?? recordsBySection.games[0];
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = recentActivity(records, 4);
+  const activity = recentActivity(records, 3);
   const metrics = getArchiveMetrics(records, currentGame);
 
   useEffect(() => {
@@ -441,7 +441,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onFooter={() => openSection("projects")}
           >
             {projectDashboardRecords.length > 0 ? (
-              <RecordList records={projectDashboardRecords.slice(0, 4)} onOpenRecord={openRecord} />
+              <RecordList records={projectDashboardRecords.slice(0, 3)} onOpenRecord={openRecord} />
             ) : (
               <p className="subtle">No projects filed yet.</p>
             )}
@@ -649,7 +649,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.20</span>
+          <span>v1.24.21</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -672,7 +672,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.20</span>
+        <span className="version-label">v1.24.21</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -728,7 +728,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.20</dd>
+            <dd>GESTALT OS v1.24.21</dd>
           </div>
         </dl>
       </div>
