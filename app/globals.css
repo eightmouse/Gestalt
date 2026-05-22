@@ -1060,26 +1060,33 @@ button:focus-visible {
 
 .headline-char {
   position: relative;
-  display: inline-grid;
-  min-inline-size: 0.58em;
+  display: inline-block;
+  line-height: inherit;
+  vertical-align: baseline;
 }
 
 .headline-char.is-space {
-  min-inline-size: 0.42em;
+  inline-size: 0.42em;
 }
 
 .headline-char-cipher,
 .headline-char-readable {
-  grid-area: 1 / 1;
   display: inline-block;
+  line-height: inherit;
+  vertical-align: baseline;
 }
 
 .headline-char-cipher {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
   color: var(--accent);
   opacity: 0;
+  pointer-events: none;
 }
 
 .headline-char-readable {
+  position: relative;
   color: var(--text);
   opacity: 1;
 }
@@ -1251,12 +1258,12 @@ button:focus-visible {
 .command-panel .search-suggestions button:hover small,
 .command-panel .search-suggestions button:focus-visible small {
   color: var(--muted);
+  animation: glyph-resolve 460ms steps(5, end);
 }
 
 .command-panel .search-suggestions button:hover small::before,
 .command-panel .search-suggestions button:focus-visible small::before {
-  opacity: 0;
-  clip-path: inset(0 0 0 100%);
+  animation: glyph-decay 420ms steps(4, end) both;
 }
 
 .search-suggestions small,
