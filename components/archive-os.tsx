@@ -631,7 +631,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.13</span>
+          <span>v1.24.14</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -654,7 +654,7 @@ function Sidebar({
             <span className="archive-menu-code">{activeConfig.code}</span>
           </button>
         </div>
-        <span className="version-label">v1.24.13</span>
+        <span className="version-label">v1.24.14</span>
         <i aria-hidden="true">-</i>
       </div>
 
@@ -710,7 +710,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.13</dd>
+            <dd>GESTALT OS v1.24.14</dd>
           </div>
         </dl>
       </div>
@@ -915,6 +915,7 @@ function WeatherPanel() {
 function MemoryLoop() {
   const memoryRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
+  const boundsRef = useRef<DOMRectReadOnly | null>(null);
 
   const setMemoryPointer = (x: number, y: number) => {
     const node = memoryRef.current;
@@ -933,15 +934,18 @@ function MemoryLoop() {
     node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
   };
   const clampPointer = (value: number) => Math.max(-1, Math.min(1, value));
+  const updateBounds = () => {
+    boundsRef.current = memoryRef.current?.getBoundingClientRect() ?? null;
+  };
 
   const handlePointerMove = (event: globalThis.PointerEvent) => {
     const node = memoryRef.current;
+    const rect = boundsRef.current;
 
-    if (!node) {
+    if (!node || !rect || document.hidden) {
       return;
     }
 
-    const rect = node.getBoundingClientRect();
     const x = clampPointer((event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2));
     const y = clampPointer((event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2));
 
@@ -956,10 +960,13 @@ function MemoryLoop() {
   };
 
   useEffect(() => {
+    updateBounds();
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("resize", updateBounds, { passive: true });
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("resize", updateBounds);
 
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);

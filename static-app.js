@@ -1253,7 +1253,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.13</span>
+        <span>v1.24.14</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1266,7 +1266,7 @@ function sidebar() {
           <span class="archive-menu-code">${escapeHtml(activeConfig.code)}</span>
         </button>
       </div>
-      <span class="version-label">v1.24.13</span>
+      <span class="version-label">v1.24.14</span>
       <i aria-hidden="true">-</i>
     </div>
 
@@ -1284,7 +1284,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.13</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.14</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1755,6 +1755,8 @@ function render() {
     state.headlineAnimating = false;
   }
 
+  updateMemoryBounds();
+
   if (state.searchOpen) {
     const input = document.querySelector("[data-search-input]");
     input?.focus();
@@ -1899,15 +1901,20 @@ function setMemoryPointer(node, x, y) {
 }
 
 let memoryFrame = 0;
+let memoryNode = null;
+let memoryBounds = null;
+
+function updateMemoryBounds() {
+  memoryNode = document.querySelector("[data-memory-loop]");
+  memoryBounds = memoryNode instanceof HTMLElement ? memoryNode.getBoundingClientRect() : null;
+}
 
 document.addEventListener("pointermove", (event) => {
-  const node = document.querySelector("[data-memory-loop]");
-
-  if (!(node instanceof HTMLElement)) {
+  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds) {
     return;
   }
 
-  const rect = node.getBoundingClientRect();
+  const rect = memoryBounds;
   const x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
   const y = Math.max(-1, Math.min(1, (event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2)));
 
@@ -1916,10 +1923,14 @@ document.addEventListener("pointermove", (event) => {
   }
 
   memoryFrame = window.requestAnimationFrame(() => {
-    setMemoryPointer(node, x, y);
+    if (memoryNode instanceof HTMLElement) {
+      setMemoryPointer(memoryNode, x, y);
+    }
     memoryFrame = 0;
   });
 });
+
+window.addEventListener("resize", updateMemoryBounds, { passive: true });
 
 document.addEventListener("click", (event) => {
   const clickTarget = event.target;

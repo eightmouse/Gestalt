@@ -2339,7 +2339,6 @@ button:focus-visible {
   overscroll-behavior: contain;
   contain: content;
   scrollbar-gutter: stable;
-  will-change: scroll-position;
 }
 
 .record-window.is-maximized .record-layout {
