@@ -154,7 +154,7 @@ window.__GESTALT_RECORDS = [
     "priority": 4,
     "dashboardActive": false,
     "hardware": "",
-    "technicalStack": "QML\nPython\nJavaScript\nBatchfile",
+    "technicalStack": "QML\nPython\nJavaScript",
     "recommendation": "",
     "tags": [
       "sootopylis",
