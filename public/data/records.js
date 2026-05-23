@@ -110,7 +110,7 @@ window.__GESTALT_RECORDS = [
     "priority": 2,
     "dashboardActive": false,
     "hardware": "",
-    "technicalStack": "Lorem ipsum",
+    "technicalStack": "Python",
     "recommendation": "",
     "tags": [
       "kirapatch",
