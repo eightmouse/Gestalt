@@ -57,7 +57,7 @@ window.__GESTALT_RECORDS = [
       "public/media/records/gestalt/1779269816210-screenshot-2026-05-20-152713.png"
     ],
     "attachments": [],
-    "progress": 100,
+    "progress": 90,
     "priority": 1,
     "dashboardActive": false,
     "hardware": "",
