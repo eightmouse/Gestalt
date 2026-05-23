@@ -61,7 +61,7 @@ window.__GESTALT_RECORDS = [
     "priority": 1,
     "dashboardActive": false,
     "hardware": "",
-    "technicalStack": "",
+    "technicalStack": "JavaScript\nTypeScript\nCSS\nMDX\nHTML",
     "recommendation": "",
     "tags": [
       "gestalt",
