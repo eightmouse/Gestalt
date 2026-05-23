@@ -198,7 +198,7 @@ window.__GESTALT_RECORDS = [
     "priority": 5,
     "dashboardActive": false,
     "hardware": "",
-    "technicalStack": "",
+    "technicalStack": "Python",
     "recommendation": "",
     "tags": [
       "kiratally",
