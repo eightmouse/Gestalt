@@ -658,7 +658,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.25</span>
+          <span>v1.24.26</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -682,7 +682,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.24.25</span>
+          <span className="version-label">v1.24.26</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -740,7 +740,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.25</dd>
+            <dd>GESTALT OS v1.24.26</dd>
           </div>
         </dl>
       </div>
@@ -1142,17 +1142,60 @@ function TagFilterBar({
 }
 
 function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
+  const tags = recordCardTags(record);
+
   return (
     <button className="section-record" type="button" onClick={() => onOpenRecord(record)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.summary}</span>
+      {tags.length > 0 ? (
+        <em className="section-record-tags" aria-label="Record tags">
+          {tags.map((tag) => (
+            <b className={`tag-pill ${tagToneClass(tag)}`} key={tag}>#{tag}</b>
+          ))}
+        </em>
+      ) : null}
       <i>
         {record.status} . {formatReadableDate(record.updated)}
       </i>
     </button>
   );
 }
+
+const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
+const curatedFilterTags = new Set([
+  "action",
+  "adventure",
+  "ai",
+  "archive",
+  "automation",
+  "blog",
+  "dashboard",
+  "desktop",
+  "electron",
+  "gba",
+  "game-tools",
+  "hardware",
+  "jrpg",
+  "linux",
+  "patcher",
+  "performance",
+  "personal",
+  "pokemon",
+  "portfolio",
+  "python",
+  "rpg",
+  "setup",
+  "shiny-hunting",
+  "site-update",
+  "steam",
+  "tools",
+  "typescript",
+  "update",
+  "web",
+  "windows"
+]);
 
 function sectionTagOptions(records: RecordEntry[]): Array<{ count: number; tag: string }> {
   const counts = new Map<string, number>();
@@ -1161,7 +1204,7 @@ function sectionTagOptions(records: RecordEntry[]): Array<{ count: number; tag: 
     record.tags.forEach((tag) => {
       const normalized = tag.trim();
 
-      if (!normalized) {
+      if (!normalized || sectionBaseTags.has(normalized)) {
         return;
       }
 
@@ -1170,9 +1213,24 @@ function sectionTagOptions(records: RecordEntry[]): Array<{ count: number; tag: 
   });
 
   return [...counts.entries()]
+    .filter(([tag, count]) => curatedFilterTags.has(tag) || count > 1)
     .map(([tag, count]) => ({ count, tag }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
     .slice(0, 10);
+}
+
+function recordCardTags(record: RecordEntry): string[] {
+  return record.tags
+    .map((tag) => tag.trim())
+    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
+    .filter((tag) => !sectionBaseTags.has(tag) && curatedFilterTags.has(tag))
+    .slice(0, 3);
+}
+
+function tagToneClass(tag: string) {
+  const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
+  const seed = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return tones[seed % tones.length];
 }
 
 function tagLabel(tag: string) {

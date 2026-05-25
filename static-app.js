@@ -1296,7 +1296,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.25</span>
+        <span>v1.24.26</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1310,7 +1310,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.24.25</span>
+        <span class="version-label">v1.24.26</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1330,7 +1330,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.25</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.26</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1556,11 +1556,58 @@ function renderSectionRows(sectionRecords) {
             <span class="section-record-kind">${escapeHtml(record.type)}</span>
             <strong>${escapeHtml(record.title)}</strong>
             <span>${escapeHtml(record.summary)}</span>
+            ${renderRecordTags(record)}
             <i>${escapeHtml(record.status)} . ${readableDate(record.updated)}</i>
           </button>`
         )
         .join("")
     : `<p class="search-empty">No records filed here yet.</p>`;
+}
+
+const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
+const curatedFilterTags = new Set([
+  "action",
+  "adventure",
+  "ai",
+  "archive",
+  "automation",
+  "blog",
+  "dashboard",
+  "desktop",
+  "electron",
+  "gba",
+  "game-tools",
+  "hardware",
+  "jrpg",
+  "linux",
+  "patcher",
+  "performance",
+  "personal",
+  "pokemon",
+  "portfolio",
+  "python",
+  "rpg",
+  "setup",
+  "shiny-hunting",
+  "site-update",
+  "steam",
+  "tools",
+  "typescript",
+  "update",
+  "web",
+  "windows"
+]);
+
+function renderRecordTags(record) {
+  const tags = recordCardTags(record);
+
+  if (!tags.length) {
+    return "";
+  }
+
+  return `<em class="section-record-tags" aria-label="Record tags">
+    ${tags.map((tag) => `<b class="tag-pill ${tagToneClass(tag)}">#${escapeHtml(tag)}</b>`).join("")}
+  </em>`;
 }
 
 function sectionTagOptions(sectionRecords) {
@@ -1570,7 +1617,7 @@ function sectionTagOptions(sectionRecords) {
     record.tags.forEach((tag) => {
       const normalized = tag.trim();
 
-      if (!normalized) {
+      if (!normalized || sectionBaseTags.has(normalized)) {
         return;
       }
 
@@ -1579,9 +1626,24 @@ function sectionTagOptions(sectionRecords) {
   });
 
   return Array.from(counts.entries())
+    .filter(([tag, count]) => curatedFilterTags.has(tag) || count > 1)
     .map(([tag, count]) => ({ count, tag }))
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
     .slice(0, 10);
+}
+
+function recordCardTags(record) {
+  return record.tags
+    .map((tag) => tag.trim())
+    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
+    .filter((tag) => !sectionBaseTags.has(tag) && curatedFilterTags.has(tag))
+    .slice(0, 3);
+}
+
+function tagToneClass(tag) {
+  const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
+  const seed = Array.from(tag).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return tones[seed % tones.length];
 }
 
 function tagLabel(tag) {

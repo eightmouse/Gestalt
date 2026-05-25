@@ -73,6 +73,15 @@ const studioSections: Array<{
 ];
 
 const sections = studioSections.map((section) => section.id);
+const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
+const tagSuggestions: Record<StudioSection, string[]> = {
+  projects: ["web", "tool", "desktop", "python", "typescript", "nextjs", "electron", "game-tools", "patcher", "automation", "archive", "portfolio", "pokemon"],
+  games: ["jrpg", "rpg", "action", "adventure", "platformer", "rhythm", "fighting", "steam", "console", "completed", "backlog"],
+  logs: ["personal", "update", "site-update", "performance", "ai", "dashboard", "daily"],
+  setup: ["hardware", "software", "windows", "linux", "peripherals"],
+  archive: ["archived", "deprecated", "experiment", "reference"]
+};
+const curatedTagSet = new Set(Object.values(tagSuggestions).flat());
 
 export function StudioClient({ records }: StudioClientProps) {
   const firstRecord = records[0];
@@ -166,7 +175,7 @@ export function StudioClient({ records }: StudioClientProps) {
           ...form,
           body: bodyDraftRef.current,
           dashboardActive: form.section === "games" && form.dashboardActive,
-          tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+          tags: parseTags(form.tags)
         })
       });
       const data = await readStudioResponse(response);
@@ -663,11 +672,20 @@ function StudioSectionPage({
 }
 
 function StudioSectionRecordButton({ onEdit, record }: { onEdit: (id: string) => void; record: RecordEntry }) {
+  const tags = recordCardTags(record);
+
   return (
     <button className="section-record" type="button" onClick={() => onEdit(record.id)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.summary}</span>
+      {tags.length > 0 ? (
+        <em className="section-record-tags" aria-label="Record tags">
+          {tags.map((tag) => (
+            <b className={`tag-pill ${tagToneClass(tag)}`} key={tag}>#{tag}</b>
+          ))}
+        </em>
+      ) : null}
       <i>{record.status} . {formatStudioDate(record.updated)}</i>
     </button>
   );
@@ -870,6 +888,7 @@ function Inspector({
           <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
         </>
       ) : null}
+      <TagEditor section={form.section} value={form.tags} onChange={(value) => onUpdate("tags", value)} />
       <dl>
         <div><dt>Created</dt><dd>{form.started || "Unknown"}</dd></div>
         <div><dt>Updated</dt><dd>{form.updated || "Unknown"}</dd></div>
@@ -894,6 +913,53 @@ function StackEditor({ onChange, value }: { onChange: (value: string) => void; v
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
+  );
+}
+
+function TagEditor({
+  onChange,
+  section,
+  value
+}: {
+  onChange: (value: string) => void;
+  section: StudioSection;
+  value: string;
+}) {
+  const currentTags = parseTags(value);
+  const suggestions = tagSuggestions[section].filter((tag) => tag !== section && tag !== `${section}s`);
+
+  const toggleTag = (tag: string) => {
+    const nextTags = currentTags.includes(tag)
+      ? currentTags.filter((currentTag) => currentTag !== tag)
+      : [...currentTags, tag];
+
+    onChange(formatTags(nextTags));
+  };
+
+  return (
+    <div className="studio-tag-editor">
+      <span>Tags</span>
+      <div className="studio-tag-suggestions" aria-label="Suggested tags">
+        {suggestions.map((tag) => (
+          <button
+            className={currentTags.includes(tag) ? "is-active" : ""}
+            key={tag}
+            type="button"
+            onClick={() => toggleTag(tag)}
+          >
+            #{tag}
+          </button>
+        ))}
+      </div>
+      <label>
+        Custom tags
+        <input
+          value={value}
+          placeholder="jrpg, steam, performance"
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </label>
+    </div>
   );
 }
 
@@ -1409,6 +1475,31 @@ function formatStudioDate(value: string): string {
   return year && month && day ? `${day} / ${month} / ${year}` : value;
 }
 
+function parseTags(value: string): string[] {
+  return value
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index);
+}
+
+function formatTags(tags: string[]): string {
+  return tags.join(", ");
+}
+
+function recordCardTags(record: RecordEntry): string[] {
+  return record.tags
+    .map((tag) => tag.trim())
+    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
+    .filter((tag) => !sectionBaseTags.has(tag) && curatedTagSet.has(tag))
+    .slice(0, 3);
+}
+
+function tagToneClass(tag: string) {
+  const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
+  const seed = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return tones[seed % tones.length];
+}
+
 function defaultType(section: StudioSection): string {
   return {
     projects: "Project Log",
@@ -1593,7 +1684,7 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     banner: form.banner,
     progress: form.progress,
     priority: form.priority,
-    tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+    tags: parseTags(form.tags),
     meta: {
       headerImage: form.headerImage,
       samples: mediaListFromText(form.samples),
