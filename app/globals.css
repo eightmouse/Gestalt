@@ -1433,22 +1433,21 @@ button:focus-visible {
 
 .section-record-column .section-record-grid {
   gap: 10px;
-  grid-auto-rows: 166px;
+  grid-auto-rows: 138px;
 }
 
 .section-record-column .section-record {
-  block-size: 166px;
+  block-size: 138px;
   min-block-size: 0;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, auto);
   grid-template-areas:
     "kind date"
-    "title title"
-    "summary summary"
-    "tags tags";
+    "title tags"
+    "summary summary";
   align-content: center;
   column-gap: 12px;
-  row-gap: 10px;
-  padding: 17px 14px 15px;
+  row-gap: 8px;
+  padding: 16px 14px;
   overflow: hidden;
 }
 
@@ -1485,6 +1484,9 @@ button:focus-visible {
 
 .section-record-column .section-record-tags {
   grid-area: tags;
+  align-self: center;
+  justify-self: end;
+  max-inline-size: 100%;
 }
 
 .section-record-column .section-record strong,
@@ -1496,14 +1498,14 @@ button:focus-visible {
 .section-record {
   position: relative;
   display: grid;
-  grid-template-columns: 110px minmax(0, 0.62fr) minmax(220px, 1fr) auto;
+  grid-template-columns: 110px minmax(0, 0.62fr) minmax(220px, 1fr) minmax(132px, auto);
   grid-template-areas:
     "kind title summary date"
-    "tags tags tags tags";
-  gap: 13px 18px;
+    "kind title summary tags";
+  gap: 5px 18px;
   align-items: center;
-  min-block-size: 108px;
-  padding: 16px;
+  min-block-size: 94px;
+  padding: 14px 16px;
   border: 1px solid rgba(217, 213, 193, 0.12);
   background: rgba(255, 255, 255, 0.018);
   color: var(--muted);
@@ -1544,13 +1546,13 @@ button:focus-visible {
 
 .section-record-tags {
   grid-area: tags;
+  justify-self: end;
+  align-self: start;
   min-width: 0;
   max-inline-size: 100%;
   display: flex;
+  justify-content: flex-end;
   gap: 6px;
-  margin-block-start: 2px;
-  padding-block-start: 9px;
-  border-block-start: 1px solid rgba(217, 213, 193, 0.08);
   overflow: hidden;
   font-style: normal;
   pointer-events: none;
@@ -1603,6 +1605,7 @@ button:focus-visible {
 .section-record i {
   grid-area: date;
   justify-self: end;
+  align-self: end;
   color: var(--muted);
   font-style: normal;
   line-height: 1.4;
@@ -5575,7 +5578,7 @@ input.studio-title-edit {
   }
 
   .section-record {
-    min-block-size: 186px;
+    min-block-size: 168px;
     grid-template-areas:
       "kind"
       "title"
@@ -5585,8 +5588,8 @@ input.studio-title-edit {
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-content: stretch;
     gap: 0;
-    row-gap: 13px;
-    padding: 18px 16px 22px;
+    row-gap: 11px;
+    padding: 18px 16px;
   }
 
   .section-record-column .section-record {
@@ -5599,7 +5602,17 @@ input.studio-title-edit {
       "date";
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-content: stretch;
-    row-gap: 13px;
+    row-gap: 11px;
+  }
+
+  .section-record-tags,
+  .section-record-column .section-record-tags {
+    grid-area: tags;
+    justify-self: start;
+    align-self: end;
+    justify-content: flex-start;
+    margin-block-start: 0;
+    transform: none;
   }
 
   .section-record strong {
@@ -5895,17 +5908,17 @@ input.studio-title-edit {
   }
 
   .section-record-column .section-record-grid {
-    grid-auto-rows: 196px;
+    grid-auto-rows: 184px;
   }
 
   .section-record-column .section-record {
-    block-size: 196px;
-    row-gap: 13px;
+    block-size: 184px;
+    row-gap: 12px;
   }
 
   .section-record {
-    min-block-size: 196px;
-    row-gap: 13px;
+    min-block-size: 184px;
+    row-gap: 12px;
   }
 
   .record-window,
