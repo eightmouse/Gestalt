@@ -1433,11 +1433,11 @@ button:focus-visible {
 
 .section-record-column .section-record-grid {
   gap: 10px;
-  grid-auto-rows: 152px;
+  grid-auto-rows: 166px;
 }
 
 .section-record-column .section-record {
-  block-size: 152px;
+  block-size: 166px;
   min-block-size: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -1447,8 +1447,8 @@ button:focus-visible {
     "tags tags";
   align-content: center;
   column-gap: 12px;
-  row-gap: 8px;
-  padding: 16px 14px;
+  row-gap: 10px;
+  padding: 17px 14px 15px;
   overflow: hidden;
 }
 
@@ -1500,10 +1500,10 @@ button:focus-visible {
   grid-template-areas:
     "kind title summary date"
     "tags tags tags tags";
-  gap: 9px 18px;
+  gap: 13px 18px;
   align-items: center;
-  min-block-size: 94px;
-  padding: 14px 16px;
+  min-block-size: 108px;
+  padding: 16px;
   border: 1px solid rgba(217, 213, 193, 0.12);
   background: rgba(255, 255, 255, 0.018);
   color: var(--muted);
@@ -1548,6 +1548,9 @@ button:focus-visible {
   max-inline-size: 100%;
   display: flex;
   gap: 6px;
+  margin-block-start: 2px;
+  padding-block-start: 9px;
+  border-block-start: 1px solid rgba(217, 213, 193, 0.08);
   overflow: hidden;
   font-style: normal;
   pointer-events: none;
@@ -5572,7 +5575,7 @@ input.studio-title-edit {
   }
 
   .section-record {
-    min-block-size: 168px;
+    min-block-size: 186px;
     grid-template-areas:
       "kind"
       "title"
@@ -5582,8 +5585,8 @@ input.studio-title-edit {
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-content: stretch;
     gap: 0;
-    row-gap: 11px;
-    padding: 18px 16px 36px;
+    row-gap: 13px;
+    padding: 18px 16px 22px;
   }
 
   .section-record-column .section-record {
@@ -5596,7 +5599,7 @@ input.studio-title-edit {
       "date";
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-content: stretch;
-    row-gap: 11px;
+    row-gap: 13px;
   }
 
   .section-record strong {
@@ -5892,17 +5895,17 @@ input.studio-title-edit {
   }
 
   .section-record-column .section-record-grid {
-    grid-auto-rows: 184px;
+    grid-auto-rows: 196px;
   }
 
   .section-record-column .section-record {
-    block-size: 184px;
-    row-gap: 12px;
+    block-size: 196px;
+    row-gap: 13px;
   }
 
   .section-record {
-    min-block-size: 184px;
-    row-gap: 12px;
+    min-block-size: 196px;
+    row-gap: 13px;
   }
 
   .record-window,
