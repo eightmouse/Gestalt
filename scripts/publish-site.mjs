@@ -15,6 +15,7 @@ function commandFor(command) {
 function parseArgs(args) {
   let message = "Update archive content";
   let dryRun = false;
+  let skipSteamSync = false;
   let skipTypecheck = false;
 
   for (let index = 0; index < args.length; index += 1) {
@@ -25,12 +26,14 @@ function parseArgs(args) {
       index += 1;
     } else if (arg === "--dry-run") {
       dryRun = true;
+    } else if (arg === "--skip-steam-sync") {
+      skipSteamSync = true;
     } else if (arg === "--skip-typecheck") {
       skipTypecheck = true;
     }
   }
 
-  return { dryRun, message, skipTypecheck };
+  return { dryRun, message, skipSteamSync, skipTypecheck };
 }
 
 function run(command, args, options = {}) {
@@ -187,7 +190,31 @@ function refreshStaticCacheBusters() {
   }
 }
 
-const { dryRun, message, skipTypecheck } = parseArgs(process.argv.slice(2));
+function hasSteamConfig() {
+  try {
+    const source = readFileSync(path.join(root, ".env.local"), "utf8");
+
+    return /^\s*STEAM_API_KEY\s*=\s*\S+/m.test(source) && /^\s*STEAM_ID\s*=\s*\S+/m.test(source);
+  } catch {
+    return false;
+  }
+}
+
+function syncSteamIfConfigured(skipSteamSync) {
+  if (skipSteamSync) {
+    console.log("\n> Steam sync skipped by --skip-steam-sync");
+    return;
+  }
+
+  if (!hasSteamConfig()) {
+    console.log("\n> Steam sync skipped: STEAM_API_KEY or STEAM_ID not configured.");
+    return;
+  }
+
+  run("node", ["scripts/sync-steam.mjs"]);
+}
+
+const { dryRun, message, skipSteamSync, skipTypecheck } = parseArgs(process.argv.slice(2));
 
 console.log("Gestalt site publish");
 console.log(`Commit message: ${message}`);
@@ -195,6 +222,7 @@ if (dryRun) {
   console.log("Dry run: checks will run, but nothing will be committed or pushed.");
 }
 
+syncSteamIfConfigured(skipSteamSync);
 run("node", ["scripts/export-static-records.mjs"]);
 refreshStaticCacheBusters();
 run("node", ["scripts/validate-content.mjs"]);

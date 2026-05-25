@@ -483,6 +483,36 @@ function activityDate(record) {
   return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] || record.updated;
 }
 
+function recordDisplaySummary(record) {
+  if (record.summary.trim() && record.summary.trim().toLowerCase() !== "no summary recorded.") {
+    return record.summary;
+  }
+
+  const latestNote = noteEntries(record.body)[0];
+  const fallback = excerptFromBody(latestNote?.body || record.body);
+
+  return fallback || "No summary recorded.";
+}
+
+function excerptFromBody(body) {
+  const line = body
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .find((value) => value && !value.startsWith(":::") && !value.startsWith("!") && !value.startsWith("#"));
+
+  if (!line) {
+    return "";
+  }
+
+  const clean = line
+    .replace(/^[-*>]\s*/, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return clean.length > 118 ? `${clean.slice(0, 115).trim()}...` : clean;
+}
+
 function noteTitleDate(title) {
   const match = title.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\b/);
 
@@ -1263,7 +1293,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.23</span>
+        <span>v1.24.24</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1277,7 +1307,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.24.23</span>
+        <span class="version-label">v1.24.24</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1297,7 +1327,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.23</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.24</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1419,7 +1449,7 @@ function dashboard() {
     : `<p class="subtle">No session active.</p>`;
 
   const log = latestLog
-    ? `<div class="latest-log"><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(latestLog.summary)}</p></div>`
+    ? `<div class="latest-log"><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(recordDisplaySummary(latestLog))}</p></div>`
     : `<p class="subtle">No field notes stored.</p>`;
 
   const feed = activity.length

@@ -463,7 +463,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             {latestLog ? (
               <div className="latest-log">
                 <span>{shortDate(latestLog.updated)}</span>
-                <p>{latestLog.summary}</p>
+                <p>{recordDisplaySummary(latestLog)}</p>
               </div>
             ) : (
               <p className="subtle">No field notes stored.</p>
@@ -649,7 +649,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.23</span>
+          <span>v1.24.24</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -673,7 +673,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.24.23</span>
+          <span className="version-label">v1.24.24</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -731,7 +731,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.23</dd>
+            <dd>GESTALT OS v1.24.24</dd>
           </div>
         </dl>
       </div>
@@ -2191,6 +2191,36 @@ function activityDate(record: RecordEntry): string {
     .filter((value): value is string => Boolean(value));
 
   return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] ?? record.updated;
+}
+
+function recordDisplaySummary(record: RecordEntry): string {
+  if (record.summary.trim() && record.summary.trim().toLowerCase() !== "no summary recorded.") {
+    return record.summary;
+  }
+
+  const latestNote = noteEntries(record.body)[0];
+  const fallback = excerptFromBody(latestNote?.body ?? record.body);
+
+  return fallback || "No summary recorded.";
+}
+
+function excerptFromBody(body: string): string {
+  const line = body
+    .split(/\r?\n/)
+    .map((value) => value.trim())
+    .find((value) => value && !value.startsWith(":::") && !value.startsWith("!") && !value.startsWith("#"));
+
+  if (!line) {
+    return "";
+  }
+
+  const clean = line
+    .replace(/^[-*>]\s*/, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return clean.length > 118 ? `${clean.slice(0, 115).trim()}...` : clean;
 }
 
 function noteTitleDate(title: string): string | null {
