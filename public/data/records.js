@@ -385,6 +385,31 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-hot-signal",
+    "title": "A Hot Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-05-25",
+    "updated": "2026-05-25",
+    "summary": "No summary recorded.",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 25 / 05 / 2026 - New Note\nOh boy, mondays. Good start of the week everyone, may we reach the weekend.\nI'm an expat, currently in Asia and weather here is getting HOT and humid.. I hate it, I miss my little European city TT\n\nYesterday I released a new note for Persona 5, I wish I had more time or at least that I could progress faster but at the same time I enjoy not being able to do so, cause it would ruin me.. kinda. Anyway, I purchased 'One Piece Pirate Warriors 4 Ultimate Edition' last night while I was in bed, why? Cause it was giga discounted and I'm a big One Piece fan. I'll probably be playing it during workdays, to cool off!\n![WOHOOOO](public/media/records/a-hot-signal/1779689504729-screenshot-2026-05-25-141128.png)\n\nSpeaking of games, I saw that Path of Exile 2 is going on sale soon too, I might be buying that one as well and we'll seeee ~\nYes it's lots of games but if they're on sale I like to take advantage of it, even if I don't play them immediately.. at least I saved some cash ehehehe.\n\nProjects wise, I will push some more updates soon. I think I'm almost done with the foundation.. then it will be new features/polish over time. I'm gonna put rest of the energies back into KiraPatch and if everything goes well I might start working on KiraPatch DS, no promises though cause it's tough, very.\n\n- Cheers!\n:::"
+  },
+  {
     "id": "a-weak-signal",
     "title": "A Weak Signal",
     "section": "logs",
