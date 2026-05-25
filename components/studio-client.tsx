@@ -40,6 +40,12 @@ type StudioClientProps = {
 };
 
 type MediaTarget = "body" | "banner" | "headerImage" | "samples" | "attachments";
+type StudioDraft = {
+  body: string;
+  form: StudioForm;
+  updatedAt: number;
+};
+type StudioDraftMap = Record<string, StudioDraft>;
 
 type PublishState = {
   phase: "running" | "success" | "error";
@@ -74,6 +80,7 @@ const studioSections: Array<{
 
 const sections = studioSections.map((section) => section.id);
 const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
+const studioDraftStorageKey = "gestalt-studio-drafts-v1";
 const tagSuggestions: Record<StudioSection, string[]> = {
   projects: ["web", "tool", "desktop", "python", "typescript", "nextjs", "electron", "game-tools", "patcher", "automation", "archive", "portfolio", "pokemon"],
   games: ["jrpg", "rpg", "action", "adventure", "platformer", "rhythm", "fighting", "steam", "console", "completed", "backlog"],
@@ -95,9 +102,14 @@ export function StudioClient({ records }: StudioClientProps) {
   const [uploading, setUploading] = useState(false);
   const [publishState, setPublishState] = useState<PublishState | null>(null);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [drafts, setDrafts] = useState<StudioDraftMap>(() => readStudioDrafts());
   const bodyDraftRef = useRef(form.body);
+  const activeSectionRef = useRef(activeSection);
+  const draftsRef = useRef(drafts);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const fileTargetRef = useRef<MediaTarget>("body");
+  const formRef = useRef(form);
+  const selectedIdRef = useRef(selectedId);
 
   const sortedRecords = useMemo(() => [...records].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [records]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
@@ -112,9 +124,48 @@ export function StudioClient({ records }: StudioClientProps) {
     }
   }, [activeContent, contents]);
 
-  const update = useCallback(<Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => {
-    setForm((current) => ({ ...current, [key]: value }));
+  useEffect(() => {
+    activeSectionRef.current = activeSection;
+  }, [activeSection]);
+
+  useEffect(() => {
+    draftsRef.current = drafts;
+    writeStudioDrafts(drafts);
+  }, [drafts]);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  const cacheDraft = useCallback((nextForm: StudioForm, nextBody = bodyDraftRef.current, id = selectedIdRef.current) => {
+    const key = studioDraftKey(nextForm, id, activeSectionRef.current);
+
+    setDrafts((current) => ({
+      ...current,
+      [key]: {
+        body: nextBody,
+        form: { ...nextForm, body: nextBody },
+        updatedAt: Date.now()
+      }
+    }));
   }, []);
+
+  const update = useCallback(<Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => {
+    const next = { ...formRef.current, [key]: value };
+    const nextBody = key === "body" && typeof value === "string" ? value : bodyDraftRef.current;
+
+    if (key === "body" && typeof value === "string") {
+      bodyDraftRef.current = value;
+    }
+
+    formRef.current = next;
+    setForm(next);
+    cacheDraft(next, nextBody);
+  }, [cacheDraft]);
 
   const openSection = useCallback((section: StudioSection) => {
     setActiveSection(section);
@@ -128,21 +179,25 @@ export function StudioClient({ records }: StudioClientProps) {
     setMode("edit");
 
     if (id === "__new") {
-      const next = emptyForm(activeSection);
-      bodyDraftRef.current = next.body;
+      const draft = draftsRef.current[studioNewDraftKey(activeSection)];
+      const next = draft?.form ?? emptyForm(activeSection);
+      bodyDraftRef.current = draft?.body ?? next.body;
+      formRef.current = next;
       setForm(next);
-      setMessage(`New ${activeSection} record draft ready.`);
+      setMessage(draft ? `Restored unsaved ${activeSection} draft.` : `New ${activeSection} record draft ready.`);
       return;
     }
 
     const record = records.find((entry) => entry.id === id);
 
     if (record) {
-      const next = fromRecord(record);
+      const draft = draftsRef.current[studioRecordDraftKey(id)];
+      const next = draft?.form ?? fromRecord(record);
       setActiveSection(next.section);
-      bodyDraftRef.current = next.body;
+      bodyDraftRef.current = draft?.body ?? next.body;
+      formRef.current = next;
       setForm(next);
-      setMessage(`Loaded ${record.title}.`);
+      setMessage(draft ? `Loaded unsaved draft for ${next.title}.` : `Loaded ${record.title}.`);
     }
   }, [activeSection, records]);
 
@@ -151,10 +206,12 @@ export function StudioClient({ records }: StudioClientProps) {
     setSelectedId("__new");
     setActiveContent("overview");
     setMode("edit");
-    const next = emptyForm(section);
-    bodyDraftRef.current = next.body;
+    const draft = draftsRef.current[studioNewDraftKey(section)];
+    const next = draft?.form ?? emptyForm(section);
+    bodyDraftRef.current = draft?.body ?? next.body;
+    formRef.current = next;
     setForm(next);
-    setMessage(`New ${section} record draft ready.`);
+    setMessage(draft ? `Restored unsaved ${section} draft.` : `New ${section} record draft ready.`);
   }, []);
 
   const save = async () => {
@@ -188,10 +245,21 @@ export function StudioClient({ records }: StudioClientProps) {
         throw new StudioRequestError("Save response was missing record details.", data.output);
       }
 
-      setSelectedId(data.id);
-      update("id", data.id);
-      update("originalId", data.id);
-      update("body", bodyDraftRef.current);
+      const savedId = String(data.id);
+      const previousDraftKey = studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current);
+      const savedForm = { ...formRef.current, body: bodyDraftRef.current, id: savedId, originalId: savedId };
+
+      formRef.current = savedForm;
+      selectedIdRef.current = savedId;
+      setSelectedId(savedId);
+      setForm(savedForm);
+      setDrafts((current) => {
+        const next = { ...current };
+        delete next[previousDraftKey];
+        delete next[studioRecordDraftKey(savedId)];
+        delete next[studioNewDraftKey(savedForm.section)];
+        return next;
+      });
       setMessage(`Saved ${data.path}. Publishing to GitHub...`);
       await publishArchive("Saved and published to GitHub.");
     } catch (error) {
@@ -238,9 +306,15 @@ export function StudioClient({ records }: StudioClientProps) {
 
       const next = emptyForm(activeSection);
       bodyDraftRef.current = next.body;
+      formRef.current = next;
       setSelectedId("__new");
       setMode("section");
       setForm(next);
+      setDrafts((current) => {
+        const updated = { ...current };
+        delete updated[studioRecordDraftKey(form.originalId)];
+        return updated;
+      });
       setMessage(`Deleted ${data.id}. Publishing removal to GitHub...`);
       await publishArchive("Deleted and published to GitHub.");
     } catch (error) {
@@ -1468,6 +1542,59 @@ function groupRecords(records: RecordEntry[]): Record<StudioSection, RecordEntry
     setup: [],
     archive: []
   });
+}
+
+function readStudioDrafts(): StudioDraftMap {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(studioDraftStorageKey);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed as StudioDraftMap : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStudioDrafts(drafts: StudioDraftMap) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const keys = Object.keys(drafts);
+
+    if (!keys.length) {
+      window.localStorage.removeItem(studioDraftStorageKey);
+      return;
+    }
+
+    window.localStorage.setItem(studioDraftStorageKey, JSON.stringify(drafts));
+  } catch {
+    // Local drafts are a convenience cache; failing to persist them should not block editing.
+  }
+}
+
+function studioRecordDraftKey(id: string) {
+  return `record:${id}`;
+}
+
+function studioNewDraftKey(section: StudioSection) {
+  return `new:${section}`;
+}
+
+function studioDraftKey(form: StudioForm, selectedId: string, fallbackSection: StudioSection) {
+  if (form.originalId) {
+    return studioRecordDraftKey(form.originalId);
+  }
+
+  if (selectedId && selectedId !== "__new") {
+    return studioRecordDraftKey(selectedId);
+  }
+
+  return studioNewDraftKey(form.section || fallbackSection);
 }
 
 function formatStudioDate(value: string): string {

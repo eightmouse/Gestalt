@@ -706,7 +706,7 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "",
     "tags": [
-      "games"
+      "jrpg"
     ],
     "milestones": [],
     "body": ":::note It's probably a me issue\nI did not like it, I played some of it because of the plot being relevant of course... but I did not like it.\nFor me it was just easier to watch the rest of the game through YouTube and call it a day.\nPersonally, I don't know why this game feels boring but it's just not it.. I don't know why they even made it in the first place.\n\nThat's it I guess, don't really have much to say.,\n:::"
