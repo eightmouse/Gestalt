@@ -1339,10 +1339,6 @@ button:focus-visible {
   transition: opacity 90ms linear;
 }
 
-.section-page.has-tag-filter {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
 .section-page--split {
   inline-size: min(100%, 1180px);
   max-inline-size: 1180px;
@@ -1379,50 +1375,6 @@ button:focus-visible {
   font-size: clamp(22px, 3vw, 34px);
   font-weight: 300;
   letter-spacing: 0.08em;
-}
-
-.tag-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-block-start: -10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(217, 213, 193, 0.12);
-  background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.045), transparent 54%),
-    rgba(0, 0, 0, 0.16);
-}
-
-.tag-filter-bar button {
-  min-block-size: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 9px;
-  border: 1px solid rgba(217, 213, 193, 0.12);
-  background: rgba(255, 255, 255, 0.018);
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.tag-filter-bar button:hover,
-.tag-filter-bar button.is-active {
-  border-color: rgba(217, 213, 193, 0.36);
-  background: rgba(217, 213, 193, 0.065);
-  color: var(--text);
-}
-
-.tag-filter-bar i {
-  min-inline-size: 18px;
-  padding: 3px 5px;
-  border-left: 1px solid rgba(217, 213, 193, 0.16);
-  color: var(--muted-2);
-  font-style: normal;
-  text-align: center;
 }
 
 .section-record-grid {
@@ -1481,21 +1433,22 @@ button:focus-visible {
 
 .section-record-column .section-record-grid {
   gap: 10px;
-  grid-auto-rows: 126px;
+  grid-auto-rows: 152px;
 }
 
 .section-record-column .section-record {
-  block-size: 126px;
+  block-size: 152px;
   min-block-size: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "kind date"
     "title title"
-    "summary summary";
+    "summary summary"
+    "tags tags";
   align-content: center;
   column-gap: 12px;
-  row-gap: 7px;
-  padding: 16px 14px 30px;
+  row-gap: 8px;
+  padding: 16px 14px;
   overflow: hidden;
 }
 
@@ -1530,6 +1483,10 @@ button:focus-visible {
   line-height: 1.35;
 }
 
+.section-record-column .section-record-tags {
+  grid-area: tags;
+}
+
 .section-record-column .section-record strong,
 .section-record-column .section-record > span:not(.section-record-kind),
 .section-record-column .section-record i {
@@ -1540,10 +1497,13 @@ button:focus-visible {
   position: relative;
   display: grid;
   grid-template-columns: 110px minmax(0, 0.62fr) minmax(220px, 1fr) auto;
-  gap: 18px;
+  grid-template-areas:
+    "kind title summary date"
+    "tags tags tags tags";
+  gap: 9px 18px;
   align-items: center;
-  min-block-size: 74px;
-  padding: 14px 16px 32px;
+  min-block-size: 94px;
+  padding: 14px 16px;
   border: 1px solid rgba(217, 213, 193, 0.12);
   background: rgba(255, 255, 255, 0.018);
   color: var(--muted);
@@ -1564,6 +1524,7 @@ button:focus-visible {
 }
 
 .section-record strong {
+  grid-area: title;
   color: var(--text);
   font-weight: 400;
   display: -webkit-box;
@@ -1575,16 +1536,16 @@ button:focus-visible {
 }
 
 .section-record span:not(.section-record-kind) {
+  grid-area: summary;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .section-record-tags {
-  position: absolute;
-  inset-inline-start: 14px;
-  inset-block-end: 8px;
-  max-inline-size: calc(100% - 28px);
+  grid-area: tags;
+  min-width: 0;
+  max-inline-size: 100%;
   display: flex;
   gap: 6px;
   overflow: hidden;
@@ -1629,6 +1590,7 @@ button:focus-visible {
 }
 
 .section-record-kind {
+  grid-area: kind;
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.1em;
@@ -1636,6 +1598,7 @@ button:focus-visible {
 }
 
 .section-record i {
+  grid-area: date;
   justify-self: end;
   color: var(--muted);
   font-style: normal;
@@ -5595,20 +5558,6 @@ input.studio-title-edit {
     max-inline-size: none;
   }
 
-  .tag-filter-bar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .tag-filter-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .tag-filter-bar button {
-    flex: 0 0 auto;
-  }
-
   .section-split-grid {
     grid-template-columns: 1fr;
   }
@@ -5624,7 +5573,13 @@ input.studio-title-edit {
 
   .section-record {
     min-block-size: 168px;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "kind"
+      "title"
+      "summary"
+      "tags"
+      "date";
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-content: stretch;
     gap: 0;
     row-gap: 11px;
@@ -5637,8 +5592,9 @@ input.studio-title-edit {
       "kind"
       "title"
       "summary"
+      "tags"
       "date";
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     align-content: stretch;
     row-gap: 11px;
   }

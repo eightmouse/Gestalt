@@ -348,7 +348,6 @@ const state = {
   panelMinimized: false,
   panelMaximized: false,
   activeContent: "overview",
-  activeTag: "",
   searchOpen: false,
   searchQuery: "",
   timelineOpen: false,
@@ -404,7 +403,6 @@ function openSection(sectionId) {
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
-  state.activeTag = "";
   render();
 }
 
@@ -432,7 +430,6 @@ function openHome() {
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
-  state.activeTag = "";
   render();
 }
 
@@ -1296,7 +1293,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.26</span>
+        <span>v1.24.27</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1310,7 +1307,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.24.26</span>
+        <span class="version-label">v1.24.27</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1330,7 +1327,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.26</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.27</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1480,18 +1477,12 @@ function dashboard() {
 
 function sectionPage(sectionId) {
   const section = sections.find((entry) => entry.id === sectionId) || sections[0];
-  const allSectionRecords = recordsFor(sectionId);
-  const tagOptions = sectionTagOptions(allSectionRecords);
-  const sectionRecords = (state.activeTag ? allSectionRecords.filter((record) => record.tags.includes(state.activeTag)) : allSectionRecords)
-    .sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const countLabel = state.activeTag
-    ? `${sectionRecords.length} / ${allSectionRecords.length} records`
-    : `${sectionRecords.length} ${sectionRecords.length === 1 ? "record" : "records"}`;
-  const tagFilter = tagFilterBar(tagOptions);
+  const sectionRecords = recordsFor(sectionId).sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const countLabel = `${sectionRecords.length} ${sectionRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(sectionId, sectionRecords);
 
   if (splitSection) {
-    return `<section class="section-page section-page--split${tagOptions.length ? " has-tag-filter" : ""}" aria-label="${escapeHtml(section.code)} records">
+    return `<section class="section-page section-page--split" aria-label="${escapeHtml(section.code)} records">
       <header class="section-page-header">
         <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
         <div>
@@ -1500,7 +1491,6 @@ function sectionPage(sectionId) {
         </div>
         <i>${countLabel}</i>
       </header>
-      ${tagFilter}
       <div class="section-split-grid">
         ${splitSection
           .map(
@@ -1514,7 +1504,7 @@ function sectionPage(sectionId) {
     </section>`;
   }
 
-  return `<section class="section-page${tagOptions.length ? " has-tag-filter" : ""}" aria-label="${escapeHtml(section.code)} records">
+  return `<section class="section-page" aria-label="${escapeHtml(section.code)} records">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div>
@@ -1523,29 +1513,8 @@ function sectionPage(sectionId) {
       </div>
       <i>${countLabel}</i>
     </header>
-    ${tagFilter}
     <div class="section-record-grid">${renderSectionRows(sectionRecords)}</div>
   </section>`;
-}
-
-function tagFilterBar(tagOptions) {
-  if (!tagOptions.length) {
-    return "";
-  }
-
-  const allClass = state.activeTag ? "" : " is-active";
-
-  return `<div class="tag-filter-bar" aria-label="Record filters">
-    <button class="${allClass.trim()}" type="button" data-tag-filter="">ALL</button>
-    ${tagOptions
-      .map(
-        ({ count, tag }) => `<button class="${state.activeTag === tag ? "is-active" : ""}" type="button" data-tag-filter="${escapeHtml(tag)}">
-          <span>${escapeHtml(tagLabel(tag))}</span>
-          <i>${count}</i>
-        </button>`
-      )
-      .join("")}
-  </div>`;
 }
 
 function renderSectionRows(sectionRecords) {
@@ -1610,28 +1579,6 @@ function renderRecordTags(record) {
   </em>`;
 }
 
-function sectionTagOptions(sectionRecords) {
-  const counts = new Map();
-
-  sectionRecords.forEach((record) => {
-    record.tags.forEach((tag) => {
-      const normalized = tag.trim();
-
-      if (!normalized || sectionBaseTags.has(normalized)) {
-        return;
-      }
-
-      counts.set(normalized, (counts.get(normalized) || 0) + 1);
-    });
-  });
-
-  return Array.from(counts.entries())
-    .filter(([tag, count]) => curatedFilterTags.has(tag) || count > 1)
-    .map(([tag, count]) => ({ count, tag }))
-    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
-    .slice(0, 10);
-}
-
 function recordCardTags(record) {
   return record.tags
     .map((tag) => tag.trim())
@@ -1644,10 +1591,6 @@ function tagToneClass(tag) {
   const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
   const seed = Array.from(tag).reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return tones[seed % tones.length];
-}
-
-function tagLabel(tag) {
-  return tag.replaceAll("-", " ").toUpperCase();
 }
 
 function splitSectionRecords(sectionId, sectionRecords) {
@@ -2132,12 +2075,6 @@ document.addEventListener("click", (event) => {
   const sectionId = target.dataset.openSection;
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
-
-  if (target.dataset.tagFilter !== undefined) {
-    state.activeTag = state.activeTag === target.dataset.tagFilter ? "" : target.dataset.tagFilter;
-    render();
-    return;
-  }
 
   if (target.dataset.home !== undefined) {
     openHome();

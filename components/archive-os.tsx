@@ -164,7 +164,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
@@ -276,7 +275,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchQuery("");
     setTimelineOpen(false);
     setNavOpen(false);
-    setActiveTag(null);
   };
 
   const openSection = (section: RecordSection) => {
@@ -290,7 +288,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchQuery("");
     setTimelineOpen(false);
     setNavOpen(false);
-    setActiveTag(null);
   };
 
   const openTimeline = () => {
@@ -492,11 +489,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         </div>
         ) : (
           <SectionPage
-            activeTag={activeTag}
             records={recordsBySection[activeSection]}
             section={activeSectionConfig}
             onOpenRecord={openRecord}
-            onTagChange={setActiveTag}
           />
         )}
 
@@ -658,7 +653,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.26</span>
+          <span>v1.24.27</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -682,7 +677,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.24.26</span>
+          <span className="version-label">v1.24.27</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -740,7 +735,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.26</dd>
+            <dd>GESTALT OS v1.24.27</dd>
           </div>
         </dl>
       </div>
@@ -1035,30 +1030,21 @@ function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenR
 }
 
 function SectionPage({
-  activeTag,
   records,
   section,
-  onOpenRecord,
-  onTagChange
+  onOpenRecord
 }: {
-  activeTag: string | null;
   records: RecordEntry[];
   section: (typeof sections)[number];
   onOpenRecord: (record: RecordEntry) => void;
-  onTagChange: (tag: string | null) => void;
 }) {
-  const tagOptions = sectionTagOptions(records);
-  const visibleRecords = activeTag ? records.filter((record) => record.tags.includes(activeTag)) : records;
-  const sortedRecords = [...visibleRecords].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const countLabel = activeTag
-    ? `${sortedRecords.length} / ${records.length} records`
-    : `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
+  const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
-  const tagFilter = tagOptions.length > 0 ? <TagFilterBar activeTag={activeTag} tags={tagOptions} onTagChange={onTagChange} /> : null;
 
   if (splitSection) {
     return (
-      <section className={tagOptions.length > 0 ? "section-page section-page--split has-tag-filter" : "section-page section-page--split"} aria-label={`${section.code} records`}>
+      <section className="section-page section-page--split" aria-label={`${section.code} records`}>
         <header className="section-page-header">
           <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
           <div>
@@ -1067,7 +1053,6 @@ function SectionPage({
           </div>
           <i>{countLabel}</i>
         </header>
-        {tagFilter}
 
         <div className="section-split-grid">
           {splitSection.map((group) => (
@@ -1093,7 +1078,7 @@ function SectionPage({
   }
 
   return (
-    <section className={tagOptions.length > 0 ? "section-page has-tag-filter" : "section-page"} aria-label={`${section.code} records`}>
+    <section className="section-page" aria-label={`${section.code} records`}>
       <header className="section-page-header">
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>
@@ -1102,7 +1087,6 @@ function SectionPage({
         </div>
         <i>{countLabel}</i>
       </header>
-      {tagFilter}
 
       <div className="section-record-grid">
         {sortedRecords.length > 0 ? (
@@ -1114,30 +1098,6 @@ function SectionPage({
         )}
       </div>
     </section>
-  );
-}
-
-function TagFilterBar({
-  activeTag,
-  tags,
-  onTagChange
-}: {
-  activeTag: string | null;
-  tags: Array<{ count: number; tag: string }>;
-  onTagChange: (tag: string | null) => void;
-}) {
-  return (
-    <div className="tag-filter-bar" aria-label="Record filters">
-      <button className={!activeTag ? "is-active" : ""} type="button" onClick={() => onTagChange(null)}>
-        ALL
-      </button>
-      {tags.map(({ count, tag }) => (
-        <button className={activeTag === tag ? "is-active" : ""} key={tag} type="button" onClick={() => onTagChange(activeTag === tag ? null : tag)}>
-          <span>{tagLabel(tag)}</span>
-          <i>{count}</i>
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -1197,28 +1157,6 @@ const curatedFilterTags = new Set([
   "windows"
 ]);
 
-function sectionTagOptions(records: RecordEntry[]): Array<{ count: number; tag: string }> {
-  const counts = new Map<string, number>();
-
-  records.forEach((record) => {
-    record.tags.forEach((tag) => {
-      const normalized = tag.trim();
-
-      if (!normalized || sectionBaseTags.has(normalized)) {
-        return;
-      }
-
-      counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
-    });
-  });
-
-  return [...counts.entries()]
-    .filter(([tag, count]) => curatedFilterTags.has(tag) || count > 1)
-    .map(([tag, count]) => ({ count, tag }))
-    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
-    .slice(0, 10);
-}
-
 function recordCardTags(record: RecordEntry): string[] {
   return record.tags
     .map((tag) => tag.trim())
@@ -1231,10 +1169,6 @@ function tagToneClass(tag: string) {
   const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
   const seed = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return tones[seed % tones.length];
-}
-
-function tagLabel(tag: string) {
-  return tag.replaceAll("-", " ").toUpperCase();
 }
 
 function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
