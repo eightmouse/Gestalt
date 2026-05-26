@@ -385,6 +385,31 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-casual-signal",
+    "title": "A Casual Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-05-26",
+    "updated": "2026-05-26",
+    "summary": "No summary recorded.",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 26 / 05 / 2026 - New Note\nI almost forgor to add a note for Gestalt since I updated it... it's the weather I swear. Like I said in the note I think new features will stop/slow down for a while, I want to focus on polish for a while, make sure it becomes more and more solid and if any new ideas pops up, so be it!\nOutside of KiraPatch, I'm helping a friend with their little project since they want to start posting/share their hobbies and track things overtime. I'm more than happy to help, I really like designing things, creating stuff etc. Lots of fun ~\n\nProjects aside, yesterday I started One Piece Pirate Warriors 4, I was not expecting first mission to be 15 ish minutes but It was fun and I was looking for something like that to play during working days, easier/quick less demandind... compared to Persona 5 at least heh.\nThere are few games I added to my wish list but I've gotta plan what to play carefully cause if each game turns out to be like P5R, then I'll play 2-3 games in total this year LOL, no shades.. it's a compliment ~\nPoE2 I think I'll buy but... friday will be impossible to play, regardless of my schedule.. since they're dropping a bomb of an update + discount.. yeah no XD\n\nWell, anyway.. that's it for today's note! Also, this isn't a daily thing.. I mostly do it if I'm in the mood of rambling/yap yap.\nDas it, buhbay\n:::"
+  },
+  {
     "id": "a-hot-signal",
     "title": "A Hot Signal",
     "section": "logs",
