@@ -419,7 +419,7 @@ window.__GESTALT_RECORDS = [
     "updated": "2026-05-26",
     "summary": "My journey as the KI- sorry, the KAIZOKU-O NI ORE WA NARU!",
     "banner": "",
-    "headerImage": "public/media/records/one-piece-pirate-warriors-4/1779812814098-587f57dc9758d5933991c19ad3ccd93ea103ad1436202343.jpg",
+    "headerImage": "public/media/records/one-piece-pirate-warriors-4/1779813836141-587f57dc9758d5933991c19ad3ccd93ea103ad1436202343.jpg",
     "samples": [],
     "attachments": [],
     "progress": 1,
