@@ -410,6 +410,31 @@ window.__GESTALT_RECORDS = [
     "body": ":::note 26 / 05 / 2026 - New Note\nI almost forgor to add a note for Gestalt since I updated it... it's the weather I swear. Like I said in the note I think new features will stop/slow down for a while, I want to focus on polish for a while, make sure it becomes more and more solid and if any new ideas pops up, so be it!\nOutside of KiraPatch, I'm helping a friend with their little project since they want to start posting/share their hobbies and track things overtime. I'm more than happy to help, I really like designing things, creating stuff etc. Lots of fun ~\n\nProjects aside, yesterday I started One Piece Pirate Warriors 4, I was not expecting first mission to be 15 ish minutes but It was fun and I was looking for something like that to play during working days, easier/quick less demandind... compared to Persona 5 at least heh.\nThere are few games I added to my wish list but I've gotta plan what to play carefully cause if each game turns out to be like P5R, then I'll play 2-3 games in total this year LOL, no shades.. it's a compliment ~\nPoE2 I think I'll buy but... friday will be impossible to play, regardless of my schedule.. since they're dropping a bomb of an update + discount.. yeah no XD\n\nWell, anyway.. that's it for today's note! Also, this isn't a daily thing.. I mostly do it if I'm in the mood of rambling/yap yap.\nDas it, buhbay\n:::"
   },
   {
+    "id": "one-piece-pirate-warriors-4",
+    "title": "One Piece Pirate Warriors 4",
+    "section": "games",
+    "type": "Play Log",
+    "status": "Draft",
+    "started": "2026-05-26",
+    "updated": "2026-05-26",
+    "summary": "My journey as the KI- sorry, the KAIZOKU-O NI ORE WA NARU!",
+    "banner": "",
+    "headerImage": "public/media/records/one-piece-pirate-warriors-4/1779812814098-587f57dc9758d5933991c19ad3ccd93ea103ad1436202343.jpg",
+    "samples": [],
+    "attachments": [],
+    "progress": 1,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "musou"
+    ],
+    "milestones": [],
+    "body": ":::note 27 / 05 / 2026 - I'm gonna beeeee\nStarted the game yesterday, literally did 3 missions so far (last one today). The game is hella fun, last musou I played was Dinasty Warrior... 6? But anyway, tons of fun and its One Piece, come on. So far I hate Sanji, since he's SLOW and clunky af. Zoro is a bit better and Luffy is of course the goat.\nLook at the scores I got so far in the 3 missions:\n\n![It spells ASS, LMAOOOO, LOLOLLO](public/media/records/one-piece-pirate-warriors-4/1779813357600-screenshot-2026-05-26-221727.png)\n\nI'm so funny.\nAnyway, by the look of it the game is a bit grindy in theory cause levelling up things requires resources and I can run stuff as much as I want for better scores etc, not bad honestly, I like the idea ~\nAs a chill game to play during the week is goated. Years ago I'd play LoL, CS2, Valorant during the week prior to sleeping, caue I hated myself (probably). Nowadays during the week I like to keep it chill and play either single players with some repetitive/grindy mechanics or mmos IF I'm invested in one.\nI'm not playing any MMO at the moment though, maybe PoE2 but we'll see.\n\nToo much nonsense ramble, this is about One Piece. So, yes the game is a typical musou, tons of enemies, big effects and lots of dopamine. I have not played the other 3 titles, mostly cause they went completely under the radar for me, no idea why.. maybe lack of interest in the genre as I'm not a big fan, not because I don't like it but because in general if you played 1 musou, you played them all.\nCan't wait to try different version of each characters, I'm hoping they get better in terms of mobilty and playstyle ~\n:::"
+  },
+  {
     "id": "a-hot-signal",
     "title": "A Hot Signal",
     "section": "logs",
