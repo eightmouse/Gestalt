@@ -175,6 +175,20 @@ function ensureThereAreChanges() {
   }
 }
 
+function syncRemoteBranch(branch) {
+  run("git", ["fetch", "origin", branch]);
+
+  const counts = capture("git", ["rev-list", "--left-right", "--count", `HEAD...origin/${branch}`])
+    .trim()
+    .split(/\s+/)
+    .map((value) => Number(value));
+  const behind = counts[1] ?? 0;
+
+  if (behind > 0) {
+    run("git", ["merge", "--no-edit", `origin/${branch}`]);
+  }
+}
+
 function refreshStaticCacheBusters() {
   const indexPath = path.join(root, "index.html");
   const source = readFileSync(indexPath, "utf8");
@@ -257,6 +271,7 @@ if (stagedDiff.status === 0) {
 run("git", ["commit", "-m", message]);
 
 const branch = capture("git", ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+syncRemoteBranch(branch);
 run("git", ["push", "origin", branch]);
 
 console.log(`\nPublished ${branch} to GitHub.`);
