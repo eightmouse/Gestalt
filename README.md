@@ -7,7 +7,7 @@
 
 [Live site](https://eightmouse.github.io/Gestalt/)
 
-Currently working on this blog / portfolio-ish thing. I have not stopped working on the other projects, still working on KiraPatch, but I wanted a dedicated place for the stuff that usually ends up scattered in notes.
+Currently working on this blog / portfolio-ish thing. I have not stopped working on the other projects, I wanted a dedicated place for the stuff that usually ends up scattered in notes.
 
 I use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working. Gestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.
 
