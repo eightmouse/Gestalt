@@ -1293,7 +1293,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.32</span>
+        <span>v1.24.33</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1307,7 +1307,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.24.32</span>
+        <span class="version-label">v1.24.33</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1327,7 +1327,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.32</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.33</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1534,39 +1534,6 @@ function renderSectionRows(sectionRecords) {
 }
 
 const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
-const curatedFilterTags = new Set([
-  "action",
-  "adventure",
-  "ai",
-  "archive",
-  "automation",
-  "blog",
-  "dashboard",
-  "desktop",
-  "electron",
-  "gba",
-  "game-tools",
-  "hardware",
-  "jrpg",
-  "linux",
-  "patcher",
-  "performance",
-  "personal",
-  "pokemon",
-  "portfolio",
-  "python",
-  "rpg",
-  "setup",
-  "shiny-hunting",
-  "site-update",
-  "steam",
-  "tools",
-  "typescript",
-  "update",
-  "web",
-  "windows"
-]);
-
 function renderRecordTags(record) {
   const tags = recordCardTags(record);
 
@@ -1580,10 +1547,24 @@ function renderRecordTags(record) {
 }
 
 function recordCardTags(record) {
+  const titleSlug = tagSlug(record.title);
+  const typeSlug = tagSlug(record.type);
+
   return record.tags
     .map((tag) => tag.trim())
     .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
-    .filter((tag) => !sectionBaseTags.has(tag) && curatedFilterTags.has(tag))
+    .filter((tag) => {
+      const slug = tagSlug(tag);
+
+      return (
+        Boolean(slug) &&
+        !sectionBaseTags.has(slug) &&
+        slug !== record.id &&
+        slug !== titleSlug &&
+        slug !== typeSlug &&
+        !titleSlug.split("-").includes(slug)
+      );
+    })
     .slice(0, 3);
 }
 
@@ -1591,6 +1572,10 @@ function tagToneClass(tag) {
   const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
   const seed = Array.from(tag).reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return tones[seed % tones.length];
+}
+
+function tagSlug(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function splitSectionRecords(sectionId, sectionRecords) {

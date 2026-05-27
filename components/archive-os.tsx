@@ -653,7 +653,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.32</span>
+          <span>v1.24.33</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -677,7 +677,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.24.32</span>
+          <span className="version-label">v1.24.33</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -735,7 +735,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.32</dd>
+            <dd>GESTALT OS v1.24.33</dd>
           </div>
         </dl>
       </div>
@@ -1124,44 +1124,26 @@ function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: 
 }
 
 const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
-const curatedFilterTags = new Set([
-  "action",
-  "adventure",
-  "ai",
-  "archive",
-  "automation",
-  "blog",
-  "dashboard",
-  "desktop",
-  "electron",
-  "gba",
-  "game-tools",
-  "hardware",
-  "jrpg",
-  "linux",
-  "patcher",
-  "performance",
-  "personal",
-  "pokemon",
-  "portfolio",
-  "python",
-  "rpg",
-  "setup",
-  "shiny-hunting",
-  "site-update",
-  "steam",
-  "tools",
-  "typescript",
-  "update",
-  "web",
-  "windows"
-]);
 
 function recordCardTags(record: RecordEntry): string[] {
+  const titleSlug = tagSlug(record.title);
+  const typeSlug = tagSlug(record.type);
+
   return record.tags
     .map((tag) => tag.trim())
     .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
-    .filter((tag) => !sectionBaseTags.has(tag) && curatedFilterTags.has(tag))
+    .filter((tag) => {
+      const slug = tagSlug(tag);
+
+      return (
+        Boolean(slug) &&
+        !sectionBaseTags.has(slug) &&
+        slug !== record.id &&
+        slug !== titleSlug &&
+        slug !== typeSlug &&
+        !titleSlug.split("-").includes(slug)
+      );
+    })
     .slice(0, 3);
 }
 
@@ -1169,6 +1151,10 @@ function tagToneClass(tag: string) {
   const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
   const seed = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return tones[seed % tones.length];
+}
+
+function tagSlug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {

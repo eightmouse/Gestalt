@@ -88,7 +88,6 @@ const tagSuggestions: Record<StudioSection, string[]> = {
   setup: ["hardware", "software", "windows", "linux", "peripherals"],
   archive: ["archived", "deprecated", "experiment", "reference"]
 };
-const curatedTagSet = new Set(Object.values(tagSuggestions).flat());
 
 export function StudioClient({ records }: StudioClientProps) {
   const firstRecord = records[0];
@@ -1614,10 +1613,24 @@ function formatTags(tags: string[]): string {
 }
 
 function recordCardTags(record: RecordEntry): string[] {
+  const titleSlug = tagSlug(record.title);
+  const typeSlug = tagSlug(record.type);
+
   return record.tags
     .map((tag) => tag.trim())
     .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
-    .filter((tag) => !sectionBaseTags.has(tag) && curatedTagSet.has(tag))
+    .filter((tag) => {
+      const slug = tagSlug(tag);
+
+      return (
+        Boolean(slug) &&
+        !sectionBaseTags.has(slug) &&
+        slug !== record.id &&
+        slug !== titleSlug &&
+        slug !== typeSlug &&
+        !titleSlug.split("-").includes(slug)
+      );
+    })
     .slice(0, 3);
 }
 
@@ -1625,6 +1638,10 @@ function tagToneClass(tag: string) {
   const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
   const seed = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return tones[seed % tones.length];
+}
+
+function tagSlug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function defaultType(section: StudioSection): string {
