@@ -385,6 +385,31 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-blocked-signal",
+    "title": "A Blocked Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-05-28",
+    "updated": "2026-05-28",
+    "summary": "No summary recorded.",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 29 / 05 / 2026 - New Note\nThis week has been exhausting, juggling different things at a time is definitely not the way to go and the weather is making it heavier, jeez. I've been doing some minor changes to Gestalt on the mobile side, just when I though that it would slow down, here we are.\n\nOn a brighter note, I've been playing lots of One Piece Pirate Warrior 4 (OPPW4) I able to do 2-3 missions every night and it's fun, haven't tried online though, I'm curious. Like I said before, it's a very chill/fun game to kill time especially after a LOOONG day heh, picking it up was definitely a good decision.. thanks to the HUGE discount tho.\n\nTomorrow PoE2 is going crazy, big update + discount I'm hyped but I don't think I'll be able to play it for a while.. or at least not as I would like to, which is fine, I want to finish P5R or at least make sure that I have a more stable routine before I can juggle P5R and PoE2.\n\nSpeaking of P5R, since I have a decent amount of hourse there's something I'd like to get off my chest:\nI like it, there's no doubt in that.. it's quite heavy on story, almost a full blown visual novel! I've been away from story heavy games for a while, cause.. lets be honest there aren't many nowadays. So I don't think it's flaw of the game but more of a me problem, which if I do want to play older 'gems' that I missed, then I might have to work on it a little bit.. Metaphor:ReFantazio is on the list, but I would absolutely not be able to handle it mentally after P5.\n\nQuick topic change, I need to update the setup section still cause I have not yet decided how to display content there properly.. I have few cool ideas but I'm not 100% on them, I have to try and see. Same thing for 'Logs' and 'Archive', I don't want the same redundant look all over the place but at the same time I don't want heavy spaghetti all around. I'll see what I can do though.\n\nAnyway, just a quick ramble nuff much ¬\n:::"
+  },
+  {
     "id": "a-casual-signal",
     "title": "A Casual Signal",
     "section": "logs",
@@ -581,7 +606,8 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "If you got this far, you have to play it. The different releases made it better and its crossplatform, so you don't need a DS!",
     "tags": [
-      "games"
+      "jrpg",
+      "single-player"
     ],
     "milestones": [],
     "body": ":::note This was good, this was sad..\nSo, this game came after Kingdom Hearts 2.\nIt answered a lot of unanswered question but at the same time, opened up a whole other world.. I don't remember the game very well, since I played 1 time a long time ago, I remember the plot, somewhat.. I have an idea of what happens generally, beside the point since I'm not doing a review anyway or judging.\n\nFirst off, I was absolutely in love with the fact that I could've played Kingdom Hearts on my DS, yes graphically if we looked at it with today's eyes, does not look  impressive but at that time, I was literally so happy.\nGameplay is pretty much the same with the addition of other stuff on the side that powers up abilities and skills, won't go into much details cause its somewhat of a complex system even for today standards.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n\nPlot wise, it's set before KH2 and lots of the characters you'll see you know already after playing KH2, its a deep dive into what goes on inside the organization.\nBecause of that, you'll get to know each character better plus a ton of other details that may or may not break your brain...\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828643669-kingdom-hearts-358-2-days-ice-cream-644x483.jpg)\n\nI haven't mention OSTs or Themes much, but just assume they're good even if I'm no talking about them, this IP has one of the best OSTs/music in the gaming industry and they still deliver to this day with each new release.\nHence why I said 'This was sad' in the title, plot + soundtrack hits hard.. and despite not remembering everything 100% I remember enough to say that it was a very very pleasant surprise..\n\nOh, and... you could play multyplayer.\nYep, that was insane and I have no clue why they stopped doing it, cause it was crazy good.\nIt was a Monster Hunter like gameplay, you had quest and then match up with people if I remember correclty, dope no joke.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n:::"
