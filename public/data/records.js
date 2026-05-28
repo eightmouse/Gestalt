@@ -808,7 +808,8 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "If you're looking for a memorable experience and are ready to play hours and hours of coca- magic, with your Disney friends.. \nIt's quite a long experience and as I mentioned in the Note, you might or might not be disappointed, so do as your heart feels. \nGame is solid, music is phenomenal and this game as a standalone works very well but no one stops at the first one though.",
     "tags": [
-      "games"
+      "jrpg",
+      "single-player"
     ],
     "milestones": [
       {
