@@ -657,7 +657,8 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "If you're looking to play the game in 2026, chances are you have the full collection so you can't really skip it.\nIf you were one of the people like me, who could not afford to just buy consoles for exclusives , I'm sure you felt my same frustration.\n\nThat said, would have I recommended it back then? I would have, if you had the money for the console or if you had the console already, why not.",
     "tags": [
-      "games"
+      "jrpg",
+      "single-player"
     ],
     "milestones": [],
     "body": ":::note Why, Nomura?\nI don't have much to say here, I had not intention of buying a whole new console for this game and I did not.\nI watched a full play through on youtube and called it a day.\n\nI have to admit, gameplay was fun and it used the 3DS tech + touch screen and dual screen, in a clever way.. however it was once again a slap in the face from Nomura, releasing very important plot info into another console, AGAIN.\n\nAs I said, gameplay wise it was fun.. plot was interesting and quite important to understand everything before and after.\nI yet have to play this game, I'm sure I will as I have the steam collection but I don't plan on doing it anytime soon.\nAll I have to say is that, I was very disappointed back then as I am now, I'll probably carry it with me forever.\n:::"
