@@ -1275,6 +1275,7 @@ function sidebar() {
   const metrics = archiveMetrics();
   const activeConfig = sections.find((section) => section.id === state.activeSection) || sections[0];
   const groups = sections
+    .filter((section) => section.id === "archive")
     .map(
       (section) => `<div class="nav-group">
         <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" data-open-section="${section.id}">
@@ -1293,7 +1294,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.33</span>
+        <span>v1.24.34</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1307,7 +1308,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.24.33</span>
+        <span class="version-label">v1.24.34</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1327,7 +1328,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.33</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.34</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1359,15 +1360,14 @@ function archiveNavigationMenu() {
     <nav class="archive-nav-panel" aria-label="Archive navigation">
       <header>
         <p>// ARCHIVE NAVIGATION</p>
-        <span>${String(sections.length).padStart(2, "0")} RECORD GROUPS</span>
+        <span>UTILITY / DEEP ARCHIVE</span>
       </header>
       <div class="archive-nav-actions" aria-label="Quick archive actions">
         <button class="${state.searchOpen ? "is-active" : ""}" type="button" data-search-toggle><span>⌕</span>Search</button>
         <button type="button" data-open-timeline><span>⌬</span>Trace</button>
         <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
-        <button class="${state.activeSection === "logs" ? "is-active" : ""}" type="button" data-open-section="logs"><span>▤</span>Logs</button>
       </div>
-      <div class="nav-stack">${groups}</div>
+      <div class="nav-stack nav-stack--archive">${groups}</div>
     </nav>`;
 }
 
@@ -1761,13 +1761,15 @@ function timelineWindow() {
 }
 
 function mobileDock() {
-  const currentGame = currentGameRecord();
+  const items = ["setup", "logs", "system", "games", "projects"]
+    .map((id) => sections.find((section) => section.id === id))
+    .filter(Boolean);
 
-  return `<nav class="mobile-dock" aria-label="Mobile quick actions">
-    <button class="${state.searchOpen ? "is-active" : ""}" type="button" data-search-toggle><span>⌕</span>Search</button>
-    <button type="button" data-open-timeline><span>⌬</span>Trace</button>
-    <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
-    <button class="${state.activeSection === "logs" ? "is-active" : ""}" type="button" data-open-section="logs"><span>▤</span>Logs</button>
+  return `<nav class="mobile-dock" aria-label="Mobile archive sections">
+    ${items.map((section) => `<button class="${state.activeSection === section.id ? "is-active" : ""} ${section.id === "system" ? "is-center" : ""}" type="button" ${section.id === "system" ? "data-home" : `data-open-section="${section.id}"`}>
+      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+      <small>${escapeHtml(section.label)}</small>
+    </button>`).join("")}
   </nav>`;
 }
 

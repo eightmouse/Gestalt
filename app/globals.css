@@ -414,7 +414,7 @@ button:focus-visible {
 
 .archive-nav-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -461,6 +461,15 @@ button:focus-visible {
   gap: 12px;
   overflow: auto;
   padding: 0 4px 0 0;
+}
+
+.archive-nav-panel .nav-stack--archive {
+  grid-template-columns: 1fr;
+  align-content: end;
+}
+
+.archive-nav-panel .nav-stack--archive .nav-trigger {
+  min-block-size: 82px;
 }
 
 .archive-nav-panel .nav-group {
@@ -5299,12 +5308,21 @@ input.studio-title-edit {
     gap: 6px;
   }
 
+  .archive-nav-actions button {
+    min-block-size: 76px;
+  }
+
   .archive-nav-panel .nav-stack {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
     overflow: auto;
     padding-inline-end: 2px;
+  }
+
+  .archive-nav-panel .nav-stack--archive {
+    grid-template-columns: 1fr;
+    align-content: end;
   }
 
   .archive-nav-panel .nav-group {
@@ -5316,6 +5334,10 @@ input.studio-title-edit {
     grid-template-columns: 28px minmax(0, 1fr) 14px;
     gap: 12px;
     padding: 14px;
+  }
+
+  .archive-nav-panel .nav-stack--archive .nav-trigger {
+    min-block-size: 76px;
   }
 
   .archive-nav-panel .nav-mark {
@@ -5811,7 +5833,7 @@ input.studio-title-edit {
   }
 
   .workspace {
-    padding: 20px 12px 84px;
+    padding: 20px 12px 118px;
   }
 
   .workspace-header {
@@ -5963,17 +5985,30 @@ input.studio-title-edit {
   }
 
   .mobile-dock {
-    display: none;
+    position: fixed;
+    z-index: 34;
+    inset-inline: 10px;
+    inset-block-end: 9px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.22fr 1fr 1fr;
+    align-items: end;
+    gap: 7px;
+    padding: 8px 6px;
+    border-block-start: 1px solid rgba(217, 213, 193, 0.16);
+    background:
+      linear-gradient(180deg, rgba(5, 6, 5, 0), rgba(5, 6, 5, 0.92) 20%),
+      rgba(5, 6, 5, 0.72);
+    backdrop-filter: blur(10px);
   }
 
   .mobile-dock button {
     min-width: 0;
-    min-block-size: 56px;
+    min-block-size: 58px;
     display: grid;
     place-items: center;
     gap: 3px;
-    padding: 7px 3px;
-    border: 1px solid transparent;
+    padding: 7px 3px 6px;
+    border: 1px solid rgba(217, 213, 193, 0.14);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.026), transparent 68%),
       rgba(255, 255, 255, 0.018);
@@ -5984,10 +6019,34 @@ input.studio-title-edit {
     cursor: pointer;
   }
 
-  .mobile-dock button span {
-    color: var(--text);
-    font-size: 18px;
-    line-height: 1;
+  .mobile-dock button.is-center {
+    min-block-size: 78px;
+    margin-block-start: -16px;
+    border-color: rgba(217, 213, 193, 0.28);
+    background:
+      linear-gradient(180deg, rgba(217, 213, 193, 0.09), transparent 68%),
+      rgba(255, 255, 255, 0.035);
+  }
+
+  .mobile-dock .nav-mark {
+    inline-size: 22px;
+    block-size: 22px;
+  }
+
+  .mobile-dock button.is-center .nav-mark {
+    inline-size: 30px;
+    block-size: 30px;
+  }
+
+  .mobile-dock button small {
+    max-inline-size: 100%;
+    overflow: hidden;
+    color: inherit;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mobile-dock button:hover,

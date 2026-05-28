@@ -382,7 +382,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             currentGame={currentGame}
             onClose={() => setNavOpen(false)}
             onOpenCurrent={() => currentGame && openRecord(currentGame, "notes")}
-            onOpenLogs={() => openSection("logs")}
             onOpenSearch={openSearchFromNavigation}
             onOpenSection={openSection}
             onOpenTimeline={openTimeline}
@@ -573,15 +572,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </>
           ) : null}
         </AnimatePresence>
-        <MobileDock
-          activeSection={activeSection}
-          currentGame={currentGame}
-          onOpenCurrent={() => currentGame && openRecord(currentGame, "notes")}
-          onOpenLogs={() => openSection("logs")}
-          onOpenTimeline={openTimeline}
-          onSearch={() => setSearchOpen((current) => !current)}
-          searchOpen={searchOpen}
-        />
+        <MobileDock activeSection={activeSection} onHome={openHome} onOpenSection={openSection} />
       </section>
     </main>
   );
@@ -589,40 +580,36 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
 type MobileDockProps = {
   activeSection: RecordSection;
-  currentGame?: RecordEntry;
-  onOpenCurrent: () => void;
-  onOpenLogs: () => void;
-  onOpenTimeline: () => void;
-  onSearch: () => void;
-  searchOpen: boolean;
+  onHome: () => void;
+  onOpenSection: (section: RecordSection) => void;
 };
 
 function MobileDock({
   activeSection,
-  currentGame,
-  onOpenCurrent,
-  onOpenLogs,
-  onOpenTimeline,
-  onSearch,
-  searchOpen
+  onHome,
+  onOpenSection
 }: MobileDockProps) {
   return (
-    <nav className="mobile-dock" aria-label="Mobile quick actions">
-      <button className={searchOpen ? "is-active" : ""} type="button" onClick={onSearch}>
-        <span>⌕</span>
-        Search
+    <nav className="mobile-dock" aria-label="Mobile archive sections">
+      <button className={activeSection === "setup" ? "is-active" : ""} type="button" onClick={() => onOpenSection("setup")}>
+        <span className="nav-mark" data-icon="setup" aria-hidden="true" />
+        <small>Setup</small>
       </button>
-      <button type="button" onClick={onOpenTimeline}>
-        <span>⌬</span>
-        Trace
+      <button className={activeSection === "logs" ? "is-active" : ""} type="button" onClick={() => onOpenSection("logs")}>
+        <span className="nav-mark" data-icon="logs" aria-hidden="true" />
+        <small>Logs</small>
       </button>
-      <button disabled={!currentGame} type="button" onClick={onOpenCurrent}>
-        <span>◇</span>
-        Current
+      <button className={activeSection === "system" ? "is-active is-center" : "is-center"} type="button" onClick={onHome}>
+        <span className="nav-mark" data-icon="system" aria-hidden="true" />
+        <small>Dashboard</small>
       </button>
-      <button className={activeSection === "logs" ? "is-active" : ""} type="button" onClick={onOpenLogs}>
-        <span>▤</span>
-        Logs
+      <button className={activeSection === "games" ? "is-active" : ""} type="button" onClick={() => onOpenSection("games")}>
+        <span className="nav-mark" data-icon="games" aria-hidden="true" />
+        <small>Games</small>
+      </button>
+      <button className={activeSection === "projects" ? "is-active" : ""} type="button" onClick={() => onOpenSection("projects")}>
+        <span className="nav-mark" data-icon="projects" aria-hidden="true" />
+        <small>Projects</small>
       </button>
     </nav>
   );
@@ -653,7 +640,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.33</span>
+          <span>v1.24.34</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -677,7 +664,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.24.33</span>
+          <span className="version-label">v1.24.34</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -735,7 +722,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.33</dd>
+            <dd>GESTALT OS v1.24.34</dd>
           </div>
         </dl>
       </div>
@@ -748,7 +735,6 @@ function ArchiveNavigationMenu({
   currentGame,
   onClose,
   onOpenCurrent,
-  onOpenLogs,
   onOpenSearch,
   onOpenSection,
   onOpenTimeline,
@@ -758,7 +744,6 @@ function ArchiveNavigationMenu({
   currentGame?: RecordEntry;
   onClose: () => void;
   onOpenCurrent: () => void;
-  onOpenLogs: () => void;
   onOpenSearch: () => void;
   onOpenSection: (section: RecordSection) => void;
   onOpenTimeline: () => void;
@@ -785,7 +770,7 @@ function ArchiveNavigationMenu({
       >
         <header>
           <p>// ARCHIVE NAVIGATION</p>
-          <span>{sections.length.toString().padStart(2, "0")} RECORD GROUPS</span>
+          <span>UTILITY / DEEP ARCHIVE</span>
         </header>
         <div className="archive-nav-actions" aria-label="Quick archive actions">
           <button className={searchOpen ? "is-active" : ""} type="button" onClick={onOpenSearch}>
@@ -800,13 +785,9 @@ function ArchiveNavigationMenu({
             <span>◇</span>
             Current
           </button>
-          <button className={activeSection === "logs" ? "is-active" : ""} type="button" onClick={onOpenLogs}>
-            <span>▤</span>
-            Logs
-          </button>
         </div>
-        <div className="nav-stack">
-          {sections.map((section) => (
+        <div className="nav-stack nav-stack--archive">
+          {sections.filter((section) => section.id === "archive").map((section) => (
             <div className="nav-group" key={section.id}>
               <button
                 type="button"
