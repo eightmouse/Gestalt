@@ -5177,7 +5177,7 @@ input.studio-title-edit {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 760px) {
   body {
     overflow: auto;
   }
