@@ -1354,6 +1354,22 @@ function archiveNavigationMenu() {
       </div>`
     )
     .join("");
+  const archiveGroups = sections
+    .filter((section) => section.id === "archive")
+    .map(
+      (section) => `<div class="nav-group">
+        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" data-open-section="${section.id}">
+          <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+          <span class="nav-label">
+            <strong>${section.code}</strong>
+            <small class="nav-readable" data-cipher="${escapeHtml(section.cipher)}">${escapeHtml(section.label)}</small>
+            <small class="nav-cipher" aria-hidden="true">${escapeHtml(section.cipher)}</small>
+          </span>
+          <span class="section-signal" aria-hidden="true"></span>
+        </button>
+      </div>`
+    )
+    .join("");
   const currentGame = currentGameRecord();
 
   return `<button class="archive-nav-backdrop" type="button" aria-label="Close archive navigation" data-nav-backdrop></button>
@@ -1362,12 +1378,21 @@ function archiveNavigationMenu() {
         <p>// ARCHIVE NAVIGATION</p>
         <span>UTILITY / DEEP ARCHIVE</span>
       </header>
-      <div class="archive-nav-actions" aria-label="Quick archive actions">
+      <div class="archive-nav-actions archive-nav-actions--desktop" aria-label="Quick archive actions">
         <button class="${state.searchOpen ? "is-active" : ""}" type="button" data-search-toggle><span>⌕</span>Search</button>
         <button type="button" data-open-timeline><span>⌬</span>Trace</button>
         <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
       </div>
-      <div class="nav-stack nav-stack--archive">${groups}</div>
+      <div class="archive-nav-search archive-nav-search--mobile" role="search">
+        <label for="mobile-archive-search">// SEARCH</label>
+        <input id="mobile-archive-search" type="search" value="${escapeHtml(state.searchQuery)}" placeholder="Search records" autocomplete="off" data-mobile-nav-search-input />
+      </div>
+      <div class="archive-nav-actions archive-nav-actions--mobile" aria-label="Mobile archive actions">
+        <button type="button" data-open-timeline><span>&#9004;</span>Trace</button>
+        <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>&#9671;</span>Current</button>
+      </div>
+      <div class="nav-stack nav-stack--desktop">${groups}</div>
+      <div class="nav-stack nav-stack--mobile-archive">${archiveGroups}</div>
     </nav>`;
 }
 
@@ -2028,7 +2053,8 @@ document.addEventListener("click", (event) => {
   if (
     state.searchOpen &&
     !clickTarget.closest(".search-panel") &&
-    !clickTarget.closest("[data-search-toggle]")
+    !clickTarget.closest("[data-search-toggle]") &&
+    !clickTarget.closest(".archive-nav-search")
   ) {
     state.searchOpen = false;
     state.searchQuery = "";
@@ -2197,6 +2223,12 @@ document.addEventListener("input", (event) => {
 
   if (target.dataset.searchInput !== undefined) {
     state.searchQuery = target.value;
+    render();
+  }
+
+  if (target.dataset.mobileNavSearchInput !== undefined) {
+    state.searchQuery = target.value;
+    state.searchOpen = target.value.trim().length > 0;
     render();
   }
 

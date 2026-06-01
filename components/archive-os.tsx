@@ -213,7 +213,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         return;
       }
 
-      if (searchRef.current?.contains(target) || target.closest("[data-search-toggle]")) {
+      if (searchRef.current?.contains(target) || target.closest("[data-search-toggle]") || target.closest(".archive-nav-search")) {
         return;
       }
 
@@ -318,6 +318,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(true);
   };
 
+  const updateSearchFromNavigation = (query: string) => {
+    setSearchQuery(query);
+    setSearchOpen(query.trim().length > 0);
+  };
+
   const openSearchResult = (result: SearchResult) => {
     if (result.kind === "record") {
       openRecord(result.record);
@@ -385,6 +390,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onOpenSearch={openSearchFromNavigation}
             onOpenSection={openSection}
             onOpenTimeline={openTimeline}
+            onSearchQueryChange={updateSearchFromNavigation}
+            searchQuery={searchQuery}
             searchOpen={searchOpen}
           />
         ) : null}
@@ -738,6 +745,8 @@ function ArchiveNavigationMenu({
   onOpenSearch,
   onOpenSection,
   onOpenTimeline,
+  onSearchQueryChange,
+  searchQuery,
   searchOpen
 }: {
   activeSection: RecordSection;
@@ -747,8 +756,30 @@ function ArchiveNavigationMenu({
   onOpenSearch: () => void;
   onOpenSection: (section: RecordSection) => void;
   onOpenTimeline: () => void;
+  onSearchQueryChange: (query: string) => void;
+  searchQuery: string;
   searchOpen: boolean;
 }) {
+  const renderSectionButton = (section: (typeof sections)[number]) => (
+    <div className="nav-group" key={section.id}>
+      <button
+        type="button"
+        className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
+        onClick={() => onOpenSection(section.id)}
+      >
+        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+        <span className="nav-label">
+          <strong>{section.code}</strong>
+          <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
+          <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
+        </span>
+        <span className="section-signal" aria-hidden="true" />
+      </button>
+    </div>
+  );
+
+  const archiveSections = sections.filter((section) => section.id === "archive");
+
   return (
     <>
       <motion.button
@@ -772,7 +803,7 @@ function ArchiveNavigationMenu({
           <p>// ARCHIVE NAVIGATION</p>
           <span>UTILITY / DEEP ARCHIVE</span>
         </header>
-        <div className="archive-nav-actions" aria-label="Quick archive actions">
+        <div className="archive-nav-actions archive-nav-actions--desktop" aria-label="Quick archive actions">
           <button className={searchOpen ? "is-active" : ""} type="button" onClick={onOpenSearch}>
             <span>⌕</span>
             Search
@@ -785,25 +816,37 @@ function ArchiveNavigationMenu({
             <span>◇</span>
             Current
           </button>
+          <button type="button" onClick={() => onOpenSection("logs")}>
+            <span>{"\u2261"}</span>
+            Logs
+          </button>
         </div>
-        <div className="nav-stack nav-stack--archive">
-          {sections.filter((section) => section.id === "archive").map((section) => (
-            <div className="nav-group" key={section.id}>
-              <button
-                type="button"
-                className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
-                onClick={() => onOpenSection(section.id)}
-              >
-                <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-                <span className="nav-label">
-                  <strong>{section.code}</strong>
-                  <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
-                  <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
-                </span>
-                <span className="section-signal" aria-hidden="true" />
-              </button>
-            </div>
-          ))}
+        <div className="archive-nav-search archive-nav-search--mobile" role="search">
+          <label htmlFor="mobile-archive-search">// SEARCH</label>
+          <input
+            id="mobile-archive-search"
+            type="search"
+            value={searchQuery}
+            placeholder="Search records"
+            autoComplete="off"
+            onChange={(event) => onSearchQueryChange(event.target.value)}
+          />
+        </div>
+        <div className="archive-nav-actions archive-nav-actions--mobile" aria-label="Mobile archive actions">
+          <button type="button" onClick={onOpenTimeline}>
+            <span>{"\u232C"}</span>
+            Trace
+          </button>
+          <button disabled={!currentGame} type="button" onClick={onOpenCurrent}>
+            <span>{"\u25C7"}</span>
+            Current
+          </button>
+        </div>
+        <div className="nav-stack nav-stack--desktop">
+          {sections.map(renderSectionButton)}
+        </div>
+        <div className="nav-stack nav-stack--mobile-archive">
+          {archiveSections.map(renderSectionButton)}
         </div>
       </motion.nav>
     </>
