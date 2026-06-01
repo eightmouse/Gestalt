@@ -998,7 +998,7 @@ button:focus-visible {
   --workspace-pad-inline: clamp(28px, 5vw, 74px);
   --workspace-pad-top: clamp(28px, 4vh, 48px);
   --workspace-pad-bottom: clamp(22px, 3.5vw, 54px);
-  --footer-reserve: 118px;
+  --footer-reserve: 82px;
   position: relative;
   z-index: 1;
   isolation: isolate;
@@ -1298,10 +1298,13 @@ button:focus-visible {
 .dashboard-grid {
   position: relative;
   z-index: 1;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-block-size: 0;
+  block-size: min(650px, calc(100vh - 260px));
   max-inline-size: 1180px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr) minmax(210px, 0.72fr);
+  grid-template-rows: minmax(0, 1.12fr) minmax(0, 0.9fr) minmax(0, 0.72fr);
   gap: clamp(10px, 1.6vh, 16px);
   contain: layout paint;
   transition: opacity 90ms linear;
@@ -1619,11 +1622,11 @@ button:focus-visible {
 }
 
 .dashboard-panel {
-  min-block-size: clamp(96px, 13.5vh, 136px);
+  min-block-size: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 10px;
-  padding: clamp(12px, 1.7vh, 16px) 20px clamp(10px, 1.5vh, 14px);
+  gap: 8px;
+  padding: clamp(10px, 1.45vh, 14px) 20px clamp(8px, 1.25vh, 12px);
   border: 1px solid var(--line);
   overflow: hidden;
   background:
@@ -1691,13 +1694,13 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list button {
-  min-block-size: clamp(34px, 4.25vh, 40px);
-  padding-block: 4px;
+  min-block-size: clamp(29px, 3.65vh, 35px);
+  padding-block: 2px;
 }
 
 .active-projects-panel .record-list small,
 .active-projects-panel .record-list i {
-  margin-block-start: 4px;
+  margin-block-start: 2px;
 }
 
 .record-list button:hover {
@@ -1732,7 +1735,7 @@ button:focus-visible {
 
 .current-game {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 64px 1fr;
   gap: 18px;
   align-items: center;
 }
@@ -1805,7 +1808,11 @@ button:focus-visible {
 
 .latest-log p {
   max-inline-size: 34ch;
+  display: -webkit-box;
+  overflow: hidden;
   text-wrap: balance;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
 }
 
 .activity-feed {
@@ -5177,6 +5184,44 @@ input.studio-title-edit {
   }
 }
 
+@media (min-width: 761px) and (max-height: 850px) {
+  .workspace {
+    --footer-reserve: 62px;
+  }
+
+  .workspace-header h1 {
+    font-size: clamp(28px, 3.1vw, 40px);
+  }
+
+  .dashboard-panel {
+    gap: 6px;
+    padding-block: 10px 8px;
+  }
+
+  .active-projects-panel .record-list button {
+    min-block-size: 28px;
+  }
+
+  .current-game {
+    grid-template-columns: 54px 1fr;
+    gap: 14px;
+  }
+
+  .current-game strong {
+    margin-block-end: 6px;
+  }
+
+  .current-game span,
+  .latest-log p,
+  .activity-feed {
+    line-height: 1.42;
+  }
+
+  .latest-log p {
+    -webkit-line-clamp: 3;
+  }
+}
+
 @media (max-width: 760px) {
   body {
     overflow: auto;
@@ -5839,6 +5884,12 @@ input.studio-title-edit {
     padding: 8px 10px 9px;
   }
 
+  .mobile-brand-meta,
+  .mobile-clock {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
   .nav-stack {
     gap: 5px;
   }
@@ -5928,7 +5979,10 @@ input.studio-title-edit {
   }
 
   .dashboard-grid {
+    block-size: auto;
     gap: 12px;
+    grid-auto-rows: auto;
+    grid-template-rows: none;
   }
 
   .wide-panel:first-child {

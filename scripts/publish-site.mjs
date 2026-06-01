@@ -240,6 +240,7 @@ syncSteamIfConfigured(skipSteamSync);
 run("node", ["scripts/export-static-records.mjs"]);
 refreshStaticCacheBusters();
 run("node", ["scripts/validate-content.mjs"]);
+run("node", ["scripts/validate-static-shell.mjs"]);
 if (skipTypecheck) {
   console.log("\n> TypeScript check skipped for content-only publish");
 } else {
