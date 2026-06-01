@@ -213,6 +213,30 @@ export function StudioClient({ records }: StudioClientProps) {
     setMessage(draft ? `Restored unsaved ${section} draft.` : `New ${section} record draft ready.`);
   }, []);
 
+  const writeRecord = async (recordForm: StudioForm, recordBody: string) => {
+    const response = await fetch("/api/studio/entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...recordForm,
+        body: recordBody,
+        dashboardActive: recordForm.section === "games" && recordForm.dashboardActive,
+        tags: parseTags(recordForm.tags)
+      })
+    });
+    const data = await readStudioResponse(response);
+
+    if (!response.ok) {
+      throw new StudioRequestError(data.error || "Save failed.", data.output);
+    }
+
+    if (!data.id || !data.path) {
+      throw new StudioRequestError("Save response was missing record details.", data.output);
+    }
+
+    return { id: String(data.id), path: String(data.path) };
+  };
+
   const save = async () => {
     setSaving(true);
     setMessage("Writing record...");
@@ -224,29 +248,21 @@ export function StudioClient({ records }: StudioClientProps) {
     setNotificationOpen(false);
 
     try {
-      const response = await fetch("/api/studio/entry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          body: bodyDraftRef.current,
-          dashboardActive: form.section === "games" && form.dashboardActive,
-          tags: parseTags(form.tags)
-        })
-      });
-      const data = await readStudioResponse(response);
-
-      if (!response.ok) {
-        throw new StudioRequestError(data.error || "Save failed.", data.output);
-      }
-
-      if (!data.id || !data.path) {
-        throw new StudioRequestError("Save response was missing record details.", data.output);
-      }
-
-      const savedId = String(data.id);
+      const pendingDrafts = Object.entries(draftsRef.current)
+        .filter(([key, draft]) => key.startsWith("record:") && key !== studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current) && draft.form.originalId)
+        .map(([key, draft]) => ({ key, draft }));
+      const data = await writeRecord(form, bodyDraftRef.current);
+      const savedId = data.id;
       const previousDraftKey = studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current);
       const savedForm = { ...formRef.current, body: bodyDraftRef.current, id: savedId, originalId: savedId };
+
+      if (pendingDrafts.length > 0) {
+        setMessage(`Saved current record. Applying ${pendingDrafts.length} pending draft${pendingDrafts.length === 1 ? "" : "s"} before publishing...`);
+
+        for (const { draft } of pendingDrafts) {
+          await writeRecord(draft.form, draft.body);
+        }
+      }
 
       formRef.current = savedForm;
       selectedIdRef.current = savedId;
@@ -257,6 +273,11 @@ export function StudioClient({ records }: StudioClientProps) {
         delete next[previousDraftKey];
         delete next[studioRecordDraftKey(savedId)];
         delete next[studioNewDraftKey(savedForm.section)];
+        for (const { key, draft } of pendingDrafts) {
+          delete next[key];
+          delete next[studioRecordDraftKey(draft.form.id)];
+          delete next[studioRecordDraftKey(draft.form.originalId)];
+        }
         return next;
       });
       setMessage(`Saved ${data.path}. Publishing to GitHub...`);
