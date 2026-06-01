@@ -570,7 +570,7 @@ button:focus-visible {
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: clamp(5px, 0.9vh, 8px);
+  gap: clamp(6px, 0.85vh, 8px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-inline-end: 4px;
@@ -593,12 +593,12 @@ button:focus-visible {
 
 .nav-trigger {
   inline-size: 100%;
-  min-block-size: clamp(34px, 4vh, 38px);
+  min-block-size: clamp(42px, 5vh, 46px);
   display: grid;
-  grid-template-columns: 28px 1fr 14px;
+  grid-template-columns: 31px 1fr 14px;
   align-items: center;
-  gap: clamp(8px, 1.1vh, 13px);
-  padding: clamp(5px, 0.72vh, 7px) 14px;
+  gap: clamp(9px, 1.1vh, 13px);
+  padding: clamp(7px, 0.85vh, 9px) 14px;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -613,8 +613,8 @@ button:focus-visible {
   position: relative;
   display: inline-grid;
   place-items: center;
-  inline-size: 22px;
-  block-size: 22px;
+  inline-size: 24px;
+  block-size: 24px;
   color: var(--text);
   opacity: 0.9;
 }
@@ -1645,6 +1645,11 @@ button:focus-visible {
   align-self: start;
 }
 
+.dashboard-grid > .dashboard-panel:not(.weather-panel, .memory-panel) {
+  grid-template-rows: auto auto auto;
+  align-content: start;
+}
+
 .active-projects-panel {
   gap: 10px;
   padding-block: clamp(13px, 1.8vh, 16px);
@@ -1812,12 +1817,18 @@ button:focus-visible {
   line-height: 1.55;
 }
 
+.latest-log {
+  display: grid;
+  gap: 10px;
+}
+
 .latest-log p {
+  margin: 0;
   max-inline-size: 34ch;
   display: -webkit-box;
   overflow: hidden;
   text-wrap: balance;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
@@ -5203,6 +5214,22 @@ input.studio-title-edit {
 
   .sidebar-label {
     margin-block-end: 12px;
+  }
+
+  .nav-stack {
+    gap: 4px;
+  }
+
+  .nav-trigger {
+    min-block-size: clamp(35px, 4.6vh, 39px);
+    grid-template-columns: 28px 1fr 14px;
+    gap: 8px;
+    padding-block: 5px;
+  }
+
+  .nav-mark {
+    inline-size: 22px;
+    block-size: 22px;
   }
 
   .system-status {
