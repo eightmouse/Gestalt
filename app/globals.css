@@ -759,7 +759,7 @@ button:focus-visible {
   grid-area: 2 / 1;
   margin-block-start: clamp(2px, 0.5vh, 5px);
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5233,7 +5233,7 @@ input.studio-title-edit {
   }
 
   .nav-trigger small {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .nav-cipher {
