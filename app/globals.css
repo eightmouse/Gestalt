@@ -759,7 +759,7 @@ button:focus-visible {
   grid-area: 2 / 1;
   margin-block-start: clamp(2px, 0.5vh, 5px);
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -789,9 +789,9 @@ button:focus-visible {
 }
 
 .nav-cipher {
-  color: rgba(217, 213, 193, 0.52);
+  color: rgba(217, 213, 193, 0.68);
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.12em;
   text-transform: none;
   opacity: 1;
   transform: translateY(0);
@@ -5230,6 +5230,14 @@ input.studio-title-edit {
     grid-template-columns: 30px 1fr 14px;
     gap: 8px;
     padding-block: 5px;
+  }
+
+  .nav-trigger small {
+    font-size: 9px;
+  }
+
+  .nav-cipher {
+    letter-spacing: 0.1em;
   }
 
   .nav-mark {
