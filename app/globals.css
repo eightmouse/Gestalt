@@ -1646,13 +1646,9 @@ button:focus-visible {
 }
 
 .dashboard-grid > .dashboard-panel:not(.weather-panel, .memory-panel) {
+  align-self: start;
   grid-template-rows: auto auto auto;
   align-content: start;
-}
-
-.active-projects-panel {
-  gap: 10px;
-  padding-block: clamp(13px, 1.8vh, 16px);
 }
 
 .weather-panel {
@@ -1664,6 +1660,11 @@ button:focus-visible {
   grid-column: 3;
   grid-row: 2 / span 2;
   overflow: hidden;
+}
+
+.active-projects-panel {
+  gap: 10px;
+  padding-block: clamp(13px, 1.8vh, 16px);
 }
 
 .dashboard-panel h2,
@@ -1833,12 +1834,12 @@ button:focus-visible {
 }
 
 .activity-feed {
+  margin: 0;
+  padding: 0;
   list-style: none;
   display: grid;
   align-content: start;
   gap: 8px;
-  margin: 0;
-  padding: 0;
 }
 
 .activity-feed li {
@@ -1880,6 +1881,21 @@ button:focus-visible {
   font-size: clamp(24px, 2.8vw, 34px);
   font-weight: 300;
   line-height: 0.95;
+}
+
+.weather-condition,
+.weather-meta span,
+.weather-note {
+  margin: 0;
+}
+
+.weather-action {
+  line-height: 1.35;
+}
+
+.weather-note,
+.weather-action {
+  display: block;
 }
 
 .weather-condition,
@@ -5240,6 +5256,10 @@ input.studio-title-edit {
     --footer-reserve: 62px;
   }
 
+  .dashboard-grid {
+    block-size: min(620px, calc(100vh - 220px));
+  }
+
   .workspace-header h1 {
     font-size: clamp(28px, 3.1vw, 40px);
   }
@@ -5266,6 +5286,40 @@ input.studio-title-edit {
   .latest-log p,
   .activity-feed {
     line-height: 1.42;
+  }
+
+  .activity-feed {
+    gap: 5px;
+    font-size: 14px;
+    line-height: 1.34;
+  }
+
+  .weather-readout {
+    gap: 4px;
+  }
+
+  .weather-primary {
+    gap: 2px;
+    padding-block-end: 4px;
+  }
+
+  .weather-temp {
+    font-size: 22px;
+  }
+
+  .weather-condition,
+  .weather-meta span,
+  .weather-note {
+    font-size: 11px;
+    line-height: 1.34;
+  }
+
+  .weather-meta {
+    gap: 5px;
+  }
+
+  .weather-action {
+    display: none;
   }
 
   .latest-log p {
