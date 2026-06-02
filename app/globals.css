@@ -570,7 +570,7 @@ button:focus-visible {
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: clamp(6px, 0.85vh, 8px);
+  gap: clamp(7px, 0.95vh, 9px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-inline-end: 4px;
@@ -593,12 +593,12 @@ button:focus-visible {
 
 .nav-trigger {
   inline-size: 100%;
-  min-block-size: clamp(42px, 5vh, 46px);
+  min-block-size: clamp(44px, 5.25vh, 49px);
   display: grid;
-  grid-template-columns: 31px 1fr 14px;
+  grid-template-columns: 32px 1fr 14px;
   align-items: center;
   gap: clamp(9px, 1.1vh, 13px);
-  padding: clamp(7px, 0.85vh, 9px) 14px;
+  padding: clamp(7px, 0.9vh, 10px) 14px;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -1643,11 +1643,6 @@ button:focus-visible {
 
 .activity-panel {
   align-self: start;
-}
-
-.dashboard-grid > .dashboard-panel:not(.weather-panel, .memory-panel) {
-  grid-template-rows: auto auto auto;
-  align-content: start;
 }
 
 .weather-panel {
