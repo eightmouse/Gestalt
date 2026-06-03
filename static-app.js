@@ -1203,9 +1203,9 @@ function renderTechnicalPage(record) {
 }
 
 function renderSetupPage(record) {
-  const hardware = textBlock(record.hardware) || setupHardwareFallback(record.body);
+  const hardware = setupHardwareSource(record);
 
-  return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} hardware">
+  return `<section class="content-terminal setup-terminal" aria-label="${escapeHtml(record.title)} hardware">
     <div class="terminal-title">// HARDWARE</div>
     <div class="record-body">${markdownBody(hardware)}</div>
   </section>`;
@@ -1293,7 +1293,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.24.47</span>
+        <span>v1.25.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1307,7 +1307,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.24.47</span>
+        <span class="version-label">v1.25.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1327,7 +1327,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.24.47</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.25.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1505,6 +1505,10 @@ function sectionPage(sectionId) {
   const countLabel = `${sectionRecords.length} ${sectionRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(sectionId, sectionRecords);
 
+  if (sectionId === "setup") {
+    return renderSetupBay(section, sectionRecords, countLabel);
+  }
+
   if (splitSection) {
     return `<section class="section-page section-page--split" aria-label="${escapeHtml(section.code)} records">
       <header class="section-page-header">
@@ -1555,6 +1559,149 @@ function renderSectionRows(sectionRecords) {
         )
         .join("")
     : `<p class="search-empty">No records filed here yet.</p>`;
+}
+
+const setupGroupRegistry = [
+  { id: "systems", title: "SYSTEMS", path: "/setup/systems", detail: "Operating systems, machines, rigs" },
+  { id: "tools", title: "TOOLS", path: "/setup/tools", detail: "Apps, utilities, workflows" },
+  { id: "peripherals", title: "PERIPHERALS", path: "/setup/peripherals", detail: "Input, display, audio, devices" },
+  { id: "notes", title: "NOTES", path: "/setup/notes", detail: "Loose setup notes and pending files" }
+];
+
+function renderSetupBay(section, sectionRecords, countLabel) {
+  const groups = setupGroupRegistry.map((group) => ({
+    ...group,
+    records: sectionRecords.filter((record) => setupGroupFor(record) === group.id)
+  }));
+
+  return `<section class="section-page setup-bay" aria-label="${escapeHtml(section.code)} device bay">
+    <header class="section-page-header setup-bay-header">
+      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+      <div>
+        <p>${escapeHtml(section.code)}</p>
+        <h2>Setup Manifest</h2>
+      </div>
+      <i>${countLabel}</i>
+    </header>
+    <div class="setup-bay-grid">
+      ${groups
+        .map(
+          (group) => `<section class="setup-group setup-group--${group.id}" aria-label="${escapeHtml(group.title)}">
+            <header>
+              <div><span>${escapeHtml(group.path)}</span><h3>${escapeHtml(group.title)}</h3></div>
+              <i>${group.records.length}</i>
+            </header>
+            <p>${escapeHtml(group.detail)}</p>
+            <div class="setup-tile-grid">
+              ${
+                group.records.length
+                  ? group.records.map((record) => renderSetupTile(record)).join("")
+                  : `<span class="setup-empty">No files mounted.</span>`
+              }
+            </div>
+          </section>`
+        )
+        .join("")}
+    </div>
+  </section>`;
+}
+
+function renderSetupTile(record) {
+  const image = recordHeaderImage(record) || record.banner;
+  const profile = setupProfile(record);
+
+  return `<button class="setup-tile" type="button" data-open-record="${record.id}">
+    <span class="setup-tile-icon" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}</span>
+    <span class="setup-tile-body">
+      <strong>${escapeHtml(record.title)}</strong>
+      <small>${escapeHtml(profile.category)} . ${escapeHtml(record.status)}</small>
+    </span>
+    <i>open</i>
+  </button>`;
+}
+
+function setupGroupFor(record) {
+  const haystack = [record.title, record.type, record.summary, ...(record.tags || [])].join(" ").toLowerCase();
+
+  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
+    return "peripherals";
+  }
+
+  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
+    return "tools";
+  }
+
+  if (/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
+    return "systems";
+  }
+
+  return "notes";
+}
+
+function setupProfile(record) {
+  const group = setupGroupFor(record);
+  const groupConfig = setupGroupRegistry.find((item) => item.id === group) || setupGroupRegistry[3];
+
+  return {
+    category: groupConfig.title,
+    command: `cat ${groupConfig.path}/${record.id}.log`,
+    specs: setupSpecRows(record)
+  };
+}
+
+function setupSpecRows(record) {
+  const privateLabel = /\b(serial|token|secret|password|passwd|key|path|host|hostname|user|username|email|address|phone|ip)\b/i;
+
+  return setupHardwareSource(record)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .map((line) => {
+      const match = line.match(/^([^:]{2,32}):\s*(.+)$/);
+
+      if (!match) {
+        return null;
+      }
+
+      const label = match[1].trim();
+      const value = match[2].trim();
+
+      if (!label || !value || privateLabel.test(label)) {
+        return null;
+      }
+
+      return { label, value };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function setupHardwareSource(record) {
+  return textBlock(record.hardware) || setupHardwareFallback(record.body);
+}
+
+function setupPathFor(record) {
+  const group = setupGroupFor(record);
+  const groupConfig = setupGroupRegistry.find((item) => item.id === group) || setupGroupRegistry[3];
+
+  return `${groupConfig.path}/${record.id}`;
+}
+
+function setupNarrativeNotes(record) {
+  return noteEntries(record.body).filter((note) => !setupNoteIsSpecOnly(note.body));
+}
+
+function setupNoteIsSpecOnly(body) {
+  const lines = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith("!") && !line.startsWith("#"));
+
+  if (!lines.length) {
+    return true;
+  }
+
+  return lines.every((line) => /^([^:]{2,32}):\s*(.+)$/.test(line));
 }
 
 const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
@@ -1628,11 +1775,77 @@ function workspaceContent() {
   return state.activeSection === "system" ? dashboard() : sectionPage(state.activeSection);
 }
 
+function setupRecordWindow(record) {
+  const profile = setupProfile(record);
+  const headerImage = recordHeaderImage(record) || record.banner;
+  const notes = setupNarrativeNotes(record);
+  const specs = profile.specs.length
+    ? profile.specs
+    : [
+        { label: "STATUS", value: record.status },
+        { label: "UPDATED", value: readableDate(record.updated) },
+        { label: "PROGRESS", value: `${record.progress}%` }
+      ];
+
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} is-setup-record" aria-label="${escapeHtml(record.title)} setup terminal">
+    <div class="setup-window-shell">
+      <section class="setup-console" aria-label="${escapeHtml(record.title)} machine profile">
+        <div class="setup-console-prompt">
+          <div class="setup-prompt-command">
+            <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>${escapeHtml(profile.command)}</strong>
+          </div>
+          <div class="window-actions setup-window-actions">
+            <button type="button" data-window-action="minimize" aria-label="Minimize setup terminal">minimize</button>
+            <button type="button" data-window-action="maximize" aria-label="Maximize setup terminal">maximize</button>
+            <button type="button" data-window-action="close" aria-label="Close setup terminal">close</button>
+          </div>
+        </div>
+        <div class="setup-console-body">
+          <div class="${headerImage ? "setup-terminal-avatar has-image" : "setup-terminal-avatar"}" aria-hidden="true">
+            ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="" decoding="async" loading="lazy" />` : ""}
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="setup-fetch setup-fetch--terminal">
+            <p class="setup-command">&gt; profile.loaded / public-safe</p>
+            <h2>${escapeHtml(record.title)}</h2>
+            ${record.summary ? `<p class="setup-motd">${escapeHtml(record.summary)}</p>` : ""}
+            <dl>
+              <div><dt>TYPE</dt><dd>${escapeHtml(profile.category)}</dd></div>
+              <div><dt>STATE</dt><dd>${escapeHtml(record.status)}</dd></div>
+              <div><dt>UPDATED</dt><dd>${readableDate(record.updated)}</dd></div>
+              ${specs.map((spec) => `<div><dt>${escapeHtml(spec.label)}</dt><dd>${escapeHtml(spec.value)}</dd></div>`).join("")}
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      ${
+        notes.length
+          ? `<section class="setup-console setup-notes-terminal" aria-label="${escapeHtml(record.title)} setup notes">
+              <div class="setup-console-prompt">
+                <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>cat notes.log</strong>
+              </div>
+              <div class="setup-note-stack">
+                ${notes
+                  .map((note) => `<article class="setup-note"><h3>// ${escapeHtml(note.title)}</h3><div class="record-body">${markdownBody(note.body)}</div></article>`)
+                  .join("")}
+              </div>
+            </section>`
+          : ""
+      }
+    </div>
+  </article>`;
+}
+
 function recordWindow(record) {
   if (!state.panelOpen) {
     return state.panelMinimized
       ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>`
       : "";
+  }
+
+  if (record.section === "setup") {
+    return setupRecordWindow(record);
   }
 
   const contents = getRecordContents(record);
@@ -1641,9 +1854,9 @@ function recordWindow(record) {
 
   const headerImage = recordHeaderImage(record);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
     <header class="window-bar">
-      <span>// ARCHIVE ENTRY</span>
+      <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-actions">
         <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
         <button type="button" data-window-action="maximize" aria-label="Maximize record">maximize</button>
@@ -1653,7 +1866,7 @@ function recordWindow(record) {
 
     <div class="record-layout">
       <div class="record-main">
-        <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}">
+        <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}">
           ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" decoding="async" />` : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>

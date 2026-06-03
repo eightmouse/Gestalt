@@ -879,7 +879,12 @@ function StudioContent({
     return (
       <section className="studio-content-terminal">
         <div className="terminal-title">// {activeContent === "samples" ? "SAMPLES" : "ATTACHMENTS"}</div>
-        <DropZone uploading={uploading} onDrop={(files) => onFileDrop(files, target)} onPick={() => onFilePick(target)} />
+        <DropZone
+          description="Images and videos are copied into public/media/records and appended to this media list."
+          uploading={uploading}
+          onDrop={(files) => onFileDrop(files, target)}
+          onPick={() => onFilePick(target)}
+        />
         <MediaPathList
           paths={paths}
           onRemove={(pathToRemove) => onUpdate(target, mediaListToText(paths.filter((path) => path !== pathToRemove)))}
@@ -1409,10 +1414,12 @@ function BufferedBodyEditor({ label, onCommit, value }: { label: string; onCommi
 }
 
 function DropZone({
+  description = "Images and videos are copied into public/media/records and inserted into the current body draft.",
   onDrop,
   onPick,
   uploading
 }: {
+  description?: string;
   onDrop: (files: FileList) => void;
   onPick: () => void;
   uploading: boolean;
@@ -1427,7 +1434,7 @@ function DropZone({
       }}
     >
       <strong>{uploading ? "Importing..." : "Drop media here"}</strong>
-      <span>Images and videos are copied into public/media/records and inserted into the current body draft.</span>
+      <span>{description}</span>
       <button type="button" onClick={onPick}>Choose Files</button>
     </div>
   );

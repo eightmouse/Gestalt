@@ -647,7 +647,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.24.47</span>
+          <span>v1.25.0</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -671,7 +671,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.24.47</span>
+          <span className="version-label">v1.25.0</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -729,7 +729,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.24.47</dd>
+            <dd>GESTALT OS v1.25.0</dd>
           </div>
         </dl>
       </div>
@@ -1066,6 +1066,10 @@ function SectionPage({
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
 
+  if (section.id === "setup") {
+    return <SetupBay countLabel={countLabel} onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
+  }
+
   if (splitSection) {
     return (
       <section className="section-page section-page--split" aria-label={`${section.code} records`}>
@@ -1203,6 +1207,173 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
   return null;
 }
 
+type SetupGroupId = "systems" | "tools" | "peripherals" | "notes";
+
+const setupGroupRegistry: Array<{ id: SetupGroupId; title: string; path: string; detail: string }> = [
+  { id: "systems", title: "SYSTEMS", path: "/setup/systems", detail: "Operating systems, machines, rigs" },
+  { id: "tools", title: "TOOLS", path: "/setup/tools", detail: "Apps, utilities, workflows" },
+  { id: "peripherals", title: "PERIPHERALS", path: "/setup/peripherals", detail: "Input, display, audio, devices" },
+  { id: "notes", title: "NOTES", path: "/setup/notes", detail: "Loose setup notes and pending files" }
+];
+
+function SetupBay({
+  countLabel,
+  onOpenRecord,
+  records,
+  section
+}: {
+  countLabel: string;
+  onOpenRecord: (record: RecordEntry) => void;
+  records: RecordEntry[];
+  section: (typeof sections)[number];
+}) {
+  const groups = setupGroupRegistry.map((group) => ({
+    ...group,
+    records: records.filter((record) => setupGroupFor(record) === group.id)
+  }));
+
+  return (
+    <section className="section-page setup-bay" aria-label={`${section.code} device bay`}>
+      <header className="section-page-header setup-bay-header">
+        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+        <div>
+          <p>{section.code}</p>
+          <h2>Setup Manifest</h2>
+        </div>
+        <i>{countLabel}</i>
+      </header>
+
+      <div className="setup-bay-grid">
+        {groups.map((group) => (
+          <section className={`setup-group setup-group--${group.id}`} key={group.id} aria-label={group.title}>
+            <header>
+              <div>
+                <span>{group.path}</span>
+                <h3>{group.title}</h3>
+              </div>
+              <i>{group.records.length}</i>
+            </header>
+            <p>{group.detail}</p>
+            <div className="setup-tile-grid">
+              {group.records.length > 0 ? (
+                group.records.map((record) => (
+                  <SetupTile key={record.id} record={record} onOpenRecord={onOpenRecord} />
+                ))
+              ) : (
+                <span className="setup-empty">No files mounted.</span>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
+  const image = recordHeaderImage(record) || record.banner;
+  const profile = setupProfile(record);
+
+  return (
+    <button className="setup-tile" type="button" onClick={() => onOpenRecord(record)}>
+      <span className="setup-tile-icon" aria-hidden="true">
+        {image ? <img src={image} alt="" decoding="async" loading="lazy" /> : null}
+      </span>
+      <span className="setup-tile-body">
+        <strong>{record.title}</strong>
+        <small>{profile.category} . {record.status}</small>
+      </span>
+      <i>open</i>
+    </button>
+  );
+}
+
+function setupGroupFor(record: RecordEntry): SetupGroupId {
+  const haystack = [record.title, record.type, record.summary, ...record.tags].join(" ").toLowerCase();
+
+  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
+    return "peripherals";
+  }
+
+  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
+    return "tools";
+  }
+
+  if (/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
+    return "systems";
+  }
+
+  return "notes";
+}
+
+function setupProfile(record: RecordEntry): { category: string; command: string; specs: Array<{ label: string; value: string }> } {
+  const group = setupGroupFor(record);
+  const category = setupGroupRegistry.find((item) => item.id === group)?.title ?? "NOTES";
+  const specs = setupSpecRows(record);
+
+  return {
+    category,
+    command: `cat ${setupGroupRegistry.find((item) => item.id === group)?.path ?? "/setup/notes"}/${record.id}.log`,
+    specs
+  };
+}
+
+function setupPathFor(record: RecordEntry): string {
+  const group = setupGroupFor(record);
+  const path = setupGroupRegistry.find((item) => item.id === group)?.path ?? "/setup/notes";
+
+  return `${path}/${record.id}`;
+}
+
+function setupNarrativeNotes(record: RecordEntry): Array<{ title: string; body: string }> {
+  return noteEntries(record.body).filter((note) => !setupNoteIsSpecOnly(note.body));
+}
+
+function setupNoteIsSpecOnly(body: string): boolean {
+  const lines = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith("!") && !line.startsWith("#"));
+
+  if (!lines.length) {
+    return true;
+  }
+
+  return lines.every((line) => /^([^:]{2,32}):\s*(.+)$/.test(line));
+}
+
+function setupSpecRows(record: RecordEntry): Array<{ label: string; value: string }> {
+  const source = setupHardwareSource(record);
+  const privateLabel = /\b(serial|token|secret|password|passwd|key|path|host|hostname|user|username|email|address|phone|ip)\b/i;
+
+  return source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .map((line) => {
+      const match = line.match(/^([^:]{2,32}):\s*(.+)$/);
+
+      if (!match) {
+        return null;
+      }
+
+      const label = match[1].trim();
+      const value = match[2].trim();
+
+      if (!label || !value || privateLabel.test(label)) {
+        return null;
+      }
+
+      return { label, value };
+    })
+    .filter((row): row is { label: string; value: string } => Boolean(row))
+    .slice(0, 8);
+}
+
+function setupHardwareSource(record: RecordEntry): string {
+  return metaText(record.meta.hardware) || setupHardwareFallback(record.body);
+}
+
 function SearchPanel({
   panelRef,
   query,
@@ -1326,6 +1497,14 @@ type RecordWindowProps = {
 };
 
 function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+  if (record.section === "setup") {
+    return <SetupRecordWindow maximized={maximized} record={record} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  }
+
+  return <ArchiveRecordWindow initialContent={initialContent} maximized={maximized} record={record} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+}
+
+function ArchiveRecordWindow({ initialContent, maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
@@ -1361,7 +1540,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
   return (
     <>
     <motion.article
-      className={`${maximized ? "record-window is-maximized" : "record-window"}${updateHistoryOpen ? " has-index-modal" : ""}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -1369,7 +1548,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
       aria-label={`${record.title} archive entry`}
     >
       <header className="window-bar">
-        <span>// ARCHIVE ENTRY</span>
+        <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
             <Minimize2 size={14} />
@@ -1386,7 +1565,7 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
       <div className="record-layout">
         <div className="record-main">
           <div
-            className={headerImage ? "record-heading has-heading-banner" : "record-heading"}
+            className={`${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}`}
           >
             {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" decoding="async" /> : null}
             <span className="record-kind">{record.type.toUpperCase()}</span>
@@ -1460,6 +1639,111 @@ function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, 
       {updateHistoryOpen && record.section !== "games" ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
     </motion.article>
     </>
+  );
+}
+
+function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+  const profile = setupProfile(record);
+  const headerImage = recordHeaderImage(record) || record.banner;
+  const notes = setupNarrativeNotes(record);
+  const specs = profile.specs.length > 0
+    ? profile.specs
+    : [
+        { label: "STATUS", value: record.status },
+        { label: "UPDATED", value: formatReadableDate(record.updated) },
+        { label: "PROGRESS", value: `${record.progress}%` }
+      ];
+
+  return (
+    <motion.article
+      className={`${maximized ? "record-window is-maximized" : "record-window"} is-setup-record`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      aria-label={`${record.title} setup terminal`}
+    >
+      <div className="setup-window-shell">
+        <section className="setup-console" aria-label={`${record.title} machine profile`}>
+          <div className="setup-console-prompt">
+            <div className="setup-prompt-command">
+              <span>eightmouse@gestalt</span>
+              <i>:</i>
+              <span>{setupPathFor(record)}</span>
+              <i>$</i>
+              <strong>{profile.command}</strong>
+            </div>
+            <div className="window-actions setup-window-actions">
+              <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
+                <Minimize2 size={14} />
+              </button>
+              <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize setup terminal">
+                <Maximize2 size={14} />
+              </button>
+              <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+
+          <div className="setup-console-body">
+            <div className={headerImage ? "setup-terminal-avatar has-image" : "setup-terminal-avatar"} aria-hidden="true">
+              {headerImage ? <img src={headerImage} alt="" decoding="async" loading="lazy" /> : null}
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+
+            <div className="setup-fetch setup-fetch--terminal">
+              <p className="setup-command">&gt; profile.loaded / public-safe</p>
+              <h2>{record.title}</h2>
+              {record.summary ? <p className="setup-motd">{record.summary}</p> : null}
+              <dl>
+                <div>
+                  <dt>TYPE</dt>
+                  <dd>{profile.category}</dd>
+                </div>
+                <div>
+                  <dt>STATE</dt>
+                  <dd>{record.status}</dd>
+                </div>
+                <div>
+                  <dt>UPDATED</dt>
+                  <dd>{formatReadableDate(record.updated)}</dd>
+                </div>
+                {specs.map((spec, index) => (
+                  <div key={`${spec.label}-${index}`}>
+                    <dt>{spec.label}</dt>
+                    <dd>{spec.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        {notes.length > 0 ? (
+          <section className="setup-console setup-notes-terminal" aria-label={`${record.title} setup notes`}>
+            <div className="setup-console-prompt">
+              <span>eightmouse@gestalt</span>
+              <i>:</i>
+              <span>{setupPathFor(record)}</span>
+              <i>$</i>
+              <strong>cat notes.log</strong>
+            </div>
+            <div className="setup-note-stack">
+              {notes.map((note) => (
+                <article className="setup-note" key={note.title}>
+                  <h3>// {note.title}</h3>
+                  <RecordBody body={note.body} />
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+    </motion.article>
   );
 }
 
@@ -1638,10 +1922,10 @@ function RecordContentPanel({ activeContent, noteSearchQuery, record }: { active
   }
 
   if (activeContent === "hardware") {
-    const hardware = metaText(record.meta.hardware) || setupHardwareFallback(record.body);
+    const hardware = setupHardwareSource(record);
 
     return (
-      <section className="content-terminal" aria-label={`${record.title} setup details`}>
+      <section className="content-terminal setup-terminal" aria-label={`${record.title} setup details`}>
         <div className="terminal-title">// HARDWARE</div>
         <RecordBody body={hardware} />
       </section>
