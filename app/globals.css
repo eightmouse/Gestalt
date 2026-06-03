@@ -2335,30 +2335,30 @@ button:focus-visible {
   margin-block-end: 2px;
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack) {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack, .studio-content-terminal, .studio-copy-aside, .studio-notification-card pre, .studio-textarea-field textarea, .studio-note-edit textarea, .studio-panel textarea) {
   scrollbar-width: thin;
   scrollbar-color: rgba(217, 213, 193, 0.34) rgba(255, 255, 255, 0.035);
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack, .studio-content-terminal, .studio-copy-aside, .studio-notification-card pre, .studio-textarea-field textarea, .studio-note-edit textarea, .studio-panel textarea)::-webkit-scrollbar {
   inline-size: 10px;
   block-size: 10px;
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-track {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack, .studio-content-terminal, .studio-copy-aside, .studio-notification-card pre, .studio-textarea-field textarea, .studio-note-edit textarea, .studio-panel textarea)::-webkit-scrollbar-track {
   background:
     linear-gradient(90deg, transparent 0 4px, rgba(217, 213, 193, 0.08) 4px 5px, transparent 5px),
     rgba(255, 255, 255, 0.02);
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-thumb {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack, .studio-content-terminal, .studio-copy-aside, .studio-notification-card pre, .studio-textarea-field textarea, .studio-note-edit textarea, .studio-panel textarea)::-webkit-scrollbar-thumb {
   min-block-size: 44px;
   border: 2px solid transparent;
   background:
     linear-gradient(rgba(217, 213, 193, 0.48), rgba(130, 127, 116, 0.36)) padding-box;
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-thumb:hover {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .archive-nav-panel .nav-stack, .studio-content-terminal, .studio-copy-aside, .studio-notification-card pre, .studio-textarea-field textarea, .studio-note-edit textarea, .studio-panel textarea)::-webkit-scrollbar-thumb:hover {
   background:
     linear-gradient(rgba(236, 230, 211, 0.7), rgba(200, 189, 159, 0.46)) padding-box;
 }
