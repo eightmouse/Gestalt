@@ -4087,7 +4087,9 @@ button:focus-visible {
 
 .studio-shell {
   display: block;
-  overflow: auto;
+  block-size: 100vh;
+  min-block-size: 0;
+  overflow: hidden;
 }
 
 .studio-workspace {
@@ -4294,13 +4296,17 @@ button:focus-visible {
 }
 
 .studio-workspace-v2 {
-  min-block-size: 100vh;
-  padding: clamp(22px, 3vh, 34px) clamp(22px, 4vw, 54px);
+  block-size: 100%;
+  min-block-size: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(10px, 1.6vh, 16px);
+  padding: clamp(14px, 2vh, 24px) clamp(18px, 3vw, 42px);
 }
 
 .studio-header-v2 {
   max-inline-size: none;
-  margin-block-end: 18px;
+  margin-block-end: 0;
 }
 
 .studio-actions {
@@ -4333,7 +4339,7 @@ button:focus-visible {
 }
 
 .studio-os-grid {
-  block-size: calc(100vh - 150px);
+  block-size: auto;
   min-block-size: 0;
   display: grid;
   grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
@@ -4366,6 +4372,8 @@ button:focus-visible {
 .studio-record-copy {
   min-width: 0;
   min-block-size: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--line);
   background: rgba(6, 7, 6, 0.78);
@@ -4377,6 +4385,7 @@ button:focus-visible {
   align-self: start;
   block-size: 100%;
   min-block-size: 0;
+  overflow: hidden;
   padding: 22px;
   border: 1px solid var(--line);
   background: rgba(6, 7, 6, 0.72);
@@ -4423,16 +4432,21 @@ button:focus-visible {
 }
 
 .studio-copy-layout {
+  min-block-size: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
   gap: 18px;
   padding: 18px;
+  overflow: hidden;
 }
 
 .studio-copy-main {
   min-width: 0;
+  min-block-size: 0;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
+  overflow: hidden;
 }
 
 .studio-entry-heading {
@@ -4441,7 +4455,7 @@ button:focus-visible {
   display: grid;
   align-content: end;
   gap: 0;
-  min-block-size: 220px;
+  min-block-size: clamp(142px, 22vh, 210px);
   padding: clamp(18px, 3vw, 28px);
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.12);
@@ -4684,9 +4698,12 @@ input.studio-title-edit {
 }
 
 .studio-content-terminal {
+  min-block-size: 0;
   display: grid;
+  align-content: start;
   gap: 14px;
   padding: 18px;
+  overflow: auto;
   border: 1px solid rgba(217, 213, 193, 0.14);
   background: rgba(255, 255, 255, 0.018);
 }
@@ -4957,10 +4974,12 @@ input.studio-title-edit {
 
 .studio-copy-aside {
   min-width: 0;
+  min-block-size: 0;
   display: grid;
   align-content: start;
   gap: 18px;
   padding: 18px;
+  overflow: auto;
   border: 1px solid rgba(217, 213, 193, 0.14);
   background: rgba(0, 0, 0, 0.2);
 }
