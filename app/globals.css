@@ -1832,7 +1832,8 @@ button:focus-visible {
 
 .memory-panel {
   grid-column: 3;
-  grid-row: 3;
+  grid-row: 2 / span 2;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -2100,7 +2101,7 @@ button:focus-visible {
   --memory-shard-x: 0px;
   --memory-shard-y: 0px;
   position: relative;
-  min-block-size: 100%;
+  min-block-size: 0;
   block-size: 100%;
   overflow: hidden;
   border: 1px solid rgba(217, 213, 193, 0.12);
