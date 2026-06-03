@@ -392,7 +392,7 @@ window.__GESTALT_RECORDS = [
     "status": "Draft",
     "started": "2026-06-03",
     "updated": "2026-06-03",
-    "summary": "A Lost Signal?",
+    "summary": "I'm here, between space... and time.................",
     "banner": "",
     "headerImage": "",
     "samples": [],
