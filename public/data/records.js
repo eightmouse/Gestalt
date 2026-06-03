@@ -385,6 +385,31 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-lost-signal",
+    "title": "A Lost Signal?",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-06-03",
+    "updated": "2026-06-03",
+    "summary": "A Lost Signal?",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "tags": [
+      "logs"
+    ],
+    "milestones": [],
+    "body": ":::note 03 / 06 / 2026 - New Note\nYes, I'm still here.\n\nBit of a quiet few days huh? Yeah, well.. I played a bit of PoE2 with some friends since I can't turn that offer down heh. I'll make a note for it later during the week!\nHaven't forgotten P5R, still there.. just taking a tiny little 'break' since I played other stuff last weekend. I'll go back to it soon enough.\n\nSpeaking of Gestalt it got a bit bugged while I was making changes, I fixed most of it and did some cleaning and now planning on some changes to 'Setup' section. I did say no new changes for a while, problem is that I want the site to be done and look exactly like it is in my mind and then I can move one for a little, before actually make any new big change. For now I'll do minor passes here and there ~\n\nBit of a slow/short update but nothing crazy is going on, I'm also slowing down with progress and updates as weather is draining my soul!\n\nAnyhow, that is it for today! ~\n:::"
+  },
+  {
     "id": "a-blocked-signal",
     "title": "A Blocked Signal",
     "section": "logs",
