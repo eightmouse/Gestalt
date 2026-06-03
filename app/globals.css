@@ -1822,7 +1822,12 @@ button:focus-visible {
 }
 
 .activity-panel {
-  align-self: start;
+  align-self: stretch;
+}
+
+.activity-panel .activity-feed {
+  min-block-size: 100%;
+  align-content: space-between;
 }
 
 .weather-panel {
