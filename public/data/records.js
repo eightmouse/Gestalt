@@ -18,11 +18,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "system",
-      "index",
-      "home"
-    ],
     "milestones": [
       {
         "label": "Archive Shell",
@@ -63,12 +58,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "JavaScript\nTypeScript\nCSS\nMDX\nHTML",
     "recommendation": "",
-    "tags": [
-      "gestalt",
-      "blog",
-      "archive",
-      "portfolio"
-    ],
     "milestones": [
       {
         "label": "Archive Shell",
@@ -112,12 +101,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "Python",
     "recommendation": "",
-    "tags": [
-      "kirapatch",
-      "pokemon",
-      "gba",
-      "patcher"
-    ],
     "milestones": [
       {
         "label": "Method 1 Research",
@@ -156,12 +139,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "QML\nPython\nJavaScript",
     "recommendation": "",
-    "tags": [
-      "sootopylis",
-      "pokemon",
-      "python",
-      "desktop"
-    ],
     "milestones": [
       {
         "label": "Prototype Shell",
@@ -200,12 +177,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "Python",
     "recommendation": "",
-    "tags": [
-      "kiratally",
-      "pokemon",
-      "shiny-hunting",
-      "tools"
-    ],
     "milestones": [
       {
         "label": "Hotkeys",
@@ -244,12 +215,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "Python: Back-end\nElectron: Front-end\nClaude: General audit",
     "recommendation": "",
-    "tags": [
-      "innkeeper",
-      "wow",
-      "electron",
-      "blizzard-api"
-    ],
     "milestones": [
       {
         "label": "Backend Data Flow",
@@ -292,12 +257,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "persona",
-      "games",
-      "jrpg",
-      "play-log"
-    ],
     "milestones": [
       {
         "label": "Play Log Opened",
@@ -326,12 +285,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "update",
-      "ai",
-      "performance",
-      "dashboard"
-    ],
     "milestones": [
       {
         "label": "Dashboard Update",
@@ -370,11 +323,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "first-entry",
-      "personal",
-      "archive"
-    ],
     "milestones": [
       {
         "label": "First Entry",
@@ -403,9 +351,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 03 / 06 / 2026 - New Note\nYes, I'm still here.\n\nBit of a quiet few days huh? Yeah, well.. I played a bit of PoE2 with some friends since I can't turn that offer down heh. I'll make a note for it later during the week!\nHaven't forgotten P5R, still there.. just taking a tiny little 'break' since I played other stuff last weekend. I'll go back to it soon enough.\n\nSpeaking of Gestalt it got a bit bugged while I was making changes, I fixed most of it and did some cleaning and now planning on some changes to 'Setup' section. I did say no new changes for a while, problem is that I want the site to be done and look exactly like it is in my mind and then I can move one for a little, before actually make any new big change. For now I'll do minor passes here and there ~\n\nBit of a slow/short update but nothing crazy is going on, I'm also slowing down with progress and updates as weather is draining my soul!\n\nAnyhow, that is it for today! ~\n:::"
   },
@@ -428,9 +373,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 29 / 05 / 2026 - New Note\nThis week has been exhausting, juggling different things at a time is definitely not the way to go and the weather is making it heavier, jeez. I've been doing some minor changes to Gestalt on the mobile side, just when I though that it would slow down, here we are.\n\nOn a brighter note, I've been playing lots of One Piece Pirate Warrior 4 (OPPW4) I able to do 2-3 missions every night and it's fun, haven't tried online though, I'm curious. Like I said before, it's a very chill/fun game to kill time especially after a LOOONG day heh, picking it up was definitely a good decision.. thanks to the HUGE discount tho.\n\nTomorrow PoE2 is going crazy, big update + discount I'm hyped but I don't think I'll be able to play it for a while.. or at least not as I would like to, which is fine, I want to finish P5R or at least make sure that I have a more stable routine before I can juggle P5R and PoE2.\n\nSpeaking of P5R, since I have a decent amount of hourse there's something I'd like to get off my chest:\nI like it, there's no doubt in that.. it's quite heavy on story, almost a full blown visual novel! I've been away from story heavy games for a while, cause.. lets be honest there aren't many nowadays. So I don't think it's flaw of the game but more of a me problem, which if I do want to play older 'gems' that I missed, then I might have to work on it a little bit.. Metaphor:ReFantazio is on the list, but I would absolutely not be able to handle it mentally after P5.\n\nQuick topic change, I need to update the setup section still cause I have not yet decided how to display content there properly.. I have few cool ideas but I'm not 100% on them, I have to try and see. Same thing for 'Logs' and 'Archive', I don't want the same redundant look all over the place but at the same time I don't want heavy spaghetti all around. I'll see what I can do though.\n\nAnyway, just a quick ramble nuff much ¬\n:::"
   },
@@ -453,9 +395,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 26 / 05 / 2026 - New Note\nI almost forgor to add a note for Gestalt since I updated it... it's the weather I swear. Like I said in the note I think new features will stop/slow down for a while, I want to focus on polish for a while, make sure it becomes more and more solid and if any new ideas pops up, so be it!\nOutside of KiraPatch, I'm helping a friend with their little project since they want to start posting/share their hobbies and track things overtime. I'm more than happy to help, I really like designing things, creating stuff etc. Lots of fun ~\n\nProjects aside, yesterday I started One Piece Pirate Warriors 4, I was not expecting first mission to be 15 ish minutes but It was fun and I was looking for something like that to play during working days, easier/quick less demandind... compared to Persona 5 at least heh.\nThere are few games I added to my wish list but I've gotta plan what to play carefully cause if each game turns out to be like P5R, then I'll play 2-3 games in total this year LOL, no shades.. it's a compliment ~\nPoE2 I think I'll buy but... friday will be impossible to play, regardless of my schedule.. since they're dropping a bomb of an update + discount.. yeah no XD\n\nWell, anyway.. that's it for today's note! Also, this isn't a daily thing.. I mostly do it if I'm in the mood of rambling/yap yap.\nDas it, buhbay\n:::"
   },
@@ -478,10 +417,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "Yes but with a big BUT.\nIf you can pick up the Ultimate or Legendary when it's discounted go for it, either on switch, steam or whichever console you prefer.\nOutside of discount, I would not suggest buy the game.. at all.  Base game has not much to offer once you finish the main content, if you don't have the DLCs you're not gonna be happy at all. Most of the fun for ME, came from grinding a little bit early on and trying all the new characters afterward. DLCs really offer a lot of extra stuff that is quite a must in my opinion.\n\nThat said, it's a solid fun game but price is bit too high.",
-    "tags": [
-      "musou",
-      "action"
-    ],
     "milestones": [],
     "body": ":::note 03 / 06 / 2026 - King of the Pirateeees!\nSoo, I finished the 'main' story.. kinda disappointed cause they just went with an original ending that is MEH. That aside game is super fun and the Ultimate Edition adds lots of cool stuff! Yes, in theory the game is not over until you S+ everything but I'm not going to do that, especially cause there's nothing hidden behind that(?). I did S most of the content, tried all the various DLCs characters and some of them are quite busted, mostly the Season Pack 2 and G5 Luffy ofc.\n\nThat aside, game is fairly short, I think it's worth the discounted price but I would've not payed full price for it probably... I mean, its a 10/15ish hours but it has tons of replay ability especially if you play with friends at higher difficulties!\n\nNow, here's my fair bit of criticism:\nThe game is fun like I said and there's a wide cast of characters. My issue is, some characters despite having big effects and wiping maps/destroying everything.. lack a 'proper' interaction with the map sorta.. could be due to tech restrictions or simply that they prefered having a smooth gameplay over potential slop, no idea.\nWhy do I say that? Well, let's take G5.. what makes it special? In my opinion, it's the toon force.. which is not displayed whatsoever.. you're basically just flying around but not really disrupting the gampleay in any shocking way.\nAlso, skills like 'Conqueror's Haki' should be removed and be part of the characters kit, cause it's kind of a waste and not really impressive since the animation is re-used for pretty much everyone anyway.\n\nDespite that, the game is fun really, I enjoyed every minute and in co-op is probably even funnier! I just hope and wish that somehow (if they make a sequel) consider making characters more unique and special in their own way!|\n:::\n\n:::note 27 / 05 / 2026 - I'm gonna beeeee\nStarted the game yesterday, literally did 3 missions so far (last one today). The game is hella fun, last musou I played was Dinasty Warrior... 6? But anyway, tons of fun and its One Piece, come on. So far I hate Sanji, since he's SLOW and clunky af. Zoro is a bit better and Luffy is of course the goat.\nThe scores I got so far in the 3 missions:\n\n![It spells ASS, LMAOOOO, LOLOLLO](public/media/records/one-piece-pirate-warriors-4/1779813357600-screenshot-2026-05-26-221727.png)\n\nI'm so funny.\nAnyway, by the look of it the game is a bit grindy in theory cause levelling up things requires resources and I can run stuff as much as I want for better scores etc, not bad honestly, I like the idea ~\nAs a chill game to play during the week is goated. Years ago I'd play LoL, CS2, Valorant during the week prior to sleeping, caue I hated myself (probably). Nowadays during the week I like to keep it chill and play either single players with some repetitive/grindy mechanics or mmos IF I'm invested in one.\nI'm not playing any MMO at the moment though, maybe PoE2 but we'll see.\n\nToo much nonsense ramble, this is about One Piece. So, yes the game is a typical musou, tons of enemies, big effects and lots of dopamine. I have not played the other 3 titles, mostly cause they went completely under the radar for me, no idea why.. maybe lack of interest in the genre as I'm not a big fan, not because I don't like it but because in general if you played 1 musou, you played them all.\nCan't wait to try different version of each characters, I'm hoping they get better in terms of mobilty and playstyle ~\n:::"
   },
@@ -504,9 +439,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 25 / 05 / 2026 - New Note\nOh boy, mondays. Good start of the week everyone, may we reach the weekend.\nI'm an expat, currently in Asia and weather here is getting HOT and humid.. I hate it, I miss my little European city TT\n\nYesterday I released a new note for Persona 5, I wish I had more time or at least that I could progress faster but at the same time I enjoy not being able to do so, cause it would ruin me.. kinda. Anyway, I purchased 'One Piece Pirate Warriors 4 Ultimate Edition' last night while I was in bed, why? Cause it was giga discounted and I'm a big One Piece fan. I'll probably be playing it during workdays, to cool off!\n![WOHOOOO](public/media/records/a-hot-signal/1779689504729-screenshot-2026-05-25-141128.png)\n\nSpeaking of games, I saw that Path of Exile 2 is going on sale soon too, I might be buying that one as well and we'll seeee ~\nYes it's lots of games but if they're on sale I like to take advantage of it, even if I don't play them immediately.. at least I saved some cash ehehehe.\n\nProjects wise, I will push some more updates soon. I think I'm almost done with the foundation.. then it will be new features/polish over time. I'm gonna put rest of the energies back into KiraPatch and if everything goes well I might start working on KiraPatch DS, no promises though cause it's tough, very.\n\n- Cheers!\n:::"
   },
@@ -529,9 +461,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 22 / 05 / 2026 - A Weak Signal\nThis week has been something, we definitely live in a society. Jokes aside, very tiring week, I spent lots of time between work and fixing Gestalt on my free time. I did not have enough brain power to work on KiraPatch, that requires lots of patience and focus.\n\nLike I said in the Gestalt note, I'm really happy how the site is turning out, it feels cozy and personal and its exactly how I envisioned it pretty much. I'm thinking of different ways to improve it now, between tags and also a way to display what other games I play.. like gatcha games or MMOs.\nObviously the active game, I want it to be a game that I'm experiencing fully.. doesn't have to be single player necessarily but the focus is to play games that I've missed on and track them this way, it helps!\n\nSpeaking of games, my rotation for mobile/gatcha is Nikke, Wuthering Waves, Dokkan, Granblue Fantasy. I mostly roll between them, sometimes I'm active on 2 or 3 at a times, sometimes I take a break and only play 1 of those. These games, especially GBF are chores and repetitive, which I wish they'd improve to make them feel like games and not jobs.\nWuthering Waves is back on rotation because of the Anniversary. I'm a 1.0 player, I played all the way untill first anniversary, then I started being seasonal or log in sporadically, mostly cause I felt tired of the daily routine.\nNikke similar situation, I play it a lot and farm for a while then stack resources and log in occasionally until big events to dump all the resources. I'm really looking forward for a Crown rerun, I don't have her yet.. so annoying.\nThat's pretty much it for other gatcha games too, I basically play seasonal or for long periods and then go back to seasonal. I'm planning on having a way for me to display these differntly, so I can show each of my accounts, what characters I have etc etc.\n\nI'm also going to rework the Hardware and Software area, cause I want to share my setup properly and tools I use. It's going to take time and for now I mostly aimed at making the site usable and polioshed, somewhat.\n\nThat's it for now, this was a spree of random things but that's exactly what I want the log to be about, random stuff!\n:::"
   },
@@ -556,9 +485,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 20 / 05 / 2026 - It is\nSo after pushing this morning and making the site pubblic, I spent a big chunk of the time checking for more bugs, polishing UI/UX a bit and structural changes of the Studio.\nI now have a better, tidy system in-place, easier to create/edit notes and push changes, thanks to some little scripts that Codex helped me to make. Nothing drastic look wise, just some polishing as I said, I don't want to make the site heavy or bloated with nonsense, otherwise it's just bleh.\n\nI still have some big stuff in mind but I'll juggle them between the other projects I'm working on ~\n:::"
   },
@@ -581,9 +507,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 20 / 05 / 2026 - Page is up!\nPage is up and running!\n\nFor anyone reading this, hi!\nThis is my personal space, I'll post updates and rambles about the different things I'm working on and the games I'm playing/played!\nI expect the space to change a bit overtime, this is just a very solid foundation that I've been building for quite a while~\n\nCheers!\n:::\n\n:::note 20 / 05 / 2026 - An Opening Signal\nSo beside getting my ass kicked in Madarame's palace, I've started doing some fixes in the UI/UX since I've found lots of bugs while adding entries in the '03_Games' section.\nI think I'm gonna host on GitHub today, just doing some minor polishing here and there cause I want this to be usable by people that come by ofc.\n\nThat said, I really like how it is turning out and hopefully I get to implement all the ideas I have without making it into a huge mess!\n:::"
   },
@@ -606,9 +529,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "logs"
-    ],
     "milestones": [],
     "body": ":::note 15 / 05 / 2026 - New Note\nSoo.\nI now have a local Studio that allows me to edit, add make changes site wide without having to touch the code, cause its 2026 and I don't want that.\nHad to dig and spend a solid amount of time on performance, cause both the site and studio were lagging in certain cases.\nThat aside, I'm still polishing things around and discovering bugs, deciding what to change or where... it's a lot really..\n\nI barely had time to do anything else, between life stuff and this.\n\nAnyway, complaining aside I'll probably chill and play Persona during the weekend so I can update/polish that area.\n:::"
   },
@@ -631,10 +551,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "If you got this far, you have to play it. The different releases made it better and its crossplatform, so you don't need a DS!",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [],
     "body": ":::note This was good, this was sad..\nSo, this game came after Kingdom Hearts 2.\nIt answered a lot of unanswered question but at the same time, opened up a whole other world.. I don't remember the game very well, since I played 1 time a long time ago, I remember the plot, somewhat.. I have an idea of what happens generally, beside the point since I'm not doing a review anyway or judging.\n\nFirst off, I was absolutely in love with the fact that I could've played Kingdom Hearts on my DS, yes graphically if we looked at it with today's eyes, does not look  impressive but at that time, I was literally so happy.\nGameplay is pretty much the same with the addition of other stuff on the side that powers up abilities and skills, won't go into much details cause its somewhat of a complex system even for today standards.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n\nPlot wise, it's set before KH2 and lots of the characters you'll see you know already after playing KH2, its a deep dive into what goes on inside the organization.\nBecause of that, you'll get to know each character better plus a ton of other details that may or may not break your brain...\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828643669-kingdom-hearts-358-2-days-ice-cream-644x483.jpg)\n\nI haven't mention OSTs or Themes much, but just assume they're good even if I'm no talking about them, this IP has one of the best OSTs/music in the gaming industry and they still deliver to this day with each new release.\nHence why I said 'This was sad' in the title, plot + soundtrack hits hard.. and despite not remembering everything 100% I remember enough to say that it was a very very pleasant surprise..\n\nOh, and... you could play multyplayer.\nYep, that was insane and I have no clue why they stopped doing it, cause it was crazy good.\nIt was a Monster Hunter like gameplay, you had quest and then match up with people if I remember correclty, dope no joke.\n![kingdom-hearts-358-days-2](public/media/records/kingdom-hearts-358-days-2/1778828629284-kingdom-hearts-358-2-days-1.jpg)\n:::"
   },
@@ -657,10 +573,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "Yes but don't force yourself into finishing it 3 times, just watch it on youtube. \nI've finished it 3 times myself and I don't want people to get through it just for different endings that you can simply watch. \nIt's repetitive past the obvious gameplay differences of the characters.",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [],
     "body": ":::note A scattered memory that's like a far off dream.\nThis is another one of the spin-offs that came out for a different platform, lots of people missed it.. I almost did too.\nI won't google stuff, cause these notes have to be genuine.. so forgive me if timelines are messy.\n\nThis came out after the DS one, it was an exclusive for PSP and luckily for me, since I was a spoiled kid.. I owned one.\nComplaints aside for being a spin-off, the game its very solid and reinforced what I felt for the DS title, a portable KH with better graphics, improved under every aspect (almost) but obviously still portable, so limits were there.\n![kingdom-hearts-birth-by-sleep](public/media/records/kingdom-hearts-birth-by-sleep/1778830005826-maxresdefault.jpg)\n\nPlot wise it was obviously interesting as we finally get to know who the 3 fellas from the secret ending of KH2FM are, on top of that we get a bigger picture of the whole situation but it's also were it gets messier because of time travels and recurring familiar faces.\nAt this point, I knew Roxas from KH2 but why is there another Roxas in my PSP game?????????????????\nThe game does tell you, it's not Roxas but Ventus but this is also were things get trickier because somethings in these games are just subtle or not always explicitly told, which can be fine or a problem, depending on who plays it.\n![kingdom-hearts-birth-by-sleep](public/media/records/kingdom-hearts-birth-by-sleep/1778830017742-hq720.jpg)\n\nThis game is where I kinda started feeling the darker (no puns), melancholic side of the plot.\nYou get Terra, which struggles the whole time with his internal battle, figuring things out.\nAqua, being the mother of the trio.\nVentus, the little brother that is just not aware of what is going on and ends up being swallowed by this whole ordeal.. well kinda.\n![kingdom-hearts-birth-by-sleep](public/media/records/kingdom-hearts-birth-by-sleep/1778830054577-kingdom-hearts-birth-by-sleep-aqua-standing-in-the-station-of-awakening.jpg)\n\nFrustrating that they had to hide each different ending behind their individual playthrough, cause past the differences in gameplay.. the game is repetitive, you're re-doing the same worlds in a different order but with a different character, that's it.\nI did it, because I was not aware of it but I really don't see the point on recommending people to do it, unless you're aiming for 100%.\n![kingdom-hearts-birth-by-sleep](public/media/records/kingdom-hearts-birth-by-sleep/1778830066838-when-playing-birth-by-sleep-what-order-do-you-guys-play-v0-fkur6y5csma91.webp)\n\nI liked all the various minigames, not all of them, NOT ALL OF THEM.\nThe introduction of more Disney world and characters is always a surprise, I think most people always look forward to a new title also because of that, you'll never know what worlds they introduce or if they'll show a different version to something we've already visited.\n\nAll that said, I liked it... it left something bitter but I liked it and honestly, being able to play a KH game wherever you wanted, was just too good.\nOSTs impeccable as always.\n:::"
   },
@@ -683,10 +595,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "If you're looking to play the game in 2026, chances are you have the full collection so you can't really skip it.\nIf you were one of the people like me, who could not afford to just buy consoles for exclusives , I'm sure you felt my same frustration.\n\nThat said, would have I recommended it back then? I would have, if you had the money for the console or if you had the console already, why not.",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [],
     "body": ":::note Why, Nomura?\nI don't have much to say here, I had not intention of buying a whole new console for this game and I did not.\nI watched a full play through on youtube and called it a day.\n\nI have to admit, gameplay was fun and it used the 3DS tech + touch screen and dual screen, in a clever way.. however it was once again a slap in the face from Nomura, releasing very important plot info into another console, AGAIN.\n\nAs I said, gameplay wise it was fun.. plot was interesting and quite important to understand everything before and after.\nI yet have to play this game, I'm sure I will as I have the steam collection but I don't plan on doing it anytime soon.\nAll I have to say is that, I was very disappointed back then as I am now, I'll probably carry it with me forever.\n:::"
   },
@@ -709,10 +617,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "If you've played the first one, you'll love this one, especially combat wise.\nPlot, as I said before.. starts getting weird.\nThis is a must play, absolutely recommended.",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [],
     "body": ":::note A scattered dream that's like a far off memory\nI'll be writing this note to express how it felt playing it for the first time, not how it felt the second time or in recent years as those experiences are different.\n![kingdom-hearts-ii](public/media/records/kingdom-hearts-ii/1778827320498-kingdom-hearts-ii.jpg)\n\nPersonally I liked it a lot, it's not my favorite but close to it.\nCronologically speaking it comes after the first one (DUH), so in theory if you finish the first on and play this one you're not missing much, what happens in-between the two is.. not filler as it definitely helps understanding what is going on/what happened, however you don't have to play the spin-offs.\n\nWhen I first played Kingdom Hearts 2, it was at the last year in middle school so I definitely played games differently than I do now of course.\nBy that I mean, I was chasing the feeling more than the logic behind a plot or inconsistencies.. not that I'm an annoying prick now that only plays perfectly written games, but obviously it affects the whole experience too when you're older.\nI was quite confused when instead of Sora I was playing this random, dumb dumb Final Fantasy looking dude.. I thought 'Wait, so Sora is gone now?'\nObviously, I was WRONG.\n![kingdom-hearts-ii](public/media/records/kingdom-hearts-ii/1778827347353-scjf3d.webp)\n\nSo, in this chapter we're basically picking up from where we left off.. Sora is now older, things have changed, Riku is MIA, Kairi is MIA, lots of new faces and people keep calling me Roxas, what the helly.\nThis is where if you've missed the spin off/haven't played them.. you're missing quite a bit.. I'm not saying its bad or good, but Square Enix knew better than to do this bs, anyway.\n![kingdom-hearts-ii](public/media/records/kingdom-hearts-ii/1778827423586-idk-if-people-still-think-this-way-but-is-it-still-v0-rstbpgje9eva1.webp)\n\nPlot wise, I enjoyed this one more.. despite being messier and hinting at were the franchise was heading.. I really liked the introduction of all the different members of the Organization, their different style and personalities accompanied by their different OSTs, PEAK.\n\nCombat was definitely an improvement, nowadays it's regarded as the best one between all the games even though there were multiple titles afterward trying to achieve more.\nBack then, I think it felt almost as a groundbreaking advancement.. they added lots of different modifiers, skills so that you could chain into things and bug some boss fights even.\nLoved discovering all the different skills locked behind leveling the different Forms, not a big fan of some of them but hey, it was a cool thing to add and made the game very interesting.\n\nIn the previous title I didn't mention Keyblades or too much details about the game, not because I don't want to spoil but mostly because I'm not here to make an essay about the game or a review, this is just a personal, digestible ramble of what all these different titles left me with or what goes through my mind as I play them.\n![kingdom-hearts-ii](public/media/records/kingdom-hearts-ii/1778827378546-find-all-seven-orichalcum-on-kingdom-hearts-2-step-9.jpg)\n\nKingdom Hearts 2, was undoubtedly a very important part of my life.. it's one of those game that I played during my teen edgy phase, it accompanied me through a lot and even nowadays I can simply replay it, with all the cool mods available and have a BLAST!\n:::"
   },
@@ -735,10 +639,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "Personally, it was PEAK.\nI do recommend it, combat is not as good as previous titles but it's way funnier in a way, so it doesn't really matter.\n\nLoved it.",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [],
     "body": ":::note I've been having these weird thoughts lately.. like.. is any of this for real.. or not?\nUnpopular, maybe not so much, opinion:\nThis game, for ME.. was it.\nYes, the combat was very problematic and floaty.\nThey did improve it quite a bit although it was nothing compared to what we have in Kingdom Hearts 2.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778855981058-450px-counter-kick-khiii.gif)\n\nWhy is this my favorite then?\nOkay so, it's a mix of.. being starved for a mainline game for 15 years and, the fact that visually it's very good, gameplay is fun and cool and some worlds are GOOD.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778855870276-kh3-sora-donald-goofy-flynn-via-disney.jpg)\n\nPlot wise, this Arc is finally OVER.\nAfter many years of theory crafting, replaying all the games, mods, videos, rambles.. it was over.\nYes.. the Arc is over but a plethora of questions have not been answered, in fact there are even more and its even more confusing.\nThis game is a mess plot wise, to be fair I could even say everything past KH2 is a mess plot wise... cause time travelling, paradoxes and the spin-offs being onto different consoles made it incredibly hard to follow and be understood.\n\n\nThat said, I think it was overall an improvement from all the other games at least tech wise, visuals, audio.. they did a very good job.\nObviously, gameplay as I said briefly was not the best that it could've been but I personally liked it a lot regardless, I think all the other new mechanics, flows, summons etc.. basically covered for it(?).\nIt's definitely not as hard as KH2, nothing that far off from it.. it's just not as hard, close to it in terms of difficulty but KH2FM was different.. maybe it was due to the different stack used, engine.. I don't know.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778855823229-kingdom-hearts-3-remind-dlc-screenshots-sora-double-form-keyblades-oathkeeper-ob.jpg)\n\nThe DLC though... well forget everything I just said about difficulty, cause the DLC was insanity.\nYes the Org. fights were hard, I'm not saying they were easy cause I'd lie..\nBut the real MVP is Yozora, that fight was a VERY GOOD fight and challenging like no others.\nIt was even more fun watching people speed run through it, with different strats or the fellas being cracked and just bullying him for fun.\n\nThe 2 endings are, beautiful and confusing like always.\nNot gonna mention the 'box' ending cause it gives me headache even thinking of it.\n![](public/media/records/kingdom-hearts-iii-re-mind/1778856267414-tumblr-c937959e1eaa54224100e9f6767241eb-0d82f0aa-640.webp)\n\nOverall, this was for me the best KH3 PROBABLY due to nostalgia, having waited for long and the visuals being very good.\nI loved it and I hope I live long enough for Kingdom Hearts 4.\n:::"
   },
@@ -761,9 +661,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "Definitely recommended, it's a breath of fresh air. Kingdom Hearts music is amazing and enjoying them this way it's a peak experience!",
-    "tags": [
-      "rhythmgame"
-    ],
     "milestones": [],
     "body": ":::note 15 / 05 / 2026 - A surprise\nI'll start by saying that this IS, unironically, the only spin-off and a good one too. Yes it is a very simple game and they managed to add some tidbits of lore here BUT, you can simply watch the video on youtube and call it a day. It's not the typical Kingdom Heart game with same gameplay loop but unique features tied to the console, which honestly is what they should've done with all the non main line games.\n![Would you look at that](public/media/records/kingdom-hearts-melody-of-memory/1779457182514-maxresdefault.jpg)\n\nGame is fun, runs well, experience is smooth and you could even use it to introduce people to the IP. I wish they'd explore and experiment more, with ideas like this.. It doesn't always have to be a JRPG on a different consoles that costs 500 bucks. Sometimes it is that simple but I know they have restraints for different reasons that probably no one would agree with.\n\nRambles aside, this is about the game. There's really not much to say, it's a music game using all the OSTs from the game. Nowadays it's available for PC too, thanks to the huge releases they did for Epic, Steam etc etc.\n:::"
   },
@@ -786,10 +683,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "Yes, just play it.\nIt's very cool and the steam version with the graphical improvement it's even more worth it.",
-    "tags": [
-      "arpg",
-      "ccg"
-    ],
     "milestones": [],
     "body": ":::note Believe in the heart of the cards.\nThis is one of THE best entries in the series, not only cause they somehow experimented with a completely different system and made it work, but also because of the plot.\nYes, there is a GBA version and no, I'll end it at that.\n\nGame was pretty straight forward, its Kingdom Heart 1.5 so we're not in Kingdom Hearts 2 but the even prior to it or at least a parallel story to what was happening in other titles.\nGameplay was different, they replaced the action combat from the first one and made it more strategic but still action.\nYou have a deck of cards, that you can edit with different cards that you find around the world, unlock or buy.\nCards can heal you, refresh the deck, debuff, buff.. sounds familiar? Yeah I think KH Union X definitely was doing something.\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854180957-level-up-menu-from-rcom.webp)\n\nYour deck had to be clever, you can't just have random cards or you'll waste time and do no damage... so you had to mix and match, have multiple copies of some cards.. it's a lot.\nBefore attacking, you could stack up to 3 cards, to make a big value and have different effect/stronger attack.\nStacking different cards, sometimes gave you special attack.. so some deck revolved around stacking as many copies of specific cards as possible.\nDuring bosses, you'd have to cancel their attack by either matching the value of their attack:\nIf they played 2 cards for the value of 18, you could stop them by playing something equal.\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854139954-screenshot-2025-02-06-6-20-36-pm-1200x676.jpg)\n\nSoo.....the fun was managing your deck, while also controlling the character, cause you can't just stand still.. duh.\nAnd it was definitely something.\n\nPlot wise, we see lots of faces that we know already if you played the DS game and some new ones.\nSora is wandering through this castle and the deeper he gets, the more memories he loses.\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854163662-kingdom-hearts-re-chain-of-memories-sony-playstation-2-ps2-video-game-5.webp)\n\nIt was definitely a different story from what we were used to and it was getting more intricate but more interesting too ~\nThe very cool thing they did is.. game was not done once you beat it with sora, you could now play through Riku's POV!\n![](public/media/records/kingdom-hearts-re-chain-of-memories/1778854260705-450px-mm-miracle-lv3-khrecom.gif)\n\nNow, it would be hypocritical of me if I didn't mention BBB, since I complained about it having pretty much same story with different POVs and repeating same game world loop.\nThis one wasn't gamebreaking but I think it was handled differently, yes Riku had different cards and powers compared to Sora but boss fights were also different, so you were playing a completely different game almost.\nBBB main issue is that it was pretty much a 1:1 but with different characters, which for ME.. wasn't enough to justify replaying the game 2 whole times.\n\nI think up until this point, it felt like (at least back then) that what they envisioned/path was different, because this games and KH2 are still giving me that KH vibes that is somewhat... I wouldn't say lost replaced/overshadowed by something else.\nPlus it felt like a very well thought game.\n:::"
   },
@@ -812,10 +705,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [],
     "body": ":::note It's probably a me issue\nI did not like it, I played some of it because of the plot being relevant of course... but I did not like it.\nFor me it was just easier to watch the rest of the game through YouTube and call it a day.\nPersonally, I don't know why this game feels boring but it's just not it.. I don't know why they even made it in the first place.\n\nThat's it I guess, don't really have much to say.,\n:::"
   },
@@ -838,11 +727,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "I obviously can't recommend this game as it doesn't exist anymore, you had to be there.\nWould have I recommended it? Yes, in-fact I did recommend it to my friends and we had lots of fun times and sad ones too, gatcha rates were baaad.",
-    "tags": [
-      "gacha",
-      "online",
-      "mobile"
-    ],
     "milestones": [],
     "body": ":::note I've been having this weird thoughts lately\nI played this game from the moment in came out and all the way till it died... I even spent money, not much of course but still.\nI'm not gonna talk about Dark Road, as I simply gave up at that point and just checked the updates from other people.\n![](public/media/records/kingdom-hearts-union-x/1778851730951-wp-1472869322835.png)\n\nThis game was simple, move your character around by dragging your finger across the screen, engage with enemies on the map and it would then be a turn based fight.\nTo attack, you had medals that once you swiped up would activate and do something, a skill which did damage or buffed you, debuffed the enemy or as game went by, all 3 of those.\n![](public/media/records/kingdom-hearts-union-x/1778850306027-maxresdefault.jpg)\n\nThen, what's special about it?\nCustomization, you could make your own character and make it look goofy as hell or mix and match different outfits, if you were lame you could've just looked like Sora, Riku or whoever.\nIn this game, you pulled for 'medals' the equivalent of an SSR Card or an SSR Character, effects where not particularly crazy, pretty simple but cool looking stuff..\nIt was the numbers and the effect that came with them.\n![](public/media/records/kingdom-hearts-union-x/1778850314682-kingdomheartsunion-2475703b.png)\n\nSo, early on medals were pretty straight forward, they'd either:\nDamage, Heal, Buff you, Debuff enemy or a combination of those, until they became crazy later on.\nThis game had elements, each medal carried an element so you had to play around advantages, not just that.. you had keyblades and they were all different and, late game it was pretty much a must to use the correct combination of keyblade/medals.\n![](public/media/records/kingdom-hearts-union-x/1778850278749-kh-union-x-header.jpg)\n\nNow, it's a gacha.. don't get excited.\nThat meant, if you pulled the newest medal, you'd be set for this rotation of weekly/monthly content, get all the cool resources, free pulls and cosmetic with ease.\nIf you didn't.. ggs you're screwed.\n\nAnd did I mention PVP? lets just.. lets just move on.\n![](public/media/records/kingdom-hearts-union-x/1778851190523-pvp-sample3.png)\n\nBUT HOLD ON, you thought pulling the medal was it? XDDDD LMAOOOO\nNuh uh, you needed copies and the only alternative to that was an item, that could've been used instead of a copy BUT, it was extremely rare and scarce.\nSo even if you got the medal, you'd have to pull for copies or it would simply not perform as it should.\n\nNow, game was quite dry in terms of content and very very greedy, I remember seeing videos of people dropping 5-10k to pull for medals, clearing the newest event and then.. just nothing.\nOvertime it got better.. more rewards, more freebies but at the same time more greed Square Enix.\nIt was absolutely way better half way through its life, events were somewhat doable, lots of free resources distributed, guilds meant something.\nLike, there was a lot and the game was actually enjoyable.\nObviously though, if you were not strong enough you could NOT progress, which meant important story parts were locked behind luck and money.\n![](public/media/records/kingdom-hearts-union-x/1778851622616-kingdom-hearts-backup-data.jpg)\n\nAt that time, we were all collectively waiting for KH3.. so outside of the gacha, replaying old titles with mods and theory crafting, we had nothing.\nDespite that, I really liked this game and I wish Square Enix made a replacement for it.\nThe game ran for quite a while, however they basically ran the game as a placeholder for KH3, it was something to entertain and make money while people were waiting for the main title.\nLike I said, it was a gacha and a greedy one at that but nothing as bad as some gatchas we have today.\n\nBecause there were factions and a leader board, pvp, raids etc.. the game was basically a weekly chore where you had to keep up with new releases or get thrashed by the last boss with 191239 bars of HP and the people in PVP.\nThat meant less rewards, less pulls, more FOMO.\n\nThe game was genuinely fun and it made people feel part of KH world, despite the greed I think it was a very fun experience and I'm glad that I can say I was there.\n:::"
   },
@@ -865,10 +749,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "If you're looking for a memorable experience and are ready to play hours and hours of coca- magic, with your Disney friends.. \nIt's quite a long experience and as I mentioned in the Note, you might or might not be disappointed, so do as your heart feels. \nGame is solid, music is phenomenal and this game as a standalone works very well but no one stops at the first one though.",
-    "tags": [
-      "jrpg",
-      "single-player"
-    ],
     "milestones": [
       {
         "label": "Play Log Opened",
@@ -897,9 +777,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "setup"
-    ],
     "milestones": [],
     "body": ":::note 15 / 05 / 2026 - New Note\nModel: MSI GF63 Thin 11SC\nCPU: Intel Core i5-11400H\nRAM: 12GB RAM\nGPU: NVIDIA GeForce GTX 1650 (Laptop, 40W)\nGPU: Intel(R) UHD Graphics\nOS: Arch Linux + Hyprland\n:::"
   },
@@ -922,9 +799,6 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "",
     "recommendation": "",
-    "tags": [
-      "setup"
-    ],
     "milestones": [],
     "body": ":::note Current Setup\nModel: MSI Katana GF66 11UC\nCPU: 11th Gen Intel(R) Core(TM) i5-11400H @ 2.70GHz (2.69 GHz)\nRAM: 16.0 GB (15.7 GB usable)\nGPU: NVIDIA GeForce RTX 3050 Laptop GPU (4 GB)\nGPU: Intel(R) UHD Graphics (128 MB)\nOS: Windows 11\n:::"
   }

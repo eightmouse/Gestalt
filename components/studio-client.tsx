@@ -22,7 +22,6 @@ type StudioForm = {
   attachments: string;
   progress: number;
   priority: number;
-  tags: string;
   milestones: string;
   hardware: string;
   technicalStack: string;
@@ -79,15 +78,7 @@ const studioSections: Array<{
 ];
 
 const sections = studioSections.map((section) => section.id);
-const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
 const studioDraftStorageKey = "gestalt-studio-drafts-v1";
-const tagSuggestions: Record<StudioSection, string[]> = {
-  projects: ["web", "tool", "desktop", "python", "typescript", "nextjs", "electron", "game-tools", "patcher", "automation", "archive", "portfolio", "pokemon"],
-  games: ["jrpg", "rpg", "action", "adventure", "platformer", "rhythm", "fighting", "steam", "console", "completed", "backlog"],
-  logs: ["personal", "update", "site-update", "performance", "ai", "dashboard", "daily"],
-  setup: ["hardware", "software", "windows", "linux", "peripherals"],
-  archive: ["archived", "deprecated", "experiment", "reference"]
-};
 
 export function StudioClient({ records }: StudioClientProps) {
   const firstRecord = records[0];
@@ -220,8 +211,7 @@ export function StudioClient({ records }: StudioClientProps) {
       body: JSON.stringify({
         ...recordForm,
         body: recordBody,
-        dashboardActive: recordForm.section === "games" && recordForm.dashboardActive,
-        tags: parseTags(recordForm.tags)
+        dashboardActive: recordForm.section === "games" && recordForm.dashboardActive
       })
     });
     const data = await readStudioResponse(response);
@@ -766,20 +756,11 @@ function StudioSectionPage({
 }
 
 function StudioSectionRecordButton({ onEdit, record }: { onEdit: (id: string) => void; record: RecordEntry }) {
-  const tags = recordCardTags(record);
-
   return (
     <button className="section-record" type="button" onClick={() => onEdit(record.id)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.summary}</span>
-      {tags.length > 0 ? (
-        <em className="section-record-tags" aria-label="Record tags">
-          {tags.map((tag) => (
-            <b className={`tag-pill ${tagToneClass(tag)}`} key={tag}>#{tag}</b>
-          ))}
-        </em>
-      ) : null}
       <i>{record.status} . {formatStudioDate(record.updated)}</i>
     </button>
   );
@@ -987,7 +968,6 @@ function Inspector({
           <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
         </>
       ) : null}
-      <TagEditor section={form.section} value={form.tags} onChange={(value) => onUpdate("tags", value)} />
       <dl>
         <div><dt>Created</dt><dd>{form.started || "Unknown"}</dd></div>
         <div><dt>Updated</dt><dd>{form.updated || "Unknown"}</dd></div>
@@ -1012,53 +992,6 @@ function StackEditor({ onChange, value }: { onChange: (value: string) => void; v
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
-  );
-}
-
-function TagEditor({
-  onChange,
-  section,
-  value
-}: {
-  onChange: (value: string) => void;
-  section: StudioSection;
-  value: string;
-}) {
-  const currentTags = parseTags(value);
-  const suggestions = tagSuggestions[section].filter((tag) => tag !== section && tag !== `${section}s`);
-
-  const toggleTag = (tag: string) => {
-    const nextTags = currentTags.includes(tag)
-      ? currentTags.filter((currentTag) => currentTag !== tag)
-      : [...currentTags, tag];
-
-    onChange(formatTags(nextTags));
-  };
-
-  return (
-    <div className="studio-tag-editor">
-      <span>Tags</span>
-      <div className="studio-tag-suggestions" aria-label="Suggested tags">
-        {suggestions.map((tag) => (
-          <button
-            className={currentTags.includes(tag) ? "is-active" : ""}
-            key={tag}
-            type="button"
-            onClick={() => toggleTag(tag)}
-          >
-            #{tag}
-          </button>
-        ))}
-      </div>
-      <label>
-        Custom tags
-        <input
-          value={value}
-          placeholder="jrpg, steam, performance"
-          onChange={(event) => onChange(event.target.value)}
-        />
-      </label>
-    </div>
   );
 }
 
@@ -1509,7 +1442,6 @@ function emptyForm(section: StudioSection = "logs"): StudioForm {
     attachments: "",
     progress: 0,
     priority: 50,
-    tags: section,
     milestones: "",
     hardware: "",
     technicalStack: "",
@@ -1544,7 +1476,6 @@ function fromRecord(record?: RecordEntry): StudioForm {
     attachments: metaMediaList(record.meta.attachments),
     progress: record.progress,
     priority: record.priority,
-    tags: record.tags.join(", "),
     milestones: typeof record.meta.milestones === "string" ? record.meta.milestones : "",
     hardware: metaTextBlock(record.meta.hardware) || (record.section === "setup" ? setupHardwareFallback(record.body) : ""),
     technicalStack: metaTextBlock(record.meta.technicalStack),
@@ -1627,49 +1558,6 @@ function studioDraftKey(form: StudioForm, selectedId: string, fallbackSection: S
 function formatStudioDate(value: string): string {
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day} / ${month} / ${year}` : value;
-}
-
-function parseTags(value: string): string[] {
-  return value
-    .split(",")
-    .map((tag) => tag.trim().toLowerCase())
-    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index);
-}
-
-function formatTags(tags: string[]): string {
-  return tags.join(", ");
-}
-
-function recordCardTags(record: RecordEntry): string[] {
-  const titleSlug = tagSlug(record.title);
-  const typeSlug = tagSlug(record.type);
-
-  return record.tags
-    .map((tag) => tag.trim())
-    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
-    .filter((tag) => {
-      const slug = tagSlug(tag);
-
-      return (
-        Boolean(slug) &&
-        !sectionBaseTags.has(slug) &&
-        slug !== record.id &&
-        slug !== titleSlug &&
-        slug !== typeSlug &&
-        !titleSlug.split("-").includes(slug)
-      );
-    })
-    .slice(0, 3);
-}
-
-function tagToneClass(tag: string) {
-  const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
-  const seed = [...tag].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return tones[seed % tones.length];
-}
-
-function tagSlug(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function defaultType(section: StudioSection): string {
@@ -1856,7 +1744,6 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     banner: form.banner,
     progress: form.progress,
     priority: form.priority,
-    tags: parseTags(form.tags),
     meta: {
       headerImage: form.headerImage,
       samples: mediaListFromText(form.samples),

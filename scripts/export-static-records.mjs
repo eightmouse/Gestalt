@@ -113,7 +113,6 @@ for (const filename of filenames) {
     hardware: decodeTextBlock(data.hardware),
     technicalStack: decodeTextBlock(data.technicalStack),
     recommendation: decodeTextBlock(data.recommendation),
-    tags: Array.isArray(data.tags) ? data.tags : [],
     milestones: parseMilestones(data.milestones),
     body: toStaticBody(body)
   });

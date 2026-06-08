@@ -58,18 +58,3 @@ export function escapeFrontmatter(value: string): string {
 export function isStudioSection(value: unknown): value is StudioSection {
   return typeof value === "string" && studioSections.includes(value as StudioSection);
 }
-
-export function normalizeTags(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map((tag) => String(tag).trim()).filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}

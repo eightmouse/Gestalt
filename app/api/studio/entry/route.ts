@@ -5,7 +5,6 @@ import {
   escapeFrontmatter,
   isLocalStudioRequest,
   isStudioSection,
-  normalizeTags,
   slugify
 } from "@/lib/studio";
 import { writeStaticRecords } from "@/lib/static-export";
@@ -26,7 +25,6 @@ type EntryPayload = {
   attachments?: string[] | string;
   progress?: number | string;
   priority?: number | string;
-  tags?: string[] | string;
   milestones?: string;
   hardware?: string;
   technicalStack?: string;
@@ -83,7 +81,6 @@ export async function POST(request: NextRequest) {
 
   const progress = clampNumber(payload.progress, 0, 100, 0);
   const priority = clampNumber(payload.priority, -999, 9999, 50);
-  const tags = normalizeTags(payload.tags);
   const samples = normalizeMediaList(payload.samples);
   const attachments = normalizeMediaList(payload.attachments);
   const dashboardActive = section === "games" && toBoolean(payload.dashboardActive);
@@ -117,7 +114,6 @@ export async function POST(request: NextRequest) {
     ...(clean(payload.hardware) ? [`hardware: "${encodeFrontmatterTextBlock(clean(payload.hardware))}"`] : []),
     ...(clean(payload.technicalStack) ? [`technicalStack: "${encodeFrontmatterTextBlock(clean(payload.technicalStack))}"`] : []),
     ...(clean(payload.recommendation) ? [`recommendation: "${encodeFrontmatterTextBlock(clean(payload.recommendation))}"`] : []),
-    `tags: [${tags.join(", ")}]`,
     `milestones: "${escapeFrontmatter(clean(payload.milestones))}"`,
     "---",
     body,

@@ -10,7 +10,6 @@ const records = (window.__GESTALT_RECORDS || [
     summary: "The root index for projects, play sessions, setup notes, and field logs.",
     progress: 100,
     priority: 1,
-    tags: ["system", "index", "home"],
     milestones: [
       { label: "Archive Shell", progress: 100, status: "Ready" },
       { label: "Content Flow", progress: 100, status: "Ready" },
@@ -36,7 +35,6 @@ const records = (window.__GESTALT_RECORDS || [
     banner: "",
     progress: 80,
     priority: 1,
-    tags: ["gestalt", "blog", "archive", "portfolio"],
     milestones: [
       { label: "Archive Shell", progress: 100, status: "Ready" },
       { label: "Static Preview", progress: 100, status: "Ready" },
@@ -65,7 +63,6 @@ Currently being extra careful because of the npm ordeal.`
     banner: "",
     progress: 85,
     priority: 2,
-    tags: ["kirapatch", "pokemon", "gba", "patcher"],
     milestones: [
       { label: "Method 1 Research", progress: 100, status: "Done" },
       { label: "Patch Flow", progress: 80, status: "In Progress" },
@@ -91,7 +88,6 @@ I apologize if the wait has been long but I don't want this to just 'work lol', 
     banner: "",
     progress: 35,
     priority: 4,
-    tags: ["sootopylis", "pokemon", "python", "desktop"],
     milestones: [
       { label: "Prototype Shell", progress: 60, status: "Paused" },
       { label: "Gameplay Core", progress: 25, status: "Paused" },
@@ -117,7 +113,6 @@ I'm not working on this currently, it's on a momentary stall cause I'd like to f
     banner: "",
     progress: 100,
     priority: 5,
-    tags: ["kiratally", "pokemon", "shiny-hunting", "tools"],
     milestones: [
       { label: "Hotkeys", progress: 100, status: "Done" },
       { label: "Counter Window", progress: 100, status: "Done" },
@@ -145,7 +140,6 @@ It's nothing crazy, just a simple counter but.. it works!`
     banner: "",
     progress: 100,
     priority: 6,
-    tags: ["innkeeper", "wow", "electron", "blizzard-api"],
     milestones: [
       { label: "Backend Data Flow", progress: 100, status: "Done" },
       { label: "Electron Shell", progress: 100, status: "Done" },
@@ -171,7 +165,6 @@ Started building it few weeks prior to pushing it to GitHub, mostly due to the f
     banner: "public/media/records/first-signal/banner.png",
     progress: 100,
     priority: 10,
-    tags: ["first-entry", "personal", "archive"],
     milestones: [{ label: "First Entry", progress: 100, status: "Filed" }],
     body: `## First Entry
 This is the first entry on my... this space.
@@ -192,7 +185,6 @@ In the coming days I will update the Setup area with my current setup.`
     banner: "public/media/records/a-useful-signal/banner.png",
     progress: 100,
     priority: 9,
-    tags: ["update", "ai", "performance", "dashboard"],
     milestones: [
       { label: "Dashboard Update", progress: 100, status: "Filed" },
       { label: "Performance Pass", progress: 100, status: "Filed" },
@@ -237,7 +229,6 @@ That is a good use of me, I think. Not replacing the person making the thing. He
     playtime: "28.9h",
     lastPlayed: "13 / 05 / 2026",
     achievementCount: "15 / 53",
-    tags: ["persona", "games", "jrpg", "play-log"],
     milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
     body: `
 :::note 14 / 05 / 2026 - Where am I at?
@@ -1293,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.25.5</span>
+        <span>v1.26.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1307,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.25.5</span>
+        <span class="version-label">v1.26.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1327,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.25.5</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1553,7 +1544,6 @@ function renderSectionRows(sectionRecords) {
             <span class="section-record-kind">${escapeHtml(record.type)}</span>
             <strong>${escapeHtml(record.title)}</strong>
             <span>${escapeHtml(record.summary)}</span>
-            ${renderRecordTags(record)}
             <i>${escapeHtml(record.status)} . ${readableDate(record.updated)}</i>
           </button>`
         )
@@ -1621,7 +1611,7 @@ function renderSetupTile(record) {
 }
 
 function setupGroupFor(record) {
-  const haystack = [record.title, record.type, record.summary, ...(record.tags || [])].join(" ").toLowerCase();
+  const haystack = [record.title, record.type, record.summary, textBlock(record.hardware)].join(" ").toLowerCase();
 
   if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
     return "peripherals";
@@ -1702,51 +1692,6 @@ function setupNoteIsSpecOnly(body) {
   }
 
   return lines.every((line) => /^([^:]{2,32}):\s*(.+)$/.test(line));
-}
-
-const sectionBaseTags = new Set(["archive", "games", "logs", "projects", "setup", "system"]);
-function renderRecordTags(record) {
-  const tags = recordCardTags(record);
-
-  if (!tags.length) {
-    return "";
-  }
-
-  return `<em class="section-record-tags" aria-label="Record tags">
-    ${tags.map((tag) => `<b class="tag-pill ${tagToneClass(tag)}">#${escapeHtml(tag)}</b>`).join("")}
-  </em>`;
-}
-
-function recordCardTags(record) {
-  const titleSlug = tagSlug(record.title);
-  const typeSlug = tagSlug(record.type);
-
-  return record.tags
-    .map((tag) => tag.trim())
-    .filter((tag, index, tags) => tag && tags.indexOf(tag) === index)
-    .filter((tag) => {
-      const slug = tagSlug(tag);
-
-      return (
-        Boolean(slug) &&
-        !sectionBaseTags.has(slug) &&
-        slug !== record.id &&
-        slug !== titleSlug &&
-        slug !== typeSlug &&
-        !titleSlug.split("-").includes(slug)
-      );
-    })
-    .slice(0, 3);
-}
-
-function tagToneClass(tag) {
-  const tones = ["tone-a", "tone-b", "tone-c", "tone-d"];
-  const seed = Array.from(tag).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return tones[seed % tones.length];
-}
-
-function tagSlug(value) {
-  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function splitSectionRecords(sectionId, sectionRecords) {

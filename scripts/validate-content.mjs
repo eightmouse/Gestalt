@@ -4,7 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const recordsDir = path.join(root, "content", "records");
 const validSections = new Set(["system", "projects", "games", "logs", "setup", "archive"]);
-const required = ["title", "section", "type", "status", "updated", "summary", "progress", "priority", "tags"];
+const required = ["title", "section", "type", "status", "updated", "summary", "progress", "priority"];
 const seen = new Set();
 const errors = [];
 
@@ -105,10 +105,6 @@ for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".
 
   if (typeof parsed.data.priority !== "number") {
     fail(filename, "priority must be a number");
-  }
-
-  if (!Array.isArray(parsed.data.tags)) {
-    fail(filename, "tags must use [tag, tag] array syntax");
   }
 
   if (!parsed.body) {

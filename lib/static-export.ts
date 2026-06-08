@@ -31,7 +31,6 @@ export async function writeStaticRecords(): Promise<void> {
       hardware: decodeTextBlock(meta.hardware),
       technicalStack: decodeTextBlock(meta.technicalStack),
       recommendation: decodeTextBlock(meta.recommendation),
-      tags: record.tags,
       milestones: record.milestones,
       body: toStaticBody(record.body)
     };

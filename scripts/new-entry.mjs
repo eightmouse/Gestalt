@@ -32,7 +32,6 @@ const status = args.status || defaultStatus(args.section);
 const summary = args.summary || "Short summary goes here.";
 const progress = Number.isFinite(Number(args.progress)) ? Number(args.progress) : 0;
 const priority = Number.isFinite(Number(args.priority)) ? Number(args.priority) : 50;
-const tags = args.tags ? args.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [args.section];
 
 const body = `---
 title: "${escapeYaml(args.title)}"
@@ -44,7 +43,6 @@ updated: "${today}"
 summary: "${escapeYaml(summary)}"
 progress: ${Math.max(0, Math.min(100, progress))}
 priority: ${priority}
-tags: [${tags.join(", ")}]
 milestones: ""
 ---
 ## Notes
@@ -127,6 +125,5 @@ Options:
   --date      Optional YYYY-MM-DD date
   --summary   Optional short summary
   --progress  Optional 0-100 number
-  --priority  Optional sort number
-  --tags      Optional comma-separated tags`);
+  --priority  Optional sort number`);
 }

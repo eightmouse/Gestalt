@@ -127,7 +127,6 @@ export function getRecords(): RecordEntry[] {
         banner: toString(data.banner),
         progress: Math.max(0, Math.min(100, toNumber(data.progress, 0))),
         priority: toNumber(data.priority, 99),
-        tags: toStringArray(data.tags),
         meta: data,
         milestones: parseMilestones(data.milestones),
         body

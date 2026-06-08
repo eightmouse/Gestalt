@@ -64,7 +64,7 @@ Run:
 node scripts/validate-content.mjs
 ```
 
-The validator checks required frontmatter, section names, date format, progress range, tags, duplicate IDs, and empty bodies.
+The validator checks required frontmatter, section names, date format, progress range, duplicate IDs, and empty bodies.
 
 ## Publish To GitHub Pages
 

@@ -18,7 +18,6 @@ export type RecordEntry = {
   banner?: string;
   progress: number;
   priority: number;
-  tags: string[];
   meta: Record<string, string | number | boolean | string[]>;
   milestones: Milestone[];
   body: string;
