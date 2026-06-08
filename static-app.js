@@ -273,13 +273,13 @@ const sections = [
 ];
 
 const latinSayings = [
-  { latin: "Festina lente.", english: "Make haste slowly." },
-  { latin: "Per aspera ad astra.", english: "Through hardship to the stars." },
-  { latin: "Nulla dies sine linea.", english: "No day without a line." },
-  { latin: "Ars longa, vita brevis.", english: "Art is long, life is brief." },
-  { latin: "Respice finem.", english: "Consider the end." },
-  { latin: "Non ducor, duco.", english: "I am not led; I lead." },
-  { latin: "Acta non verba.", english: "Deeds, not words." }
+  { latin: "Festina lente.", english: "Make haste slowly.", meaning: "Move with urgency, but keep enough control to avoid careless mistakes." },
+  { latin: "Per aspera ad astra.", english: "Through hardship to the stars.", meaning: "Difficult work can still point somewhere luminous." },
+  { latin: "Nulla dies sine linea.", english: "No day without a line.", meaning: "A small daily mark still counts as progress." },
+  { latin: "Ars longa, vita brevis.", english: "Art is long, life is brief.", meaning: "The work outlives the short window we get to shape it." },
+  { latin: "Respice finem.", english: "Consider the end.", meaning: "Keep the final shape in mind before making the next move." },
+  { latin: "Non ducor, duco.", english: "I am not led; I lead.", meaning: "A reminder to steer the archive instead of letting noise steer it." },
+  { latin: "Acta non verba.", english: "Deeds, not words.", meaning: "Let the record show what actually changed." }
 ];
 
 const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
@@ -558,7 +558,7 @@ function dailyLatinSaying() {
 function dashboardSubtext() {
   const saying = dailyLatinSaying();
 
-  return `${saying.latin} / ${saying.english}`;
+  return `<span class="latin-tooltip" tabindex="0">${escapeHtml(saying.latin)}<span role="tooltip"><b>${escapeHtml(saying.english)}</b><small>${escapeHtml(saying.meaning)}</small></span></span>`;
 }
 
 function weatherCodeLabel(code) {
@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.2</span>
+        <span>v1.26.3</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.2</span>
+        <span class="version-label">v1.26.3</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.3</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1486,7 +1486,7 @@ function dashboard() {
     ${dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel")}
     ${dashboardPanel("CURRENT GAME", game, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "")}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "")}
-    ${dashboardPanel("RECENT ACTIVITY", feed, "", "", "wide-panel activity-panel")}
+    ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
   </div>`;
 }
 
@@ -1980,7 +1980,7 @@ function render() {
         <div>
           <p class="route-label">// ${escapeHtml(routeTitle)}</p>
           <h1 class="${headlineClass}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}">${renderHeadlineLetters(headline)}<span class="${cursorClass}">_</span></h1>
-          <p class="subtle">${escapeHtml(state.activeSection === "system" ? dashboardSubtext() : "Browse the records filed under this archive.")}</p>
+          <p class="subtle">${state.activeSection === "system" ? dashboardSubtext() : escapeHtml("Browse the records filed under this archive.")}</p>
         </div>
         <div class="time-block" aria-label="Local time">
           <span>◷</span>

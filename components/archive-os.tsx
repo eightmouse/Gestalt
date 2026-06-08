@@ -72,13 +72,13 @@ const sections: Array<{
 ];
 
 const latinSayings = [
-  { latin: "Festina lente.", english: "Make haste slowly." },
-  { latin: "Per aspera ad astra.", english: "Through hardship to the stars." },
-  { latin: "Nulla dies sine linea.", english: "No day without a line." },
-  { latin: "Ars longa, vita brevis.", english: "Art is long, life is brief." },
-  { latin: "Respice finem.", english: "Consider the end." },
-  { latin: "Non ducor, duco.", english: "I am not led; I lead." },
-  { latin: "Acta non verba.", english: "Deeds, not words." }
+  { latin: "Festina lente.", english: "Make haste slowly.", meaning: "Move with urgency, but keep enough control to avoid careless mistakes." },
+  { latin: "Per aspera ad astra.", english: "Through hardship to the stars.", meaning: "Difficult work can still point somewhere luminous." },
+  { latin: "Nulla dies sine linea.", english: "No day without a line.", meaning: "A small daily mark still counts as progress." },
+  { latin: "Ars longa, vita brevis.", english: "Art is long, life is brief.", meaning: "The work outlives the short window we get to shape it." },
+  { latin: "Respice finem.", english: "Consider the end.", meaning: "Keep the final shape in mind before making the next move." },
+  { latin: "Non ducor, duco.", english: "I am not led; I lead.", meaning: "A reminder to steer the archive instead of letting noise steer it." },
+  { latin: "Acta non verba.", english: "Deeds, not words.", meaning: "Let the record show what actually changed." }
 ];
 
 const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
@@ -337,7 +337,16 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
   const headline = activeSection === "system" ? getGreeting(now) : activeSectionConfig.label;
-  const subtext = activeSection === "system" ? dashboardSubtext(now) : "Browse the records filed under this archive.";
+  const saying = dailyLatinSaying(now);
+  const subtext = activeSection === "system" ? (
+    <span className="latin-tooltip" tabIndex={0}>
+      {saying.latin}
+      <span role="tooltip">
+        <b>{saying.english}</b>
+        <small>{saying.meaning}</small>
+      </span>
+    </span>
+  ) : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen;
 
   return (
@@ -434,6 +443,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             projectRecords={projectDashboardRecords}
             onOpenRecord={(record, content) => openRecord(record, content ?? "overview")}
             onOpenSection={openSection}
+            onOpenTimeline={openTimeline}
           />
         ) : (
           <SectionPage
@@ -589,7 +599,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.26.2</span>
+          <span>v1.26.3</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -613,7 +623,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.26.2</span>
+          <span className="version-label">v1.26.3</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -671,7 +681,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.26.2</dd>
+            <dd>GESTALT OS v1.26.3</dd>
           </div>
         </dl>
       </div>
@@ -1763,12 +1773,6 @@ function dailyLatinSaying(date: Date | null) {
   const seed = source.getFullYear() * 372 + (source.getMonth() + 1) * 31 + source.getDate();
 
   return latinSayings[seed % latinSayings.length];
-}
-
-function dashboardSubtext(date: Date | null): string {
-  const saying = dailyLatinSaying(date);
-
-  return `${saying.latin} / ${saying.english}`;
 }
 
 function getTimelineItems(records: RecordEntry[], limit: number): TimelineItem[] {

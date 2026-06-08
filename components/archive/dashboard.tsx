@@ -12,6 +12,7 @@ type DashboardProps = {
   projectRecords: RecordEntry[];
   onOpenRecord: (record: RecordEntry, content?: "notes") => void;
   onOpenSection: (section: RecordSection) => void;
+  onOpenTimeline: () => void;
 };
 
 type DashboardPanelProps = {
@@ -44,7 +45,8 @@ export function ArchiveDashboard({
   panelOpen,
   projectRecords,
   onOpenRecord,
-  onOpenSection
+  onOpenSection,
+  onOpenTimeline
 }: DashboardProps) {
   return (
     <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
@@ -84,7 +86,7 @@ export function ArchiveDashboard({
         )}
       </DashboardPanel>
 
-      <DashboardPanel title="RECENT ACTIVITY" className="wide-panel activity-panel">
+      <DashboardPanel title="RECENT ACTIVITY" className="wide-panel activity-panel" footerLabel="View full timeline" onFooter={onOpenTimeline}>
         {activity.length > 0 ? (
           <ol className="activity-feed">
             {activity.map((item) => (
