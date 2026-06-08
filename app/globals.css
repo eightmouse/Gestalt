@@ -1456,7 +1456,7 @@ button:focus-visible {
     linear-gradient(90deg, rgba(217, 213, 193, 0.07), transparent 18% 82%, rgba(217, 213, 193, 0.035)),
     repeating-linear-gradient(90deg, transparent 0 24px, rgba(217, 213, 193, 0.028) 25px, transparent 26px 68px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent 52%),
-    var(--panel);
+    rgba(8, 9, 8, 0.54);
 }
 
 .section-page-header::before,
@@ -1531,7 +1531,7 @@ button:focus-visible {
   border: 1px solid rgba(217, 213, 193, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%),
-    rgba(0, 0, 0, 0.16);
+    rgba(0, 0, 0, 0.1);
 }
 
 .section-record-column > header {
@@ -1627,7 +1627,7 @@ button:focus-visible {
   min-block-size: 94px;
   padding: 14px 16px;
   border: 1px solid rgba(217, 213, 193, 0.12);
-  background: rgba(255, 255, 255, 0.018);
+  background: rgba(8, 9, 8, 0.38);
   color: var(--muted);
   text-align: left;
   cursor: pointer;
@@ -1659,7 +1659,7 @@ button:focus-visible {
 
 .section-record:hover {
   border-color: var(--line-strong);
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(12, 13, 11, 0.52);
   color: var(--text);
 }
 
@@ -1719,7 +1719,7 @@ button:focus-visible {
   background:
     linear-gradient(90deg, rgba(217, 213, 193, 0.075), transparent 54%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent),
-    var(--panel);
+    rgba(8, 9, 8, 0.54);
 }
 
 .setup-bay-grid {
@@ -1743,7 +1743,7 @@ button:focus-visible {
   background:
     linear-gradient(135deg, rgba(217, 213, 193, 0.055), transparent 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent 52%),
-    rgba(0, 0, 0, 0.18);
+    rgba(0, 0, 0, 0.1);
 }
 
 .setup-group > header {
@@ -1902,7 +1902,7 @@ button:focus-visible {
     linear-gradient(180deg, rgba(217, 213, 193, 0.032), transparent 30%),
     repeating-linear-gradient(90deg, transparent 0 28px, rgba(217, 213, 193, 0.018) 29px, transparent 30px 72px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 48%),
-    var(--panel);
+    rgba(8, 9, 8, 0.58);
   box-shadow: 0 24px 60px var(--shadow);
 }
 
@@ -1938,17 +1938,30 @@ button:focus-visible {
   z-index: 1;
 }
 
+.dashboard-panel > div {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
 .wide-panel {
   grid-column: span 2;
 }
 
 .activity-panel {
   align-self: stretch;
+  grid-template-rows: auto minmax(0, 1fr) minmax(18px, auto);
+  gap: 6px;
 }
 
 .activity-panel .activity-feed {
   min-block-size: 0;
   align-content: space-between;
+}
+
+.activity-panel .panel-link {
+  align-self: end;
+  min-block-size: 18px;
+  line-height: 1.2;
 }
 
 .weather-panel {
@@ -2163,24 +2176,31 @@ button:focus-visible {
   list-style: none;
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: clamp(4px, 0.7vh, 8px);
 }
 
 .activity-feed li {
+  min-width: 0;
   display: flex;
-  gap: 15px;
+  gap: 12px;
+  line-height: 1.35;
 }
 
 .activity-feed span {
+  flex: 0 0 auto;
   color: var(--muted-2);
 }
 
 .activity-feed button {
+  min-width: 0;
   padding: 0;
+  overflow: hidden;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .activity-feed button:hover {
