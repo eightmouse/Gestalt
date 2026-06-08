@@ -1098,22 +1098,6 @@ button:focus-visible {
     repeating-linear-gradient(90deg, transparent 0 44px, rgba(217, 213, 193, 0.15) 44px 45px, transparent 45px 90px);
 }
 
-.workspace-header::after {
-  content: "";
-  position: absolute;
-  inset-block-start: -1px;
-  inset-inline-end: 0;
-  inline-size: 38px;
-  block-size: 38px;
-  pointer-events: none;
-  opacity: 0.42;
-  background:
-    linear-gradient(var(--text), var(--text)) 50% 0 / 1px 9px no-repeat,
-    linear-gradient(var(--text), var(--text)) 50% 100% / 1px 9px no-repeat,
-    linear-gradient(90deg, var(--text), var(--text)) 0 50% / 9px 1px no-repeat,
-    linear-gradient(90deg, var(--text), var(--text)) 100% 50% / 9px 1px no-repeat;
-}
-
 .workspace-header h1 {
   position: relative;
   margin: 0;
@@ -2656,7 +2640,10 @@ button:focus-visible {
   overflow: hidden;
   overscroll-behavior: contain;
   border: 1px solid var(--line-strong);
-  background: rgba(8, 9, 8, 0.985);
+  background:
+    linear-gradient(135deg, rgba(217, 213, 193, 0.028), transparent 34%),
+    linear-gradient(90deg, rgba(5, 6, 5, 0.92), rgba(8, 9, 8, 0.985) 38%),
+    rgba(8, 9, 8, 0.985);
   box-shadow:
     0 28px 78px rgba(0, 0, 0, 0.68),
     0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -2684,12 +2671,12 @@ button:focus-visible {
 
 .record-window::before {
   inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.052);
   background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.11), rgba(217, 213, 193, 0.11)) 18px 18px / 48px 1px no-repeat,
-    linear-gradient(rgba(217, 213, 193, 0.11), rgba(217, 213, 193, 0.11)) 18px 18px / 1px 22px no-repeat,
-    linear-gradient(90deg, rgba(217, 213, 193, 0.09), rgba(217, 213, 193, 0.09)) calc(100% - 66px) calc(100% - 20px) / 48px 1px no-repeat,
-    linear-gradient(rgba(217, 213, 193, 0.09), rgba(217, 213, 193, 0.09)) calc(100% - 18px) calc(100% - 42px) / 1px 22px no-repeat;
+    linear-gradient(90deg, rgba(217, 213, 193, 0.1), rgba(217, 213, 193, 0.1)) 18px 18px / 62px 1px no-repeat,
+    linear-gradient(rgba(217, 213, 193, 0.1), rgba(217, 213, 193, 0.1)) 18px 18px / 1px 18px no-repeat,
+    linear-gradient(90deg, rgba(217, 213, 193, 0.075), rgba(217, 213, 193, 0.075)) calc(100% - 80px) calc(100% - 20px) / 62px 1px no-repeat,
+    linear-gradient(rgba(217, 213, 193, 0.075), rgba(217, 213, 193, 0.075)) calc(100% - 18px) calc(100% - 38px) / 1px 18px no-repeat;
 }
 
 .record-window::after {
@@ -2849,8 +2836,10 @@ button:focus-visible {
   justify-content: space-between;
   align-items: center;
   padding: 0 22px 0 28px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(8, 9, 8, 0.68));
+  border-bottom: 1px solid rgba(217, 213, 193, 0.16);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.055), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.036), rgba(8, 9, 8, 0.68));
   color: var(--text);
   letter-spacing: 0.12em;
 }
@@ -2960,8 +2949,8 @@ button:focus-visible {
   max-block-size: none;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 230px;
-  gap: 26px;
-  padding: 28px 26px 30px 30px;
+  gap: 28px;
+  padding: 30px 28px 32px 32px;
   overflow: auto;
   overscroll-behavior: contain;
   contain: content;
@@ -2984,7 +2973,7 @@ button:focus-visible {
 .record-heading:not(.has-heading-banner) {
   margin-block-end: 26px;
   padding-block-end: 18px;
-  border-block-end: 1px solid rgba(217, 213, 193, 0.12);
+  border-block-end: 1px solid rgba(217, 213, 193, 0.14);
 }
 
 .record-heading:not(.has-heading-banner)::after {
@@ -3004,7 +2993,7 @@ button:focus-visible {
   margin-block-end: 22px;
   padding: 96px 22px 26px;
   overflow: hidden;
-  border: 1px solid rgba(217, 213, 193, 0.08);
+  border: 1px solid rgba(217, 213, 193, 0.11);
   background:
     linear-gradient(180deg, rgba(5, 6, 5, 0.22), rgba(5, 6, 5, 0.94)),
     linear-gradient(90deg, rgba(5, 6, 5, 0.76), rgba(5, 6, 5, 0.26) 56%, rgba(5, 6, 5, 0.7));
@@ -3073,7 +3062,7 @@ button:focus-visible {
   margin-block-end: 18px;
   padding: 3px 7px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.055);
   color: var(--text);
   font-size: 12px;
   letter-spacing: 0.1em;
@@ -3087,7 +3076,7 @@ button:focus-visible {
 }
 
 .record-heading h2 {
-  margin: 0 0 22px;
+  margin: 0 0 20px;
   color: var(--text-strong);
   font-size: clamp(34px, 4.2vw, 48px);
   font-weight: 300;
@@ -3320,16 +3309,18 @@ button:focus-visible {
   display: grid;
   align-content: start;
   grid-template-rows: auto auto auto;
-  gap: 24px;
-  padding: 26px 18px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.018);
+  gap: 22px;
+  padding: 24px 18px;
+  border: 1px solid rgba(217, 213, 193, 0.14);
+  background:
+    linear-gradient(180deg, rgba(217, 213, 193, 0.026), transparent 36%),
+    rgba(255, 255, 255, 0.014);
 }
 
 .record-aside ol {
   list-style: none;
   display: grid;
-  gap: 10px;
+  gap: 7px;
   margin: 18px 0 0;
   padding: 0;
 }
@@ -3341,12 +3332,14 @@ button:focus-visible {
 
 .record-aside li.is-active {
   color: var(--text-strong);
-  background: rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.1), transparent 80%),
+    rgba(255, 255, 255, 0.045);
 }
 
 .record-aside li button {
   inline-size: 100%;
-  min-block-size: 32px;
+  min-block-size: 34px;
   display: flex;
   align-items: center;
   padding: 7px 8px;
@@ -3363,8 +3356,8 @@ button:focus-visible {
 
 .record-meta {
   margin-block-start: 18px;
-  padding-block-start: 22px;
-  border-top: 1px solid var(--line);
+  padding-block-start: 20px;
+  border-top: 1px solid rgba(217, 213, 193, 0.13);
   font-size: 12px;
 }
 
@@ -6820,8 +6813,7 @@ input.studio-title-edit {
     inline-size: min(300px, calc(100vw - 28px));
   }
 
-  .workspace-header::before,
-  .workspace-header::after {
+  .workspace-header::before {
     display: none;
   }
 
