@@ -49,6 +49,12 @@ function run(command, args, options = {}) {
   }
 }
 
+function runTypecheck() {
+  const tscPath = path.join(root, "node_modules", "typescript", "bin", "tsc");
+
+  run("node", [tscPath, "--noEmit"]);
+}
+
 function capture(command, args) {
   const result = spawnSync(commandFor(command), args, {
     cwd: root,
@@ -244,7 +250,7 @@ run("node", ["scripts/validate-static-shell.mjs"]);
 if (skipTypecheck) {
   console.log("\n> TypeScript check skipped for content-only publish");
 } else {
-  run("corepack", ["pnpm", "run", "check"]);
+  runTypecheck();
 }
 run("node", ["--check", "static-app.js"]);
 run("git", ["diff", "--check"]);

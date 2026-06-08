@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { create } from "zustand";
+import { BootScreen } from "@/components/archive/boot-screen";
 import { ArchiveDashboard } from "@/components/archive/dashboard";
+import { renderHeadlineLetters } from "@/components/archive/headline-text";
 import {
-  type ArchiveMetrics,
   activityDate,
   formatClock,
   formatDate,
@@ -29,6 +30,8 @@ import {
   splitUpdateIndex
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
+import { SearchPanel } from "@/components/archive/search-panel";
+import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
 import { setupHardwareSource, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import type { ContentKey, SearchCommand, SearchResult, TimelineItem } from "@/components/archive/types";
@@ -48,21 +51,6 @@ const useArchiveStore = create<ArchiveState>((set) => ({
   setActiveSection: (section) => set({ activeSection: section })
 }));
 
-const sections: Array<{
-  id: RecordSection;
-  code: string;
-  label: string;
-  cipher: string;
-  icon: string;
-}> = [
-  { id: "system", code: "01_SYSTEM", label: "Dashboard", cipher: "⌖╳╵⌁⟐⌰╳⟟", icon: "system" },
-  { id: "projects", code: "02_PROJECTS", label: "Active Processes", cipher: "⟐⌰╳⌖╵ / ⌁⟟⌖╳⌰", icon: "projects" },
-  { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "╳⌁⟟⟐⌰ / ╵⌖⌁╳", icon: "games" },
-  { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "⌰╳╵⌖ / ⟟⌁⌰╳╵", icon: "logs" },
-  { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "⌖⟟⌰╳╵ / ⌁⟐⌖", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", cipher: "╵⌖⟐⌰⌁ / ╳⟟⌖╵", icon: "archive" }
-];
-
 const latinSayings = [
   { latin: "Festina lente.", english: "Make haste slowly.", meaning: "Move with urgency, but keep enough control to avoid careless mistakes." },
   { latin: "Per aspera ad astra.", english: "Through hardship to the stars.", meaning: "Difficult work can still point somewhere luminous." },
@@ -73,45 +61,11 @@ const latinSayings = [
   { latin: "Acta non verba.", english: "Deeds, not words.", meaning: "Let the record show what actually changed." }
 ];
 
-const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
 const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
-
-function cipherizeText(value: string): string {
-  return value
-    .split("")
-    .map((char, index) => {
-      if (char === " ") return " ";
-      if (char === "/" || char === "&" || char === "." || char === "-") return char;
-      return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
-    })
-    .join("");
-}
 
 function projectStatusRank(status: string): number {
   const rank = projectStatusOrder.indexOf(status.toLowerCase());
   return rank === -1 ? projectStatusOrder.length : rank;
-}
-
-function renderHeadlineLetters(value: string) {
-  const cipher = cipherizeText(value).split("");
-
-  return value.split("").map((char, index) => {
-    const isSpace = char === " ";
-    const display = isSpace ? "\u00A0" : char;
-    const cipherDisplay = isSpace ? "\u00A0" : cipher[index] ?? char;
-
-    return (
-      <span
-        aria-hidden="true"
-        className={isSpace ? "headline-char is-space" : "headline-char"}
-        key={`${char}-${index}`}
-        style={{ "--headline-index": index } as CSSProperties}
-      >
-        <span className="headline-char-cipher">{cipherDisplay}</span>
-        <span className="headline-char-readable">{display}</span>
-      </span>
-    );
-  });
 }
 
 type ArchiveOSProps = {
@@ -329,19 +283,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   return (
     <main className={hasFocusWindow ? "archive-shell has-record" : "archive-shell"}>
-      <div className="boot-screen" aria-hidden="true">
-        <span>GESTALT</span>
-        <div
-          className="boot-status headline-decode-text is-resolving"
-          aria-label="System initializing"
-          style={{ "--headline-chars": "System initializing".length } as CSSProperties}
-        >
-          {renderHeadlineLetters("System initializing")}
-        </div>
-        <b className="boot-meter">
-          <b />
-        </b>
-      </div>
+      <BootScreen />
       <div className="grain-layer" />
       <div className="scanline-layer" />
       <Sidebar
@@ -549,285 +491,6 @@ function MobileDock({
         <small>Projects</small>
       </button>
     </nav>
-  );
-}
-
-type SidebarProps = {
-  activeSection: RecordSection;
-  metrics: ArchiveMetrics;
-  navOpen: boolean;
-  now: Date | null;
-  onHome: () => void;
-  onOpenSection: (section: RecordSection) => void;
-  onToggleNav: () => void;
-};
-
-function Sidebar({
-  activeSection,
-  metrics,
-  navOpen,
-  now,
-  onHome,
-  onOpenSection,
-  onToggleNav
-}: SidebarProps) {
-  const activeConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
-
-  return (
-    <aside className="sidebar">
-      <div className="brand-block">
-        <div className="mobile-brand-meta">
-          <span>v1.26.11</span>
-          <span>HANDHELD FIELD MODE</span>
-        </div>
-        <div className="mobile-clock" aria-label="Archive date">
-          <span>{formatDate(now)}</span>
-        </div>
-        <div className="brand-row">
-          <button className="brand" type="button" onClick={onHome}>
-            GESTALT
-          </button>
-          <button
-            className={navOpen ? "archive-menu-toggle is-active" : "archive-menu-toggle"}
-            type="button"
-            aria-expanded={navOpen}
-            aria-label="Open archive navigation"
-            onClick={onToggleNav}
-          >
-            <span className="archive-menu-glyph" aria-hidden="true">
-              <i />
-            </span>
-            <span className="archive-menu-code">{activeConfig.code}</span>
-          </button>
-        </div>
-        <div className="desktop-brand-meta">
-          <span className="version-label">v1.26.11</span>
-          <span className="desktop-mode-label">OPERATOR DESK MODE</span>
-        </div>
-        <i aria-hidden="true">-</i>
-      </div>
-
-      <nav aria-label="Archive navigation">
-        <p className="sidebar-label">// ARCHIVE NAVIGATION</p>
-        <div className="nav-stack">
-          {sections.map((section) => (
-            <div className="nav-group" key={section.id}>
-              <button
-                type="button"
-                className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
-                onClick={() => onOpenSection(section.id)}
-              >
-                <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-                <span className="nav-label">
-                  <strong>{section.code}</strong>
-                  <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
-                  <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
-                </span>
-                <span className="section-signal" aria-hidden="true" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </nav>
-
-      <div className="system-status">
-        <p>// SYSTEM STATUS</p>
-        <dl>
-          <div>
-            <dt>USER</dt>
-            <dd>Eightmouse</dd>
-          </div>
-          <div>
-            <dt>RECORDS</dt>
-            <dd>{metrics.recordCount}</dd>
-          </div>
-          <div>
-            <dt>MEDIA</dt>
-            <dd>{metrics.mediaCount}</dd>
-          </div>
-          <div>
-            <dt>ACTIVE PRJ</dt>
-            <dd>{metrics.activeProjects}</dd>
-          </div>
-          <div>
-            <dt>ACTIVE GAME</dt>
-            <dd>{metrics.activeGame?.title ?? "None"}</dd>
-          </div>
-          <div>
-            <dt>LAST FILED</dt>
-            <dd>{formatReadableDate(metrics.latestActivityDate)}</dd>
-          </div>
-          <div>
-            <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.26.11</dd>
-          </div>
-        </dl>
-      </div>
-    </aside>
-  );
-}
-
-function ArchiveNavigationMenu({
-  activeSection,
-  currentGame,
-  onClose,
-  onOpenCurrent,
-  onOpenSearch,
-  onOpenSection,
-  onOpenTimeline,
-  onSearchQueryChange,
-  searchQuery,
-  searchOpen
-}: {
-  activeSection: RecordSection;
-  currentGame?: RecordEntry;
-  onClose: () => void;
-  onOpenCurrent: () => void;
-  onOpenSearch: () => void;
-  onOpenSection: (section: RecordSection) => void;
-  onOpenTimeline: () => void;
-  onSearchQueryChange: (query: string) => void;
-  searchQuery: string;
-  searchOpen: boolean;
-}) {
-  const renderSectionButton = (section: (typeof sections)[number]) => (
-    <div className="nav-group" key={section.id}>
-      <button
-        type="button"
-        className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
-        onClick={() => onOpenSection(section.id)}
-      >
-        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-        <span className="nav-label">
-          <strong>{section.code}</strong>
-          <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
-          <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
-        </span>
-        <span className="section-signal" aria-hidden="true" />
-      </button>
-    </div>
-  );
-
-  const archiveSections = sections.filter((section) => section.id === "archive");
-
-  return (
-    <>
-      <motion.button
-        aria-label="Close archive navigation"
-        className="archive-nav-backdrop"
-        type="button"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.nav
-        aria-label="Archive navigation"
-        className="archive-nav-panel"
-        initial={{ opacity: 0, x: -18, filter: "blur(2px)" }}
-        animate={{ opacity: 1, x: 0, filter: "blur(0)" }}
-        exit={{ opacity: 0, x: -18, filter: "blur(2px)" }}
-        transition={{ duration: 0.18, ease: "easeOut" }}
-      >
-        <header>
-          <p>// ARCHIVE NAVIGATION</p>
-          <span>UTILITY / DEEP ARCHIVE</span>
-        </header>
-        <div className="archive-nav-actions archive-nav-actions--desktop" aria-label="Quick archive actions">
-          <button className={searchOpen ? "is-active" : ""} type="button" onClick={onOpenSearch}>
-            <span>⌕</span>
-            Search
-          </button>
-          <button type="button" onClick={onOpenTimeline}>
-            <span>⌬</span>
-            Trace
-          </button>
-          <button disabled={!currentGame} type="button" onClick={onOpenCurrent}>
-            <span>◇</span>
-            Current
-          </button>
-          <button type="button" onClick={() => onOpenSection("logs")}>
-            <span>{"\u2261"}</span>
-            Logs
-          </button>
-        </div>
-        <div className="archive-nav-search archive-nav-search--mobile" role="search">
-          <label htmlFor="mobile-archive-search">// SEARCH</label>
-          <input
-            id="mobile-archive-search"
-            type="search"
-            value={searchQuery}
-            placeholder="Search records"
-            autoComplete="off"
-            onChange={(event) => onSearchQueryChange(event.target.value)}
-          />
-        </div>
-        <div className="archive-nav-actions archive-nav-actions--mobile" aria-label="Mobile archive actions">
-          <button type="button" onClick={onOpenTimeline}>
-            <span>{"\u232C"}</span>
-            Trace
-          </button>
-          <button disabled={!currentGame} type="button" onClick={onOpenCurrent}>
-            <span>{"\u25C7"}</span>
-            Current
-          </button>
-        </div>
-        <div className="nav-stack nav-stack--desktop">
-          {sections.map(renderSectionButton)}
-        </div>
-        <div className="nav-stack nav-stack--mobile-archive">
-          {archiveSections.map(renderSectionButton)}
-        </div>
-      </motion.nav>
-    </>
-  );
-}
-
-function SearchPanel({
-  panelRef,
-  query,
-  results,
-  onOpenResult,
-  onQueryChange
-}: {
-  panelRef: RefObject<HTMLDivElement | null>;
-  query: string;
-  results: SearchResult[];
-  onOpenResult: (result: SearchResult) => void;
-  onQueryChange: (query: string) => void;
-}) {
-  return (
-    <div className="search-panel command-panel" ref={panelRef} role="search">
-      <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>// COMMAND PALETTE</label>
-      <input
-        autoComplete="off"
-        autoFocus
-        id="archive-search"
-        onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Search records or type a command"
-        type="search"
-        value={query}
-      />
-      <div className="search-suggestions">
-        {results.length > 0 ? (
-          results.map((result) => (
-            <button key={result.kind === "record" ? result.record.id : result.id} type="button" onClick={() => onOpenResult(result)}>
-              <span>
-                <strong>
-                  {result.kind === "record" ? result.record.title : result.title}
-                </strong>
-                <small data-cipher={cipherizeText(result.detail)}>
-                  {result.detail}
-                </small>
-              </span>
-              <i>{result.kind === "record" ? result.record.section.toUpperCase() : "CMD"}</i>
-            </button>
-          ))
-        ) : (
-          <p className="search-empty">No matching command or record.</p>
-        )}
-      </div>
-    </div>
   );
 }
 
