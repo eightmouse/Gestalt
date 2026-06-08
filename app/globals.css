@@ -1392,11 +1392,11 @@ button:focus-visible {
   z-index: 1;
   flex: 0 1 auto;
   min-block-size: 0;
-  block-size: min(650px, calc(100vh - 260px));
+  block-size: min(700px, calc(100vh - 238px));
   max-inline-size: 1180px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr) minmax(210px, 0.72fr);
-  grid-template-rows: minmax(0, 1.08fr) minmax(0, 0.88fr) minmax(0, 0.66fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 0.86fr);
   gap: clamp(10px, 1.6vh, 16px);
   contain: layout paint;
   transition: opacity 90ms linear;
@@ -1963,7 +1963,6 @@ button:focus-visible {
 .activity-panel > div {
   display: flex;
   align-items: center;
-  padding-block: 0;
 }
 
 .activity-panel .panel-link {
