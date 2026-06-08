@@ -30,17 +30,9 @@ import {
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
 import { setupHardwareSource, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
+import { TimelineWindow } from "@/components/archive/timeline-window";
+import type { ContentKey, SearchCommand, SearchResult, TimelineItem } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-
-type ContentKey =
-  | "overview"
-  | "samples"
-  | "technical"
-  | "notes"
-  | "changelog"
-  | "recommendation"
-  | "hardware"
-  | "attachments";
 
 type ArchiveState = {
   selectedId: string;
@@ -121,20 +113,6 @@ function renderHeadlineLetters(value: string) {
     );
   });
 }
-
-type TimelineItem = {
-  content: ContentKey;
-  date: string;
-  detail: string;
-  id: string;
-  record: RecordEntry;
-  title: string;
-};
-
-type SearchResult =
-  | { kind: "command"; id: string; title: string; detail: string; action?: "timeline"; section?: RecordSection; record?: RecordEntry; content?: ContentKey }
-  | { kind: "record"; record: RecordEntry; detail: string };
-type SearchCommand = Extract<SearchResult, { kind: "command" }>;
 
 type ArchiveOSProps = {
   records: RecordEntry[];
@@ -599,7 +577,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.26.10</span>
+          <span>v1.26.11</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -623,7 +601,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.26.10</span>
+          <span className="version-label">v1.26.11</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -681,7 +659,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.26.10</dd>
+            <dd>GESTALT OS v1.26.11</dd>
           </div>
         </dl>
       </div>
@@ -850,54 +828,6 @@ function SearchPanel({
         )}
       </div>
     </div>
-  );
-}
-
-function TimelineWindow({
-  items,
-  onClose,
-  onOpenRecord
-}: {
-  items: TimelineItem[];
-  onClose: () => void;
-  onOpenRecord: (record: RecordEntry, content: ContentKey) => void;
-}) {
-  return (
-    <motion.article
-      className="timeline-window"
-      aria-label="Archive timeline"
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 14 }}
-      transition={{ duration: 0.18 }}
-    >
-      <header className="window-bar">
-        <span>// TIMELINE RECONSTRUCTION</span>
-        <div className="window-actions">
-          <button type="button" data-window-action="close" aria-label="Close timeline" onClick={onClose}>
-            close
-          </button>
-        </div>
-      </header>
-      <div className="timeline-body">
-        <div className="timeline-summary">
-          <p>RECENT SIGNALS</p>
-          <strong>{items.length}</strong>
-          <span>records and notes sorted by observed date</span>
-        </div>
-        <ol className="timeline-list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <time>{formatReadableDate(item.date)}</time>
-              <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
-                <span>{item.title}</span>
-                <small>{item.detail}</small>
-              </button>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </motion.article>
   );
 }
 

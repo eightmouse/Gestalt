@@ -30,6 +30,7 @@ body {
 }
 
 body {
+  position: relative;
   margin: 0;
   overflow: hidden;
   background:
@@ -42,6 +43,22 @@ body {
   font-variation-settings: "wght" 300, "wdth" 82;
   font-weight: 300;
   letter-spacing: 0;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.52;
+  background-image:
+    var(--archive-image),
+    var(--archive-image-static);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: grayscale(1) contrast(0.96) brightness(0.88);
 }
 
 button {
@@ -63,6 +80,7 @@ button:focus-visible {
 .archive-shell {
   --sidebar-width: 340px;
   position: relative;
+  z-index: 1;
   isolation: isolate;
   height: 100vh;
   min-height: 100vh;
@@ -83,13 +101,10 @@ button:focus-visible {
   background-image:
     radial-gradient(circle at 84% 14%, rgba(217, 213, 193, 0.05) 0 1px, transparent 1px 130px),
     linear-gradient(90deg, transparent 0 calc(var(--sidebar-width) + 11px), rgba(217, 213, 193, 0.09) calc(var(--sidebar-width) + 11px) calc(var(--sidebar-width) + 12px), transparent calc(var(--sidebar-width) + 12px)),
-    linear-gradient(90deg, rgba(5, 6, 5, 0.9) 0 18%, rgba(5, 6, 5, 0.56) 38%, rgba(5, 6, 5, 0.16) 56%, rgba(5, 6, 5, 0.68) 100%),
-    var(--archive-image),
-    var(--archive-image-static);
+    linear-gradient(90deg, rgba(5, 6, 5, 0.9) 0 18%, rgba(5, 6, 5, 0.56) 38%, rgba(5, 6, 5, 0.16) 56%, rgba(5, 6, 5, 0.68) 100%);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  filter: grayscale(1) contrast(0.96) brightness(0.88);
 }
 
 .archive-shell.has-record::before {
@@ -6653,6 +6668,10 @@ input.studio-title-edit {
       linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px) 0 0 / 54px 54px,
       linear-gradient(0deg, rgba(255, 255, 255, 0.016) 1px, transparent 1px) 0 0 / 54px 54px,
       #050605;
+  }
+
+  body::before {
+    opacity: 0.24;
   }
 
   .archive-shell::before {
