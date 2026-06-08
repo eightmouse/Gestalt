@@ -1949,8 +1949,8 @@ button:focus-visible {
 
 .activity-panel {
   align-self: stretch;
-  grid-template-rows: auto minmax(0, 1fr) minmax(18px, auto);
-  gap: 6px;
+  grid-template-rows: auto minmax(0, 1fr) minmax(20px, auto);
+  gap: 8px;
 }
 
 .activity-panel .activity-feed {
@@ -1960,8 +1960,8 @@ button:focus-visible {
 
 .activity-panel .panel-link {
   align-self: end;
-  min-block-size: 18px;
-  line-height: 1.2;
+  min-block-size: 20px;
+  line-height: 1.35;
 }
 
 .weather-panel {
@@ -2176,14 +2176,14 @@ button:focus-visible {
   list-style: none;
   display: grid;
   align-content: start;
-  gap: clamp(4px, 0.7vh, 8px);
+  gap: clamp(7px, 1vh, 10px);
 }
 
 .activity-feed li {
   min-width: 0;
   display: flex;
   gap: 12px;
-  line-height: 1.35;
+  line-height: 1.55;
 }
 
 .activity-feed span {
