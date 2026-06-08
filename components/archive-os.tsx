@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Clock,
-  Search,
   Square,
   Terminal,
 } from "lucide-react";
@@ -338,7 +337,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
               data-search-toggle
               onClick={() => setSearchOpen((current) => !current)}
             >
-              <Search size={15} />
+              <span className="search-icon" aria-hidden="true" />
             </button>
           </div>
           {searchOpen ? (

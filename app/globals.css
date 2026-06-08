@@ -468,6 +468,18 @@ button:focus-visible {
   line-height: 1;
 }
 
+.archive-nav-actions--desktop button:first-child > span:not(.search-icon) {
+  display: none;
+}
+
+.archive-nav-actions--desktop button:first-child::before {
+  content: "/";
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  transform: skewX(-12deg);
+}
+
 .archive-nav-actions button:hover,
 .archive-nav-actions button:focus-visible,
 .archive-nav-actions button.is-active {
@@ -1470,10 +1482,10 @@ button:focus-visible {
   padding: 18px 20px;
   border: 1px solid var(--line);
   background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.07), transparent 18% 82%, rgba(217, 213, 193, 0.035)),
-    repeating-linear-gradient(90deg, transparent 0 24px, rgba(217, 213, 193, 0.028) 25px, transparent 26px 68px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045), transparent 52%),
-    var(--glass-panel);
+    linear-gradient(90deg, rgba(217, 213, 193, 0.06), transparent 20% 84%, rgba(217, 213, 193, 0.028)),
+    repeating-linear-gradient(90deg, transparent 0 30px, rgba(217, 213, 193, 0.02) 31px, transparent 32px 74px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.032), transparent 52%),
+    rgba(8, 9, 8, 0.52);
 }
 
 .section-page-header::before,
@@ -1525,7 +1537,8 @@ button:focus-visible {
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 8px;
+  counter-reset: section-record;
   overflow: auto;
   overscroll-behavior: contain;
   padding-inline-end: 6px;
@@ -1547,8 +1560,9 @@ button:focus-visible {
   padding: 14px;
   border: 1px solid rgba(217, 213, 193, 0.2);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 42%),
-    var(--glass-panel);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), transparent 42%),
+    linear-gradient(90deg, rgba(217, 213, 193, 0.032), transparent 34%),
+    rgba(8, 9, 8, 0.46);
 }
 
 .section-record-column > header {
@@ -1583,11 +1597,11 @@ button:focus-visible {
 .section-record-column .section-record {
   block-size: 138px;
   min-block-size: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(112px, auto);
+  grid-template-columns: 30px minmax(0, 1fr) minmax(112px, auto);
   grid-template-areas:
-    "kind date"
-    "title title"
-    "summary summary";
+    "index kind date"
+    "index title title"
+    "index summary summary";
   align-content: center;
   column-gap: 12px;
   row-gap: 8px;
@@ -1634,54 +1648,69 @@ button:focus-visible {
 
 .section-record {
   position: relative;
+  counter-increment: section-record;
   display: grid;
-  grid-template-columns: 110px minmax(0, 0.72fr) minmax(220px, 1fr) minmax(132px, auto);
+  grid-template-columns: 36px 104px minmax(0, 0.72fr) minmax(220px, 1fr) minmax(132px, auto);
   grid-template-areas:
-    "kind title summary date"
-    "kind title summary date";
+    "index kind title summary date"
+    "index kind title summary date";
   gap: 5px 18px;
   align-items: center;
   min-block-size: 94px;
   padding: 14px 16px;
-  border: 1px solid rgba(217, 213, 193, 0.12);
-  background: var(--glass-panel);
+  border: 1px solid rgba(217, 213, 193, 0.105);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.032), transparent 20%),
+    rgba(8, 9, 8, 0.42);
   color: var(--muted);
   text-align: left;
   cursor: pointer;
 }
 
 .section-record::before {
-  content: "";
-  position: absolute;
-  inset: 7px;
-  pointer-events: none;
-  opacity: 0;
-  border-inline-start: 1px solid rgba(217, 213, 193, 0.28);
-  border-block-start: 1px solid rgba(217, 213, 193, 0.12);
-  transition: opacity 120ms linear;
+  content: counter(section-record, decimal-leading-zero);
+  position: static;
+  grid-area: index;
+  opacity: 0.58;
+  border: 0;
+  color: var(--muted-2);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  transition: color 120ms linear, opacity 120ms linear;
 }
 
 .section-record::after {
   content: "";
   position: absolute;
-  inset-inline-end: 12px;
-  inset-block-start: 10px;
-  inline-size: 24px;
-  block-size: 5px;
+  inset-inline-start: 52px;
+  inset-block: 12px;
+  inline-size: 1px;
   pointer-events: none;
-  opacity: 0.28;
-  background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.55) 0 6px, transparent 6px 9px, rgba(217, 213, 193, 0.32) 9px 14px, transparent 14px);
+  opacity: 0.42;
+  background: linear-gradient(180deg, transparent, rgba(217, 213, 193, 0.22), transparent);
+  transition: opacity 120ms linear;
+}
+
+.section-record .section-record-kind::before {
+  content: "";
+  inline-size: 5px;
+  block-size: 5px;
+  border: 1px solid currentColor;
+  opacity: 0.5;
+  transform: rotate(45deg);
 }
 
 .section-record:hover {
   border-color: var(--line-strong);
-  background: var(--glass-panel-hover);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.05), transparent 24%),
+    rgba(12, 13, 11, 0.58);
   color: var(--text);
 }
 
 .section-record:hover::before {
-  opacity: 1;
+  color: var(--text);
+  opacity: 0.86;
 }
 
 .section-record strong,
@@ -1711,6 +1740,9 @@ button:focus-visible {
 
 .section-record-kind {
   grid-area: kind;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.1em;
@@ -3991,32 +4023,25 @@ button:focus-visible {
 
 .search-icon {
   position: relative;
-  inline-size: 14px;
-  block-size: 14px;
+  inline-size: 16px;
+  block-size: 16px;
   display: block;
 }
 
 .search-icon::before {
-  content: "";
+  content: "/";
   position: absolute;
-  inset-block-start: 1px;
-  inset-inline-start: 1px;
-  inline-size: 8px;
-  block-size: 8px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: currentColor;
+  font-size: 17px;
+  line-height: 1;
+  transform: skewX(-12deg);
 }
 
 .search-icon::after {
-  content: "";
-  position: absolute;
-  inset-inline-end: 1px;
-  inset-block-end: 2px;
-  inline-size: 6px;
-  block-size: 1px;
-  background: currentColor;
-  transform: rotate(45deg);
-  transform-origin: center;
+  display: none;
 }
 
 .note-search-panel {
@@ -6532,6 +6557,7 @@ input.studio-title-edit {
   .section-record {
     min-block-size: 152px;
     grid-template-areas:
+      "index"
       "kind"
       "title"
       "summary"
@@ -6543,9 +6569,14 @@ input.studio-title-edit {
     padding: 18px 16px;
   }
 
+  .section-record::after {
+    display: none;
+  }
+
   .section-record-column .section-record {
     grid-template-columns: 1fr;
     grid-template-areas:
+      "index"
       "kind"
       "title"
       "summary"
