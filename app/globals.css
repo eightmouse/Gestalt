@@ -1528,10 +1528,10 @@ button:focus-visible {
   grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
   padding: 14px;
-  border: 1px solid rgba(217, 213, 193, 0.12);
+  border: 1px solid rgba(217, 213, 193, 0.15);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 42%),
-    rgba(0, 0, 0, 0.1);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 42%),
+    rgba(8, 9, 8, 0.28);
 }
 
 .section-record-column > header {
@@ -1627,7 +1627,7 @@ button:focus-visible {
   min-block-size: 94px;
   padding: 14px 16px;
   border: 1px solid rgba(217, 213, 193, 0.12);
-  background: rgba(8, 9, 8, 0.38);
+  background: rgba(8, 9, 8, 0.3);
   color: var(--muted);
   text-align: left;
   cursor: pointer;
@@ -1659,7 +1659,7 @@ button:focus-visible {
 
 .section-record:hover {
   border-color: var(--line-strong);
-  background: rgba(12, 13, 11, 0.52);
+  background: rgba(12, 13, 11, 0.44);
   color: var(--text);
 }
 
@@ -1739,11 +1739,11 @@ button:focus-visible {
   gap: 12px;
   min-block-size: 218px;
   padding: 15px;
-  border: 1px solid rgba(217, 213, 193, 0.13);
+  border: 1px solid rgba(217, 213, 193, 0.15);
   background:
     linear-gradient(135deg, rgba(217, 213, 193, 0.055), transparent 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent 52%),
-    rgba(0, 0, 0, 0.1);
+    rgba(8, 9, 8, 0.26);
 }
 
 .setup-group > header {
@@ -1956,6 +1956,11 @@ button:focus-visible {
 .activity-panel .activity-feed {
   min-block-size: 0;
   align-content: space-between;
+}
+
+.activity-panel > div {
+  display: grid;
+  align-content: center;
 }
 
 .activity-panel .panel-link {
