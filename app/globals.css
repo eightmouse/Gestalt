@@ -1911,16 +1911,16 @@ button:focus-visible {
   min-block-size: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 8px;
+  gap: clamp(9px, 1.25vh, 13px);
   padding: clamp(10px, 1.45vh, 14px) 20px clamp(8px, 1.25vh, 12px);
   border: 1px solid var(--line);
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(217, 213, 193, 0.032), transparent 30%),
-    repeating-linear-gradient(90deg, transparent 0 28px, rgba(217, 213, 193, 0.018) 29px, transparent 30px 72px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 48%),
-    var(--glass-panel);
-  box-shadow: 0 24px 60px var(--shadow);
+    linear-gradient(180deg, rgba(217, 213, 193, 0.038), transparent 26%),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(217, 213, 193, 0.014) 35px, transparent 36px 78px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028), transparent 52%),
+    rgba(8, 9, 8, 0.5);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.48);
 }
 
 .dashboard-panel::before,
@@ -1932,7 +1932,7 @@ button:focus-visible {
 
 .dashboard-panel::before {
   inset: 7px;
-  opacity: 0.62;
+  opacity: 0.5;
   border-block-start: 1px solid rgba(217, 213, 193, 0.08);
   border-inline-start: 1px solid rgba(217, 213, 193, 0.055);
 }
@@ -1942,7 +1942,7 @@ button:focus-visible {
   inset-block-start: 11px;
   inline-size: 20px;
   block-size: 10px;
-  opacity: 0.3;
+  opacity: 0.22;
   background:
     linear-gradient(90deg, rgba(217, 213, 193, 0.5), rgba(217, 213, 193, 0.5)) 0 0 / 12px 1px no-repeat,
     linear-gradient(rgba(217, 213, 193, 0.5), rgba(217, 213, 193, 0.5)) 0 0 / 1px 8px no-repeat,
@@ -1967,7 +1967,11 @@ button:focus-visible {
 .activity-panel {
   align-self: stretch;
   grid-template-rows: auto minmax(0, 1fr) minmax(20px, auto);
-  gap: clamp(12px, 1.75vh, 16px);
+  gap: clamp(11px, 1.55vh, 15px);
+  background:
+    linear-gradient(180deg, rgba(217, 213, 193, 0.026), transparent 30%),
+    linear-gradient(90deg, rgba(217, 213, 193, 0.04), transparent 30% 76%, rgba(217, 213, 193, 0.025)),
+    rgba(7, 8, 7, 0.46);
 }
 
 .activity-panel .activity-feed {
@@ -1995,6 +1999,10 @@ button:focus-visible {
   grid-column: 3;
   grid-row: 1;
   grid-template-rows: auto minmax(0, 1fr);
+  background:
+    linear-gradient(160deg, rgba(217, 213, 193, 0.034), transparent 42%),
+    repeating-linear-gradient(0deg, transparent 0 19px, rgba(217, 213, 193, 0.018) 20px, transparent 21px 58px),
+    rgba(7, 8, 7, 0.45);
 }
 
 .memory-panel {
@@ -2002,11 +2010,40 @@ button:focus-visible {
   grid-row: 2 / span 2;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
+  border-color: rgba(217, 213, 193, 0.13);
+  background:
+    radial-gradient(ellipse at 50% 72%, rgba(217, 213, 193, 0.045), transparent 44%),
+    rgba(6, 7, 6, 0.42);
 }
 
 .active-projects-panel {
   gap: clamp(12px, 1.75vh, 16px);
   padding-block: clamp(13px, 1.8vh, 16px);
+  border-color: rgba(217, 213, 193, 0.22);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.058), transparent 24%),
+    repeating-linear-gradient(180deg, transparent 0 36px, rgba(217, 213, 193, 0.02) 37px, transparent 38px 76px),
+    rgba(8, 9, 8, 0.56);
+}
+
+.active-projects-panel::after {
+  inset-inline-end: 14px;
+  inset-block-start: 13px;
+  inline-size: 34px;
+  block-size: 8px;
+  opacity: 0.22;
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.55), rgba(217, 213, 193, 0.55)) 0 0 / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, rgba(217, 213, 193, 0.52) 0 2px, transparent 2px 6px);
+}
+
+.latest-log-panel {
+  padding-inline-end: 24px;
+  border-color: rgba(217, 213, 193, 0.145);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.05), transparent 16%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), transparent 54%),
+    rgba(9, 10, 8, 0.48);
 }
 
 .dashboard-panel h2,
@@ -2021,17 +2058,17 @@ button:focus-visible {
 .dashboard-panel h2 {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dashboard-panel h2::before {
-  content: "";
-  inline-size: 6px;
-  block-size: 6px;
+  content: "//";
+  inline-size: auto;
+  block-size: auto;
   flex: 0 0 auto;
-  border: 1px solid currentColor;
-  opacity: 0.58;
-  transform: rotate(45deg);
+  border: 0;
+  opacity: 0.56;
+  transform: none;
 }
 
 .panel-link {
@@ -2047,6 +2084,7 @@ button:focus-visible {
 
 .record-list {
   display: grid;
+  counter-reset: dashboard-record;
 }
 
 .active-projects-panel .record-list {
@@ -2069,8 +2107,17 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list button {
+  counter-increment: dashboard-record;
+  grid-template-columns: 28px 1fr auto;
   min-block-size: clamp(32px, 4.15vh, 40px);
   padding-block: 3px;
+}
+
+.active-projects-panel .record-list button::before {
+  content: counter(dashboard-record, decimal-leading-zero);
+  color: var(--muted-2);
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 
 .active-projects-panel .record-list small,
@@ -2110,8 +2157,8 @@ button:focus-visible {
 
 .current-game {
   display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: 18px;
+  grid-template-columns: 58px 1fr;
+  gap: 16px;
   align-items: center;
   align-self: center;
   block-size: 100%;
@@ -2129,6 +2176,7 @@ button:focus-visible {
   text-align: center;
   font-size: 9px;
   overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(217, 213, 193, 0.055), 0 14px 24px rgba(0, 0, 0, 0.26);
 }
 
 .game-cover img {
@@ -2171,9 +2219,10 @@ button:focus-visible {
 
 .current-game strong {
   display: block;
-  margin-block-end: 10px;
+  margin-block-end: 8px;
   color: var(--text-strong);
   font-weight: 400;
+  line-height: 1.2;
 }
 
 .current-game span,
@@ -2185,12 +2234,14 @@ button:focus-visible {
 
 .latest-log {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+  padding-inline-start: 12px;
+  border-inline-start: 1px solid rgba(217, 213, 193, 0.14);
 }
 
 .latest-log p {
   margin: 0;
-  max-inline-size: 34ch;
+  max-inline-size: 38ch;
   display: -webkit-box;
   overflow: hidden;
   text-wrap: balance;
@@ -2204,14 +2255,15 @@ button:focus-visible {
   list-style: none;
   display: grid;
   align-content: start;
-  gap: clamp(7px, 1vh, 10px);
+  gap: clamp(6px, 0.9vh, 9px);
 }
 
 .activity-feed li {
   min-width: 0;
-  display: flex;
-  gap: 12px;
-  line-height: 1.55;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  line-height: 1.45;
 }
 
 .activity-feed span {
@@ -2239,7 +2291,7 @@ button:focus-visible {
   min-block-size: 0;
   display: grid;
   align-content: space-between;
-  gap: 5px;
+  gap: 6px;
 }
 
 .weather-primary {
