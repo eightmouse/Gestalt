@@ -13,6 +13,23 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { create } from "zustand";
+import { ArchiveDashboard } from "@/components/archive/dashboard";
+import {
+  type ArchiveMetrics,
+  activityDate,
+  formatClock,
+  formatDate,
+  formatReadableDate,
+  getArchiveMetrics,
+  metaText,
+  noteEntries,
+  noteTitleDate,
+  recentActivity,
+  recordHeaderImage,
+  splitUpdateIndex
+} from "@/components/archive/record-utils";
+import { SectionPage } from "@/components/archive/section-page";
+import { setupHardwareSource, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
 type ContentKey =
@@ -66,13 +83,6 @@ const latinSayings = [
 
 const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
 const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
-const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
-  archive: "Deprecated Index",
-  games: "Play Log Registry",
-  logs: "Field Note Index",
-  projects: "Process Registry",
-  setup: "Setup Manifest"
-};
 
 function cipherizeText(value: string): string {
   return value
@@ -111,29 +121,6 @@ function renderHeadlineLetters(value: string) {
     );
   });
 }
-
-type WeatherState = {
-  label: string;
-  temp: string;
-  condition: string;
-  meta: string;
-  note: string;
-  loading: boolean;
-};
-
-type WeatherLocation = {
-  label: string;
-  latitude: number;
-  longitude: number;
-};
-
-type ArchiveMetrics = {
-  activeGame?: RecordEntry;
-  activeProjects: number;
-  latestActivityDate: string;
-  mediaCount: number;
-  recordCount: number;
-};
 
 type TimelineItem = {
   content: ContentKey;
@@ -439,60 +426,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         </header>
 
         {activeSection === "system" ? (
-        <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
-          <DashboardPanel
-            title="PROJECTS"
-            className="wide-panel active-projects-panel"
-            footerLabel={`View all (${projectDashboardRecords.length})`}
-            onFooter={() => openSection("projects")}
-          >
-            {projectDashboardRecords.length > 0 ? (
-              <RecordList records={projectDashboardRecords.slice(0, 3)} onOpenRecord={openRecord} />
-            ) : (
-              <p className="subtle">No projects filed yet.</p>
-            )}
-          </DashboardPanel>
-
-          <DashboardPanel title="CURRENT GAME" footerLabel={currentGame ? "Read note" : undefined} onFooter={() => currentGame && openRecord(currentGame, "notes")}>
-            {currentGame ? <CurrentGame record={currentGame} /> : <p className="subtle">No session active.</p>}
-          </DashboardPanel>
-
-          <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
-            <WeatherPanel />
-          </DashboardPanel>
-
-          <DashboardPanel title="MEMORY STATE" className="memory-panel">
-            <MemoryLoop />
-          </DashboardPanel>
-
-          <DashboardPanel title="LATEST LOG" footerLabel="Read log" onFooter={() => latestLog && openRecord(latestLog)}>
-            {latestLog ? (
-              <div className="latest-log">
-                <span>{shortDate(latestLog.updated)}</span>
-                <p>{recordDisplaySummary(latestLog)}</p>
-              </div>
-            ) : (
-              <p className="subtle">No field notes stored.</p>
-            )}
-          </DashboardPanel>
-
-          <DashboardPanel title="RECENT ACTIVITY" className="wide-panel activity-panel">
-            {activity.length > 0 ? (
-              <ol className="activity-feed">
-                {activity.map((item) => (
-                  <li key={item.record.id}>
-                    <span>[{shortDate(item.date)}]</span>
-                    <button type="button" onClick={() => openRecord(item.record)}>
-                      {item.record.type}: {item.record.title}
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <p className="subtle">No activity filed yet.</p>
-            )}
-          </DashboardPanel>
-        </div>
+          <ArchiveDashboard
+            activity={activity}
+            currentGame={currentGame}
+            latestLog={latestLog}
+            panelOpen={panelOpen}
+            projectRecords={projectDashboardRecords}
+            onOpenRecord={(record, content) => openRecord(record, content ?? "overview")}
+            onOpenSection={openSection}
+          />
         ) : (
           <SectionPage
             records={recordsBySection[activeSection]}
@@ -647,7 +589,7 @@ function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.26.0</span>
+          <span>v1.26.1</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -671,7 +613,7 @@ function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.26.0</span>
+          <span className="version-label">v1.26.1</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -729,7 +671,7 @@ function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.26.0</dd>
+            <dd>GESTALT OS v1.26.1</dd>
           </div>
         </dl>
       </div>
@@ -853,484 +795,6 @@ function ArchiveNavigationMenu({
   );
 }
 
-type DashboardPanelProps = {
-  title: string;
-  children: React.ReactNode;
-  footerLabel?: string;
-  className?: string;
-  onFooter?: () => void;
-};
-
-function DashboardPanel({ title, children, footerLabel, className = "", onFooter }: DashboardPanelProps) {
-  return (
-    <article className={`dashboard-panel ${className}`}>
-      <h2>{title}</h2>
-      <div>{children}</div>
-      {footerLabel ? (
-        <button className="panel-link" type="button" onClick={onFooter}>
-          {footerLabel} <span>-&gt;</span>
-        </button>
-      ) : null}
-    </article>
-  );
-}
-
-function WeatherPanel() {
-  const [weather, setWeather] = useState<WeatherState>({
-    label: "AUTO WEATHER",
-    temp: "--",
-    condition: "Awaiting signal",
-    meta: "Approximate network signal",
-    note: "No browser location prompt. Gestalt stores nothing.",
-    loading: false
-  });
-
-  const requestWeather = async () => {
-    if (weather.loading) {
-      return;
-    }
-
-    if (typeof fetch !== "function") {
-      setWeather((current) => ({
-        ...current,
-        condition: "Signal unavailable",
-        meta: "This browser cannot read weather",
-        note: "Weather remains client-side; no location is stored."
-      }));
-      return;
-    }
-
-    setWeather((current) => ({
-      ...current,
-      loading: true,
-      condition: "Reading signal",
-      meta: "Resolving approximate sky",
-      note: "No browser permission dialog is required."
-    }));
-
-    try {
-      const location = await resolveWeatherLocation();
-      const latitude = location.latitude.toFixed(3);
-      const longitude = location.longitude.toFixed(3);
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
-      const response = await fetch(url);
-      const data = await response.json();
-      const current = data.current ?? {};
-
-      setWeather({
-        label: "AUTO WEATHER",
-        temp: Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--",
-        condition: weatherCodeLabel(Number(current.weather_code)),
-        meta: `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`,
-        note: `Approximate sky: ${location.label}. Nothing is saved by Gestalt.`,
-        loading: false
-      });
-    } catch {
-      setWeather({
-        label: "AUTO WEATHER",
-        temp: "--",
-        condition: "Signal interrupted",
-        meta: "Weather endpoints did not respond",
-        note: "Try again later; the archive remains offline-safe.",
-        loading: false
-      });
-    }
-  };
-
-  useEffect(() => {
-    void requestWeather();
-    // The first read should happen once on mount; the refresh button handles later reads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className="weather-readout">
-      <div className="weather-primary">
-        <span className="weather-temp">{weather.temp}</span>
-        <span className="weather-condition">{weather.condition}</span>
-      </div>
-      <div className="weather-meta">
-        <span>{weather.label}</span>
-        <span>{weather.meta}</span>
-      </div>
-      <p className="weather-note">{weather.note}</p>
-      <button className="weather-action" type="button" disabled={weather.loading} onClick={requestWeather}>
-        &gt; {weather.loading ? "Reading signal..." : "Refresh sky"}
-      </button>
-    </div>
-  );
-}
-
-function MemoryLoop() {
-  const memoryRef = useRef<HTMLDivElement | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const boundsRef = useRef<DOMRectReadOnly | null>(null);
-
-  const setMemoryPointer = (x: number, y: number) => {
-    const node = memoryRef.current;
-
-    if (!node) {
-      return;
-    }
-
-    node.style.setProperty("--memory-core-x", `${(x * 4).toFixed(2)}px`);
-    node.style.setProperty("--memory-core-y", `${(y * 4).toFixed(2)}px`);
-    node.style.setProperty("--memory-orbit-x", `${(x * -6).toFixed(2)}px`);
-    node.style.setProperty("--memory-orbit-y", `${(y * -5).toFixed(2)}px`);
-    node.style.setProperty("--memory-shard-x", `${(x * 7).toFixed(2)}px`);
-    node.style.setProperty("--memory-shard-y", `${(y * 5).toFixed(2)}px`);
-    node.style.setProperty("--memory-axis-x", `${(x * 2).toFixed(2)}px`);
-    node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
-  };
-  const clampPointer = (value: number) => Math.max(-1, Math.min(1, value));
-  const updateBounds = () => {
-    boundsRef.current = memoryRef.current?.getBoundingClientRect() ?? null;
-  };
-
-  const handlePointerMove = (event: globalThis.PointerEvent) => {
-    const node = memoryRef.current;
-    const rect = boundsRef.current;
-
-    if (!node || !rect || document.hidden) {
-      return;
-    }
-
-    const x = clampPointer((event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2));
-    const y = clampPointer((event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2));
-
-    if (frameRef.current !== null) {
-      window.cancelAnimationFrame(frameRef.current);
-    }
-
-    frameRef.current = window.requestAnimationFrame(() => {
-      setMemoryPointer(x, y);
-      frameRef.current = null;
-    });
-  };
-
-  useEffect(() => {
-    updateBounds();
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    window.addEventListener("resize", updateBounds, { passive: true });
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("resize", updateBounds);
-
-      if (frameRef.current !== null) {
-        window.cancelAnimationFrame(frameRef.current);
-      }
-    };
-  }, []);
-
-  return (
-    <div className="memory-loop" aria-hidden="true" ref={memoryRef}>
-      <span className="memory-core" />
-      <span className="memory-orbit" />
-      <span className="memory-gate" />
-      <span className="memory-shard" />
-      <span className="memory-rain" />
-      <span className="memory-axis" />
-      <span className="memory-cipher" />
-      <span className="memory-nodes" />
-    </div>
-  );
-}
-
-function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenRecord: (record: RecordEntry) => void }) {
-  return (
-    <div className="record-list">
-      {records.map((record) => (
-        <button key={record.id} type="button" onClick={() => onOpenRecord(record)}>
-          <span>
-            <strong>{record.title}</strong>
-            <small>{record.status}</small>
-          </span>
-          <i>{record.progress}%</i>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function SectionPage({
-  records,
-  section,
-  onOpenRecord
-}: {
-  records: RecordEntry[];
-  section: (typeof sections)[number];
-  onOpenRecord: (record: RecordEntry) => void;
-}) {
-  const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
-  const splitSection = splitSectionRecords(section.id, sortedRecords);
-
-  if (section.id === "setup") {
-    return <SetupBay countLabel={countLabel} onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
-  }
-
-  if (splitSection) {
-    return (
-      <section className="section-page section-page--split" aria-label={`${section.code} records`}>
-        <header className="section-page-header">
-          <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-          <div>
-            <p>{section.code}</p>
-            <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
-          </div>
-          <i>{countLabel}</i>
-        </header>
-
-        <div className="section-split-grid">
-          {splitSection.map((group) => (
-            <section className="section-record-column" key={group.title} aria-label={group.title}>
-              <header>
-                <h3>{group.title}</h3>
-                <span>{group.records.length}</span>
-              </header>
-              <div className="section-record-grid">
-                {group.records.length > 0 ? (
-                  group.records.map((record) => (
-                    <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
-                  ))
-                ) : (
-                  <p className="search-empty">No records filed here yet.</p>
-                )}
-              </div>
-            </section>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="section-page" aria-label={`${section.code} records`}>
-      <header className="section-page-header">
-        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-        <div>
-          <p>{section.code}</p>
-          <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
-        </div>
-        <i>{countLabel}</i>
-      </header>
-
-      <div className="section-record-grid">
-        {sortedRecords.length > 0 ? (
-          sortedRecords.map((record) => (
-            <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
-          ))
-        ) : (
-          <p className="search-empty">No records filed here yet.</p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
-  return (
-    <button className="section-record" type="button" onClick={() => onOpenRecord(record)}>
-      <span className="section-record-kind">{record.type}</span>
-      <strong>{record.title}</strong>
-      <span>{record.summary}</span>
-      <i>
-        {record.status} . {formatReadableDate(record.updated)}
-      </i>
-    </button>
-  );
-}
-
-function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
-  if (section === "projects") {
-    const activeStatuses = new Set(["active", "in progress", "planning", "blocked"]);
-
-    return [
-      { title: "ACTIVE PROJECTS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
-      { title: "OTHER PROCESSES", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
-    ];
-  }
-
-  if (section === "games") {
-    const activeStatuses = new Set(["playing", "on hold", "in progress"]);
-
-    return [
-      { title: "SESSION LOGS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
-      { title: "PAST LOGS", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
-    ];
-  }
-
-  return null;
-}
-
-type SetupGroupId = "systems" | "tools" | "peripherals" | "notes";
-
-const setupGroupRegistry: Array<{ id: SetupGroupId; title: string; path: string; detail: string }> = [
-  { id: "systems", title: "SYSTEMS", path: "/setup/systems", detail: "Operating systems, machines, rigs" },
-  { id: "tools", title: "TOOLS", path: "/setup/tools", detail: "Apps, utilities, workflows" },
-  { id: "peripherals", title: "PERIPHERALS", path: "/setup/peripherals", detail: "Input, display, audio, devices" },
-  { id: "notes", title: "NOTES", path: "/setup/notes", detail: "Loose setup notes and pending files" }
-];
-
-function SetupBay({
-  countLabel,
-  onOpenRecord,
-  records,
-  section
-}: {
-  countLabel: string;
-  onOpenRecord: (record: RecordEntry) => void;
-  records: RecordEntry[];
-  section: (typeof sections)[number];
-}) {
-  const groups = setupGroupRegistry.map((group) => ({
-    ...group,
-    records: records.filter((record) => setupGroupFor(record) === group.id)
-  }));
-
-  return (
-    <section className="section-page setup-bay" aria-label={`${section.code} device bay`}>
-      <header className="section-page-header setup-bay-header">
-        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-        <div>
-          <p>{section.code}</p>
-          <h2>Setup Manifest</h2>
-        </div>
-        <i>{countLabel}</i>
-      </header>
-
-      <div className="setup-bay-grid">
-        {groups.map((group) => (
-          <section className={`setup-group setup-group--${group.id}`} key={group.id} aria-label={group.title}>
-            <header>
-              <div>
-                <span>{group.path}</span>
-                <h3>{group.title}</h3>
-              </div>
-              <i>{group.records.length}</i>
-            </header>
-            <p>{group.detail}</p>
-            <div className="setup-tile-grid">
-              {group.records.length > 0 ? (
-                group.records.map((record) => (
-                  <SetupTile key={record.id} record={record} onOpenRecord={onOpenRecord} />
-                ))
-              ) : (
-                <span className="setup-empty">No files mounted.</span>
-              )}
-            </div>
-          </section>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
-  const image = recordHeaderImage(record) || record.banner;
-  const profile = setupProfile(record);
-
-  return (
-    <button className="setup-tile" type="button" onClick={() => onOpenRecord(record)}>
-      <span className="setup-tile-icon" aria-hidden="true">
-        {image ? <img src={image} alt="" decoding="async" loading="lazy" /> : null}
-      </span>
-      <span className="setup-tile-body">
-        <strong>{record.title}</strong>
-        <small>{profile.category} . {record.status}</small>
-      </span>
-      <i>open</i>
-    </button>
-  );
-}
-
-function setupGroupFor(record: RecordEntry): SetupGroupId {
-  const haystack = [record.title, record.type, record.summary].join(" ").toLowerCase();
-
-  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
-    return "peripherals";
-  }
-
-  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
-    return "tools";
-  }
-
-  if (/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
-    return "systems";
-  }
-
-  return "notes";
-}
-
-function setupProfile(record: RecordEntry): { category: string; command: string; specs: Array<{ label: string; value: string }> } {
-  const group = setupGroupFor(record);
-  const category = setupGroupRegistry.find((item) => item.id === group)?.title ?? "NOTES";
-  const specs = setupSpecRows(record);
-
-  return {
-    category,
-    command: `cat ${setupGroupRegistry.find((item) => item.id === group)?.path ?? "/setup/notes"}/${record.id}.log`,
-    specs
-  };
-}
-
-function setupPathFor(record: RecordEntry): string {
-  const group = setupGroupFor(record);
-  const path = setupGroupRegistry.find((item) => item.id === group)?.path ?? "/setup/notes";
-
-  return `${path}/${record.id}`;
-}
-
-function setupNarrativeNotes(record: RecordEntry): Array<{ title: string; body: string }> {
-  return noteEntries(record.body).filter((note) => !setupNoteIsSpecOnly(note.body));
-}
-
-function setupNoteIsSpecOnly(body: string): boolean {
-  const lines = body
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => !line.startsWith("!") && !line.startsWith("#"));
-
-  if (!lines.length) {
-    return true;
-  }
-
-  return lines.every((line) => /^([^:]{2,32}):\s*(.+)$/.test(line));
-}
-
-function setupSpecRows(record: RecordEntry): Array<{ label: string; value: string }> {
-  const source = setupHardwareSource(record);
-  const privateLabel = /\b(serial|token|secret|password|passwd|key|path|host|hostname|user|username|email|address|phone|ip)\b/i;
-
-  return source
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .map((line) => {
-      const match = line.match(/^([^:]{2,32}):\s*(.+)$/);
-
-      if (!match) {
-        return null;
-      }
-
-      const label = match[1].trim();
-      const value = match[2].trim();
-
-      if (!label || !value || privateLabel.test(label)) {
-        return null;
-      }
-
-      return { label, value };
-    })
-    .filter((row): row is { label: string; value: string } => Boolean(row))
-    .slice(0, 8);
-}
-
-function setupHardwareSource(record: RecordEntry): string {
-  return metaText(record.meta.hardware) || setupHardwareFallback(record.body);
-}
-
 function SearchPanel({
   panelRef,
   query,
@@ -1424,23 +888,6 @@ function TimelineWindow({
         </ol>
       </div>
     </motion.article>
-  );
-}
-
-function CurrentGame({ record }: { record: RecordEntry }) {
-  return (
-    <div className="current-game">
-      <div className="game-cover">
-        <img src={record.banner || "/images/archive-banner.png"} alt="" decoding="async" />
-        <span>{record.title.slice(0, 10)}</span>
-      </div>
-      <div>
-        <strong>{record.title}</strong>
-        <span>{record.progress}% Complete</span>
-        <span>{String(record.meta.playtime ?? "18.7h")} Play Time</span>
-        <span>Last Played: {String(record.meta.lastPlayed ?? "Today")}</span>
-      </div>
-    </div>
   );
 }
 
@@ -1747,96 +1194,6 @@ function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label:
 
 function contentOrdinal(record: RecordEntry, index: number): string {
   return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
-}
-
-function recordHeaderImage(record: RecordEntry): string {
-  return typeof record.meta.headerImage === "string" ? record.meta.headerImage : "";
-}
-
-function splitUpdateIndex(body: string): { mainBody: string; updates: string[] } {
-  const lines = body.split(/\r?\n/);
-  const startIndex = lines.findIndex((line) => line.trim() === "## Update Index");
-
-  if (startIndex === -1) {
-    return { mainBody: body, updates: [] };
-  }
-
-  let endIndex = lines.length;
-
-  for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (lines[index].startsWith("## ") || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
-      endIndex = index;
-      break;
-    }
-  }
-
-  const updates = lines
-    .slice(startIndex + 1, endIndex)
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("- "))
-    .map((line) => line.slice(2));
-  const mainBody = [...lines.slice(0, startIndex), ...lines.slice(endIndex)].join("\n").trim();
-
-  return { mainBody, updates };
-}
-
-function noteEntries(body: string): Array<{ title: string; body: string }> {
-  const { mainBody } = splitUpdateIndex(body);
-  const lines = mainBody.split(/\r?\n/);
-  const notes: Array<{ title: string; body: string }> = [];
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
-
-    if (!line.startsWith(":::note ") && !line.startsWith(":::previous-note ")) {
-      continue;
-    }
-
-    const title = line.slice(notePrefix.length).trim() || "Untitled note";
-    const innerLines: string[] = [];
-
-    index += 1;
-
-    while (index < lines.length && lines[index].trim() !== ":::") {
-      innerLines.push(lines[index]);
-      index += 1;
-    }
-
-    notes.push({ title, body: innerLines.join("\n").trim() });
-  }
-
-  if (!notes.length && mainBody.trim()) {
-    notes.push({ title: "Current note", body: mainBody.trim() });
-  }
-
-  return notes;
-}
-
-function setupHardwareFallback(body: string): string {
-  const notes = noteEntries(body);
-
-  if (!notes.length) {
-    return body;
-  }
-
-  return notes.map((note) => note.body).filter(Boolean).join("\n\n") || body;
-}
-
-function metaText(value: unknown): string {
-  if (typeof value === "string") {
-    return decodeTextBlock(value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item)).join("\n");
-  }
-
-  return "";
-}
-
-function decodeTextBlock(value: string): string {
-  return value.replace(/\\+n/g, "\n");
 }
 
 function getTextList(value: unknown): string[] {
@@ -2412,185 +1769,6 @@ function dashboardSubtext(date: Date | null): string {
   const saying = dailyLatinSaying(date);
 
   return `${saying.latin} / ${saying.english}`;
-}
-
-function weatherCodeLabel(code: number): string {
-  if (code === 0) return "Clear sky";
-  if ([1, 2, 3].includes(code)) return "Partly cloudy";
-  if ([45, 48].includes(code)) return "Fog";
-  if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle";
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "Rain";
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
-  if ([95, 96, 99].includes(code)) return "Storm";
-
-  return "Weather logged";
-}
-
-async function resolveWeatherLocation(): Promise<WeatherLocation> {
-  const response = await fetch("https://ipapi.co/json/");
-
-  if (!response.ok) {
-    throw new Error("Weather location lookup failed");
-  }
-
-  const data = await response.json() as {
-    city?: string;
-    country_code?: string;
-    latitude?: number | string;
-    longitude?: number | string;
-  };
-  const latitude = Number(data.latitude);
-  const longitude = Number(data.longitude);
-
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    throw new Error("Weather location missing coordinates");
-  }
-
-  return {
-    label: [data.city, data.country_code].filter(Boolean).join(", ") || "network location",
-    latitude,
-    longitude
-  };
-}
-
-function formatClock(date: Date | null): string {
-  if (!date) {
-    return "--:--";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(date);
-}
-
-function formatDate(date: Date | null): string {
-  if (!date) {
-    return "-- / -- / ----";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  })
-    .format(date)
-    .replaceAll("/", " / ");
-}
-
-function shortDate(value: string): string {
-  const [year, month, day] = value.split("-");
-  return year && month && day ? `${day}/${month}` : "--/--";
-}
-
-function formatReadableDate(value: string): string {
-  const [year, month, day] = value.split("-");
-  return year && month && day ? `${day} / ${month} / ${year}` : value;
-}
-
-function recentActivity(records: RecordEntry[], limit: number): Array<{ date: string; record: RecordEntry }> {
-  return records
-    .filter((record) => record.section !== "system")
-    .map((record) => ({ date: activityDate(record), record }))
-    .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
-    .slice(0, limit);
-}
-
-function activityDate(record: RecordEntry): string {
-  const noteDates = noteEntries(record.body)
-    .map((note) => noteTitleDate(note.title))
-    .filter((value): value is string => Boolean(value));
-
-  return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] ?? record.updated;
-}
-
-function recordDisplaySummary(record: RecordEntry): string {
-  if (record.summary.trim() && record.summary.trim().toLowerCase() !== "no summary recorded.") {
-    return record.summary;
-  }
-
-  const latestNote = noteEntries(record.body)[0];
-  const fallback = excerptFromBody(latestNote?.body ?? record.body);
-
-  return fallback || "No summary recorded.";
-}
-
-function excerptFromBody(body: string): string {
-  const line = body
-    .split(/\r?\n/)
-    .map((value) => value.trim())
-    .find((value) => value && !value.startsWith(":::") && !value.startsWith("!") && !value.startsWith("#"));
-
-  if (!line) {
-    return "";
-  }
-
-  const clean = line
-    .replace(/^[-*>]\s*/, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return clean.length > 118 ? `${clean.slice(0, 115).trim()}...` : clean;
-}
-
-function noteTitleDate(title: string): string | null {
-  const match = title.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\b/);
-
-  if (!match) {
-    return null;
-  }
-
-  const [, day, month, year] = match;
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-}
-
-function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEntry): ArchiveMetrics {
-  const publicRecords = records.filter((record) => record.section !== "system");
-  const latestActivityDate = recentActivity(records, 1)[0]?.date ?? publicRecords[0]?.updated ?? "";
-
-  return {
-    activeGame,
-    activeProjects: records.filter((record) => record.section === "projects" && ["active", "in progress", "planning"].includes(record.status.toLowerCase())).length,
-    latestActivityDate,
-    mediaCount: countMediaPaths(publicRecords),
-    recordCount: publicRecords.length
-  };
-}
-
-function countMediaPaths(records: RecordEntry[]): number {
-  const paths = new Set<string>();
-  const markdownImagePattern = /!\[(?:.*?)]\((.*?)\)/g;
-
-  for (const record of records) {
-    for (const value of [record.banner, record.meta.headerImage]) {
-      if (typeof value === "string" && value) {
-        paths.add(value);
-      }
-    }
-
-    for (const key of ["samples", "attachments"] as const) {
-      const value = record.meta[key];
-      const list = Array.isArray(value) ? value : typeof value === "string" ? value.split(/\r?\n|,/) : [];
-
-      for (const item of list) {
-        const path = String(item).trim();
-
-        if (path) {
-          paths.add(path);
-        }
-      }
-    }
-
-    for (const match of record.body.matchAll(markdownImagePattern)) {
-      if (match[1]) {
-        paths.add(match[1]);
-      }
-    }
-  }
-
-  return paths.size;
 }
 
 function getTimelineItems(records: RecordEntry[], limit: number): TimelineItem[] {
