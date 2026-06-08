@@ -38,6 +38,18 @@ type WeatherLocation = {
   longitude: number;
 };
 
+const defaultWeatherState: WeatherState = {
+  label: "AUTO WEATHER",
+  temp: "--",
+  condition: "Awaiting signal",
+  meta: "Approximate network signal",
+  note: "No browser location prompt. Gestalt stores nothing.",
+  loading: false
+};
+
+let cachedWeather = defaultWeatherState;
+let weatherLoaded = false;
+
 export function ArchiveDashboard({
   activity,
   currentGame,
@@ -75,7 +87,7 @@ export function ArchiveDashboard({
         <MemoryLoop />
       </DashboardPanel>
 
-      <DashboardPanel title="LATEST LOG" footerLabel="Read log" onFooter={() => latestLog && onOpenRecord(latestLog)}>
+      <DashboardPanel title="LATEST LOG" className="latest-log-panel" footerLabel="Read log" onFooter={() => latestLog && onOpenRecord(latestLog)}>
         {latestLog ? (
           <div className="latest-log">
             <span>{shortDate(latestLog.updated)}</span>
@@ -230,37 +242,41 @@ function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenR
 }
 
 function WeatherPanel() {
-  const [weather, setWeather] = useState<WeatherState>({
-    label: "AUTO WEATHER",
-    temp: "--",
-    condition: "Awaiting signal",
-    meta: "Approximate network signal",
-    note: "No browser location prompt. Gestalt stores nothing.",
-    loading: false
-  });
+  const mountedRef = useRef(false);
+  const [weather, setWeather] = useState<WeatherState>(cachedWeather);
 
   const requestWeather = async () => {
-    if (weather.loading) {
+    if (cachedWeather.loading) {
       return;
     }
+
+    const updateWeather = (next: WeatherState) => {
+      cachedWeather = next;
+
+      if (mountedRef.current) {
+        setWeather(next);
+      }
+    };
 
     if (typeof fetch !== "function") {
-      setWeather((current) => ({
-        ...current,
+      updateWeather({
+        ...cachedWeather,
         condition: "Signal unavailable",
         meta: "This browser cannot read weather",
-        note: "Weather remains client-side; no location is stored."
-      }));
+        note: "Weather remains client-side; no location is stored.",
+        loading: false
+      });
+      weatherLoaded = true;
       return;
     }
 
-    setWeather((current) => ({
-      ...current,
+    updateWeather({
+      ...cachedWeather,
       loading: true,
       condition: "Reading signal",
       meta: "Resolving approximate sky",
       note: "No browser permission dialog is required."
-    }));
+    });
 
     try {
       const location = await resolveWeatherLocation();
@@ -271,7 +287,7 @@ function WeatherPanel() {
       const data = await response.json();
       const current = data.current ?? {};
 
-      setWeather({
+      updateWeather({
         label: "AUTO WEATHER",
         temp: Number.isFinite(current.temperature_2m) ? `${Math.round(current.temperature_2m)}C` : "--",
         condition: weatherCodeLabel(Number(current.weather_code)),
@@ -279,8 +295,9 @@ function WeatherPanel() {
         note: `Approximate sky: ${location.label}. Nothing is saved by Gestalt.`,
         loading: false
       });
+      weatherLoaded = true;
     } catch {
-      setWeather({
+      updateWeather({
         label: "AUTO WEATHER",
         temp: "--",
         condition: "Signal interrupted",
@@ -288,13 +305,21 @@ function WeatherPanel() {
         note: "Try again later; the archive remains offline-safe.",
         loading: false
       });
+      weatherLoaded = true;
     }
   };
 
   useEffect(() => {
-    void requestWeather();
-    // The first read should happen once on mount; the refresh button handles later reads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    mountedRef.current = true;
+    setWeather(cachedWeather);
+
+    if (!weatherLoaded && !cachedWeather.loading) {
+      void requestWeather();
+    }
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   return (
