@@ -2455,8 +2455,10 @@ button:focus-visible {
 
 .activity-feed li {
   min-width: 0;
+  min-block-size: 38px;
   display: grid;
   grid-template-columns: 62px minmax(0, 1fr);
+  align-items: start;
   gap: 12px;
   line-height: 1.5;
   box-shadow: inset 1px 0 0 var(--dashboard-edge);
@@ -2514,7 +2516,7 @@ button:focus-visible {
   color: var(--text-strong);
 }
 
-@media (min-width: 1181px) and (min-height: 1040px) {
+@media (min-width: 1181px) and (min-height: 1120px) {
   .dashboard-grid {
     block-size: min(800px, calc(100vh - 218px));
     grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 1.12fr);
