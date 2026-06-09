@@ -70,7 +70,7 @@ export function ArchiveDashboard({
         onFooter={() => onOpenSection("projects")}
       >
         {projectRecords.length > 0 ? (
-          <RecordList records={projectRecords.slice(0, 3)} onOpenRecord={onOpenRecord} />
+          <RecordList records={projectRecords.slice(0, 5)} onOpenRecord={onOpenRecord} />
         ) : (
           <p className="subtle">No projects filed yet.</p>
         )}

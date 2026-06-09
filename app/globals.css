@@ -2299,6 +2299,10 @@ button:focus-visible {
   box-shadow: none;
 }
 
+.active-projects-panel .record-list button:nth-child(n + 4) {
+  display: none;
+}
+
 .active-projects-panel .record-list button::before {
   content: counter(dashboard-record, decimal-leading-zero);
   color: var(--muted-2);
@@ -2526,22 +2530,138 @@ button:focus-visible {
   color: var(--text-strong);
 }
 
-@media (min-width: 1181px) and (min-height: 1120px) {
+@media (min-width: 1500px) and (min-height: 1120px) {
   .dashboard-grid {
-    block-size: min(800px, calc(100vh - 218px));
+    block-size: min(840px, calc(100vh - 228px));
+    max-inline-size: 1380px;
+    grid-template-columns: minmax(340px, 1.04fr) minmax(260px, 0.84fr) minmax(260px, 0.74fr);
     grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 1.12fr);
+    gap: clamp(14px, 1.4vh, 22px);
   }
 
+  .dashboard-panel {
+    padding: clamp(14px, 1.35vh, 18px) 24px clamp(12px, 1.2vh, 16px);
+  }
+
+  .dashboard-panel h2 {
+    font-size: 14px;
+  }
+
+  .current-game-panel {
+    grid-template-rows: auto minmax(110px, 1fr) minmax(22px, auto);
+  }
+
+  .current-game {
+    min-block-size: 110px;
+    grid-template-columns: 72px 1fr;
+    gap: 18px;
+  }
+
+  .record-list strong,
+  .current-game strong {
+    font-size: 15px;
+  }
+
+  .record-list small,
+  .record-list i,
+  .current-game span,
+  .latest-log span {
+    font-size: 13px;
+  }
+
+  .latest-log p,
+  .activity-feed strong {
+    font-size: 15px;
+  }
+
+  .activity-feed > li > span,
+  .activity-feed small {
+    font-size: 13px;
+  }
+
+  .activity-feed li {
+    min-block-size: 42px;
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+
+  .active-projects-panel .record-list button {
+    min-block-size: clamp(36px, 3.2vh, 46px);
+  }
+
+  .active-projects-panel .record-list button:nth-child(4),
   .activity-feed li:nth-child(4) {
     display: grid;
   }
 }
 
-@media (min-width: 1280px) and (min-height: 1240px) {
-  .dashboard-grid {
-    block-size: min(860px, calc(100vh - 218px));
+@media (min-width: 2600px) and (min-height: 1500px) {
+  .archive-shell {
+    --sidebar-width: 380px;
   }
 
+  .workspace {
+    --workspace-pad-inline: clamp(60px, 4vw, 128px);
+    --footer-reserve: 94px;
+  }
+
+  .workspace-header h1 {
+    font-size: clamp(36px, 2.3vw, 58px);
+  }
+
+  .dashboard-grid {
+    block-size: min(980px, calc(100vh - 300px));
+    max-inline-size: 1660px;
+    grid-template-columns: minmax(420px, 1.06fr) minmax(330px, 0.84fr) minmax(330px, 0.76fr);
+    gap: clamp(20px, 1.05vw, 28px);
+  }
+
+  .dashboard-panel {
+    gap: 16px;
+    padding: 20px 30px 18px;
+  }
+
+  .dashboard-panel h2 {
+    font-size: 16px;
+  }
+
+  .current-game-panel {
+    grid-template-rows: auto minmax(132px, 1fr) minmax(24px, auto);
+  }
+
+  .current-game {
+    min-block-size: 132px;
+    grid-template-columns: 92px 1fr;
+    gap: 24px;
+  }
+
+  .record-list strong,
+  .current-game strong {
+    font-size: 17px;
+  }
+
+  .record-list small,
+  .record-list i,
+  .current-game span,
+  .latest-log span {
+    font-size: 14px;
+  }
+
+  .latest-log p,
+  .activity-feed strong {
+    font-size: 16px;
+  }
+
+  .activity-feed > li > span,
+  .activity-feed small {
+    font-size: 14px;
+  }
+
+  .activity-feed li {
+    min-block-size: 48px;
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+
+  .active-projects-panel .record-list button:nth-child(5),
   .activity-feed li:nth-child(5) {
     display: grid;
   }
