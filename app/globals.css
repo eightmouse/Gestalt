@@ -2410,6 +2410,18 @@ button:focus-visible {
   transform-origin: center;
 }
 
+.weather-action-frame {
+  opacity: 0.76;
+}
+
+.weather-action-core {
+  opacity: 0.9;
+}
+
+.weather-action-signal {
+  opacity: 0.58;
+}
+
 .weather-action:hover,
 .weather-action:focus-visible {
   border-color: rgba(217, 213, 193, 0.42);
@@ -2417,13 +2429,23 @@ button:focus-visible {
   opacity: 1;
 }
 
-.weather-action.is-loading .weather-action-icon {
-  animation: weather-refresh 900ms linear infinite;
+.weather-action.is-loading .weather-action-core {
+  animation: weather-core-pulse 900ms ease-in-out infinite;
 }
 
-@keyframes weather-refresh {
-  to {
-    transform: rotate(360deg);
+.weather-action.is-loading .weather-action-signal {
+  animation: weather-signal-pulse 900ms steps(2, end) infinite;
+}
+
+@keyframes weather-core-pulse {
+  50% {
+    opacity: 0.42;
+  }
+}
+
+@keyframes weather-signal-pulse {
+  50% {
+    opacity: 1;
   }
 }
 

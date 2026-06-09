@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.29</span>
+        <span>v1.26.30</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.29</span>
+        <span class="version-label">v1.26.30</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.29</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.30</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1419,9 +1419,10 @@ function weatherPanel() {
 }
 
 function weatherRefreshIcon() {
-  return `<svg class="weather-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="square" stroke-linejoin="miter">
-    <circle cx="18" cy="18" r="9.5" stroke-dasharray="52 8" stroke-dashoffset="1"></circle>
-    <path d="M25.5 9.5v7.5H18"></path>
+  return `<svg class="weather-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter">
+    <path class="weather-action-frame" d="M18 8.5 27.5 18 18 27.5 8.5 18Z"></path>
+    <path class="weather-action-core" d="M18 13.5 22.5 18 18 22.5 13.5 18Z"></path>
+    <path class="weather-action-signal" d="M26.5 10H30v3.5M9.5 26H6v-3.5M27 23l3 3M9 13l-3-3"></path>
   </svg>`;
 }
 
