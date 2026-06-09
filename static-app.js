@@ -475,33 +475,63 @@ function activityDate(record) {
 }
 
 function recordDisplaySummary(record) {
-  if (record.summary.trim() && record.summary.trim().toLowerCase() !== "no summary recorded.") {
-    return record.summary;
-  }
-
   const latestNote = noteEntries(record.body)[0];
   const fallback = excerptFromBody(latestNote?.body || record.body);
+  const summary = cleanSummaryText(record.summary);
 
-  return fallback || "No summary recorded.";
+  if (summary && wordCount(summary) >= 22) {
+    return summary;
+  }
+
+  return fallback || summary || "No summary recorded.";
 }
 
 function excerptFromBody(body) {
-  const line = body
+  const clean = body
     .split(/\r?\n/)
-    .map((value) => value.trim())
-    .find((value) => value && !value.startsWith(":::") && !value.startsWith("!") && !value.startsWith("#"));
-
-  if (!line) {
-    return "";
-  }
-
-  const clean = line
-    .replace(/^[-*>]\s*/, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .map(cleanExcerptLine)
+    .filter(Boolean)
+    .join(" ")
     .replace(/\s+/g, " ")
     .trim();
 
-  return clean.length > 118 ? `${clean.slice(0, 115).trim()}...` : clean;
+  if (!clean) {
+    return "";
+  }
+
+  return clean.length > 180 ? `${clean.slice(0, 177).trim()}...` : clean;
+}
+
+function cleanSummaryText(value) {
+  const clean = value.trim();
+
+  return clean.toLowerCase() === "no summary recorded." ? "" : clean;
+}
+
+function cleanExcerptLine(value) {
+  const line = value.trim();
+
+  if (
+    !line ||
+    line.startsWith(":::") ||
+    line.startsWith("#") ||
+    line.startsWith("![") ||
+    line === "---"
+  ) {
+    return "";
+  }
+
+  return line
+    .replace(/^[-*>]\s*/, "")
+    .replace(/!\[[^\]]*]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/[*_~]/g, "")
+    .trim();
+}
+
+function wordCount(value) {
+  return value.split(/\s+/).filter(Boolean).length;
 }
 
 function noteTitleDate(title) {
@@ -1284,7 +1314,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.35</span>
+        <span>v1.26.36</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1328,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.35</span>
+        <span class="version-label">v1.26.36</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1348,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.35</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.36</dd></div>
       </dl>
     </div>
   </aside>`;

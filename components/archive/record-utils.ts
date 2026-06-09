@@ -143,14 +143,15 @@ export function recentActivity(records: RecordEntry[], limit: number): Array<{ d
 }
 
 export function recordDisplaySummary(record: RecordEntry): string {
-  if (record.summary.trim() && record.summary.trim().toLowerCase() !== "no summary recorded.") {
-    return record.summary;
-  }
-
   const latestNote = noteEntries(record.body)[0];
   const fallback = excerptFromBody(latestNote?.body ?? record.body);
+  const summary = cleanSummaryText(record.summary);
 
-  return fallback || "No summary recorded.";
+  if (summary && wordCount(summary) >= 22) {
+    return summary;
+  }
+
+  return fallback || summary || "No summary recorded.";
 }
 
 export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEntry): ArchiveMetrics {
@@ -175,22 +176,51 @@ export function activityDate(record: RecordEntry): string {
 }
 
 function excerptFromBody(body: string): string {
-  const line = body
+  const clean = body
     .split(/\r?\n/)
-    .map((value) => value.trim())
-    .find((value) => value && !value.startsWith(":::") && !value.startsWith("!") && !value.startsWith("#"));
-
-  if (!line) {
-    return "";
-  }
-
-  const clean = line
-    .replace(/^[-*>]\s*/, "")
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .map(cleanExcerptLine)
+    .filter(Boolean)
+    .join(" ")
     .replace(/\s+/g, " ")
     .trim();
 
-  return clean.length > 118 ? `${clean.slice(0, 115).trim()}...` : clean;
+  if (!clean) {
+    return "";
+  }
+
+  return clean.length > 180 ? `${clean.slice(0, 177).trim()}...` : clean;
+}
+
+function cleanSummaryText(value: string): string {
+  const clean = value.trim();
+
+  return clean.toLowerCase() === "no summary recorded." ? "" : clean;
+}
+
+function cleanExcerptLine(value: string): string {
+  const line = value.trim();
+
+  if (
+    !line ||
+    line.startsWith(":::") ||
+    line.startsWith("#") ||
+    line.startsWith("![") ||
+    line === "---"
+  ) {
+    return "";
+  }
+
+  return line
+    .replace(/^[-*>]\s*/, "")
+    .replace(/!\[[^\]]*]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/[*_~]/g, "")
+    .trim();
+}
+
+function wordCount(value: string): number {
+  return value.split(/\s+/).filter(Boolean).length;
 }
 
 export function noteTitleDate(title: string): string | null {
