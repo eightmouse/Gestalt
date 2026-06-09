@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.28</span>
+        <span>v1.26.29</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.28</span>
+        <span class="version-label">v1.26.29</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.28</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.29</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1400,15 +1400,13 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
 
 function weatherPanel() {
   const actionLabel = weatherState.loading ? "Reading sky signal" : "Refresh sky";
+  const refreshIcon = weatherRefreshIcon();
 
   return `<div class="weather-readout" data-weather-module>
     <div class="weather-primary">
       <span class="weather-temp" data-weather-temp>${escapeHtml(weatherState.temp)}</span>
       <button class="weather-action${weatherState.loading ? " is-loading" : ""}" type="button" data-weather-action aria-label="${actionLabel}" title="${actionLabel}" ${weatherState.loading ? "disabled" : ""}>
-        <svg class="weather-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="square" stroke-linejoin="miter">
-          <circle cx="18" cy="18" r="9.5" stroke-dasharray="52 8" stroke-dashoffset="1"></circle>
-          <path d="M25.5 9.5v7.5H18"></path>
-        </svg>
+        ${refreshIcon}
       </button>
       <span class="weather-condition" data-weather-condition>${escapeHtml(weatherState.condition)}</span>
     </div>
@@ -1418,6 +1416,13 @@ function weatherPanel() {
     </div>
     <p class="weather-note" data-weather-note>${escapeHtml(weatherState.note)}</p>
   </div>`;
+}
+
+function weatherRefreshIcon() {
+  return `<svg class="weather-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="square" stroke-linejoin="miter">
+    <circle cx="18" cy="18" r="9.5" stroke-dasharray="52 8" stroke-dashoffset="1"></circle>
+    <path d="M25.5 9.5v7.5H18"></path>
+  </svg>`;
 }
 
 function memoryLoop() {
@@ -2071,7 +2076,9 @@ function syncWeather() {
   if (note) note.textContent = weatherState.note;
   if (action) {
     const actionLabel = weatherState.loading ? "Reading sky signal" : "Refresh sky";
-    action.textContent = "";
+    if (!action.querySelector(".weather-action-icon")) {
+      action.innerHTML = weatherRefreshIcon();
+    }
     action.setAttribute("aria-label", actionLabel);
     action.setAttribute("title", actionLabel);
     action.classList.toggle("is-loading", weatherState.loading);
