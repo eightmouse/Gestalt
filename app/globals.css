@@ -2403,12 +2403,12 @@ button:focus-visible {
 
 .weather-action::before {
   content: "";
-  inline-size: 14px;
-  block-size: 14px;
+  inline-size: 16px;
+  block-size: 16px;
   background: currentColor;
   transform-origin: center;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6v6h-6' fill='none' stroke='black' stroke-width='2' stroke-linecap='square' stroke-linejoin='miter'/%3E%3Cpath d='M19 12a7 7 0 1 1-2-5' fill='none' stroke='black' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6v6h-6' fill='none' stroke='black' stroke-width='2' stroke-linecap='square' stroke-linejoin='miter'/%3E%3Cpath d='M19 12a7 7 0 1 1-2-5' fill='none' stroke='black' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.46 5.1h-2.18A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h8V3z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.46 5.1h-2.18A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h8V3z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 .weather-action:hover,
