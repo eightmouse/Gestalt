@@ -15,7 +15,7 @@ type SearchPanelProps = {
 export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryChange }: SearchPanelProps) {
   return (
     <div className="search-panel command-panel" ref={panelRef} role="search">
-      <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>// COMMAND PALETTE</label>
+      <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>~ COMMAND PALETTE</label>
       <input
         autoComplete="off"
         autoFocus

@@ -473,7 +473,7 @@ button:focus-visible {
 }
 
 .archive-nav-actions--desktop button:first-child::before {
-  content: "/";
+  content: "~";
   color: var(--text);
   font-size: 18px;
   line-height: 1;
@@ -2228,6 +2228,8 @@ button:focus-visible {
   grid-template-columns: 28px 1fr auto;
   min-block-size: clamp(32px, 4.15vh, 40px);
   padding-block: 3px;
+  background: linear-gradient(180deg, transparent, var(--dashboard-edge), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
+  box-shadow: none;
 }
 
 .active-projects-panel .record-list button::before {
@@ -2245,6 +2247,11 @@ button:focus-visible {
 .record-list button:hover {
   color: var(--text-strong);
   box-shadow: inset 2px 0 0 var(--dashboard-signal);
+}
+
+.active-projects-panel .record-list button:hover {
+  background: linear-gradient(180deg, transparent, var(--dashboard-signal), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
+  box-shadow: none;
 }
 
 .record-list strong,
@@ -4231,15 +4238,15 @@ button:focus-visible {
 }
 
 .search-icon::before {
-  content: "/";
+  content: "~";
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   color: currentColor;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1;
-  transform: skewX(-12deg);
+  transform: translateY(-1px) skewX(-8deg);
 }
 
 .search-icon::after {

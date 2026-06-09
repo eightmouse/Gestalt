@@ -140,11 +140,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       const target = event.target;
       const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 
-      if (event.metaKey || event.ctrlKey || event.altKey || (isInputTarget && event.key !== "`")) {
+      if (event.metaKey || event.ctrlKey || event.altKey || (isInputTarget && event.key !== "`" && event.key !== "~")) {
         return;
       }
 
-      if (event.key === "/" || event.key === "`") {
+      if (event.key === "~" || event.key === "`") {
         event.preventDefault();
         setSearchOpen((current) => !current);
       }
