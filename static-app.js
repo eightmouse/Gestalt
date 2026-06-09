@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.34</span>
+        <span>v1.26.35</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.34</span>
+        <span class="version-label">v1.26.35</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.34</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.35</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1891,14 +1891,15 @@ function searchPanel() {
                 : result.action === "timeline"
                   ? "data-open-timeline"
                   : `data-open-section="${result.section}"`;
+              const stateAttr = result.record ? ` data-state="${recordStateKey(result.record.status)}"` : "";
 
-              return `<button type="button" ${commandAttrs}>
+              return `<button type="button" ${commandAttrs}${stateAttr}>
                 <span><strong>${escapeHtml(result.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
                 <i>CMD</i>
               </button>`;
             }
 
-            return `<button type="button" data-open-record="${result.record.id}">
+            return `<button type="button" data-open-record="${result.record.id}" data-state="${recordStateKey(result.record.status)}">
             <span><strong>${escapeHtml(result.record.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
             <i>${escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
@@ -1929,7 +1930,7 @@ function timelineWindow() {
   const items = getTimelineItems(32);
   const rows = items
     .map(
-      (item) => `<li>
+      (item) => `<li data-state="${recordStateKey(item.record.status)}">
         <time>${readableDate(item.date)}</time>
         <button type="button" data-open-record="${item.record.id}" data-open-content="${item.content}">
           <span>${escapeHtml(item.title)}</span>

@@ -1320,6 +1320,8 @@ button:focus-visible {
 }
 
 .search-suggestions button {
+  --command-edge: rgba(217, 213, 193, 0.04);
+  --command-signal: rgba(217, 213, 193, 0.2);
   min-block-size: 44px;
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1330,12 +1332,54 @@ button:focus-visible {
   color: var(--muted);
   text-align: left;
   cursor: pointer;
+  box-shadow: inset 2px 0 0 var(--command-edge);
+}
+
+.search-suggestions button[data-state="active"],
+.search-suggestions button[data-state="playing"],
+.timeline-list li[data-state="active"],
+.timeline-list li[data-state="playing"] {
+  --command-edge: rgba(236, 230, 211, 0.14);
+  --command-signal: rgba(236, 230, 211, 0.46);
+}
+
+.search-suggestions button[data-state="in-progress"],
+.search-suggestions button[data-state="planning"],
+.timeline-list li[data-state="in-progress"],
+.timeline-list li[data-state="planning"] {
+  --command-edge: rgba(200, 189, 159, 0.12);
+  --command-signal: rgba(200, 189, 159, 0.38);
+}
+
+.search-suggestions button[data-state="paused"],
+.search-suggestions button[data-state="on-hold"],
+.timeline-list li[data-state="paused"],
+.timeline-list li[data-state="on-hold"] {
+  --command-edge: rgba(130, 127, 116, 0.1);
+  --command-signal: rgba(130, 127, 116, 0.34);
+}
+
+.search-suggestions button[data-state="blocked"],
+.timeline-list li[data-state="blocked"] {
+  --command-edge: rgba(214, 170, 130, 0.12);
+  --command-signal: rgba(214, 170, 130, 0.42);
+}
+
+.search-suggestions button[data-state="completed"],
+.search-suggestions button[data-state="filed"],
+.search-suggestions button[data-state="archived"],
+.timeline-list li[data-state="completed"],
+.timeline-list li[data-state="filed"],
+.timeline-list li[data-state="archived"] {
+  --command-edge: rgba(217, 213, 193, 0.035);
+  --command-signal: rgba(217, 213, 193, 0.16);
 }
 
 .search-suggestions button:hover,
 .search-suggestions button:focus-visible {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
+  box-shadow: inset 2px 0 0 var(--command-signal);
 }
 
 .search-suggestions strong,
@@ -2998,6 +3042,8 @@ button:focus-visible {
 }
 
 .timeline-list li {
+  --command-edge: rgba(217, 213, 193, 0.04);
+  --command-signal: rgba(217, 213, 193, 0.2);
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
   align-items: start;
@@ -3017,9 +3063,9 @@ button:focus-visible {
   gap: 5px;
   padding: 12px 14px;
   border: 1px solid rgba(217, 213, 193, 0.1);
-  border-left-color: rgba(217, 213, 193, 0.34);
+  border-left-color: var(--command-signal);
   background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.075), transparent 50%),
+    linear-gradient(90deg, var(--command-edge), transparent 50%),
     rgba(255, 255, 255, 0.022);
   color: var(--text);
   text-align: left;
@@ -3028,8 +3074,9 @@ button:focus-visible {
 
 .timeline-list button:hover {
   border-color: rgba(217, 213, 193, 0.34);
+  border-left-color: var(--command-signal);
   background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.12), transparent 56%),
+    linear-gradient(90deg, var(--command-edge), transparent 56%),
     rgba(255, 255, 255, 0.04);
 }
 

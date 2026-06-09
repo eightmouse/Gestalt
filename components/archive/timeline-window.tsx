@@ -37,7 +37,7 @@ export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowP
         </div>
         <ol className="timeline-list">
           {items.map((item) => (
-            <li key={item.id}>
+            <li data-state={timelineStateKey(item.record.status)} key={item.id}>
               <time>{formatReadableDate(item.date)}</time>
               <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
                 <span>{item.title}</span>
@@ -49,4 +49,8 @@ export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowP
       </div>
     </motion.article>
   );
+}
+
+function timelineStateKey(status: string): string {
+  return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }

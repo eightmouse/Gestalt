@@ -28,7 +28,12 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
       <div className="search-suggestions">
         {results.length > 0 ? (
           results.map((result) => (
-            <button key={result.kind === "record" ? result.record.id : result.id} type="button" onClick={() => onOpenResult(result)}>
+            <button
+              data-state={searchResultStateKey(result)}
+              key={result.kind === "record" ? result.record.id : result.id}
+              type="button"
+              onClick={() => onOpenResult(result)}
+            >
               <span>
                 <strong>
                   {result.kind === "record" ? result.record.title : result.title}
@@ -46,4 +51,10 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
       </div>
     </div>
   );
+}
+
+function searchResultStateKey(result: SearchResult): string | undefined {
+  const status = result.kind === "record" ? result.record.status : result.record?.status;
+
+  return status ? status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown" : undefined;
 }
