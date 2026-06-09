@@ -1033,7 +1033,7 @@ button:focus-visible {
   --workspace-pad-inline: clamp(28px, 5vw, 74px);
   --workspace-pad-top: clamp(28px, 4vh, 48px);
   --workspace-pad-bottom: clamp(22px, 3.5vw, 54px);
-  --footer-reserve: 82px;
+  --footer-reserve: 72px;
   position: relative;
   z-index: 1;
   isolation: isolate;
@@ -1447,7 +1447,7 @@ button:focus-visible {
   z-index: 1;
   flex: 0 1 auto;
   min-block-size: 0;
-  block-size: min(700px, calc(100vh - 238px));
+  block-size: min(730px, calc(100vh - 218px));
   max-inline-size: 1180px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr) minmax(210px, 0.72fr);
@@ -2305,6 +2305,11 @@ button:focus-visible {
   display: block;
 }
 
+.latest-log span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .record-list strong {
   max-inline-size: 100%;
   overflow: hidden;
@@ -2416,8 +2421,8 @@ button:focus-visible {
   margin: 0;
   max-inline-size: 38ch;
   color: #a9a391;
-  font-size: 13px;
-  line-height: 1.58;
+  font-size: 14px;
+  line-height: 1.6;
   display: -webkit-box;
   overflow: hidden;
   text-wrap: balance;
@@ -2437,8 +2442,8 @@ button:focus-visible {
 .activity-feed li {
   min-width: 0;
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 12px;
   line-height: 1.5;
   box-shadow: inset 1px 0 0 var(--dashboard-edge);
 }
@@ -2446,7 +2451,7 @@ button:focus-visible {
 .activity-feed > li > span {
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .activity-feed button {
@@ -2476,13 +2481,13 @@ button:focus-visible {
 
 .activity-feed strong {
   color: var(--text);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 400;
 }
 
 .activity-feed small {
   color: #a09b8c;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -6328,8 +6333,8 @@ input.studio-title-edit {
   }
 
   .dashboard-panel {
-    gap: 6px;
-    padding-block: 10px 8px;
+    gap: 8px;
+    padding-block: 10px 9px;
   }
 
   .active-projects-panel .record-list button {
@@ -6348,7 +6353,7 @@ input.studio-title-edit {
   .current-game span,
   .latest-log p,
   .activity-feed {
-    line-height: 1.42;
+    line-height: 1.48;
   }
 
   .latest-log p {
