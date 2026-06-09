@@ -2305,9 +2305,12 @@ button:focus-visible {
 
 .weather-readout {
   min-block-size: 0;
+  block-size: 100%;
   display: grid;
+  grid-template-rows: auto auto minmax(0, auto) auto;
   align-content: space-between;
   gap: 6px;
+  padding-block-end: 1px;
 }
 
 .weather-primary {
@@ -2348,10 +2351,14 @@ button:focus-visible {
 
 .weather-action {
   justify-self: start;
+  min-block-size: 19px;
+  display: inline-flex;
+  align-items: center;
   padding: 0;
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  line-height: 1.25;
 }
 
 .weather-action:hover {
