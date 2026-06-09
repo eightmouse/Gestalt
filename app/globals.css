@@ -2219,6 +2219,7 @@ button:focus-visible {
 .record-list {
   display: grid;
   counter-reset: dashboard-record;
+  padding-block: 2px;
 }
 
 .record-list button,
@@ -2260,8 +2261,9 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list {
-  align-content: space-between;
-  min-block-size: 100%;
+  block-size: 100%;
+  min-block-size: 0;
+  align-content: space-evenly;
 }
 
 .record-list button {
@@ -2444,7 +2446,7 @@ button:focus-visible {
 
 .activity-feed {
   margin: 0;
-  padding: 0;
+  padding: 2px 0;
   list-style: none;
   display: grid;
   align-content: start;
@@ -2512,10 +2514,10 @@ button:focus-visible {
   color: var(--text-strong);
 }
 
-@media (min-width: 1181px) and (min-height: 920px) {
+@media (min-width: 1181px) and (min-height: 1040px) {
   .dashboard-grid {
-    block-size: min(780px, calc(100vh - 218px));
-    grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 1.08fr);
+    block-size: min(800px, calc(100vh - 218px));
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 1.12fr);
   }
 
   .activity-feed li:nth-child(4) {
@@ -2523,9 +2525,9 @@ button:focus-visible {
   }
 }
 
-@media (min-width: 1280px) and (min-height: 1080px) {
+@media (min-width: 1280px) and (min-height: 1240px) {
   .dashboard-grid {
-    block-size: min(820px, calc(100vh - 218px));
+    block-size: min(860px, calc(100vh - 218px));
   }
 
   .activity-feed li:nth-child(5) {
