@@ -333,6 +333,28 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "a-something-signal",
+    "title": "A Something Signal",
+    "section": "logs",
+    "type": "Field Note",
+    "status": "Draft",
+    "started": "2026-06-09",
+    "updated": "2026-06-09",
+    "summary": "No summary recorded.",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 100,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "milestones": [],
+    "body": ":::note 09 / 06 / 2026 - New Note\nStill here.. sooooooooo. I've been making little changes to Gestalt and Playing PoE2 during the week, this is the summary of it for the most.\n\nGestalt wise, I've been adding little details here and there so it feels more alive/has a soul. Before it felt too dry and lacking from what my original mockup portrayed. So few days ago I started feeling as if something was missing, that is it pretty much, some details and other little things.\n\nPoE2, I haven't made a note yet and I will soon but I'm trying to make changes to Gestalt first on how things are displayed and how to make more than 1 game as active/current.\nI haven't abandoned P5R, I'm craving it and after seeing the news of P6 and P4 I'm quite hyped although I'm a fresh new fan hehe. Also, recently cleared my SSD too as it was getting cramped and I almost had no space left. Anyway, will update P5R as soon as I get back to it!\nIn the meantime, I'm actively doing some changes to Gestalt and Kira (altough just minor stuff, since it's very time consuming and complicated stuff).\n\nGoing back to PoE2 for a second, I have this weird bug causing my PC to turn  off 5 ish minutes after I close the game. Only happens with PoE and nothing else, I got recommended to do DDU in safe mode, I'm gonna try that later this week and see how it goes, that aside I'll post the full discovery on the first note of PoE2 along some normal gameplay stuff.\n\nCheers ~\n:::"
+  },
+  {
     "id": "a-lost-signal",
     "title": "A Lost Signal?",
     "section": "logs",
