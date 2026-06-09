@@ -2335,17 +2335,27 @@ button:focus-visible {
 
 .weather-primary {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "temp action"
+    "condition condition";
+  align-items: start;
   gap: 3px;
   padding-block-end: 5px;
   border-bottom: 1px solid rgba(217, 213, 193, 0.1);
 }
 
 .weather-temp {
+  grid-area: temp;
   color: var(--text-strong);
   font-family: var(--sans);
   font-size: clamp(24px, 2.8vw, 34px);
   font-weight: 300;
   line-height: 0.95;
+}
+
+.weather-condition {
+  grid-area: condition;
 }
 
 .weather-condition,
@@ -2370,22 +2380,64 @@ button:focus-visible {
 }
 
 .weather-action {
-  justify-self: start;
+  position: relative;
+  grid-area: action;
+  justify-self: end;
   align-self: start;
   flex: 0 0 auto;
-  margin-block-start: auto;
-  min-block-size: 19px;
+  inline-size: 24px;
+  block-size: 24px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  margin-block-start: 1px;
   padding: 0;
+  border: 1px solid rgba(217, 213, 193, 0.2);
   background: transparent;
   color: var(--text);
   cursor: pointer;
-  line-height: 1.25;
+  line-height: 1;
+  opacity: 0.78;
+  transition: border-color 120ms linear, color 120ms linear, opacity 120ms linear;
 }
 
-.weather-action:hover {
+.weather-action::before {
+  content: "";
+  inline-size: 12px;
+  block-size: 12px;
+  border: 1px solid currentColor;
+  border-inline-start-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-24deg);
+}
+
+.weather-action::after {
+  content: "";
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  margin-inline-start: 9px;
+  margin-block-start: -6px;
+  border-block: 3px solid transparent;
+  border-inline-start: 4px solid currentColor;
+  transform: rotate(-18deg);
+}
+
+.weather-action:hover,
+.weather-action:focus-visible {
+  border-color: rgba(217, 213, 193, 0.42);
   color: var(--text-strong);
+  opacity: 1;
+}
+
+.weather-action.is-loading::before {
+  animation: weather-refresh 900ms linear infinite;
+}
+
+@keyframes weather-refresh {
+  to {
+    transform: rotate(336deg);
+  }
 }
 
 .memory-loop {

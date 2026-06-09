@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.20</span>
+        <span>v1.26.21</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.20</span>
+        <span class="version-label">v1.26.21</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.20</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.21</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1399,11 +1399,12 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
 }
 
 function weatherPanel() {
-  const actionLabel = weatherState.loading ? "Reading signal..." : "Refresh sky";
+  const actionLabel = weatherState.loading ? "Reading sky signal" : "Refresh sky";
 
   return `<div class="weather-readout" data-weather-module>
     <div class="weather-primary">
       <span class="weather-temp" data-weather-temp>${escapeHtml(weatherState.temp)}</span>
+      <button class="weather-action${weatherState.loading ? " is-loading" : ""}" type="button" data-weather-action aria-label="${actionLabel}" title="${actionLabel}" ${weatherState.loading ? "disabled" : ""}></button>
       <span class="weather-condition" data-weather-condition>${escapeHtml(weatherState.condition)}</span>
     </div>
     <div class="weather-meta">
@@ -1411,7 +1412,6 @@ function weatherPanel() {
       <span data-weather-meta>${escapeHtml(weatherState.meta)}</span>
     </div>
     <p class="weather-note" data-weather-note>${escapeHtml(weatherState.note)}</p>
-    <button class="weather-action" type="button" data-weather-action ${weatherState.loading ? "disabled" : ""}>&gt; ${actionLabel}</button>
   </div>`;
 }
 
@@ -2065,7 +2065,11 @@ function syncWeather() {
   if (meta) meta.textContent = weatherState.meta;
   if (note) note.textContent = weatherState.note;
   if (action) {
-    action.textContent = weatherState.loading ? "> Reading signal..." : "> Refresh sky";
+    const actionLabel = weatherState.loading ? "Reading sky signal" : "Refresh sky";
+    action.textContent = "";
+    action.setAttribute("aria-label", actionLabel);
+    action.setAttribute("title", actionLabel);
+    action.classList.toggle("is-loading", weatherState.loading);
     action.disabled = weatherState.loading;
   }
 }

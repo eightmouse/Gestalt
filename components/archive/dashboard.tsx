@@ -326,6 +326,14 @@ function WeatherPanel() {
     <div className="weather-readout">
       <div className="weather-primary">
         <span className="weather-temp">{weather.temp}</span>
+        <button
+          aria-label={weather.loading ? "Reading sky signal" : "Refresh sky"}
+          className={weather.loading ? "weather-action is-loading" : "weather-action"}
+          disabled={weather.loading}
+          onClick={requestWeather}
+          title={weather.loading ? "Reading sky signal" : "Refresh sky"}
+          type="button"
+        />
         <span className="weather-condition">{weather.condition}</span>
       </div>
       <div className="weather-meta">
@@ -333,9 +341,6 @@ function WeatherPanel() {
         <span>{weather.meta}</span>
       </div>
       <p className="weather-note">{weather.note}</p>
-      <button className="weather-action" type="button" disabled={weather.loading} onClick={requestWeather}>
-        &gt; {weather.loading ? "Reading signal..." : "Refresh sky"}
-      </button>
     </div>
   );
 }
