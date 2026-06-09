@@ -76,7 +76,12 @@ export function ArchiveDashboard({
         )}
       </DashboardPanel>
 
-      <DashboardPanel title="CURRENT GAME" footerLabel={currentGame ? "Read note" : undefined} onFooter={() => currentGame && onOpenRecord(currentGame, "notes")}>
+      <DashboardPanel
+        title="CURRENT GAME"
+        className="current-game-panel"
+        footerLabel={currentGame ? "Read note" : undefined}
+        onFooter={() => currentGame && onOpenRecord(currentGame, "notes")}
+      >
         {currentGame ? <CurrentGame record={currentGame} /> : <p className="subtle">No session active.</p>}
       </DashboardPanel>
 

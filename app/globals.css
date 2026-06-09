@@ -1462,7 +1462,7 @@ button:focus-visible {
   max-inline-size: 1180px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr) minmax(210px, 0.72fr);
-  grid-template-rows: minmax(0, 1fr) minmax(0, 0.78fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.92fr);
   gap: clamp(10px, 1.6vh, 16px);
   contain: layout paint;
   transition: opacity 90ms linear;
@@ -2129,6 +2129,15 @@ button:focus-visible {
   align-items: center;
 }
 
+.current-game-panel {
+  grid-template-rows: auto minmax(92px, 1fr) minmax(20px, auto);
+}
+
+.current-game-panel > div {
+  display: grid;
+  align-items: center;
+}
+
 .weather-panel {
   grid-column: 3;
   grid-row: 1;
@@ -2349,7 +2358,8 @@ button:focus-visible {
   gap: 16px;
   align-items: center;
   align-self: center;
-  block-size: 100%;
+  block-size: auto;
+  min-block-size: 92px;
 }
 
 .current-game[data-state] .game-cover {
@@ -2537,7 +2547,7 @@ button:focus-visible {
   }
 }
 
-@media (min-width: 761px) and (max-height: 760px) {
+@media (min-width: 761px) and (max-height: 850px) {
   .activity-feed {
     gap: 8px;
   }
@@ -6388,6 +6398,10 @@ input.studio-title-edit {
     padding-block: 10px 9px;
   }
 
+  .current-game-panel {
+    grid-template-rows: auto minmax(84px, 1fr) minmax(20px, auto);
+  }
+
   .active-projects-panel .record-list button {
     min-block-size: 28px;
   }
@@ -6395,6 +6409,7 @@ input.studio-title-edit {
   .current-game {
     grid-template-columns: 54px 1fr;
     gap: 14px;
+    min-block-size: 84px;
   }
 
   .current-game strong {
