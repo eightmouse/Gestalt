@@ -207,11 +207,7 @@ function activityTraceTitle(title: string): string {
     .replace(/^\s*\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s*[-:–—]?\s*/, "")
     .trim();
 
-  if (!clean || clean.toLowerCase() === "new note") {
-    return "New note filed";
-  }
-
-  return clean;
+  return clean || "New note";
 }
 
 function excerptFromBody(body: string): string {

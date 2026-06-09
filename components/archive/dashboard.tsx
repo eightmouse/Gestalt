@@ -227,7 +227,6 @@ function MemoryLoop() {
       <span className="memory-shard" />
       <span className="memory-rain" />
       <span className="memory-axis" />
-      <span className="memory-cipher" />
       <span className="memory-nodes" />
     </div>
   );
