@@ -334,9 +334,9 @@ function WeatherPanel() {
           title={weather.loading ? "Reading sky signal" : "Refresh sky"}
           type="button"
         >
-          <svg aria-hidden="true" className="weather-action-icon" focusable="false" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" fill="none" r="9.5" />
-            <path d="M25.5 9.5v7.5H18" fill="none" />
+          <svg aria-hidden="true" className="weather-action-icon" fill="none" focusable="false" stroke="currentColor" strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2.35" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="9.5" strokeDasharray="52 8" strokeDashoffset="1" />
+            <path d="M25.5 9.5v7.5H18" />
           </svg>
         </button>
         <span className="weather-condition">{weather.condition}</span>

@@ -2406,18 +2406,8 @@ button:focus-visible {
   block-size: 22px;
   display: block;
   overflow: visible;
-  color: currentColor;
-  stroke: currentColor;
-  stroke-width: 2.35;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
   transform-box: view-box;
   transform-origin: center;
-}
-
-.weather-action-icon circle {
-  stroke-dasharray: 52 8;
-  stroke-dashoffset: 1;
 }
 
 .weather-action:hover,
