@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
+import type { ActivityEntry } from "@/components/archive/record-utils";
 
 type DashboardProps = {
-  activity: Array<{ date: string; record: RecordEntry }>;
+  activity: ActivityEntry[];
   currentGame?: RecordEntry;
   latestLog?: RecordEntry;
   panelOpen: boolean;
@@ -104,8 +105,9 @@ export function ArchiveDashboard({
             {activity.map((item) => (
               <li data-state={dashboardRecordStateKey(item.record.status)} key={item.record.id}>
                 <span>[{shortDate(item.date)}]</span>
-                <button type="button" onClick={() => onOpenRecord(item.record)}>
-                  {item.record.type}: {item.record.title}
+                <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
+                  <strong>{item.title}</strong>
+                  <small>{item.detail}</small>
                 </button>
               </li>
             ))}

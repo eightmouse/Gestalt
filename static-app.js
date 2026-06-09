@@ -461,17 +461,48 @@ function readableDate(value) {
 function recentActivity(limit) {
   return records
     .filter((record) => record.section !== "system")
-    .map((record) => ({ date: activityDate(record), record }))
+    .map((record) => {
+      const trace = activityTrace(record);
+
+      return {
+        content: trace ? "notes" : undefined,
+        date: trace?.date || record.updated,
+        detail: trace ? `${record.type} / ${record.title}` : record.type,
+        record,
+        title: trace ? activityTraceTitle(trace.note.title) : record.title
+      };
+    })
     .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
     .slice(0, limit);
 }
 
 function activityDate(record) {
-  const noteDates = noteEntries(record.body)
-    .map((note) => noteTitleDate(note.title))
-    .filter(Boolean);
+  return activityTrace(record)?.date || record.updated;
+}
 
-  return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] || record.updated;
+function activityTrace(record) {
+  const latestNote = noteEntries(record.body)
+    .map((note) => ({ date: noteTitleDate(note.title), note }))
+    .filter((entry) => entry.date)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+
+  if (!latestNote || latestNote.date < record.updated) {
+    return null;
+  }
+
+  return latestNote;
+}
+
+function activityTraceTitle(title) {
+  const clean = title
+    .replace(/^\s*\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s*[-:–—]?\s*/, "")
+    .trim();
+
+  if (!clean || clean.toLowerCase() === "new note") {
+    return "New note filed";
+  }
+
+  return clean;
 }
 
 function recordDisplaySummary(record) {
@@ -1314,7 +1345,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.36</span>
+        <span>v1.26.37</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1328,7 +1359,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.36</span>
+        <span class="version-label">v1.26.37</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1348,7 +1379,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.36</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.37</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1515,7 +1546,10 @@ function dashboard() {
         .map(
           (item) => `<li data-state="${recordStateKey(item.record.status)}">
           <span>[${shortDate(item.date)}]</span>
-          <button type="button" data-open-record="${item.record.id}">${escapeHtml(item.record.type)}: ${escapeHtml(item.record.title)}</button>
+          <button type="button" data-open-record="${item.record.id}" ${item.content ? `data-open-content="${item.content}"` : ""}>
+            <strong>${escapeHtml(item.title)}</strong>
+            <small>${escapeHtml(item.detail)}</small>
+          </button>
         </li>`
         )
         .join("")}

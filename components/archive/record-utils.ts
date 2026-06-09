@@ -8,6 +8,14 @@ export type ArchiveMetrics = {
   recordCount: number;
 };
 
+export type ActivityEntry = {
+  content?: "notes";
+  date: string;
+  detail: string;
+  record: RecordEntry;
+  title: string;
+};
+
 export function formatClock(date: Date | null): string {
   if (!date) {
     return "--:--";
@@ -134,10 +142,20 @@ export function decodeTextBlock(value: string): string {
   return value.replace(/\\+n/g, "\n");
 }
 
-export function recentActivity(records: RecordEntry[], limit: number): Array<{ date: string; record: RecordEntry }> {
+export function recentActivity(records: RecordEntry[], limit: number): ActivityEntry[] {
   return records
     .filter((record) => record.section !== "system")
-    .map((record) => ({ date: activityDate(record), record }))
+    .map((record) => {
+      const trace = activityTrace(record);
+
+      return {
+        content: trace ? "notes" as const : undefined,
+        date: trace?.date ?? record.updated,
+        detail: trace ? `${record.type} / ${record.title}` : record.type,
+        record,
+        title: trace ? activityTraceTitle(trace.note.title) : record.title
+      };
+    })
     .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
     .slice(0, limit);
 }
@@ -168,11 +186,32 @@ export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEnt
 }
 
 export function activityDate(record: RecordEntry): string {
-  const noteDates = noteEntries(record.body)
-    .map((note) => noteTitleDate(note.title))
-    .filter((value): value is string => Boolean(value));
+  return activityTrace(record)?.date ?? record.updated;
+}
 
-  return [record.updated, ...noteDates].sort((a, b) => b.localeCompare(a))[0] ?? record.updated;
+function activityTrace(record: RecordEntry): { date: string; note: { title: string; body: string } } | null {
+  const latestNote = noteEntries(record.body)
+    .map((note) => ({ date: noteTitleDate(note.title), note }))
+    .filter((entry): entry is { date: string; note: { title: string; body: string } } => Boolean(entry.date))
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+
+  if (!latestNote || latestNote.date < record.updated) {
+    return null;
+  }
+
+  return latestNote;
+}
+
+function activityTraceTitle(title: string): string {
+  const clean = title
+    .replace(/^\s*\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s*[-:–—]?\s*/, "")
+    .trim();
+
+  if (!clean || clean.toLowerCase() === "new note") {
+    return "New note filed";
+  }
+
+  return clean;
 }
 
 function excerptFromBody(body: string): string {
