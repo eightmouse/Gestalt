@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.31</span>
+        <span>v1.26.32</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.31</span>
+        <span class="version-label">v1.26.32</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.31</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.32</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1747,7 +1747,7 @@ function setupRecordWindow(record) {
         { label: "PROGRESS", value: `${record.progress}%` }
       ];
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} is-setup-record" aria-label="${escapeHtml(record.title)} setup terminal">
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} is-setup-record" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
     <div class="setup-window-shell">
       <section class="setup-console" aria-label="${escapeHtml(record.title)} machine profile">
         <div class="setup-console-prompt">
@@ -1814,7 +1814,7 @@ function recordWindow(record) {
 
   const headerImage = recordHeaderImage(record);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" aria-label="${escapeHtml(record.title)} archive entry">
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
     <header class="window-bar">
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-actions">

@@ -2757,6 +2757,8 @@ button:focus-visible {
 }
 
 .record-window {
+  --window-edge: rgba(217, 213, 193, 0.05);
+  --window-signal: rgba(217, 213, 193, 0.24);
   position: fixed;
   z-index: 60;
   inset-block-start: clamp(36px, 8vh, 82px);
@@ -2776,11 +2778,42 @@ button:focus-visible {
     linear-gradient(90deg, rgba(5, 6, 5, 0.92), rgba(8, 9, 8, 0.985) 38%),
     rgba(8, 9, 8, 0.985);
   box-shadow:
+    inset 2px 0 0 var(--window-edge),
     0 28px 78px rgba(0, 0, 0, 0.68),
     0 0 0 1px rgba(255, 255, 255, 0.08);
   contain: layout paint style;
   transform: translateZ(0);
   animation: window-in 200ms ease-out;
+}
+
+.record-window[data-state="active"],
+.record-window[data-state="playing"] {
+  --window-edge: rgba(236, 230, 211, 0.16);
+  --window-signal: rgba(236, 230, 211, 0.5);
+}
+
+.record-window[data-state="in-progress"],
+.record-window[data-state="planning"] {
+  --window-edge: rgba(200, 189, 159, 0.13);
+  --window-signal: rgba(200, 189, 159, 0.42);
+}
+
+.record-window[data-state="paused"],
+.record-window[data-state="on-hold"] {
+  --window-edge: rgba(130, 127, 116, 0.11);
+  --window-signal: rgba(130, 127, 116, 0.36);
+}
+
+.record-window[data-state="blocked"] {
+  --window-edge: rgba(214, 170, 130, 0.13);
+  --window-signal: rgba(214, 170, 130, 0.44);
+}
+
+.record-window[data-state="completed"],
+.record-window[data-state="filed"],
+.record-window[data-state="archived"] {
+  --window-edge: rgba(217, 213, 193, 0.04);
+  --window-signal: rgba(217, 213, 193, 0.18);
 }
 
 .record-window.is-steady {
@@ -2982,7 +3015,7 @@ button:focus-visible {
   inset-block-start: 0;
   inline-size: 4px;
   block-size: 100%;
-  background: linear-gradient(180deg, rgba(217, 213, 193, 0.52), transparent 72%);
+  background: linear-gradient(180deg, var(--window-signal), transparent 72%);
   opacity: 0.5;
 }
 
@@ -3464,7 +3497,7 @@ button:focus-visible {
 .record-aside li.is-active {
   color: var(--text-strong);
   background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.1), transparent 80%),
+    linear-gradient(90deg, var(--window-edge), transparent 80%),
     rgba(255, 255, 255, 0.045);
 }
 

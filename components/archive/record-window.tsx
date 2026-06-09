@@ -70,6 +70,7 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onClose, onMin
     <>
     <motion.article
       className={`${maximized ? "record-window is-maximized" : "record-window"}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
+      data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -186,6 +187,7 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
   return (
     <motion.article
       className={`${maximized ? "record-window is-maximized" : "record-window"} is-setup-record`}
+      data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -274,4 +276,8 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
       </div>
     </motion.article>
   );
+}
+
+function recordStateKey(status: string): string {
+  return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
