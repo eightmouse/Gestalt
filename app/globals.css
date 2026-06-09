@@ -2385,8 +2385,8 @@ button:focus-visible {
   justify-self: end;
   align-self: start;
   flex: 0 0 auto;
-  inline-size: 28px;
-  block-size: 28px;
+  inline-size: 32px;
+  block-size: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2401,15 +2401,23 @@ button:focus-visible {
   transition: border-color 120ms linear, color 120ms linear, opacity 120ms linear;
 }
 
-.weather-action::before {
-  content: "";
-  inline-size: 18px;
-  block-size: 18px;
+.weather-action-icon {
+  inline-size: 22px;
+  block-size: 22px;
   display: block;
-  background: currentColor;
-  transform-origin: 50% 50%;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M23 10v7h-7' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3Cpath d='M22 17a8 8 0 1 1-2.35-5.65L23 14.7' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M23 10v7h-7' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3Cpath d='M22 17a8 8 0 1 1-2.35-5.65L23 14.7' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E") center / contain no-repeat;
+  overflow: visible;
+  color: currentColor;
+  stroke: currentColor;
+  stroke-width: 2.35;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  transform-box: view-box;
+  transform-origin: center;
+}
+
+.weather-action-icon circle {
+  stroke-dasharray: 52 8;
+  stroke-dashoffset: 1;
 }
 
 .weather-action:hover,
@@ -2419,7 +2427,7 @@ button:focus-visible {
   opacity: 1;
 }
 
-.weather-action.is-loading::before {
+.weather-action.is-loading .weather-action-icon {
   animation: weather-refresh 900ms linear infinite;
 }
 

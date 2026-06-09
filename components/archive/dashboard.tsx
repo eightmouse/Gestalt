@@ -333,7 +333,12 @@ function WeatherPanel() {
           onClick={requestWeather}
           title={weather.loading ? "Reading sky signal" : "Refresh sky"}
           type="button"
-        />
+        >
+          <svg aria-hidden="true" className="weather-action-icon" focusable="false" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" fill="none" r="9.5" />
+            <path d="M25.5 9.5v7.5H18" fill="none" />
+          </svg>
+        </button>
         <span className="weather-condition">{weather.condition}</span>
       </div>
       <div className="weather-meta">

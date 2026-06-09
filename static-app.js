@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.26</span>
+        <span>v1.26.27</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.26</span>
+        <span class="version-label">v1.26.27</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.26</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.27</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1404,7 +1404,12 @@ function weatherPanel() {
   return `<div class="weather-readout" data-weather-module>
     <div class="weather-primary">
       <span class="weather-temp" data-weather-temp>${escapeHtml(weatherState.temp)}</span>
-      <button class="weather-action${weatherState.loading ? " is-loading" : ""}" type="button" data-weather-action aria-label="${actionLabel}" title="${actionLabel}" ${weatherState.loading ? "disabled" : ""}></button>
+      <button class="weather-action${weatherState.loading ? " is-loading" : ""}" type="button" data-weather-action aria-label="${actionLabel}" title="${actionLabel}" ${weatherState.loading ? "disabled" : ""}>
+        <svg class="weather-action-icon" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+          <circle cx="18" cy="18" r="9.5" fill="none"></circle>
+          <path d="M25.5 9.5v7.5H18" fill="none"></path>
+        </svg>
+      </button>
       <span class="weather-condition" data-weather-condition>${escapeHtml(weatherState.condition)}</span>
     </div>
     <div class="weather-meta">
