@@ -151,9 +151,9 @@ export function recentActivity(records: RecordEntry[], limit: number): ActivityE
       return {
         content: trace ? "notes" as const : undefined,
         date: trace?.date ?? record.updated,
-        detail: trace ? `${record.type} / ${record.title}` : record.type,
+        detail: trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type,
         record,
-        title: trace ? activityTraceTitle(trace.note.title) : record.title
+        title: record.title
       };
     })
     .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
