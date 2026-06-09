@@ -1284,7 +1284,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.30</span>
+        <span>v1.26.31</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1298,7 +1298,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.30</span>
+        <span class="version-label">v1.26.31</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1318,7 +1318,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.30</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.31</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1551,7 +1551,7 @@ function renderSectionRows(sectionRecords) {
   return sectionRecords.length
     ? sectionRecords
         .map(
-          (record) => `<button class="section-record" type="button" data-open-record="${record.id}">
+          (record) => `<button class="section-record" type="button" data-open-record="${record.id}" data-state="${recordStateKey(record.status)}">
             <span class="section-record-kind">${escapeHtml(record.type)}</span>
             <strong>${escapeHtml(record.title)}</strong>
             <span>${escapeHtml(record.summary)}</span>
@@ -1560,6 +1560,10 @@ function renderSectionRows(sectionRecords) {
         )
         .join("")
     : `<p class="search-empty">No records filed here yet.</p>`;
+}
+
+function recordStateKey(status) {
+  return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
 const setupGroupRegistry = [

@@ -757,13 +757,17 @@ function StudioSectionPage({
 
 function StudioSectionRecordButton({ onEdit, record }: { onEdit: (id: string) => void; record: RecordEntry }) {
   return (
-    <button className="section-record" type="button" onClick={() => onEdit(record.id)}>
+    <button className="section-record" data-state={studioRecordStateKey(record.status)} type="button" onClick={() => onEdit(record.id)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.summary}</span>
       <i>{record.status} . {formatStudioDate(record.updated)}</i>
     </button>
   );
+}
+
+function studioRecordStateKey(status: string): string {
+  return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
 function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {

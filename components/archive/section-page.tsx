@@ -93,7 +93,7 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
 
 function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
   return (
-    <button className="section-record" type="button" onClick={() => onOpenRecord(record)}>
+    <button className="section-record" data-state={recordStateKey(record.status)} type="button" onClick={() => onOpenRecord(record)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.summary}</span>
@@ -102,6 +102,10 @@ function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: 
       </i>
     </button>
   );
+}
+
+function recordStateKey(status: string): string {
+  return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
 function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {

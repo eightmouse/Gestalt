@@ -1631,6 +1631,8 @@ button:focus-visible {
 }
 
 .section-record {
+  --record-edge: rgba(217, 213, 193, 0.04);
+  --record-signal: rgba(217, 213, 193, 0.22);
   position: relative;
   isolation: isolate;
   counter-increment: section-record;
@@ -1650,6 +1652,7 @@ button:focus-visible {
   color: var(--muted);
   text-align: left;
   cursor: pointer;
+  box-shadow: inset 2px 0 0 var(--record-edge);
   transition: border-color 120ms linear, background-color 120ms linear, box-shadow 120ms linear, color 120ms linear;
 }
 
@@ -1673,8 +1676,44 @@ button:focus-visible {
   inline-size: 1px;
   pointer-events: none;
   opacity: 0.42;
-  background: linear-gradient(180deg, transparent, rgba(217, 213, 193, 0.22), transparent);
+  background: linear-gradient(180deg, transparent, var(--record-signal), transparent);
   transition: opacity 120ms linear, box-shadow 120ms linear;
+}
+
+.section-record[data-state="active"],
+.section-record[data-state="playing"] {
+  --record-edge: rgba(236, 230, 211, 0.15);
+  --record-signal: rgba(236, 230, 211, 0.48);
+}
+
+.section-record[data-state="in-progress"],
+.section-record[data-state="planning"] {
+  --record-edge: rgba(200, 189, 159, 0.12);
+  --record-signal: rgba(200, 189, 159, 0.4);
+}
+
+.section-record[data-state="paused"],
+.section-record[data-state="on-hold"] {
+  --record-edge: rgba(130, 127, 116, 0.11);
+  --record-signal: rgba(130, 127, 116, 0.36);
+}
+
+.section-record[data-state="blocked"] {
+  --record-edge: rgba(214, 170, 130, 0.12);
+  --record-signal: rgba(214, 170, 130, 0.44);
+}
+
+.section-record[data-state="completed"],
+.section-record[data-state="filed"],
+.section-record[data-state="archived"] {
+  --record-edge: rgba(217, 213, 193, 0.035);
+  --record-signal: rgba(217, 213, 193, 0.16);
+}
+
+.section-record[data-state="blocked"]::after,
+.section-record[data-state="paused"]::after,
+.section-record[data-state="on-hold"]::after {
+  background: repeating-linear-gradient(180deg, transparent 0 4px, var(--record-signal) 4px 8px, transparent 8px 13px);
 }
 
 .section-record .section-record-kind::before {
@@ -1709,6 +1748,7 @@ button:focus-visible {
   outline: none;
   border-color: var(--line-strong);
   box-shadow:
+    inset 2px 0 0 var(--record-signal),
     inset 0 0 0 1px rgba(217, 213, 193, 0.12),
     0 0 0 1px rgba(217, 213, 193, 0.08);
   color: var(--text);
