@@ -89,7 +89,7 @@ export function ArchiveDashboard({
 
       <DashboardPanel title="LATEST LOG" className="latest-log-panel" footerLabel="Read log" onFooter={() => latestLog && onOpenRecord(latestLog)}>
         {latestLog ? (
-          <div className="latest-log">
+          <div className="latest-log" data-state={dashboardRecordStateKey(latestLog.status)}>
             <span>{shortDate(latestLog.updated)}</span>
             <p>{recordDisplaySummary(latestLog)}</p>
           </div>
@@ -102,7 +102,7 @@ export function ArchiveDashboard({
         {activity.length > 0 ? (
           <ol className="activity-feed">
             {activity.map((item) => (
-              <li key={item.record.id}>
+              <li data-state={dashboardRecordStateKey(item.record.status)} key={item.record.id}>
                 <span>[{shortDate(item.date)}]</span>
                 <button type="button" onClick={() => onOpenRecord(item.record)}>
                   {item.record.type}: {item.record.title}
@@ -134,9 +134,10 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
 
 function CurrentGame({ record }: { record: RecordEntry }) {
   return (
-    <div className="current-game">
+    <div className="current-game" data-state={dashboardRecordStateKey(record.status)}>
       <div className="game-cover">
         <img src={record.banner || "/images/archive-banner.png"} alt="" decoding="async" />
+        <i className="game-cover-signal">LIVE</i>
         <span>{record.title.slice(0, 10)}</span>
       </div>
       <div>
@@ -229,7 +230,7 @@ function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenR
   return (
     <div className="record-list">
       {records.map((record) => (
-        <button key={record.id} type="button" onClick={() => onOpenRecord(record)}>
+        <button data-state={dashboardRecordStateKey(record.status)} key={record.id} type="button" onClick={() => onOpenRecord(record)}>
           <span>
             <strong>{record.title}</strong>
             <small>{record.status}</small>
@@ -239,6 +240,10 @@ function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenR
       ))}
     </div>
   );
+}
+
+function dashboardRecordStateKey(status: string): string {
+  return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
 function WeatherPanel() {

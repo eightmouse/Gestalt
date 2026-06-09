@@ -2165,6 +2165,44 @@ button:focus-visible {
   counter-reset: dashboard-record;
 }
 
+.record-list button,
+.current-game,
+.latest-log,
+.activity-feed li {
+  --dashboard-edge: rgba(217, 213, 193, 0.04);
+  --dashboard-signal: rgba(217, 213, 193, 0.2);
+}
+
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="active"],
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="playing"] {
+  --dashboard-edge: rgba(236, 230, 211, 0.14);
+  --dashboard-signal: rgba(236, 230, 211, 0.46);
+}
+
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="in-progress"],
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="planning"] {
+  --dashboard-edge: rgba(200, 189, 159, 0.12);
+  --dashboard-signal: rgba(200, 189, 159, 0.38);
+}
+
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="paused"],
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="on-hold"] {
+  --dashboard-edge: rgba(130, 127, 116, 0.1);
+  --dashboard-signal: rgba(130, 127, 116, 0.34);
+}
+
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="blocked"] {
+  --dashboard-edge: rgba(214, 170, 130, 0.12);
+  --dashboard-signal: rgba(214, 170, 130, 0.42);
+}
+
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="completed"],
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="filed"],
+:where(.record-list button, .current-game, .latest-log, .activity-feed li)[data-state="archived"] {
+  --dashboard-edge: rgba(217, 213, 193, 0.035);
+  --dashboard-signal: rgba(217, 213, 193, 0.16);
+}
+
 .active-projects-panel .record-list {
   align-content: space-between;
   min-block-size: 100%;
@@ -2182,6 +2220,7 @@ button:focus-visible {
   color: var(--text);
   text-align: left;
   cursor: pointer;
+  box-shadow: inset 2px 0 0 var(--dashboard-edge);
 }
 
 .active-projects-panel .record-list button {
@@ -2205,6 +2244,7 @@ button:focus-visible {
 
 .record-list button:hover {
   color: var(--text-strong);
+  box-shadow: inset 2px 0 0 var(--dashboard-signal);
 }
 
 .record-list strong,
@@ -2240,6 +2280,10 @@ button:focus-visible {
   align-items: center;
   align-self: center;
   block-size: 100%;
+}
+
+.current-game[data-state] .game-cover {
+  border-color: var(--dashboard-signal);
 }
 
 .game-cover {
@@ -2279,7 +2323,7 @@ button:focus-visible {
   inset-inline-end: 7px;
   z-index: 2;
   padding: 2px 5px;
-  border: 1px solid rgba(217, 213, 193, 0.34);
+  border: 1px solid var(--dashboard-signal);
   background: rgba(5, 6, 5, 0.64);
   color: var(--text);
   font-size: 9px;
@@ -2314,7 +2358,7 @@ button:focus-visible {
   display: grid;
   gap: 12px;
   padding-inline-start: 12px;
-  border-inline-start: 1px solid rgba(217, 213, 193, 0.14);
+  border-inline-start: 1px solid var(--dashboard-signal);
 }
 
 .latest-log p {
@@ -2342,6 +2386,7 @@ button:focus-visible {
   grid-template-columns: 56px minmax(0, 1fr);
   gap: 10px;
   line-height: 1.45;
+  box-shadow: inset 1px 0 0 var(--dashboard-edge);
 }
 
 .activity-feed span {
