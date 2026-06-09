@@ -101,7 +101,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     ?? recordsBySection.games.find((record) => record.status === "Playing")
     ?? recordsBySection.games[0];
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = recentActivity(records, 3);
+  const activity = recentActivity(records, 5);
   const metrics = getArchiveMetrics(records, currentGame);
 
   useEffect(() => {

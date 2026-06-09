@@ -61,6 +61,17 @@ body::before {
   filter: grayscale(1) contrast(0.96) brightness(0.88);
 }
 
+#root:empty::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(217, 213, 193, 0.035), transparent 34%),
+    #050605;
+}
+
 button {
   border: 0;
   color: inherit;
@@ -1451,7 +1462,7 @@ button:focus-visible {
   max-inline-size: 1180px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr) minmax(210px, 0.72fr);
-  grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 0.86fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.78fr) minmax(0, 1fr);
   gap: clamp(10px, 1.6vh, 16px);
   contain: layout paint;
   transition: opacity 90ms linear;
@@ -2098,12 +2109,13 @@ button:focus-visible {
 
 .activity-panel .activity-feed {
   min-block-size: 0;
-  align-content: space-between;
+  block-size: 100%;
+  align-content: space-evenly;
 }
 
 .activity-panel > div {
-  display: flex;
-  align-items: center;
+  display: grid;
+  align-items: stretch;
 }
 
 .activity-panel .panel-link {
@@ -2448,6 +2460,10 @@ button:focus-visible {
   box-shadow: inset 1px 0 0 var(--dashboard-edge);
 }
 
+.activity-feed li:nth-child(n + 4) {
+  display: none;
+}
+
 .activity-feed > li > span {
   flex: 0 0 auto;
   color: var(--muted);
@@ -2494,6 +2510,37 @@ button:focus-visible {
 
 .activity-feed button:hover strong {
   color: var(--text-strong);
+}
+
+@media (min-width: 1181px) and (min-height: 920px) {
+  .dashboard-grid {
+    block-size: min(780px, calc(100vh - 218px));
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 1.08fr);
+  }
+
+  .activity-feed li:nth-child(4) {
+    display: grid;
+  }
+}
+
+@media (min-width: 1280px) and (min-height: 1080px) {
+  .dashboard-grid {
+    block-size: min(820px, calc(100vh - 218px));
+  }
+
+  .activity-feed li:nth-child(5) {
+    display: grid;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 760px) {
+  .activity-feed {
+    gap: 8px;
+  }
+
+  .activity-feed li:nth-child(n + 3) {
+    display: none;
+  }
 }
 
 .weather-readout {
