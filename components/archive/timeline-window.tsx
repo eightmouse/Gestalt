@@ -12,6 +12,10 @@ type TimelineWindowProps = {
 };
 
 export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowProps) {
+  const noteCount = items.filter((item) => item.kind === "note").length;
+  const recordCount = items.length - noteCount;
+  const sectionCount = new Set(items.map((item) => item.record.section)).size;
+
   return (
     <motion.article
       className="timeline-window"
@@ -34,6 +38,20 @@ export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowP
           <p>RECENT SIGNALS</p>
           <strong>{items.length}</strong>
           <span>records and notes sorted by observed date</span>
+          <dl className="timeline-metrics">
+            <div>
+              <dt>NOTES</dt>
+              <dd>{noteCount}</dd>
+            </div>
+            <div>
+              <dt>RECORDS</dt>
+              <dd>{recordCount}</dd>
+            </div>
+            <div>
+              <dt>SECTIONS</dt>
+              <dd>{sectionCount}</dd>
+            </div>
+          </dl>
         </div>
         <ol className="timeline-list">
           {items.map((item) => (
@@ -42,6 +60,7 @@ export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowP
               <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
                 <span>{item.title}</span>
                 <small>{item.detail}</small>
+                <i>{item.kind === "note" ? "NOTE TRACE" : "RECORD TRACE"}</i>
               </button>
             </li>
           ))}

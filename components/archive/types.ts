@@ -15,6 +15,7 @@ export type TimelineItem = {
   date: string;
   detail: string;
   id: string;
+  kind: "record" | "note";
   record: RecordEntry;
   title: string;
 };

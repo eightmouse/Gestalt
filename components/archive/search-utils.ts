@@ -15,6 +15,7 @@ export function getTimelineItems(records: RecordEntry[], limit: number): Timelin
           date: activityDate(record),
           detail: `${record.type} / ${record.status}`,
           id: `${record.id}-activity-${activityDate(record)}`,
+          kind: "record",
           record,
           title: `${record.title} updated`
         }
@@ -32,6 +33,7 @@ export function getTimelineItems(records: RecordEntry[], limit: number): Timelin
           date,
           detail: `${record.title} / Note ${index + 1}`,
           id: `${record.id}-note-${index}-${date}`,
+          kind: "note",
           record,
           title: note.title
         });

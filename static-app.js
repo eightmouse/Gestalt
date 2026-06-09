@@ -743,6 +743,7 @@ function getTimelineItems(limit) {
           date,
           detail: `${record.type} / ${record.status}`,
           id: `${record.id}-activity-${date}`,
+          kind: "record",
           record,
           title: `${record.title} updated`
         }
@@ -760,6 +761,7 @@ function getTimelineItems(limit) {
           date: noteDate,
           detail: `${record.title} / Note ${index + 1}`,
           id: `${record.id}-note-${index}-${noteDate}`,
+          kind: "note",
           record,
           title: note.title
         });
@@ -1345,7 +1347,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.45</span>
+        <span>v1.26.46</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1359,7 +1361,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.45</span>
+        <span class="version-label">v1.26.46</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1379,7 +1381,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.45</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.46</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1992,6 +1994,9 @@ function timelineWindow() {
   }
 
   const items = getTimelineItems(32);
+  const noteCount = items.filter((item) => item.kind === "note").length;
+  const recordCount = items.length - noteCount;
+  const sectionCount = new Set(items.map((item) => item.record.section)).size;
   const rows = items
     .map(
       (item) => `<li data-state="${recordStateKey(item.record.status)}">
@@ -1999,6 +2004,7 @@ function timelineWindow() {
         <button type="button" data-open-record="${item.record.id}" data-open-content="${item.content}">
           <span>${escapeHtml(item.title)}</span>
           <small>${escapeHtml(item.detail)}</small>
+          <i>${item.kind === "note" ? "NOTE TRACE" : "RECORD TRACE"}</i>
         </button>
       </li>`
     )
@@ -2017,6 +2023,11 @@ function timelineWindow() {
           <p>RECENT SIGNALS</p>
           <strong>${items.length}</strong>
           <span>records and notes sorted by observed date</span>
+          <dl class="timeline-metrics">
+            <div><dt>NOTES</dt><dd>${noteCount}</dd></div>
+            <div><dt>RECORDS</dt><dd>${recordCount}</dd></div>
+            <div><dt>SECTIONS</dt><dd>${sectionCount}</dd></div>
+          </dl>
         </div>
         <ol class="timeline-list">${rows}</ol>
       </div>

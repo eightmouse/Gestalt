@@ -3224,7 +3224,7 @@ button:focus-visible {
 
 .timeline-summary {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: end;
   gap: 4px 16px;
   padding-block-end: 16px;
@@ -3247,6 +3247,44 @@ button:focus-visible {
 
 .timeline-summary span {
   color: var(--muted-2);
+}
+
+.timeline-metrics {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(58px, auto));
+  gap: 8px;
+  margin: 0;
+}
+
+.timeline-metrics div {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid rgba(217, 213, 193, 0.1);
+  background:
+    linear-gradient(180deg, rgba(217, 213, 193, 0.045), transparent 56%),
+    rgba(255, 255, 255, 0.018);
+}
+
+.timeline-metrics dt,
+.timeline-metrics dd {
+  margin: 0;
+}
+
+.timeline-metrics dt {
+  color: var(--muted-2);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.timeline-metrics dd {
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
 }
 
 .timeline-list {
@@ -3278,6 +3316,7 @@ button:focus-visible {
 .timeline-list button {
   min-block-size: 56px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 5px;
   padding: 12px 14px;
   border: 1px solid rgba(217, 213, 193, 0.1);
@@ -3299,15 +3338,41 @@ button:focus-visible {
 }
 
 .timeline-list span,
-.timeline-list small {
+.timeline-list small,
+.timeline-list i {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.timeline-list span,
+.timeline-list small {
+  grid-column: 1;
+}
+
 .timeline-list small {
   color: var(--muted);
   font-size: 12px;
+}
+
+.timeline-list i {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  padding: 4px 7px;
+  border: 1px solid rgba(217, 213, 193, 0.12);
+  color: var(--muted-2);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.1em;
+}
+
+.timeline-list li[data-state="active"] i,
+.timeline-list li[data-state="playing"] i,
+.timeline-list li[data-state="in-progress"] i,
+.timeline-list li[data-state="planning"] i {
+  border-color: var(--command-signal);
+  color: var(--text);
 }
 
 .window-bar {
@@ -7121,6 +7186,16 @@ input.studio-title-edit {
     padding: 20px 18px;
   }
 
+  .timeline-summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .timeline-metrics {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .timeline-list li {
     grid-template-columns: 1fr;
     gap: 4px;
@@ -7128,6 +7203,16 @@ input.studio-title-edit {
 
   .timeline-list time {
     padding-block-start: 0;
+  }
+
+  .timeline-list button {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .timeline-list i {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
   }
 
   .record-layout {
