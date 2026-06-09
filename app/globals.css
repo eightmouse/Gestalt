@@ -2477,7 +2477,7 @@ button:focus-visible {
   min-block-size: 0;
   display: grid;
   grid-template-columns: 62px minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   gap: 12px;
   line-height: 1.5;
   box-shadow: inset 1px 0 0 var(--dashboard-edge);
@@ -2488,9 +2488,12 @@ button:focus-visible {
 }
 
 .activity-feed > li > span {
+  align-self: start;
   flex: 0 0 auto;
   color: var(--muted);
   font-size: 12px;
+  line-height: 1.28;
+  padding-block-start: 1px;
 }
 
 .activity-feed button {
