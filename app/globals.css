@@ -2711,7 +2711,7 @@ button:focus-visible {
   list-style: none;
   display: grid;
   align-content: start;
-  gap: clamp(5px, 0.72vh, 7px);
+  gap: clamp(4px, 0.62vh, 6px);
 }
 
 .activity-feed li {
@@ -2721,8 +2721,8 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 62px minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
-  line-height: 1.5;
+  gap: 10px;
+  line-height: 1.42;
   box-shadow: inset 1px 0 0 var(--dashboard-edge);
 }
 
@@ -2769,8 +2769,8 @@ button:focus-visible {
   color: var(--muted);
   cursor: pointer;
   display: grid;
-  gap: 2px;
-  line-height: 1.28;
+  gap: 1px;
+  line-height: 1.24;
   text-align: left;
 }
 
@@ -2788,14 +2788,14 @@ button:focus-visible {
 
 .activity-feed strong {
   color: var(--text);
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 400;
   animation: dashboard-activity-title 7.6s ease-in-out infinite;
 }
 
 .activity-feed small {
   color: #a09b8c;
-  font-size: 12px;
+  font-size: 12.5px;
   letter-spacing: 0;
   text-transform: none;
 }
