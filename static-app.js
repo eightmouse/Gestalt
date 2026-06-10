@@ -343,6 +343,7 @@ function readLocalMemoryState() {
 }
 
 const initialLocalMemory = readLocalMemoryState();
+let bootPromptTimer = 0;
 
 const state = {
   selectedId: "dashboard",
@@ -358,7 +359,7 @@ const state = {
   noteSearchQuery: "",
   updateHistoryOpen: false,
   localMemory: initialLocalMemory,
-  bootDismissed: initialLocalMemory === "granted",
+  bootDismissed: false,
   windowSteady: false,
   headlineAnimating: true,
   expandedImage: null
@@ -1356,7 +1357,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.27.0</span>
+        <span>v1.27.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1370,7 +1371,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.27.0</span>
+        <span class="version-label">v1.27.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1390,7 +1391,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.27.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.27.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1471,7 +1472,7 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
 }
 
 function localMemoryPrompt() {
-  if (state.localMemory !== "prompt") {
+  if (state.localMemory !== "prompt" || !state.bootDismissed) {
     return "";
   }
 
@@ -2163,8 +2164,12 @@ function render() {
   syncTime();
   syncWeather();
 
-  if (!state.bootDismissed) {
-    state.bootDismissed = true;
+  if (!state.bootDismissed && !bootPromptTimer) {
+    bootPromptTimer = window.setTimeout(() => {
+      state.bootDismissed = true;
+      bootPromptTimer = 0;
+      render();
+    }, 2800);
   }
 
   if (state.windowSteady) {
@@ -2369,12 +2374,18 @@ document.addEventListener("click", (event) => {
   }
 
   if (clickTarget.closest("[data-local-memory-allow]")) {
+    if (bootPromptTimer) {
+      window.clearTimeout(bootPromptTimer);
+      bootPromptTimer = 0;
+    }
+
     try {
       window.localStorage.setItem(localMemoryKey, "granted");
       state.localMemory = "granted";
       state.bootDismissed = true;
     } catch {
       state.localMemory = "session";
+      state.bootDismissed = true;
     }
 
     render();
@@ -2382,7 +2393,13 @@ document.addEventListener("click", (event) => {
   }
 
   if (clickTarget.closest("[data-local-memory-session]")) {
+    if (bootPromptTimer) {
+      window.clearTimeout(bootPromptTimer);
+      bootPromptTimer = 0;
+    }
+
     state.localMemory = "session";
+    state.bootDismissed = true;
     render();
     return;
   }

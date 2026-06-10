@@ -2364,27 +2364,30 @@ button:focus-visible {
 
 .panel-title-action::after {
   content: "";
-  inline-size: 16px;
-  block-size: 1px;
-  opacity: 0;
-  background: currentColor;
-  transform: translateX(-4px) scaleX(0.45);
-  transform-origin: left center;
+  inline-size: 5px;
+  block-size: 5px;
+  border: 1px solid currentColor;
+  opacity: 0.18;
+  background: transparent;
+  transform: rotate(45deg) scale(0.78);
+  transform-origin: center;
   transition:
     opacity 160ms ease,
-    transform 160ms ease;
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .dashboard-panel h2.is-actionable:hover,
 .dashboard-panel h2.is-actionable:focus-within {
-  color: var(--text-strong);
-  text-shadow: 0 0 9px rgba(217, 213, 193, 0.18);
+  color: var(--text);
+  text-shadow: 0 0 6px rgba(217, 213, 193, 0.1);
 }
 
 .dashboard-panel h2.is-actionable:hover .panel-title-action::after,
 .panel-title-action:focus-visible::after {
-  opacity: 0.72;
-  transform: translateX(0) scaleX(1);
+  opacity: 0.48;
+  transform: rotate(45deg) scale(1);
+  box-shadow: 0 0 8px rgba(217, 213, 193, 0.12);
 }
 
 .panel-title-action:focus-visible {
@@ -2712,7 +2715,6 @@ button:focus-visible {
 }
 
 .activity-feed li {
-  --activity-date-column: 62px;
   position: relative;
   min-width: 0;
   min-block-size: 0;
@@ -2722,24 +2724,6 @@ button:focus-visible {
   gap: 12px;
   line-height: 1.5;
   box-shadow: inset 1px 0 0 var(--dashboard-edge);
-}
-
-.activity-feed li::after {
-  content: "";
-  position: absolute;
-  inset-inline-start: calc(var(--activity-date-column) + 3px);
-  inset-block-start: 3px;
-  inline-size: 8px;
-  block-size: 8px;
-  border-radius: 999px;
-  opacity: 0.62;
-  background: rgba(236, 230, 211, 0.92);
-  box-shadow:
-    0 0 10px rgba(236, 230, 211, 0.42),
-    0 0 22px rgba(217, 213, 193, 0.24),
-    0 0 2px rgba(236, 230, 211, 0.94);
-  pointer-events: none;
-  animation: dashboard-activity-dot 7.6s ease-in-out infinite;
 }
 
 .activity-feed li:nth-child(n + 4) {
@@ -2756,22 +2740,22 @@ button:focus-visible {
   padding-block-start: 1px;
 }
 
-.activity-feed li:nth-child(2)::after {
+.activity-feed li:nth-child(2) strong::before {
   animation-duration: 9.1s;
   animation-delay: -2.8s;
 }
 
-.activity-feed li:nth-child(3)::after {
+.activity-feed li:nth-child(3) strong::before {
   animation-duration: 6.9s;
   animation-delay: -4.7s;
 }
 
-.activity-feed li:nth-child(4)::after {
+.activity-feed li:nth-child(4) strong::before {
   animation-duration: 10.3s;
   animation-delay: -1.6s;
 }
 
-.activity-feed li:nth-child(5)::after {
+.activity-feed li:nth-child(5) strong::before {
   animation-duration: 8.4s;
   animation-delay: -6.1s;
 }
@@ -2803,9 +2787,31 @@ button:focus-visible {
 }
 
 .activity-feed strong {
+  position: relative;
+  padding-inline-start: 14px;
   color: var(--text);
   font-size: 14px;
   font-weight: 400;
+}
+
+.activity-feed strong::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 1px;
+  inset-block-start: 50%;
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 999px;
+  opacity: 0.58;
+  background: rgba(236, 230, 211, 0.88);
+  box-shadow:
+    0 0 9px rgba(236, 230, 211, 0.36),
+    0 0 18px rgba(217, 213, 193, 0.18),
+    0 0 2px rgba(236, 230, 211, 0.9);
+  transform: translateY(-50%) scale(0.86);
+  transform-origin: center;
+  pointer-events: none;
+  animation: dashboard-activity-dot 7.6s ease-in-out infinite;
 }
 
 .activity-feed small {
@@ -2869,7 +2875,6 @@ button:focus-visible {
   }
 
   .activity-feed li {
-    --activity-date-column: 68px;
     min-block-size: 42px;
     grid-template-columns: 68px minmax(0, 1fr);
   }
@@ -2947,7 +2952,6 @@ button:focus-visible {
   }
 
   .activity-feed li {
-    --activity-date-column: 74px;
     min-block-size: 48px;
     grid-template-columns: 74px minmax(0, 1fr);
   }
@@ -3315,7 +3319,7 @@ button:focus-visible {
 .archive-shell.has-record .active-projects-panel .record-list button::after,
 .archive-shell.has-record .game-cover-signal,
 .archive-shell.has-record .latest-log::before,
-.archive-shell.has-record .activity-feed li::after,
+.archive-shell.has-record .activity-feed strong::before,
 .archive-shell.has-record .weather-temp::after {
   animation-play-state: paused;
 }
@@ -8131,7 +8135,7 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed li::after,
+  .activity-feed strong::before,
   .weather-temp::after {
     display: none;
   }
@@ -8148,7 +8152,7 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed li::after,
+  .activity-feed strong::before,
   .weather-temp::after {
     opacity: 0 !important;
   }

@@ -80,6 +80,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [navOpen, setNavOpen] = useState(false);
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
   const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
+  const [bootComplete, setBootComplete] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -128,6 +129,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
     setLocalMemory("prompt");
   }, []);
+
+  useEffect(() => {
+    if (localMemory === "checking" || bootComplete) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setBootComplete(true), 2800);
+    return () => window.clearTimeout(timer);
+  }, [bootComplete, localMemory]);
 
   useEffect(() => {
     if (!searchOpen) {
@@ -298,12 +308,16 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   };
 
-  const continueOnce = () => setLocalMemory("session");
+  const continueOnce = () => {
+    setBootComplete(true);
+    setLocalMemory("session");
+  };
+  const showBoot = !bootComplete;
 
   return (
     <main className={hasFocusWindow ? "archive-shell has-record" : "archive-shell"}>
-      {localMemory === "granted" || localMemory === "checking" ? null : <BootScreen />}
-      {localMemory === "prompt" ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
+      {showBoot ? <BootScreen /> : null}
+      {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />
       <Sidebar
