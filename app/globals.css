@@ -2740,22 +2740,22 @@ button:focus-visible {
   padding-block-start: 1px;
 }
 
-.activity-feed li:nth-child(2) strong::before {
+.activity-feed li:nth-child(2) strong {
   animation-duration: 9.1s;
   animation-delay: -2.8s;
 }
 
-.activity-feed li:nth-child(3) strong::before {
+.activity-feed li:nth-child(3) strong {
   animation-duration: 6.9s;
   animation-delay: -4.7s;
 }
 
-.activity-feed li:nth-child(4) strong::before {
+.activity-feed li:nth-child(4) strong {
   animation-duration: 10.3s;
   animation-delay: -1.6s;
 }
 
-.activity-feed li:nth-child(5) strong::before {
+.activity-feed li:nth-child(5) strong {
   animation-duration: 8.4s;
   animation-delay: -6.1s;
 }
@@ -2787,31 +2787,10 @@ button:focus-visible {
 }
 
 .activity-feed strong {
-  position: relative;
-  padding-inline-start: 14px;
   color: var(--text);
   font-size: 14px;
   font-weight: 400;
-}
-
-.activity-feed strong::before {
-  content: "";
-  position: absolute;
-  inset-inline-start: 1px;
-  inset-block-start: 50%;
-  inline-size: 7px;
-  block-size: 7px;
-  border-radius: 999px;
-  opacity: 0.58;
-  background: rgba(236, 230, 211, 0.88);
-  box-shadow:
-    0 0 9px rgba(236, 230, 211, 0.36),
-    0 0 18px rgba(217, 213, 193, 0.18),
-    0 0 2px rgba(236, 230, 211, 0.9);
-  transform: translateY(-50%) scale(0.86);
-  transform-origin: center;
-  pointer-events: none;
-  animation: dashboard-activity-dot 7.6s ease-in-out infinite;
+  animation: dashboard-activity-title 7.6s ease-in-out infinite;
 }
 
 .activity-feed small {
@@ -3319,7 +3298,7 @@ button:focus-visible {
 .archive-shell.has-record .active-projects-panel .record-list button::after,
 .archive-shell.has-record .game-cover-signal,
 .archive-shell.has-record .latest-log::before,
-.archive-shell.has-record .activity-feed strong::before,
+.archive-shell.has-record .activity-feed strong,
 .archive-shell.has-record .weather-temp::after {
   animation-play-state: paused;
 }
@@ -6636,30 +6615,24 @@ input.studio-title-edit {
   }
 }
 
-@keyframes dashboard-activity-dot {
+@keyframes dashboard-activity-title {
   0%,
   64%,
   100% {
-    opacity: 0.5;
-    transform: scale(0.86);
-    box-shadow:
-      0 0 7px rgba(236, 230, 211, 0.24),
-      0 0 14px rgba(217, 213, 193, 0.14),
-      0 0 1px rgba(236, 230, 211, 0.72);
+    color: rgba(217, 213, 193, 0.88);
+    text-shadow: 0 0 0 rgba(236, 230, 211, 0);
   }
 
   70% {
-    opacity: 0.98;
-    transform: scale(1.08);
-    box-shadow:
-      0 0 11px rgba(236, 230, 211, 0.48),
-      0 0 22px rgba(217, 213, 193, 0.28),
-      0 0 2px rgba(236, 230, 211, 0.9);
+    color: var(--text-strong);
+    text-shadow:
+      0 0 7px rgba(236, 230, 211, 0.36),
+      0 0 18px rgba(217, 213, 193, 0.18);
   }
 
   77% {
-    opacity: 0.62;
-    transform: scale(0.92);
+    color: rgba(236, 230, 211, 0.92);
+    text-shadow: 0 0 5px rgba(236, 230, 211, 0.12);
   }
 }
 
@@ -8135,9 +8108,13 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed strong::before,
   .weather-temp::after {
     display: none;
+  }
+
+  .activity-feed strong {
+    animation: none;
+    text-shadow: none;
   }
 }
 
@@ -8152,8 +8129,12 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed strong::before,
   .weather-temp::after {
     opacity: 0 !important;
+  }
+
+  .activity-feed strong {
+    animation: none !important;
+    text-shadow: none !important;
   }
 }
