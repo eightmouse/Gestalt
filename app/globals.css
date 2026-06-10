@@ -2241,9 +2241,10 @@ button:focus-visible {
 
 .activity-panel .activity-feed {
   min-block-size: 0;
-  block-size: 100%;
-  grid-template-rows: repeat(3, minmax(34px, 1fr));
-  align-content: stretch;
+  block-size: auto;
+  grid-auto-rows: minmax(34px, auto);
+  align-content: center;
+  gap: clamp(7px, 0.95vh, 10px);
 }
 
 .activity-panel > div {
@@ -2257,7 +2258,7 @@ button:focus-visible {
 }
 
 .current-game-panel {
-  grid-template-rows: auto minmax(102px, 1fr);
+  grid-template-rows: auto minmax(112px, 1fr);
 }
 
 .current-game-panel > div {
@@ -2587,12 +2588,12 @@ button:focus-visible {
 
 .current-game {
   display: grid;
-  grid-template-columns: 66px 1fr;
-  gap: 18px;
+  grid-template-columns: 78px 1fr;
+  gap: 20px;
   align-items: center;
   align-self: center;
   block-size: auto;
-  min-block-size: 102px;
+  min-block-size: 112px;
 }
 
 .current-game[data-state] .game-cover {
@@ -2657,14 +2658,14 @@ button:focus-visible {
   display: block;
   margin-block-end: 9px;
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1.2;
 }
 
 .current-game span {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.58;
 }
 
@@ -2677,11 +2678,8 @@ button:focus-visible {
 .latest-log {
   position: relative;
   display: grid;
-  align-content: center;
-  inline-size: 100%;
-  min-block-size: 100%;
-  gap: 11px;
-  padding-inline-start: 14px;
+  gap: 12px;
+  padding-inline-start: 12px;
   border-inline-start: 0;
   box-shadow: inset 1px 0 0 var(--dashboard-signal);
   overflow: hidden;
@@ -2710,7 +2708,7 @@ button:focus-visible {
   display: -webkit-box;
   overflow: hidden;
   text-wrap: balance;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
@@ -2744,7 +2742,7 @@ button:focus-visible {
   align-self: start;
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.28;
   padding-block-start: 1px;
 }
@@ -2797,14 +2795,14 @@ button:focus-visible {
 
 .activity-feed strong {
   color: var(--text);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 400;
   animation: dashboard-activity-title 7.6s ease-in-out infinite;
 }
 
 .activity-feed small {
   color: #a09b8c;
-  font-size: 12.5px;
+  font-size: 13px;
   letter-spacing: 0;
   text-transform: none;
 }
