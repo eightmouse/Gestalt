@@ -1643,7 +1643,7 @@ button:focus-visible {
     "index summary summary";
   align-content: center;
   column-gap: 12px;
-  row-gap: 8px;
+  row-gap: 5px;
   padding: 16px 14px;
   overflow: hidden;
 }
@@ -1656,13 +1656,13 @@ button:focus-visible {
   grid-area: title;
   display: block;
   line-height: 1.25;
-  margin-block: 2px 4px;
+  margin-block: 1px 2px;
 }
 
 .section-record-column .section-record > span:not(.section-record-kind) {
   grid-area: summary;
   min-block-size: 0;
-  padding-block-start: 9px;
+  padding-block-start: 3px;
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -5909,6 +5909,14 @@ input.studio-title-edit {
   color: var(--text);
 }
 
+.studio-placement-field small {
+  color: var(--muted-2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  text-transform: none;
+}
+
 .studio-copy-aside .studio-check {
   display: flex;
   align-items: center;
@@ -7067,17 +7075,17 @@ input.studio-title-edit {
   }
 
   .section-record {
-    min-block-size: 152px;
+    min-block-size: 176px;
     grid-template-areas:
       "index"
       "kind"
       "title"
       "summary"
       "date";
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     align-content: stretch;
     gap: 0;
-    row-gap: 11px;
+    row-gap: 8px;
     padding: 18px 16px;
   }
 
@@ -7086,6 +7094,8 @@ input.studio-title-edit {
   }
 
   .section-record-column .section-record {
+    block-size: auto;
+    min-block-size: 176px;
     grid-template-columns: 1fr;
     grid-template-areas:
       "index"
@@ -7093,9 +7103,13 @@ input.studio-title-edit {
       "title"
       "summary"
       "date";
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
     align-content: stretch;
-    row-gap: 11px;
+    row-gap: 8px;
+  }
+
+  .section-record-column .section-record-grid {
+    grid-auto-rows: minmax(176px, auto);
   }
 
   .section-record strong {
@@ -7499,17 +7513,18 @@ input.studio-title-edit {
   }
 
   .section-record-column .section-record-grid {
-    grid-auto-rows: 168px;
+    grid-auto-rows: minmax(176px, auto);
   }
 
   .section-record-column .section-record {
-    block-size: 168px;
-    row-gap: 12px;
+    block-size: auto;
+    min-block-size: 176px;
+    row-gap: 8px;
   }
 
   .section-record {
-    min-block-size: 168px;
-    row-gap: 12px;
+    min-block-size: 176px;
+    row-gap: 8px;
   }
 
   .record-window,

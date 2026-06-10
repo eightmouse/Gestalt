@@ -23,6 +23,8 @@ const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
   setup: "Setup Manifest"
 };
 
+const sessionGameStatuses = new Set(["active", "in progress", "on hold", "paused", "planning", "playing"]);
+
 export function SectionPage({ records, section, onOpenRecord }: SectionPageProps) {
   const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
@@ -119,11 +121,9 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
   }
 
   if (section === "games") {
-    const activeStatuses = new Set(["playing", "on hold", "in progress"]);
-
     return [
-      { title: "SESSION LOGS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
-      { title: "PAST LOGS", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+      { title: "SESSION LOGS", records: records.filter((record) => sessionGameStatuses.has(record.status.toLowerCase())) },
+      { title: "PAST LOGS", records: records.filter((record) => !sessionGameStatuses.has(record.status.toLowerCase())) }
     ];
   }
 

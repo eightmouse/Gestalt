@@ -770,6 +770,12 @@ function studioRecordStateKey(status: string): string {
   return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
+const sessionGameStatuses = new Set(["active", "in progress", "on hold", "paused", "planning", "playing"]);
+
+function isSessionGameStatus(status: string): boolean {
+  return sessionGameStatuses.has(status.toLowerCase());
+}
+
 function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
   if (section === "projects") {
     const activeStatuses = new Set(["active", "in progress", "planning", "blocked"]);
@@ -781,11 +787,9 @@ function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[
   }
 
   if (section === "games") {
-    const activeStatuses = new Set(["playing", "on hold", "in progress"]);
-
     return [
-      { title: "SESSION LOGS", records: records.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
-      { title: "PAST LOGS", records: records.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+      { title: "SESSION LOGS", records: records.filter((record) => isSessionGameStatus(record.status)) },
+      { title: "PAST LOGS", records: records.filter((record) => !isSessionGameStatus(record.status)) }
     ];
   }
 
@@ -952,6 +956,8 @@ function Inspector({
   saving: boolean;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
+  const gamePlacement = isSessionGameStatus(form.status) ? "session" : "past";
+
   return (
     <div className="studio-inspector">
       <h3>INSPECTOR</h3>
@@ -965,6 +971,28 @@ function Inspector({
       </label>
       {form.section === "games" ? (
         <>
+          <label className="studio-placement-field">
+            Log placement
+            <select
+              value={gamePlacement}
+              onChange={(event) => {
+                if (event.target.value === "session") {
+                  onUpdate("status", isSessionGameStatus(form.status) ? form.status : "Playing");
+                  return;
+                }
+
+                onUpdate("status", "Completed");
+
+                if (form.dashboardActive) {
+                  onUpdate("dashboardActive", false);
+                }
+              }}
+            >
+              <option value="session">Session Logs</option>
+              <option value="past">Past Logs</option>
+            </select>
+            <small>Session Logs are still alive. Past Logs are completed, filed, or archived.</small>
+          </label>
           <label className="studio-check">
             <input type="checkbox" checked={form.dashboardActive} onChange={(event) => onUpdate("dashboardActive", event.target.checked)} />
             <span>Dashboard active game</span>
