@@ -1721,6 +1721,7 @@ button:focus-visible {
 
 .section-record {
   --record-edge: rgba(217, 213, 193, 0.04);
+  --record-progress: 0%;
   --record-signal: rgba(217, 213, 193, 0.22);
   position: relative;
   isolation: isolate;
@@ -1736,6 +1737,7 @@ button:focus-visible {
   padding: 14px 16px;
   border: 1px solid rgba(217, 213, 193, 0.105);
   background:
+    linear-gradient(90deg, var(--record-signal) 0 var(--record-progress), transparent var(--record-progress) 100%) left bottom / 100% 1px no-repeat,
     linear-gradient(90deg, rgba(217, 213, 193, 0.032), transparent 20%),
     rgba(8, 9, 8, 0.42);
   color: var(--muted);
@@ -1817,6 +1819,7 @@ button:focus-visible {
 .section-record:hover {
   border-color: var(--line-strong);
   background:
+    linear-gradient(90deg, var(--record-signal) 0 var(--record-progress), transparent var(--record-progress) 100%) left bottom / 100% 1px no-repeat,
     linear-gradient(90deg, rgba(217, 213, 193, 0.05), transparent 24%),
     rgba(12, 13, 11, 0.58);
   color: var(--text);

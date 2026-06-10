@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
 import { setupGroupFor, setupGroupRegistry, setupProfile } from "@/components/archive/setup-utils";
@@ -98,7 +99,13 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
 
 function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
   return (
-    <button className="section-record" data-state={recordStateKey(record.status)} type="button" onClick={() => onOpenRecord(record)}>
+    <button
+      className="section-record"
+      data-state={recordStateKey(record.status)}
+      style={{ "--record-progress": `${recordProgress(record)}%` } as CSSProperties}
+      type="button"
+      onClick={() => onOpenRecord(record)}
+    >
       <span className="section-record-kind">
         <span>{record.type}</span>
         <small>{recordTraceId(record)}</small>
@@ -118,6 +125,10 @@ function recordStateKey(status: string): string {
 
 function recordTraceId(record: RecordEntry): string {
   return `#${record.section.slice(0, 3).toUpperCase()}-${record.priority.toString().padStart(3, "0")}`;
+}
+
+function recordProgress(record: RecordEntry): number {
+  return Math.max(0, Math.min(100, Number(record.progress) || 0));
 }
 
 function SectionReadout({ items }: { items: Array<{ label: string; value: string }> }) {
