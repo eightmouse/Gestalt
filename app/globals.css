@@ -17,7 +17,6 @@
   --mono: "Bahnschrift Light", "Bahnschrift", "DIN Alternate", "Cascadia Mono", "IBM Plex Mono", "Consolas", monospace;
   --sans: "Bahnschrift Light Condensed", "Bahnschrift SemiCondensed", "Bahnschrift", "Agency FB", "Segoe UI", Arial, sans-serif;
   --archive-image: url("/images/archive-banner.png");
-  --archive-image-static: url("../public/images/archive-banner.png");
 }
 
 * {
@@ -52,9 +51,7 @@ body::before {
   z-index: 0;
   pointer-events: none;
   opacity: 0.52;
-  background-image:
-    var(--archive-image),
-    var(--archive-image-static);
+  background-image: var(--archive-image);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
