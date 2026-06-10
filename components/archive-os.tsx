@@ -63,6 +63,10 @@ type ArchiveOSProps = {
   records: RecordEntry[];
 };
 
+type LocalMemoryState = "checking" | "prompt" | "granted" | "session";
+
+const localMemoryKey = "gestalt.local-memory";
+
 export function ArchiveOS({ records }: ArchiveOSProps) {
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
   const [panelOpen, setPanelOpen] = useState(false);
@@ -75,6 +79,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
+  const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -109,6 +114,19 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     updateClock();
     const interval = window.setInterval(updateClock, 30_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(localMemoryKey) === "granted") {
+        setLocalMemory("granted");
+        return;
+      }
+    } catch {
+      // Local storage can be blocked by strict browser settings. Gestalt keeps working without it.
+    }
+
+    setLocalMemory("prompt");
   }, []);
 
   useEffect(() => {
@@ -271,10 +289,21 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     </span>
   ) : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen;
+  const grantLocalMemory = () => {
+    try {
+      window.localStorage.setItem(localMemoryKey, "granted");
+      setLocalMemory("granted");
+    } catch {
+      setLocalMemory("session");
+    }
+  };
+
+  const continueOnce = () => setLocalMemory("session");
 
   return (
     <main className={hasFocusWindow ? "archive-shell has-record" : "archive-shell"}>
-      <BootScreen />
+      {localMemory === "granted" || localMemory === "checking" ? null : <BootScreen />}
+      {localMemory === "prompt" ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />
       <Sidebar
@@ -445,6 +474,29 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         <MobileDock activeSection={activeSection} onHome={openHome} onOpenSection={openSection} />
       </section>
     </main>
+  );
+}
+
+function LocalMemoryPrompt({ onAllow, onContinue }: { onAllow: () => void; onContinue: () => void }) {
+  return (
+    <div className="local-memory-consent" role="dialog" aria-modal="true" aria-labelledby="local-memory-title">
+      <div>
+        <p>// LOCAL MEMORY REQUEST</p>
+        <h2 id="local-memory-title">Remember this terminal?</h2>
+        <span>
+          Gestalt can store one local preference in this browser so repeat visits skip the full boot sequence. No
+          account, tracking, analytics, or personal data.
+        </span>
+        <div>
+          <button type="button" onClick={onAllow}>
+            Allow local memory
+          </button>
+          <button type="button" onClick={onContinue}>
+            Continue once
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

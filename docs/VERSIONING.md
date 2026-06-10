@@ -2,7 +2,7 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current version: `v1.26.62`.
+Current version: `v1.27.0`.
 
 ## Rules
 

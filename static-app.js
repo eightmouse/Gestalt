@@ -332,6 +332,18 @@ const weatherState = {
   loading: false
 };
 
+const localMemoryKey = "gestalt.local-memory";
+
+function readLocalMemoryState() {
+  try {
+    return window.localStorage.getItem(localMemoryKey) === "granted" ? "granted" : "prompt";
+  } catch {
+    return "prompt";
+  }
+}
+
+const initialLocalMemory = readLocalMemoryState();
+
 const state = {
   selectedId: "dashboard",
   activeSection: "system",
@@ -345,7 +357,8 @@ const state = {
   navOpen: false,
   noteSearchQuery: "",
   updateHistoryOpen: false,
-  bootDismissed: false,
+  localMemory: initialLocalMemory,
+  bootDismissed: initialLocalMemory === "granted",
   windowSteady: false,
   headlineAnimating: true,
   expandedImage: null
@@ -1343,7 +1356,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.62</span>
+        <span>v1.27.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1357,7 +1370,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.62</span>
+        <span class="version-label">v1.27.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1377,7 +1390,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.62</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.27.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1455,6 +1468,24 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
     <h2${headingClass}>${titleMarkup}</h2>
     <div>${body}</div>
   </article>`;
+}
+
+function localMemoryPrompt() {
+  if (state.localMemory !== "prompt") {
+    return "";
+  }
+
+  return `<div class="local-memory-consent" role="dialog" aria-modal="true" aria-labelledby="local-memory-title">
+    <div>
+      <p>// LOCAL MEMORY REQUEST</p>
+      <h2 id="local-memory-title">Remember this terminal?</h2>
+      <span>Gestalt can store one local preference in this browser so repeat visits skip the full boot sequence. No account, tracking, analytics, or personal data.</span>
+      <div>
+        <button type="button" data-local-memory-allow>Allow local memory</button>
+        <button type="button" data-local-memory-session>Continue once</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 function weatherPanel() {
@@ -2091,6 +2122,7 @@ function render() {
       <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
       <b class="boot-meter"><b></b></b>
     </div>`}
+    ${localMemoryPrompt()}
     <div class="grain-layer"></div>
     <div class="scanline-layer"></div>
     ${sidebar()}
@@ -2333,6 +2365,25 @@ document.addEventListener("click", (event) => {
   const clickTarget = event.target;
 
   if (!(clickTarget instanceof Element)) {
+    return;
+  }
+
+  if (clickTarget.closest("[data-local-memory-allow]")) {
+    try {
+      window.localStorage.setItem(localMemoryKey, "granted");
+      state.localMemory = "granted";
+      state.bootDismissed = true;
+    } catch {
+      state.localMemory = "session";
+    }
+
+    render();
+    return;
+  }
+
+  if (clickTarget.closest("[data-local-memory-session]")) {
+    state.localMemory = "session";
+    render();
     return;
   }
 
