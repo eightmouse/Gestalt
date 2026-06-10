@@ -126,15 +126,20 @@ export function ArchiveDashboard({
 }
 
 function DashboardPanel({ title, children, footerLabel, className = "", onFooter }: DashboardPanelProps) {
+  const isActionable = Boolean(footerLabel && onFooter);
+
   return (
     <article className={`dashboard-panel ${className}`}>
-      <h2>{title}</h2>
+      <h2 className={isActionable ? "is-actionable" : undefined}>
+        {isActionable ? (
+          <button className="panel-title-action" type="button" onClick={onFooter} aria-label={footerLabel} title={footerLabel}>
+            {title}
+          </button>
+        ) : (
+          title
+        )}
+      </h2>
       <div>{children}</div>
-      {footerLabel ? (
-        <button className="panel-link" type="button" onClick={onFooter}>
-          {footerLabel} <span>-&gt;</span>
-        </button>
-      ) : null}
     </article>
   );
 }
