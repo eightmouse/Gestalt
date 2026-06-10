@@ -1877,11 +1877,18 @@ button:focus-visible {
   grid-area: kind;
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.section-record-kind small {
+  color: var(--muted-2);
+  font-size: 10px;
+  letter-spacing: 0.12em;
 }
 
 .section-record i {

@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.26.51-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.26.52-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -13,7 +13,7 @@ I wanted a place for the stuff that usually ends up scattered around notes: proj
 
 I use Obsidian a lot, godsend, bless the creators, but I wanted something more public-facing for a while. Not a standard blog layout, more like a little personal operating system where every entry feels like opening a record.
 
-Current public version: `v1.26.51`.
+Current public version: `v1.26.52`.
 
 ## What It Is
 
