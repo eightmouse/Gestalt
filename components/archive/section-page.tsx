@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
 import { setupGroupFor, setupGroupRegistry, setupProfile } from "@/components/archive/setup-utils";
@@ -53,7 +52,10 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
           {splitSection.map((group) => (
             <section className="section-record-column" key={group.title} aria-label={group.title}>
               <header>
-                <h3>{group.title}</h3>
+                <div>
+                  <h3>{group.title}</h3>
+                  <small>{groupStatusLine(group.records)}</small>
+                </div>
                 <span>{group.records.length}</span>
               </header>
               <div className="section-record-grid">
@@ -99,13 +101,7 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
 
 function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
   return (
-    <button
-      className="section-record"
-      data-state={recordStateKey(record.status)}
-      style={{ "--record-progress": `${recordProgress(record)}%` } as CSSProperties}
-      type="button"
-      onClick={() => onOpenRecord(record)}
-    >
+    <button className="section-record" data-state={recordStateKey(record.status)} type="button" onClick={() => onOpenRecord(record)}>
       <span className="section-record-kind">
         <span>{record.type}</span>
         <small>{recordTraceId(record)}</small>
@@ -125,10 +121,6 @@ function recordStateKey(status: string): string {
 
 function recordTraceId(record: RecordEntry): string {
   return `#${record.section.slice(0, 3).toUpperCase()}-${record.priority.toString().padStart(3, "0")}`;
-}
-
-function recordProgress(record: RecordEntry): number {
-  return Math.max(0, Math.min(100, Number(record.progress) || 0));
 }
 
 function SectionReadout({ items }: { items: Array<{ label: string; value: string }> }) {
@@ -154,6 +146,13 @@ function sectionReadout(records: RecordEntry[]): Array<{ label: string; value: s
     { label: "FILED", value: String(filedCount).padStart(2, "0") },
     { label: "LAST", value: records[0] ? formatReadableDate(records[0].updated) : "-- / -- / ----" }
   ];
+}
+
+function groupStatusLine(records: RecordEntry[]): string {
+  const liveStatuses = new Set(["active", "blocked", "in progress", "on hold", "paused", "planning", "playing"]);
+  const liveCount = records.filter((record) => liveStatuses.has(record.status.toLowerCase())).length;
+
+  return `${liveCount} live ${liveCount === 1 ? "file" : "files"} / ${records.length} indexed`;
 }
 
 function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {

@@ -1343,7 +1343,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.53</span>
+        <span>v1.26.54</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1357,7 +1357,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.53</span>
+        <span class="version-label">v1.26.54</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1377,7 +1377,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.53</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.54</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1589,7 +1589,7 @@ function sectionPage(sectionId) {
         ${splitSection
           .map(
             (group) => `<section class="section-record-column" aria-label="${escapeHtml(group.title)}">
-              <header><h3>${escapeHtml(group.title)}</h3><span>${group.records.length}</span></header>
+              <header><div><h3>${escapeHtml(group.title)}</h3><small>${escapeHtml(groupStatusLine(group.records))}</small></div><span>${group.records.length}</span></header>
               <div class="section-record-grid">${renderSectionRows(group.records)}</div>
             </section>`
           )
@@ -1616,7 +1616,7 @@ function renderSectionRows(sectionRecords) {
   return sectionRecords.length
     ? sectionRecords
         .map(
-          (record) => `<button class="section-record" type="button" data-open-record="${record.id}" data-state="${recordStateKey(record.status)}" style="--record-progress: ${recordProgress(record)}%">
+          (record) => `<button class="section-record" type="button" data-open-record="${record.id}" data-state="${recordStateKey(record.status)}">
             <span class="section-record-kind"><span>${escapeHtml(record.type)}</span><small>${escapeHtml(recordTraceId(record))}</small></span>
             <strong>${escapeHtml(record.title)}</strong>
             <span>${escapeHtml(record.summary)}</span>
@@ -1635,10 +1635,6 @@ function recordTraceId(record) {
   return `#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}`;
 }
 
-function recordProgress(record) {
-  return Math.max(0, Math.min(100, Number(record.progress) || 0));
-}
-
 function sectionReadout(sectionRecords) {
   const archivedStatuses = new Set(["archived", "completed", "deprecated", "done", "filed"]);
   const openCount = sectionRecords.filter((record) => !archivedStatuses.has(record.status.toLowerCase())).length;
@@ -1655,6 +1651,13 @@ function renderSectionReadout(items) {
   return `<dl class="section-page-readout">
     ${items.map((item) => `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>`).join("")}
   </dl>`;
+}
+
+function groupStatusLine(sectionRecords) {
+  const liveStatuses = new Set(["active", "blocked", "in progress", "on hold", "paused", "planning", "playing"]);
+  const liveCount = sectionRecords.filter((record) => liveStatuses.has(record.status.toLowerCase())).length;
+
+  return `${liveCount} live ${liveCount === 1 ? "file" : "files"} / ${sectionRecords.length} indexed`;
 }
 
 const setupGroupRegistry = [
