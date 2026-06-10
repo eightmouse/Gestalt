@@ -398,6 +398,10 @@ function openRecord(recordId, contentKey = "overview") {
 }
 
 function openSection(sectionId) {
+  if (state.activeSection === sectionId) {
+    return;
+  }
+
   state.headlineAnimating = state.activeSection !== sectionId;
   state.activeSection = sectionId;
   state.panelOpen = false;
@@ -1338,10 +1342,11 @@ function renderRecordContent(record, activeContent) {
 function sidebar() {
   const metrics = archiveMetrics();
   const activeConfig = sections.find((section) => section.id === state.activeSection) || sections[0];
+  const activeSectionIndex = Math.max(0, sections.findIndex((section) => section.id === state.activeSection));
   const groups = sections
     .map(
       (section) => `<div class="nav-group">
-        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" data-open-section="${section.id}">
+        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" ${state.activeSection === section.id ? `aria-current="page"` : ""} data-open-section="${section.id}">
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
           <span class="nav-label">
             <strong>${section.code}</strong>
@@ -1357,7 +1362,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.27.7</span>
+        <span>v1.27.8</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1371,7 +1376,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.27.7</span>
+        <span class="version-label">v1.27.8</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1379,7 +1384,7 @@ function sidebar() {
 
     <nav aria-label="Archive navigation">
       <p class="sidebar-label">// ARCHIVE NAVIGATION</p>
-      <div class="nav-stack">${groups}</div>
+      <div class="nav-stack nav-stack--sidebar" style="--active-nav-index: ${activeSectionIndex}">${groups}</div>
     </nav>
 
     <div class="system-status">
@@ -1391,7 +1396,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.27.7</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.27.8</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1405,7 +1410,7 @@ function archiveNavigationMenu() {
   const groups = sections
     .map(
       (section) => `<div class="nav-group">
-        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" data-open-section="${section.id}">
+        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" ${state.activeSection === section.id ? `aria-current="page"` : ""} data-open-section="${section.id}">
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
           <span class="nav-label">
             <strong>${section.code}</strong>
@@ -1421,7 +1426,7 @@ function archiveNavigationMenu() {
     .filter((section) => section.id === "archive")
     .map(
       (section) => `<div class="nav-group">
-        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" data-open-section="${section.id}">
+        <button class="nav-trigger ${state.activeSection === section.id ? "is-active" : ""}" type="button" ${state.activeSection === section.id ? `aria-current="page"` : ""} data-open-section="${section.id}">
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
           <span class="nav-label">
             <strong>${section.code}</strong>

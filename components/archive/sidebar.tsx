@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { formatDate, formatReadableDate, type ArchiveMetrics } from "@/components/archive/record-utils";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
@@ -39,12 +40,14 @@ export function Sidebar({
   onToggleNav
 }: SidebarProps) {
   const activeConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
+  const activeSectionIndex = Math.max(0, sections.findIndex((section) => section.id === activeSection));
+  const navStackStyle = { "--active-nav-index": activeSectionIndex } as CSSProperties;
 
   return (
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.27.7</span>
+          <span>v1.27.8</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -68,7 +71,7 @@ export function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.27.7</span>
+          <span className="version-label">v1.27.8</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -76,13 +79,18 @@ export function Sidebar({
 
       <nav aria-label="Archive navigation">
         <p className="sidebar-label">// ARCHIVE NAVIGATION</p>
-        <div className="nav-stack">
+        <div className="nav-stack nav-stack--sidebar" style={navStackStyle}>
           {sections.map((section) => (
             <div className="nav-group" key={section.id}>
               <button
                 type="button"
                 className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
-                onClick={() => onOpenSection(section.id)}
+                aria-current={activeSection === section.id ? "page" : undefined}
+                onClick={() => {
+                  if (activeSection !== section.id) {
+                    onOpenSection(section.id);
+                  }
+                }}
               >
                 <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
                 <span className="nav-label">
@@ -126,7 +134,7 @@ export function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.27.7</dd>
+            <dd>GESTALT OS v1.27.8</dd>
           </div>
         </dl>
       </div>
@@ -164,7 +172,12 @@ export function ArchiveNavigationMenu({
       <button
         type="button"
         className={activeSection === section.id ? "nav-trigger is-active" : "nav-trigger"}
-        onClick={() => onOpenSection(section.id)}
+        aria-current={activeSection === section.id ? "page" : undefined}
+        onClick={() => {
+          if (activeSection !== section.id) {
+            onOpenSection(section.id);
+          }
+        }}
       >
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <span className="nav-label">
