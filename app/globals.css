@@ -1572,6 +1572,40 @@ button:focus-visible {
   letter-spacing: 0.08em;
 }
 
+.section-page-readout {
+  margin: 9px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 16px;
+  color: var(--muted);
+}
+
+.section-page-readout div {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.section-page-readout dt,
+.section-page-readout dd {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.section-page-readout dt {
+  color: var(--muted-2);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+
+.section-page-readout dd {
+  color: var(--text);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
 .section-record-grid {
   min-height: 0;
   display: grid;

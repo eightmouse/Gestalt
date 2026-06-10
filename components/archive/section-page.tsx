@@ -29,9 +29,10 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
   const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
+  const readout = sectionReadout(sortedRecords);
 
   if (section.id === "setup") {
-    return <SetupBay countLabel={countLabel} onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
+    return <SetupBay countLabel={countLabel} onOpenRecord={onOpenRecord} readout={readout} records={sortedRecords} section={section} />;
   }
 
   if (splitSection) {
@@ -42,6 +43,7 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
           <div>
             <p>{section.code}</p>
             <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
+            <SectionReadout items={readout} />
           </div>
           <i>{countLabel}</i>
         </header>
@@ -76,6 +78,7 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
         <div>
           <p>{section.code}</p>
           <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
+          <SectionReadout items={readout} />
         </div>
         <i>{countLabel}</i>
       </header>
@@ -110,6 +113,31 @@ function recordStateKey(status: string): string {
   return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
+function SectionReadout({ items }: { items: Array<{ label: string; value: string }> }) {
+  return (
+    <dl className="section-page-readout">
+      {items.map((item) => (
+        <div key={item.label}>
+          <dt>{item.label}</dt>
+          <dd>{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function sectionReadout(records: RecordEntry[]): Array<{ label: string; value: string }> {
+  const archivedStatuses = new Set(["archived", "completed", "deprecated", "done", "filed"]);
+  const openCount = records.filter((record) => !archivedStatuses.has(record.status.toLowerCase())).length;
+  const filedCount = records.length - openCount;
+
+  return [
+    { label: "OPEN", value: String(openCount).padStart(2, "0") },
+    { label: "FILED", value: String(filedCount).padStart(2, "0") },
+    { label: "LAST", value: records[0] ? formatReadableDate(records[0].updated) : "-- / -- / ----" }
+  ];
+}
+
 function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
   if (section === "projects") {
     const activeStatuses = new Set(["active", "in progress", "planning", "blocked"]);
@@ -133,11 +161,13 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
 function SetupBay({
   countLabel,
   onOpenRecord,
+  readout,
   records,
   section
 }: {
   countLabel: string;
   onOpenRecord: (record: RecordEntry) => void;
+  readout: Array<{ label: string; value: string }>;
   records: RecordEntry[];
   section: ArchiveSectionConfig;
 }) {
@@ -153,6 +183,7 @@ function SetupBay({
         <div>
           <p>{section.code}</p>
           <h2>Setup Manifest</h2>
+          <SectionReadout items={readout} />
         </div>
         <i>{countLabel}</i>
       </header>

@@ -1343,7 +1343,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.26.50</span>
+        <span>v1.26.51</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1357,7 +1357,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.26.50</span>
+        <span class="version-label">v1.26.51</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1377,7 +1377,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.50</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.26.51</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1568,9 +1568,10 @@ function sectionPage(sectionId) {
   const sectionRecords = recordsFor(sectionId).sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sectionRecords.length} ${sectionRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(sectionId, sectionRecords);
+  const readout = sectionReadout(sectionRecords);
 
   if (sectionId === "setup") {
-    return renderSetupBay(section, sectionRecords, countLabel);
+    return renderSetupBay(section, sectionRecords, countLabel, readout);
   }
 
   if (splitSection) {
@@ -1580,6 +1581,7 @@ function sectionPage(sectionId) {
         <div>
           <p>${escapeHtml(section.code)}</p>
             <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
+            ${renderSectionReadout(readout)}
         </div>
         <i>${countLabel}</i>
       </header>
@@ -1602,6 +1604,7 @@ function sectionPage(sectionId) {
       <div>
         <p>${escapeHtml(section.code)}</p>
           <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
+          ${renderSectionReadout(readout)}
       </div>
       <i>${countLabel}</i>
     </header>
@@ -1628,6 +1631,24 @@ function recordStateKey(status) {
   return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
 }
 
+function sectionReadout(sectionRecords) {
+  const archivedStatuses = new Set(["archived", "completed", "deprecated", "done", "filed"]);
+  const openCount = sectionRecords.filter((record) => !archivedStatuses.has(record.status.toLowerCase())).length;
+  const filedCount = sectionRecords.length - openCount;
+
+  return [
+    { label: "OPEN", value: String(openCount).padStart(2, "0") },
+    { label: "FILED", value: String(filedCount).padStart(2, "0") },
+    { label: "LAST", value: sectionRecords[0] ? readableDate(sectionRecords[0].updated) : "-- / -- / ----" }
+  ];
+}
+
+function renderSectionReadout(items) {
+  return `<dl class="section-page-readout">
+    ${items.map((item) => `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>`).join("")}
+  </dl>`;
+}
+
 const setupGroupRegistry = [
   { id: "systems", title: "SYSTEMS", path: "/setup/systems", detail: "Operating systems, machines, rigs" },
   { id: "tools", title: "TOOLS", path: "/setup/tools", detail: "Apps, utilities, workflows" },
@@ -1635,7 +1656,7 @@ const setupGroupRegistry = [
   { id: "notes", title: "NOTES", path: "/setup/notes", detail: "Loose setup notes and pending files" }
 ];
 
-function renderSetupBay(section, sectionRecords, countLabel) {
+function renderSetupBay(section, sectionRecords, countLabel, readout) {
   const groups = setupGroupRegistry.map((group) => ({
     ...group,
     records: sectionRecords.filter((record) => setupGroupFor(record) === group.id)
@@ -1647,6 +1668,7 @@ function renderSetupBay(section, sectionRecords, countLabel) {
       <div>
         <p>${escapeHtml(section.code)}</p>
         <h2>Setup Manifest</h2>
+        ${renderSectionReadout(readout)}
       </div>
       <i>${countLabel}</i>
     </header>
