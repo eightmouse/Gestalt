@@ -2348,7 +2348,10 @@ button:focus-visible {
   grid-template-columns: 28px 1fr auto;
   min-block-size: clamp(32px, 4.15vh, 40px);
   padding-block: 3px;
-  background: linear-gradient(180deg, transparent, var(--dashboard-edge), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
+  background:
+    linear-gradient(180deg, transparent, var(--dashboard-edge), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat,
+    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.22), transparent 64%) -38% 100% / 30% 5px no-repeat,
+    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.48), transparent) -38% 100% / 34% 1px no-repeat;
   box-shadow: none;
   animation: dashboard-project-line 8.6s ease-in-out infinite;
 }
@@ -2391,7 +2394,10 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list button:hover {
-  background: linear-gradient(180deg, transparent, var(--dashboard-signal), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
+  background:
+    linear-gradient(180deg, transparent, var(--dashboard-signal), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat,
+    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.26), transparent 64%) -38% 100% / 30% 5px no-repeat,
+    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.54), transparent) -38% 100% / 34% 1px no-repeat;
   box-shadow: none;
 }
 
@@ -2523,11 +2529,10 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset-inline-start: -1px;
-  inset-block-start: 0;
+  inset-block: 0;
   inline-size: 1px;
-  block-size: 18px;
   opacity: 0;
-  background: rgba(236, 230, 211, 0.72);
+  background: linear-gradient(180deg, transparent, rgba(236, 230, 211, 0.78), transparent) 0 -36px / 100% 36px no-repeat;
   box-shadow: 0 0 10px rgba(217, 213, 193, 0.24);
   animation: dashboard-log-tick 9.2s ease-in-out infinite;
 }
@@ -2582,13 +2587,16 @@ button:focus-visible {
 .activity-feed > li > span::before {
   content: "";
   position: absolute;
-  inset-inline-start: -9px;
-  inset-block-start: 6px;
-  inline-size: 3px;
-  block-size: 3px;
-  opacity: 0.28;
-  background: currentColor;
-  box-shadow: 0 0 6px rgba(217, 213, 193, 0.16);
+  inset-inline-start: -14px;
+  inset-block-start: 7px;
+  inline-size: 9px;
+  block-size: 1px;
+  opacity: 0.34;
+  background: linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.7));
+  box-shadow:
+    0 -3px 0 rgba(217, 213, 193, 0.09),
+    0 3px 0 rgba(217, 213, 193, 0.07),
+    0 0 8px rgba(217, 213, 193, 0.18);
   animation: dashboard-activity-pip 6.8s steps(2, end) infinite;
 }
 
@@ -2818,12 +2826,24 @@ button:focus-visible {
 }
 
 .weather-temp {
+  position: relative;
   grid-area: temp;
   color: var(--text-strong);
   font-family: var(--sans);
   font-size: clamp(24px, 2.8vw, 34px);
   font-weight: 300;
   line-height: 0.95;
+}
+
+.weather-temp::after {
+  content: attr(data-temp);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  color: rgba(236, 230, 211, 0.72);
+  pointer-events: none;
+  transform: translateX(0);
+  animation: weather-temp-glitch 11s steps(2, end) infinite;
 }
 
 .weather-condition {
@@ -3129,7 +3149,8 @@ button:focus-visible {
 .archive-shell.has-record .active-projects-panel .record-list button,
 .archive-shell.has-record .game-cover-signal,
 .archive-shell.has-record .latest-log::before,
-.archive-shell.has-record .activity-feed > li > span::before {
+.archive-shell.has-record .activity-feed > li > span::before,
+.archive-shell.has-record .weather-temp::after {
   animation-play-state: paused;
 }
 
@@ -6376,20 +6397,17 @@ input.studio-title-edit {
 
 @keyframes dashboard-project-line {
   0%,
+  68%,
   100% {
-    border-block-end-color: rgba(217, 213, 193, 0.075);
+    background-position: 31px 50%, -38% 100%, -38% 100%;
   }
 
-  46% {
-    border-block-end-color: rgba(217, 213, 193, 0.13);
+  79% {
+    background-position: 31px 50%, 48% 100%, 48% 100%;
   }
 
-  51% {
-    border-block-end-color: rgba(217, 213, 193, 0.19);
-  }
-
-  57% {
-    border-block-end-color: rgba(217, 213, 193, 0.085);
+  91% {
+    background-position: 31px 50%, 138% 100%, 138% 100%;
   }
 }
 
@@ -6417,36 +6435,68 @@ input.studio-title-edit {
 
 @keyframes dashboard-log-tick {
   0%,
-  74%,
+  68%,
   100% {
     opacity: 0;
-    transform: translateY(0);
+    background-position: 0 -36px;
   }
 
-  78% {
-    opacity: 0.72;
-    transform: translateY(12px);
+  74% {
+    opacity: 0.68;
+    background-position: 0 12%;
   }
 
-  85% {
+  90% {
     opacity: 0;
-    transform: translateY(42px);
+    background-position: 0 calc(100% + 36px);
   }
 }
 
 @keyframes dashboard-activity-pip {
   0%,
-  72%,
+  66%,
   100% {
-    opacity: 0.24;
+    opacity: 0.3;
+    transform: translateX(0);
+  }
+
+  72% {
+    opacity: 0.88;
+    transform: translateX(2px);
   }
 
   78% {
-    opacity: 0.72;
+    opacity: 0.42;
+    transform: translateX(0);
+  }
+}
+
+@keyframes weather-temp-glitch {
+  0%,
+  81%,
+  100% {
+    opacity: 0;
+    transform: translateX(0);
   }
 
-  82% {
-    opacity: 0.34;
+  83% {
+    opacity: 0.52;
+    transform: translateX(2px);
+  }
+
+  84% {
+    opacity: 0;
+    transform: translateX(-1px);
+  }
+
+  86% {
+    opacity: 0.38;
+    transform: translateX(-2px);
+  }
+
+  87% {
+    opacity: 0;
+    transform: translateX(0);
   }
 }
 
@@ -7893,7 +7943,8 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed > li > span::before {
+  .activity-feed > li > span::before,
+  .weather-temp::after {
     display: none;
   }
 }
@@ -7909,7 +7960,8 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed > li > span::before {
-    opacity: 0.24 !important;
+  .activity-feed > li > span::before,
+  .weather-temp::after {
+    opacity: 0 !important;
   }
 }

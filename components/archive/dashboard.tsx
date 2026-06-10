@@ -336,7 +336,7 @@ function WeatherPanel() {
   return (
     <div className="weather-readout">
       <div className="weather-primary">
-        <span className="weather-temp">{weather.temp}</span>
+        <span className="weather-temp" data-temp={weather.temp}>{weather.temp}</span>
         <button
           aria-label={weather.loading ? "Reading sky signal" : "Refresh sky"}
           className={weather.loading ? "weather-action is-loading" : "weather-action"}
