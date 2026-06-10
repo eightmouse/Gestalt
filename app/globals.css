@@ -2344,36 +2344,34 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list button {
+  position: relative;
+  overflow: hidden;
   counter-increment: dashboard-record;
   grid-template-columns: 28px 1fr auto;
   min-block-size: clamp(32px, 4.15vh, 40px);
   padding-block: 3px;
-  background:
-    linear-gradient(180deg, transparent, var(--dashboard-edge), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat,
-    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.16), transparent 68%) -46% 100% / 42% 6px no-repeat,
-    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.46), transparent) -46% 100% / 42% 1px no-repeat;
+  background: linear-gradient(180deg, transparent, var(--dashboard-edge), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
   box-shadow: none;
-  animation: dashboard-project-line 14.4s linear infinite;
 }
 
 .active-projects-panel .record-list button:nth-child(2) {
-  animation-duration: 16.2s;
-  animation-delay: -4.6s;
+  --project-line-duration: 16.2s;
+  --project-line-delay: -4.6s;
 }
 
 .active-projects-panel .record-list button:nth-child(3) {
-  animation-duration: 12.8s;
-  animation-delay: -8.3s;
+  --project-line-duration: 12.8s;
+  --project-line-delay: -8.3s;
 }
 
 .active-projects-panel .record-list button:nth-child(4) {
-  animation-duration: 18.1s;
-  animation-delay: -2.7s;
+  --project-line-duration: 18.1s;
+  --project-line-delay: -2.7s;
 }
 
 .active-projects-panel .record-list button:nth-child(5) {
-  animation-duration: 15.3s;
-  animation-delay: -10.4s;
+  --project-line-duration: 15.3s;
+  --project-line-delay: -10.4s;
 }
 
 .active-projects-panel .record-list button:nth-child(n + 4) {
@@ -2387,6 +2385,25 @@ button:focus-visible {
   letter-spacing: 0.08em;
 }
 
+.active-projects-panel .record-list button::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 31px;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  block-size: 6px;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.18), transparent 68%) 50% 100% / 100% 6px no-repeat,
+    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.48), transparent) 50% 100% / 100% 1px no-repeat;
+  filter: blur(0.1px);
+  transform: translateX(-62%) scaleX(0.46);
+  transform-origin: left center;
+  animation: dashboard-project-line var(--project-line-duration, 14.4s) linear infinite;
+  animation-delay: var(--project-line-delay, 0s);
+}
+
 .active-projects-panel .record-list small,
 .active-projects-panel .record-list i {
   margin-block-start: 2px;
@@ -2398,11 +2415,14 @@ button:focus-visible {
 }
 
 .active-projects-panel .record-list button:hover {
-  background:
-    linear-gradient(180deg, transparent, var(--dashboard-signal), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat,
-    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.2), transparent 68%) -46% 100% / 42% 6px no-repeat,
-    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.52), transparent) -46% 100% / 42% 1px no-repeat;
+  background: linear-gradient(180deg, transparent, var(--dashboard-signal), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
   box-shadow: none;
+}
+
+.active-projects-panel .record-list button:hover::after {
+  background:
+    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.22), transparent 68%) 50% 100% / 100% 6px no-repeat,
+    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.54), transparent) 50% 100% / 100% 1px no-repeat;
 }
 
 .record-list strong,
@@ -2533,12 +2553,12 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset-inline-start: -1px;
-  inset-block-start: -42px;
+  inset-block-start: -26px;
   inline-size: 1px;
-  block-size: 42px;
+  block-size: 26px;
   opacity: 0;
   background: linear-gradient(180deg, transparent, rgba(236, 230, 211, 0.78), transparent);
-  box-shadow: 0 0 10px rgba(217, 213, 193, 0.24);
+  box-shadow: 0 0 7px rgba(217, 213, 193, 0.2);
   will-change: inset-block-start, opacity;
   animation: dashboard-log-tick 8.8s linear infinite;
 }
@@ -2594,13 +2614,37 @@ button:focus-visible {
 .activity-feed > li > span::before {
   content: "";
   position: absolute;
-  inset-inline-start: -16px;
-  inset-block-start: 7px;
-  inline-size: 8px;
-  block-size: 1px;
-  opacity: 0.26;
-  background: linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.72));
-  box-shadow: 0 0 7px rgba(217, 213, 193, 0.16);
+  inset-inline-start: -12px;
+  inset-block-start: 5px;
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 999px;
+  opacity: 0.34;
+  background: rgba(217, 213, 193, 0.72);
+  box-shadow:
+    0 0 7px rgba(217, 213, 193, 0.26),
+    0 0 1px rgba(236, 230, 211, 0.8);
+  animation: dashboard-activity-dot 7.6s ease-in-out infinite;
+}
+
+.activity-feed li:nth-child(2) > span::before {
+  animation-duration: 9.1s;
+  animation-delay: -2.8s;
+}
+
+.activity-feed li:nth-child(3) > span::before {
+  animation-duration: 6.9s;
+  animation-delay: -4.7s;
+}
+
+.activity-feed li:nth-child(4) > span::before {
+  animation-duration: 10.3s;
+  animation-delay: -1.6s;
+}
+
+.activity-feed li:nth-child(5) > span::before {
+  animation-duration: 8.4s;
+  animation-delay: -6.1s;
 }
 
 .activity-feed button {
@@ -2615,42 +2659,6 @@ button:focus-visible {
   gap: 2px;
   line-height: 1.28;
   text-align: left;
-}
-
-.activity-feed button::after {
-  content: "";
-  position: absolute;
-  inset-inline-start: 0;
-  inset-block-end: 1px;
-  inline-size: 48%;
-  block-size: 1px;
-  opacity: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.58), transparent);
-  box-shadow: 0 0 9px rgba(217, 213, 193, 0.22);
-  transform: translateX(-120%) scaleX(0.62);
-  transform-origin: left center;
-  animation: dashboard-activity-trace 8.9s linear infinite;
-}
-
-.activity-feed li:nth-child(2) button::after {
-  animation-duration: 10.4s;
-  animation-delay: -3.6s;
-}
-
-.activity-feed li:nth-child(3) button::after {
-  animation-duration: 8.2s;
-  animation-delay: -5.2s;
-}
-
-.activity-feed li:nth-child(4) button::after {
-  animation-duration: 11.7s;
-  animation-delay: -1.4s;
-}
-
-.activity-feed li:nth-child(5) button::after {
-  animation-duration: 9.6s;
-  animation-delay: -7.1s;
 }
 
 .activity-feed button:hover {
@@ -3173,10 +3181,10 @@ button:focus-visible {
   opacity: 0.58;
 }
 
-.archive-shell.has-record .active-projects-panel .record-list button,
+.archive-shell.has-record .active-projects-panel .record-list button::after,
 .archive-shell.has-record .game-cover-signal,
 .archive-shell.has-record .latest-log::before,
-.archive-shell.has-record .activity-feed button::after,
+.archive-shell.has-record .activity-feed > li > span::before,
 .archive-shell.has-record .weather-temp::after {
   animation-play-state: paused;
 }
@@ -6424,17 +6432,28 @@ input.studio-title-edit {
 
 @keyframes dashboard-project-line {
   0%,
-  66% {
-    background-position: 31px 50%, -46% 100%, -46% 100%;
+  62% {
+    opacity: 0;
+    transform: translateX(-62%) scaleX(0.46);
   }
 
-  84% {
-    background-position: 31px 50%, 58% 100%, 58% 100%;
+  68% {
+    opacity: 0.34;
   }
 
-  96%,
+  83% {
+    opacity: 0.58;
+    transform: translateX(64%) scaleX(0.92);
+  }
+
+  91% {
+    opacity: 0;
+    transform: translateX(152%) scaleX(0.54);
+  }
+
   100% {
-    background-position: 31px 50%, 146% 100%, 146% 100%;
+    opacity: 0;
+    transform: translateX(152%) scaleX(0.54);
   }
 }
 
@@ -6464,7 +6483,7 @@ input.studio-title-edit {
   0%,
   52% {
     opacity: 0;
-    inset-block-start: -42px;
+    inset-block-start: -26px;
   }
 
   60% {
@@ -6478,31 +6497,32 @@ input.studio-title-edit {
   96%,
   100% {
     opacity: 0;
-    inset-block-start: calc(100% + 42px);
+    inset-block-start: calc(100% + 26px);
   }
 }
 
-@keyframes dashboard-activity-trace {
+@keyframes dashboard-activity-dot {
   0%,
-  57%,
+  64%,
   100% {
-    opacity: 0;
-    transform: translateX(-120%) scaleX(0.62);
+    opacity: 0.3;
+    transform: scale(0.82);
+    box-shadow:
+      0 0 5px rgba(217, 213, 193, 0.18),
+      0 0 1px rgba(236, 230, 211, 0.72);
   }
 
-  68% {
-    opacity: 0.58;
-    transform: translateX(-8%) scaleX(1);
+  70% {
+    opacity: 0.9;
+    transform: scale(1);
+    box-shadow:
+      0 0 9px rgba(217, 213, 193, 0.38),
+      0 0 2px rgba(236, 230, 211, 0.9);
   }
 
-  82% {
+  77% {
     opacity: 0.42;
-    transform: translateX(96%) scaleX(0.92);
-  }
-
-  90% {
-    opacity: 0;
-    transform: translateX(150%) scaleX(0.72);
+    transform: scale(0.88);
   }
 }
 
@@ -7972,13 +7992,13 @@ input.studio-title-edit {
 }
 
 @media (max-width: 760px) {
-  .active-projects-panel .record-list button,
+  .active-projects-panel .record-list button::after,
   .game-cover-signal {
     animation: none;
   }
 
   .latest-log::before,
-  .activity-feed button::after,
+  .activity-feed > li > span::before,
   .weather-temp::after {
     display: none;
   }
@@ -7995,7 +8015,7 @@ input.studio-title-edit {
   }
 
   .latest-log::before,
-  .activity-feed button::after,
+  .activity-feed > li > span::before,
   .weather-temp::after {
     opacity: 0 !important;
   }
