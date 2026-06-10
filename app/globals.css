@@ -2389,17 +2389,20 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset-inline-start: 31px;
-  inset-inline-end: 0;
   inset-block-end: 0;
+  inline-size: clamp(132px, 42%, 270px);
   block-size: 6px;
   opacity: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.18), transparent 68%) 50% 100% / 100% 6px no-repeat,
-    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.48), transparent) 50% 100% / 100% 1px no-repeat;
-  filter: blur(0.1px);
-  transform: translateX(-62%) scaleX(0.46);
+    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.2), rgba(217, 213, 193, 0.08) 38%, transparent 72%) 50% 100% / 100% 6px no-repeat,
+    linear-gradient(90deg, transparent 0%, rgba(236, 230, 211, 0.08) 18%, rgba(236, 230, 211, 0.5) 50%, rgba(236, 230, 211, 0.08) 82%, transparent 100%) 50% 100% / 100% 1px no-repeat;
+  filter: blur(0.35px);
   transform-origin: left center;
+  transform: translateX(-135%) scaleX(0.48);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 20%, #000 80%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 20%, #000 80%, transparent 100%);
+  will-change: opacity, transform;
   animation: dashboard-project-line var(--project-line-duration, 14.4s) linear infinite;
   animation-delay: var(--project-line-delay, 0s);
 }
@@ -2421,8 +2424,8 @@ button:focus-visible {
 
 .active-projects-panel .record-list button:hover::after {
   background:
-    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.22), transparent 68%) 50% 100% / 100% 6px no-repeat,
-    linear-gradient(90deg, transparent, rgba(236, 230, 211, 0.54), transparent) 50% 100% / 100% 1px no-repeat;
+    radial-gradient(ellipse at center, rgba(217, 213, 193, 0.24), rgba(217, 213, 193, 0.09) 38%, transparent 72%) 50% 100% / 100% 6px no-repeat,
+    linear-gradient(90deg, transparent 0%, rgba(236, 230, 211, 0.1) 18%, rgba(236, 230, 211, 0.56) 50%, rgba(236, 230, 211, 0.1) 82%, transparent 100%) 50% 100% / 100% 1px no-repeat;
 }
 
 .record-list strong,
@@ -2547,18 +2550,19 @@ button:focus-visible {
   gap: 12px;
   padding-inline-start: 12px;
   border-inline-start: 1px solid var(--dashboard-signal);
+  overflow: hidden;
 }
 
 .latest-log::before {
   content: "";
   position: absolute;
-  inset-inline-start: -1px;
-  inset-block-start: -26px;
+  inset-inline-start: 0;
+  inset-block-start: -36px;
   inline-size: 1px;
-  block-size: 26px;
+  block-size: 36px;
   opacity: 0;
   background: linear-gradient(180deg, transparent, rgba(236, 230, 211, 0.78), transparent);
-  box-shadow: 0 0 7px rgba(217, 213, 193, 0.2);
+  box-shadow: 0 0 9px rgba(217, 213, 193, 0.22);
   will-change: inset-block-start, opacity;
   animation: dashboard-log-tick 8.8s linear infinite;
 }
@@ -2614,16 +2618,17 @@ button:focus-visible {
 .activity-feed > li > span::before {
   content: "";
   position: absolute;
-  inset-inline-start: -12px;
-  inset-block-start: 5px;
-  inline-size: 5px;
-  block-size: 5px;
+  inset-inline-start: -15px;
+  inset-block-start: 4px;
+  inline-size: 7px;
+  block-size: 7px;
   border-radius: 999px;
-  opacity: 0.34;
-  background: rgba(217, 213, 193, 0.72);
+  opacity: 0.56;
+  background: rgba(236, 230, 211, 0.86);
   box-shadow:
-    0 0 7px rgba(217, 213, 193, 0.26),
-    0 0 1px rgba(236, 230, 211, 0.8);
+    0 0 9px rgba(236, 230, 211, 0.34),
+    0 0 18px rgba(217, 213, 193, 0.2),
+    0 0 1px rgba(236, 230, 211, 0.9);
   animation: dashboard-activity-dot 7.6s ease-in-out infinite;
 }
 
@@ -6434,7 +6439,7 @@ input.studio-title-edit {
   0%,
   62% {
     opacity: 0;
-    transform: translateX(-62%) scaleX(0.46);
+    transform: translateX(-135%) scaleX(0.48);
   }
 
   68% {
@@ -6442,18 +6447,18 @@ input.studio-title-edit {
   }
 
   83% {
-    opacity: 0.58;
-    transform: translateX(64%) scaleX(0.92);
+    opacity: 0.56;
+    transform: translateX(245%) scaleX(0.92);
   }
 
   91% {
     opacity: 0;
-    transform: translateX(152%) scaleX(0.54);
+    transform: translateX(330%) scaleX(0.54);
   }
 
   100% {
     opacity: 0;
-    transform: translateX(152%) scaleX(0.54);
+    transform: translateX(330%) scaleX(0.54);
   }
 }
 
@@ -6483,7 +6488,7 @@ input.studio-title-edit {
   0%,
   52% {
     opacity: 0;
-    inset-block-start: -26px;
+    inset-block-start: -36px;
   }
 
   60% {
@@ -6497,7 +6502,7 @@ input.studio-title-edit {
   96%,
   100% {
     opacity: 0;
-    inset-block-start: calc(100% + 26px);
+    inset-block-start: 100%;
   }
 }
 
@@ -6505,24 +6510,26 @@ input.studio-title-edit {
   0%,
   64%,
   100% {
-    opacity: 0.3;
-    transform: scale(0.82);
+    opacity: 0.5;
+    transform: scale(0.86);
     box-shadow:
-      0 0 5px rgba(217, 213, 193, 0.18),
+      0 0 7px rgba(236, 230, 211, 0.24),
+      0 0 14px rgba(217, 213, 193, 0.14),
       0 0 1px rgba(236, 230, 211, 0.72);
   }
 
   70% {
-    opacity: 0.9;
-    transform: scale(1);
+    opacity: 0.98;
+    transform: scale(1.08);
     box-shadow:
-      0 0 9px rgba(217, 213, 193, 0.38),
+      0 0 11px rgba(236, 230, 211, 0.48),
+      0 0 22px rgba(217, 213, 193, 0.28),
       0 0 2px rgba(236, 230, 211, 0.9);
   }
 
   77% {
-    opacity: 0.42;
-    transform: scale(0.88);
+    opacity: 0.62;
+    transform: scale(0.92);
   }
 }
 
