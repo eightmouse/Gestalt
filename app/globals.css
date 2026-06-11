@@ -17,6 +17,7 @@
   --mono: "Bahnschrift Light", "Bahnschrift", "DIN Alternate", "Cascadia Mono", "IBM Plex Mono", "Consolas", monospace;
   --sans: "Bahnschrift Light Condensed", "Bahnschrift SemiCondensed", "Bahnschrift", "Agency FB", "Segoe UI", Arial, sans-serif;
   --archive-image: url("/images/archive-banner.png");
+  --archive-image-static: url("../public/images/archive-banner.png");
 }
 
 * {
@@ -51,7 +52,9 @@ body::before {
   z-index: 0;
   pointer-events: none;
   opacity: 0.52;
-  background-image: var(--archive-image);
+  background-image:
+    var(--archive-image),
+    var(--archive-image-static);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
@@ -711,17 +714,18 @@ button:focus-visible {
 .nav-stack--sidebar::before {
   content: "";
   position: absolute;
-  inset-inline-start: 0;
-  inset-block-start: 0;
+  inset-inline-start: 1px;
+  inset-block-start: 3px;
   z-index: 3;
   inline-size: 2px;
-  block-size: var(--nav-row-size);
+  block-size: calc(var(--nav-row-size) - 6px);
   pointer-events: none;
-  background: linear-gradient(180deg, transparent, var(--accent) 18% 82%, transparent);
+  background: var(--accent);
+  border-radius: 999px;
   box-shadow:
-    0 0 9px rgba(217, 213, 193, 0.2),
-    0 0 1px rgba(236, 230, 211, 0.9);
-  opacity: 0.82;
+    0 0 8px rgba(217, 213, 193, 0.28),
+    0 0 1px rgba(236, 230, 211, 0.94);
+  opacity: 0.9;
   transform: translateY(calc(var(--active-nav-index, 0) * var(--nav-row-step)));
   transition:
     transform 260ms cubic-bezier(0.2, 0.8, 0.22, 1),
@@ -2795,23 +2799,23 @@ button:focus-visible {
 }
 
 .activity-feed li:nth-child(2) strong {
-  animation-duration: 9.1s;
-  animation-delay: -2.8s;
+  animation-duration: 14.2s;
+  animation-delay: -3.6s;
 }
 
 .activity-feed li:nth-child(3) strong {
-  animation-duration: 6.9s;
-  animation-delay: -4.7s;
+  animation-duration: 13.4s;
+  animation-delay: -6.2s;
 }
 
 .activity-feed li:nth-child(4) strong {
-  animation-duration: 10.3s;
-  animation-delay: -1.6s;
+  animation-duration: 15.6s;
+  animation-delay: -2.4s;
 }
 
 .activity-feed li:nth-child(5) strong {
-  animation-duration: 8.4s;
-  animation-delay: -6.1s;
+  animation-duration: 12.6s;
+  animation-delay: -7.1s;
 }
 
 .activity-feed button {
@@ -2844,7 +2848,7 @@ button:focus-visible {
   color: var(--text);
   font-size: 15px;
   font-weight: 400;
-  animation: dashboard-activity-title 7.6s ease-in-out infinite;
+  animation: dashboard-activity-title 12.8s ease-in-out infinite;
 }
 
 .activity-feed small {
@@ -6671,22 +6675,27 @@ input.studio-title-edit {
 
 @keyframes dashboard-activity-title {
   0%,
-  64%,
+  52%,
   100% {
     color: rgba(217, 213, 193, 0.88);
     text-shadow: 0 0 0 rgba(236, 230, 211, 0);
   }
 
+  62% {
+    color: rgba(236, 230, 211, 0.96);
+    text-shadow: 0 0 6px rgba(236, 230, 211, 0.28);
+  }
+
   70% {
     color: var(--text-strong);
     text-shadow:
-      0 0 7px rgba(236, 230, 211, 0.36),
-      0 0 18px rgba(217, 213, 193, 0.18);
+      0 0 10px rgba(236, 230, 211, 0.46),
+      0 0 22px rgba(217, 213, 193, 0.24);
   }
 
-  77% {
-    color: rgba(236, 230, 211, 0.92);
-    text-shadow: 0 0 5px rgba(236, 230, 211, 0.12);
+  82% {
+    color: rgba(236, 230, 211, 0.94);
+    text-shadow: 0 0 7px rgba(236, 230, 211, 0.18);
   }
 }
 

@@ -47,7 +47,7 @@ export function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.27.8</span>
+          <span>v1.27.9</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -71,7 +71,7 @@ export function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.27.8</span>
+          <span className="version-label">v1.27.9</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -134,7 +134,7 @@ export function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.27.8</dd>
+            <dd>GESTALT OS v1.27.9</dd>
           </div>
         </dl>
       </div>
