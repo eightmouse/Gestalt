@@ -100,7 +100,16 @@ for (const filename of filenames) {
     updated: data.updated || "2026-05-15",
     summary: data.summary || "No summary recorded.",
     banner: toStaticPath(data.banner),
+    dashboardImage: toStaticPath(data.dashboardImage),
     headerImage: toStaticPath(data.headerImage),
+    iconImage: toStaticPath(data.iconImage),
+    setupGroup: typeof data.setupGroup === "string"
+      ? data.setupGroup
+      : typeof data.setupKind === "string"
+        ? data.setupKind
+        : typeof data.category === "string"
+          ? data.category
+          : "",
     samples: toStaticPathList(data.samples),
     attachments: toStaticPathList(data.attachments),
     progress: Number(data.progress) || 0,

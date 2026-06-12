@@ -84,6 +84,7 @@ const studioDraftStorageKey = "gestalt-studio-drafts-v1";
 
 export function StudioClient({ records }: StudioClientProps) {
   const firstRecord = records[0];
+  const [studioRecords, setStudioRecords] = useState<RecordEntry[]>(records);
   const [selectedId, setSelectedId] = useState(firstRecord?.id ?? "__new");
   const [activeSection, setActiveSection] = useState<StudioSection>(firstRecord?.section === "system" || !firstRecord ? "projects" : firstRecord.section);
   const [mode, setMode] = useState<"section" | "edit">(firstRecord ? "edit" : "section");
@@ -103,12 +104,16 @@ export function StudioClient({ records }: StudioClientProps) {
   const formRef = useRef(form);
   const selectedIdRef = useRef(selectedId);
 
-  const sortedRecords = useMemo(() => [...records].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [records]);
+  const sortedRecords = useMemo(() => [...studioRecords].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [studioRecords]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
   const sectionRecords = groupedRecords[activeSection].slice().sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const contents = useMemo(() => getStudioContents(form.section, form.setupGroup), [form.section, form.setupGroup]);
   const activeRecord = useMemo(() => toRecordPreview(form, bodyDraftRef.current), [form]);
   const activeSectionConfig = studioSections.find((section) => section.id === activeSection) ?? studioSections[0];
+
+  useEffect(() => {
+    setStudioRecords(records);
+  }, [records]);
 
   useEffect(() => {
     if (!contents.some((item) => item.key === activeContent)) {
@@ -180,7 +185,7 @@ export function StudioClient({ records }: StudioClientProps) {
       return;
     }
 
-    const record = records.find((entry) => entry.id === id);
+    const record = studioRecords.find((entry) => entry.id === id);
 
     if (record) {
       const draft = draftsRef.current[studioRecordDraftKey(id)];
@@ -191,7 +196,7 @@ export function StudioClient({ records }: StudioClientProps) {
       setForm(next);
       setMessage(draft ? `Loaded unsaved draft for ${next.title}.` : `Loaded ${record.title}.`);
     }
-  }, [activeSection, records]);
+  }, [activeSection, studioRecords]);
 
   const newRecord = useCallback((section: StudioSection) => {
     setActiveSection(section);
@@ -243,13 +248,14 @@ export function StudioClient({ records }: StudioClientProps) {
       const pendingDrafts = Object.entries(draftsRef.current)
         .filter(([key, draft]) => key.startsWith("record:") && key !== studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current) && draft.form.originalId)
         .map(([key, draft]) => ({ key, draft }));
+      const originalRecordId = formRef.current.originalId || selectedIdRef.current;
       const data = await writeRecord(form, bodyDraftRef.current);
       const savedId = data.id;
       const previousDraftKey = studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current);
       const savedForm = { ...formRef.current, body: bodyDraftRef.current, id: savedId, originalId: savedId };
 
       if (pendingDrafts.length > 0) {
-        setMessage(`Saved current record. Applying ${pendingDrafts.length} pending draft${pendingDrafts.length === 1 ? "" : "s"} before publishing...`);
+        setMessage(`Saved current record. Applying ${pendingDrafts.length} pending draft${pendingDrafts.length === 1 ? "" : "s"} locally...`);
 
         for (const { draft } of pendingDrafts) {
           await writeRecord(draft.form, draft.body);
@@ -260,6 +266,15 @@ export function StudioClient({ records }: StudioClientProps) {
       selectedIdRef.current = savedId;
       setSelectedId(savedId);
       setForm(savedForm);
+      setStudioRecords((current) => {
+        let next = upsertStudioRecord(current, toRecordPreview(savedForm, bodyDraftRef.current), originalRecordId);
+
+        for (const { draft } of pendingDrafts) {
+          next = upsertStudioRecord(next, toRecordPreview(draft.form, draft.body), draft.form.originalId || draft.form.id);
+        }
+
+        return next;
+      });
       setDrafts((current) => {
         const next = { ...current };
         delete next[previousDraftKey];
@@ -272,8 +287,12 @@ export function StudioClient({ records }: StudioClientProps) {
         }
         return next;
       });
-      setMessage(`Saved ${data.path}. Publishing to GitHub...`);
-      await publishArchive("Saved and published to GitHub.");
+      setMessage(`Saved ${data.path}. Publish when you are ready.`);
+      setPublishState({
+        phase: "success",
+        title: "Record saved locally",
+        detail: "MDX and static archive data were refreshed. Publish Changes when you want GitHub Pages to update."
+      });
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Save failed.";
       setMessage(detail);
@@ -322,13 +341,18 @@ export function StudioClient({ records }: StudioClientProps) {
       setSelectedId("__new");
       setMode("section");
       setForm(next);
+      setStudioRecords((current) => current.filter((record) => record.id !== form.originalId));
       setDrafts((current) => {
         const updated = { ...current };
         delete updated[studioRecordDraftKey(form.originalId)];
         return updated;
       });
-      setMessage(`Deleted ${data.id}. Publishing removal to GitHub...`);
-      await publishArchive("Deleted and published to GitHub.");
+      setMessage(`Deleted ${data.id}. Publish when you are ready.`);
+      setPublishState({
+        phase: "success",
+        title: "Record deleted locally",
+        detail: "The record file and static archive data were refreshed. Publish Changes when you want GitHub Pages to update."
+      });
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Delete failed.";
       setMessage(detail);
@@ -375,6 +399,26 @@ export function StudioClient({ records }: StudioClientProps) {
       summary: publishData.summary,
       output: publishData.output
     });
+  };
+
+  const publishChanges = async () => {
+    setSaving(true);
+    setNotificationOpen(false);
+
+    try {
+      await publishArchive("Published to GitHub.");
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Publish failed.";
+      setMessage(detail);
+      setPublishState({
+        phase: "error",
+        title: "Publish failed",
+        detail
+      });
+      setNotificationOpen(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const chooseFiles = (target: MediaTarget) => {
@@ -494,7 +538,8 @@ export function StudioClient({ records }: StudioClientProps) {
             <p className="subtle">A quiet copy of the archive for editing records before saving them to MDX.</p>
           </div>
           <div className="studio-actions">
-            <button type="button" disabled={saving} onClick={save}>{saving ? "Publishing..." : "Save Record"}</button>
+            <button type="button" disabled={saving} onClick={save}>{saving ? "Working..." : "Save Record"}</button>
+            <button type="button" disabled={saving} onClick={publishChanges}>Publish Changes</button>
             <button
               className={`studio-notification-button ${publishState ? `is-${publishState.phase}` : ""}`}
               type="button"
@@ -563,7 +608,6 @@ export function StudioClient({ records }: StudioClientProps) {
                   form={form}
                   saving={saving}
                   onDelete={deleteRecord}
-                  onFilePick={chooseFiles}
                   onUpdate={update}
                 />
               </aside>
@@ -933,6 +977,18 @@ function StudioContent({
     );
   }
 
+  if (form.section === "setup") {
+    return (
+      <SetupOverviewEditor
+        form={form}
+        uploading={uploading}
+        onFileDrop={onFileDrop}
+        onFilePick={onFilePick}
+        onUpdate={onUpdate}
+      />
+    );
+  }
+
   return (
     <section className="studio-content-terminal">
       <div className="terminal-title">// OVERVIEW</div>
@@ -950,18 +1006,67 @@ function StudioContent({
   );
 }
 
+function SetupOverviewEditor({
+  form,
+  onFileDrop,
+  onFilePick,
+  onUpdate,
+  uploading
+}: {
+  form: StudioForm;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
+  onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
+  uploading: boolean;
+}) {
+  const setupGroup = normalizeSetupGroup(form.setupGroup);
+  const mediaTarget: Extract<MediaTarget, "headerImage" | "iconImage"> | null = setupGroup === "tools" ? "iconImage" : setupGroup === "peripherals" ? "headerImage" : null;
+  const mediaPath = mediaTarget === "iconImage" ? form.iconImage : mediaTarget === "headerImage" ? form.headerImage : "";
+  const mediaLabel = setupGroup === "tools" ? "Shortcut Icon" : setupGroup === "peripherals" ? "Peripheral Photo" : "";
+  const mediaDescription = setupGroup === "tools"
+    ? "Drop the app icon here. This is what appears in the Tools desktop grid."
+    : "Drop the main device photo here. This becomes the expandable peripheral thumbnail.";
+
+  return (
+    <section className="studio-content-terminal studio-setup-overview">
+      <div className="terminal-title">// SETUP OVERVIEW</div>
+      <label className="studio-textarea-field">
+        Summary
+        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+      </label>
+      {mediaTarget ? (
+        <div className="studio-setup-media-field">
+          <div className="studio-setup-media-head">
+            <span>{mediaLabel}</span>
+            {mediaPath ? <button type="button" onClick={() => onUpdate(mediaTarget, "")}>Clear</button> : null}
+          </div>
+          <DropZone
+            description={mediaDescription}
+            uploading={uploading}
+            onDrop={(files) => onFileDrop(files, mediaTarget)}
+            onPick={() => onFilePick(mediaTarget)}
+          />
+          {mediaPath ? (
+            <MediaPathList paths={[mediaPath]} onRemove={() => onUpdate(mediaTarget, "")} />
+          ) : null}
+        </div>
+      ) : (
+        <p className="studio-setup-note">Systems use Hardware for specs. Notes use the Notes page. No extra media is required here.</p>
+      )}
+    </section>
+  );
+}
+
 function Inspector({
   canDelete,
   form,
   onDelete,
-  onFilePick,
   saving,
   onUpdate
 }: {
   canDelete: boolean;
   form: StudioForm;
   onDelete: () => void;
-  onFilePick: (target: MediaTarget) => void;
   saving: boolean;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
@@ -1006,7 +1111,7 @@ function Inspector({
         </>
       ) : null}
       {form.section === "setup" ? (
-        <SetupInspectorControls form={form} onFilePick={onFilePick} onUpdate={onUpdate} />
+        <SetupInspectorControls form={form} onUpdate={onUpdate} />
       ) : null}
       <dl>
         <div><dt>Created</dt><dd>{form.started || "Unknown"}</dd></div>
@@ -1024,11 +1129,9 @@ function Inspector({
 
 function SetupInspectorControls({
   form,
-  onFilePick,
   onUpdate
 }: {
   form: StudioForm;
-  onFilePick: (target: MediaTarget) => void;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
   const setupGroup = normalizeSetupGroup(form.setupGroup);
@@ -1045,14 +1148,6 @@ function SetupInspectorControls({
         </select>
       </label>
       <p>{setupGroupHelp(setupGroup)}</p>
-      {setupGroup === "tools" ? (
-        <div className="studio-icon-picker">
-          <button type="button" onClick={() => onFilePick("iconImage")}>
-            {form.iconImage ? "Change shortcut icon" : "Add shortcut icon"}
-          </button>
-          <span>{form.iconImage ? form.iconImage.split("/").at(-1) : "No icon assigned"}</span>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -1581,6 +1676,12 @@ function groupRecords(records: RecordEntry[]): Record<StudioSection, RecordEntry
   });
 }
 
+function upsertStudioRecord(records: RecordEntry[], nextRecord: RecordEntry, previousId = ""): RecordEntry[] {
+  const filtered = records.filter((record) => record.id !== nextRecord.id && (!previousId || record.id !== previousId));
+
+  return [...filtered, nextRecord];
+}
+
 function readStudioDrafts(): StudioDraftMap {
   if (typeof window === "undefined") {
     return {};
@@ -1836,7 +1937,7 @@ function getStudioContents(section: StudioSection, setupGroup = ""): Array<{ key
   }
 
   if (section === "setup") {
-    if (normalizeSetupGroup(setupGroup) === "notes") {
+    if (normalizeSetupGroup(setupGroup) !== "systems") {
       return [
         { key: "overview", label: "Overview" },
         { key: "notes", label: "Notes" }

@@ -1763,7 +1763,7 @@ button:focus-visible {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
+  align-items: start;
   gap: 16px;
 }
 
@@ -2823,8 +2823,11 @@ button:focus-visible {
 }
 
 .current-game[data-state] .game-cover {
-  border-color: var(--dashboard-signal);
-  animation: dashboard-cover-neon 8.8s ease-in-out infinite;
+  border-color: rgba(236, 230, 211, 0.42);
+  box-shadow:
+    0 0 0 1px rgba(217, 213, 193, 0.075),
+    0 0 18px rgba(217, 213, 193, 0.1),
+    0 14px 24px rgba(0, 0, 0, 0.26);
 }
 
 .game-cover {
@@ -2845,14 +2848,16 @@ button:focus-visible {
 .game-cover::before {
   content: "";
   position: absolute;
-  inset: -2px;
+  inset: 7px;
   z-index: 2;
   pointer-events: none;
-  border: 1px solid rgba(236, 230, 211, 0.32);
-  box-shadow:
-    inset 0 0 16px rgba(236, 230, 211, 0.14),
-    0 0 18px rgba(217, 213, 193, 0.22);
-  opacity: 0.72;
+  border: 0;
+  opacity: 0.58;
+  filter: blur(5px);
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse at 50% 48%, rgba(236, 230, 211, 0.3), transparent 58%),
+    linear-gradient(135deg, transparent 16%, rgba(217, 213, 193, 0.16) 48%, transparent 78%);
   animation: dashboard-cover-signal 7.6s ease-in-out infinite;
 }
 
@@ -3698,8 +3703,6 @@ button:focus-visible {
   inset: 0;
   border: 1px solid rgba(255, 255, 255, 0.052);
   background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.1), rgba(217, 213, 193, 0.1)) 18px 18px / 62px 1px no-repeat,
-    linear-gradient(rgba(217, 213, 193, 0.1), rgba(217, 213, 193, 0.1)) 18px 18px / 1px 18px no-repeat,
     linear-gradient(90deg, rgba(217, 213, 193, 0.075), rgba(217, 213, 193, 0.075)) calc(100% - 80px) calc(100% - 20px) / 62px 1px no-repeat,
     linear-gradient(rgba(217, 213, 193, 0.075), rgba(217, 213, 193, 0.075)) calc(100% - 18px) calc(100% - 38px) / 1px 18px no-repeat;
 }
@@ -5991,10 +5994,6 @@ button:focus-visible {
   --section-split-record-gap: 10px;
 }
 
-.studio-section-copy.section-page--split .section-record-column {
-  min-block-size: calc(var(--section-split-list-height) + 76px);
-}
-
 .studio-section-header-actions {
   display: flex;
   align-items: center;
@@ -6329,6 +6328,52 @@ input.studio-title-edit {
 
 .studio-content-terminal .studio-textarea-field:first-of-type textarea {
   min-block-size: 116px;
+}
+
+.studio-setup-overview {
+  gap: 16px;
+}
+
+.studio-setup-overview .studio-textarea-field textarea {
+  min-block-size: 136px;
+}
+
+.studio-setup-media-field {
+  display: grid;
+  gap: 12px;
+}
+
+.studio-setup-media-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.studio-setup-media-head button {
+  min-block-size: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(217, 213, 193, 0.18);
+  background: rgba(255, 255, 255, 0.026);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.studio-setup-note {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(217, 213, 193, 0.12);
+  background: rgba(255, 255, 255, 0.014);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .studio-progress-edit {
@@ -7104,21 +7149,18 @@ input.studio-title-edit {
 @keyframes dashboard-cover-signal {
   0%,
   100% {
-    opacity: 0.58;
-    box-shadow:
-      inset 0 0 14px rgba(236, 230, 211, 0.1),
-      0 0 14px rgba(217, 213, 193, 0.16);
+    opacity: 0.42;
+    transform: scale(0.96);
   }
 
   46% {
-    opacity: 0.88;
-    box-shadow:
-      inset 0 0 22px rgba(236, 230, 211, 0.22),
-      0 0 24px rgba(217, 213, 193, 0.28);
+    opacity: 0.78;
+    transform: scale(1.03);
   }
 
   58% {
-    opacity: 0.62;
+    opacity: 0.5;
+    transform: scale(0.99);
   }
 }
 
