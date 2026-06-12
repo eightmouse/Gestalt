@@ -37,7 +37,7 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
 
   if (splitSection) {
     return (
-      <section className="section-page section-page--split" aria-label={`${section.code} records`}>
+      <section className={`section-page section-page--split section-page--${section.id}`} aria-label={`${section.code} records`}>
         <header className="section-page-header">
           <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
           <div>

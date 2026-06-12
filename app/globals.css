@@ -1763,6 +1763,12 @@ button:focus-visible {
   gap: 16px;
 }
 
+@media (min-width: 761px) {
+  .section-page--games .section-split-grid {
+    block-size: min(512px, calc(100vh - 340px));
+  }
+}
+
 .section-record-column {
   min-width: 0;
   min-height: 0;
