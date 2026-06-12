@@ -56,6 +56,10 @@ export function recordHeaderImage(record: RecordEntry): string {
   return typeof record.meta.headerImage === "string" ? record.meta.headerImage : "";
 }
 
+export function recordDashboardImage(record: RecordEntry): string {
+  return typeof record.meta.dashboardImage === "string" ? record.meta.dashboardImage : record.banner || "/images/archive-banner.png";
+}
+
 export function splitUpdateIndex(body: string): { mainBody: string; updates: string[] } {
   const lines = body.split(/\r?\n/);
   const startIndex = lines.findIndex((line) => line.trim() === "## Update Index");

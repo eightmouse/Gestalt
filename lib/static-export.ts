@@ -18,6 +18,7 @@ export async function writeStaticRecords(): Promise<void> {
       updated: record.updated,
       summary: record.summary,
       banner: toStaticPath(record.banner),
+      dashboardImage: toStaticPath(typeof meta.dashboardImage === "string" ? meta.dashboardImage : ""),
       headerImage: toStaticPath(typeof meta.headerImage === "string" ? meta.headerImage : ""),
       samples: toStaticPathList(meta.samples),
       attachments: toStaticPathList(meta.attachments),

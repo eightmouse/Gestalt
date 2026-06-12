@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
+import { recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
 
 type DashboardProps = {
@@ -156,7 +156,7 @@ function CurrentGame({ record }: { record: RecordEntry }) {
   return (
     <div className="current-game" data-state={dashboardRecordStateKey(record.status)}>
       <div className="game-cover">
-        <img src={record.banner || "/images/archive-banner.png"} alt="" decoding="async" />
+        <img src={recordDashboardImage(record)} alt="" decoding="async" fetchPriority="low" />
       </div>
       <div>
         <strong>{record.title}</strong>
