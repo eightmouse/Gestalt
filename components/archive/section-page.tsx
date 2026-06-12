@@ -235,6 +235,7 @@ function SetupBay({
 function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
   const group = setupGroupFor(record);
   const image = setupTileImage(record);
+  const imageLoading = group === "tools" || group === "peripherals" ? "eager" : "lazy";
   const profile = setupProfile(record);
   const externalUrl = safeExternalUrl(record.meta.externalUrl);
   const action = group === "tools" ? externalUrl ? "launch" : "idle" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
@@ -242,7 +243,7 @@ function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntr
   const content = (
     <>
       <span className={image ? "setup-tile-icon has-image" : "setup-tile-icon"} aria-hidden="true">
-        {image ? <img src={image} alt="" decoding="async" loading="lazy" /> : null}
+        {image ? <img src={image} alt="" decoding="async" loading={imageLoading} /> : null}
         <span className="setup-tile-glyph" />
       </span>
       <span className="setup-tile-body">
