@@ -18,6 +18,8 @@ type StudioForm = {
   summary: string;
   banner: string;
   headerImage: string;
+  iconImage: string;
+  setupGroup: string;
   samples: string;
   attachments: string;
   progress: number;
@@ -38,7 +40,7 @@ type StudioClientProps = {
   records: RecordEntry[];
 };
 
-type MediaTarget = "body" | "banner" | "headerImage" | "samples" | "attachments";
+type MediaTarget = "body" | "banner" | "headerImage" | "iconImage" | "samples" | "attachments";
 type StudioDraft = {
   body: string;
   form: StudioForm;
@@ -104,7 +106,7 @@ export function StudioClient({ records }: StudioClientProps) {
   const sortedRecords = useMemo(() => [...records].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [records]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
   const sectionRecords = groupedRecords[activeSection].slice().sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const contents = useMemo(() => getStudioContents(form.section), [form.section]);
+  const contents = useMemo(() => getStudioContents(form.section, form.setupGroup), [form.section, form.setupGroup]);
   const activeRecord = useMemo(() => toRecordPreview(form, bodyDraftRef.current), [form]);
   const activeSectionConfig = studioSections.find((section) => section.id === activeSection) ?? studioSections[0];
 
@@ -429,6 +431,8 @@ export function StudioClient({ records }: StudioClientProps) {
         update("banner", firstPath);
       } else if (target === "headerImage") {
         update("headerImage", firstPath);
+      } else if (target === "iconImage") {
+        update("iconImage", firstPath);
       } else if (target === "samples" || target === "attachments") {
         const current = mediaListFromText(form[target]);
         const next = [...current, ...imported.map((item) => item.path)];
@@ -559,6 +563,7 @@ export function StudioClient({ records }: StudioClientProps) {
                   form={form}
                   saving={saving}
                   onDelete={deleteRecord}
+                  onFilePick={chooseFiles}
                   onUpdate={update}
                 />
               </aside>
@@ -707,7 +712,7 @@ function StudioSectionPage({
   const splitSection = splitStudioSectionRecords(section.id, records);
 
   return (
-    <section className={splitSection ? "section-page section-page--split studio-section-copy" : "section-page studio-section-copy"} aria-label={`${section.code} studio records`}>
+    <section className={splitSection ? `section-page section-page--split section-page--${section.id} studio-section-copy` : "section-page studio-section-copy"} aria-label={`${section.code} studio records`}>
       <header className="section-page-header">
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>
@@ -892,10 +897,12 @@ function StudioContent({
   }
 
   if (activeContent === "hardware") {
+    const detailLabel = setupDetailsLabel(form.setupGroup);
+
     return (
       <section className="studio-content-terminal">
-        <div className="terminal-title">// HARDWARE</div>
-        <BufferedBodyEditor label="Hardware Notes" value={form.hardware} onCommit={(value) => onUpdate("hardware", value)} />
+        <div className="terminal-title">// {detailLabel.toUpperCase()}</div>
+        <BufferedBodyEditor label={detailLabel} value={form.hardware} onCommit={(value) => onUpdate("hardware", value)} />
       </section>
     );
   }
@@ -947,12 +954,14 @@ function Inspector({
   canDelete,
   form,
   onDelete,
+  onFilePick,
   saving,
   onUpdate
 }: {
   canDelete: boolean;
   form: StudioForm;
   onDelete: () => void;
+  onFilePick: (target: MediaTarget) => void;
   saving: boolean;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
@@ -961,14 +970,10 @@ function Inspector({
   return (
     <div className="studio-inspector">
       <h3>INSPECTOR</h3>
-      <label>
-        Section
-        <select value={form.section} onChange={(event) => onUpdate("section", event.target.value as StudioSection)}>
-          {sections.map((section) => (
-            <option key={section} value={section}>{section}</option>
-          ))}
-        </select>
-      </label>
+      <div className="studio-inspector-section">
+        <span>Section</span>
+        <strong>{form.section}</strong>
+      </div>
       {form.section === "games" ? (
         <>
           <label className="studio-placement-field">
@@ -1000,6 +1005,9 @@ function Inspector({
           <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
         </>
       ) : null}
+      {form.section === "setup" ? (
+        <SetupInspectorControls form={form} onFilePick={onFilePick} onUpdate={onUpdate} />
+      ) : null}
       <dl>
         <div><dt>Created</dt><dd>{form.started || "Unknown"}</dd></div>
         <div><dt>Updated</dt><dd>{form.updated || "Unknown"}</dd></div>
@@ -1008,6 +1016,41 @@ function Inspector({
         <div className="studio-inspector-danger">
           <span>Danger Zone</span>
           <button className="studio-danger-action" type="button" disabled={saving} onClick={onDelete}>Delete Record</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SetupInspectorControls({
+  form,
+  onFilePick,
+  onUpdate
+}: {
+  form: StudioForm;
+  onFilePick: (target: MediaTarget) => void;
+  onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
+}) {
+  const setupGroup = normalizeSetupGroup(form.setupGroup);
+
+  return (
+    <div className="studio-setup-controls">
+      <label>
+        Setup folder
+        <select value={setupGroup} onChange={(event) => onUpdate("setupGroup", event.target.value)}>
+          <option value="systems">Systems</option>
+          <option value="tools">Tools</option>
+          <option value="peripherals">Peripherals</option>
+          <option value="notes">Notes</option>
+        </select>
+      </label>
+      <p>{setupGroupHelp(setupGroup)}</p>
+      {setupGroup === "tools" ? (
+        <div className="studio-icon-picker">
+          <button type="button" onClick={() => onFilePick("iconImage")}>
+            {form.iconImage ? "Change shortcut icon" : "Add shortcut icon"}
+          </button>
+          <span>{form.iconImage ? form.iconImage.split("/").at(-1) : "No icon assigned"}</span>
         </div>
       ) : null}
     </div>
@@ -1470,6 +1513,8 @@ function emptyForm(section: StudioSection = "logs"): StudioForm {
     summary: "No summary recorded.",
     banner: "",
     headerImage: "",
+    iconImage: "",
+    setupGroup: section === "setup" ? "systems" : "",
     samples: "",
     attachments: "",
     progress: 0,
@@ -1504,6 +1549,8 @@ function fromRecord(record?: RecordEntry): StudioForm {
     summary: record.summary,
     banner: record.banner ?? "",
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
+    iconImage: typeof record.meta.iconImage === "string" ? record.meta.iconImage : "",
+    setupGroup: typeof record.meta.setupGroup === "string" ? normalizeSetupGroup(record.meta.setupGroup) : record.section === "setup" ? inferSetupGroup(record) : "",
     samples: metaMediaList(record.meta.samples),
     attachments: metaMediaList(record.meta.attachments),
     progress: record.progress,
@@ -1600,6 +1647,46 @@ function defaultType(section: StudioSection): string {
     setup: "Setup Note",
     archive: "Archive Record"
   }[section];
+}
+
+function normalizeSetupGroup(value: string): string {
+  return ["systems", "tools", "peripherals", "notes"].includes(value) ? value : "systems";
+}
+
+function inferSetupGroup(record: RecordEntry): string {
+  const haystack = [record.title, record.type, record.summary, metaTextBlock(record.meta.hardware)].join(" ").toLowerCase();
+
+  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
+    return "peripherals";
+  }
+
+  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
+    return "tools";
+  }
+
+  if (/\b(note|notes|memo|file)\b/.test(haystack) && !/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
+    return "notes";
+  }
+
+  return "systems";
+}
+
+function setupDetailsLabel(setupGroup: string): string {
+  return {
+    systems: "Hardware Notes",
+    tools: "Shortcut Details",
+    peripherals: "Device Details",
+    notes: "Note Details"
+  }[normalizeSetupGroup(setupGroup)] ?? "Details";
+}
+
+function setupGroupHelp(setupGroup: string): string {
+  return {
+    systems: "Opens as a neofetch-style terminal profile.",
+    tools: "Appears as a desktop shortcut and opens as a tool profile.",
+    peripherals: "Appears as an inspection photo tile with expandable media.",
+    notes: "Appears as a note/file icon and opens into note content."
+  }[normalizeSetupGroup(setupGroup)] ?? "Choose how this Setup record should appear.";
 }
 
 type MilestoneDraft = {
@@ -1730,7 +1817,7 @@ function metaMediaList(value: unknown): string {
   return typeof value === "string" ? value.replace(/\\+n/g, "\n") : "";
 }
 
-function getStudioContents(section: StudioSection): Array<{ key: StudioContentKey; label: string }> {
+function getStudioContents(section: StudioSection, setupGroup = ""): Array<{ key: StudioContentKey; label: string }> {
   if (section === "projects") {
     return [
       { key: "technical", label: "Technical Stack" },
@@ -1749,9 +1836,16 @@ function getStudioContents(section: StudioSection): Array<{ key: StudioContentKe
   }
 
   if (section === "setup") {
+    if (normalizeSetupGroup(setupGroup) === "notes") {
+      return [
+        { key: "overview", label: "Overview" },
+        { key: "notes", label: "Notes" }
+      ];
+    }
+
     return [
       { key: "overview", label: "Overview" },
-      { key: "hardware", label: "Hardware" },
+      { key: "hardware", label: setupDetailsLabel(setupGroup).replace(" Notes", "") },
       { key: "notes", label: "Notes" },
     ];
   }
@@ -1778,6 +1872,8 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     priority: form.priority,
     meta: {
       headerImage: form.headerImage,
+      iconImage: form.iconImage,
+      setupGroup: form.section === "setup" ? normalizeSetupGroup(form.setupGroup) : "",
       samples: mediaListFromText(form.samples),
       attachments: mediaListFromText(form.attachments),
       dashboardActive: form.dashboardActive,

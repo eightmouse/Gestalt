@@ -5986,6 +5986,15 @@ button:focus-visible {
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
 }
 
+.studio-section-copy.section-page--split {
+  --section-split-record-height: 138px;
+  --section-split-record-gap: 10px;
+}
+
+.studio-section-copy.section-page--split .section-record-column {
+  min-block-size: calc(var(--section-split-list-height) + 76px);
+}
+
 .studio-section-header-actions {
   display: flex;
   align-items: center;
@@ -6618,6 +6627,7 @@ input.studio-title-edit {
   border-block-start: 1px solid rgba(217, 213, 193, 0.14);
 }
 
+.studio-inspector-section,
 .studio-inspector label,
 .studio-inspector dl {
   display: grid;
@@ -6625,6 +6635,29 @@ input.studio-title-edit {
   color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.08em;
+}
+
+.studio-inspector-section {
+  padding: 9px 10px;
+  border: 1px solid rgba(217, 213, 193, 0.14);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.studio-inspector-section span,
+.studio-setup-controls p,
+.studio-icon-picker span {
+  color: var(--muted-2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+}
+
+.studio-inspector-section strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .studio-inspector dl {
@@ -6647,6 +6680,36 @@ input.studio-title-edit {
   letter-spacing: 0.04em;
   line-height: 1.45;
   text-transform: none;
+}
+
+.studio-setup-controls {
+  display: grid;
+  gap: 10px;
+  padding: 11px;
+  border: 1px solid rgba(217, 213, 193, 0.14);
+  background:
+    linear-gradient(90deg, rgba(217, 213, 193, 0.032), transparent 52%),
+    rgba(255, 255, 255, 0.014);
+}
+
+.studio-setup-controls p {
+  margin: -2px 0 0;
+}
+
+.studio-icon-picker {
+  display: grid;
+  gap: 7px;
+}
+
+.studio-icon-picker button {
+  min-block-size: 34px;
+  border: 1px solid rgba(217, 213, 193, 0.18);
+  background: rgba(255, 255, 255, 0.026);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
 }
 
 .studio-copy-aside .studio-check {

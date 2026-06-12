@@ -21,6 +21,8 @@ type EntryPayload = {
   summary?: string;
   banner?: string;
   headerImage?: string;
+  iconImage?: string;
+  setupGroup?: string;
   samples?: string[] | string;
   attachments?: string[] | string;
   progress?: number | string;
@@ -102,6 +104,8 @@ export async function POST(request: NextRequest) {
     `summary: "${escapeFrontmatter(clean(payload.summary) || "No summary recorded.")}"`,
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
     ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
+    ...(clean(payload.iconImage) ? [`iconImage: "${escapeFrontmatter(clean(payload.iconImage))}"`] : []),
+    ...(section === "setup" && clean(payload.setupGroup) ? [`setupGroup: "${escapeFrontmatter(normalizeSetupGroup(clean(payload.setupGroup)))}"`] : []),
     ...(samples.length ? [`samples: [${samples.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
     ...(attachments.length ? [`attachments: [${attachments.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
     `progress: ${progress}`,
@@ -204,6 +208,10 @@ function parseOptionalInteger(value: unknown): number | null {
 
   const parsed = Number(raw);
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeSetupGroup(value: string): string {
+  return ["systems", "tools", "peripherals", "notes"].includes(value) ? value : "systems";
 }
 
 async function unsetOtherActiveGames(activeId: string): Promise<void> {
