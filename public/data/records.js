@@ -333,6 +333,28 @@ window.__GESTALT_RECORDS = [
     "body": "## First Entry\nThis is the first entry on my... this space.\n\nI intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.\n\nIn the coming days I will update the Setup area with my current setup."
   },
   {
+    "id": "obsidian",
+    "title": "Obsidian",
+    "section": "setup",
+    "type": "Setup Note",
+    "status": "Draft",
+    "started": "2026-06-12",
+    "updated": "2026-06-12",
+    "summary": "No summary recorded.",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 0,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "milestones": [],
+    "body": ":::note 12 / 06 / 2026 - New Note\nWrite the first note here.\n:::"
+  },
+  {
     "id": "path-of-exile-2",
     "title": "Path of Exile 2",
     "section": "games",
