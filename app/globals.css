@@ -1646,6 +1646,9 @@ button:focus-visible {
 }
 
 .section-page--split {
+  --section-split-record-height: 138px;
+  --section-split-record-gap: 10px;
+  --section-split-list-height: calc((var(--section-split-record-height) * 3) + (var(--section-split-record-gap) * 2));
   inline-size: min(100%, 1180px);
   max-inline-size: 1180px;
 }
@@ -1760,12 +1763,13 @@ button:focus-visible {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 16px;
 }
 
 @media (min-width: 761px) {
-  .section-page--games .section-split-grid {
-    block-size: min(512px, calc(100vh - 340px));
+  .section-page--split .section-record-column .section-record-grid {
+    block-size: var(--section-split-list-height);
   }
 }
 
@@ -1817,12 +1821,12 @@ button:focus-visible {
 }
 
 .section-record-column .section-record-grid {
-  gap: 10px;
-  grid-auto-rows: 138px;
+  gap: var(--section-split-record-gap);
+  grid-auto-rows: var(--section-split-record-height);
 }
 
 .section-record-column .section-record {
-  block-size: 138px;
+  block-size: var(--section-split-record-height);
   min-block-size: 0;
   grid-template-columns: 30px minmax(0, 1fr) minmax(112px, auto);
   grid-template-areas:
