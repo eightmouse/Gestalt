@@ -148,7 +148,7 @@ export function decodeTextBlock(value: string): string {
 
 export function recentActivity(records: RecordEntry[], limit: number): ActivityEntry[] {
   return records
-    .filter((record) => record.section !== "system")
+    .filter((record) => record.section !== "system" && !(record.section === "setup" && setupGroupForActivity(record) === "tools"))
     .map((record) => {
       const trace = activityTrace(record);
       const setupDetail = setupActivityDetail(record);
@@ -219,7 +219,7 @@ function setupActivityDetail(record: RecordEntry): string | null {
   const group = setupGroupForActivity(record);
 
   if (group === "tools") {
-    return "Setup Tool / Shortcut";
+    return null;
   }
 
   if (group === "peripherals") {

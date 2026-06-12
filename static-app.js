@@ -484,7 +484,7 @@ function readableDate(value) {
 
 function recentActivity(limit) {
   return records
-    .filter((record) => record.section !== "system")
+    .filter((record) => record.section !== "system" && !(record.section === "setup" && setupGroupForActivity(record) === "tools"))
     .map((record) => {
       const trace = activityTrace(record);
       const setupDetail = setupActivityDetail(record);
@@ -530,7 +530,7 @@ function setupActivityDetail(record) {
   const group = setupGroupForActivity(record);
 
   if (group === "tools") {
-    return "Setup Tool / Shortcut";
+    return null;
   }
 
   if (group === "peripherals") {
@@ -1435,7 +1435,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.30.0</span>
+        <span>v1.30.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1449,7 +1449,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.30.0</span>
+        <span class="version-label">v1.30.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1469,7 +1469,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.30.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.30.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1825,16 +1825,23 @@ function renderSetupTile(record) {
   const group = setupGroupFor(record);
   const image = setupTileImage(record);
   const profile = setupProfile(record);
-  const action = group === "tools" ? "open" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
-
-  return `<button class="setup-tile setup-tile--${group}" type="button" data-open-record="${record.id}">
-    <span class="setup-tile-icon" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}<span class="setup-tile-glyph"></span></span>
+  const externalUrl = safeExternalUrl(record.externalUrl);
+  const action = group === "tools" ? (externalUrl ? "launch" : "idle") : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
+  const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${profile.category} . ${record.status}`;
+  const content = `<span class="${image ? "setup-tile-icon has-image" : "setup-tile-icon"}" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}<span class="setup-tile-glyph"></span></span>
     <span class="setup-tile-body">
       <strong>${escapeHtml(record.title)}</strong>
-      <small>${escapeHtml(profile.category)} . ${escapeHtml(record.status)}</small>
+      ${metaLine ? `<small>${escapeHtml(metaLine)}</small>` : ""}
     </span>
-    <i>${action}</i>
-  </button>`;
+    <i>${action}</i>`;
+
+  if (group === "tools") {
+    return externalUrl
+      ? `<a class="setup-tile setup-tile--tools" href="${escapeHtml(externalUrl)}" target="_blank" rel="noreferrer">${content}</a>`
+      : `<button class="setup-tile setup-tile--tools is-inert" type="button" aria-disabled="true">${content}</button>`;
+  }
+
+  return `<button class="setup-tile setup-tile--${group}" type="button" data-open-record="${record.id}">${content}</button>`;
 }
 
 function setupTileImage(record) {
@@ -2077,12 +2084,17 @@ function setupToolBody(record, profile, specs, headerImage) {
 }
 
 function setupPeripheralBody(record, profile, specs, headerImage) {
+  const description = cleanDisplaySummary(record.summary);
+
   return `<div class="setup-console-body setup-console-body--peripheral">
     <button class="${headerImage ? "setup-inspection-photo has-image" : "setup-inspection-photo"}" ${headerImage ? `data-expand-image="${escapeHtml(headerImage)}" data-expand-alt="${escapeHtml(record.title)}"` : "disabled"} type="button">
       ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="" decoding="async" loading="lazy" />` : ""}
       <span>${headerImage ? "inspect photo" : "no capture"}</span>
     </button>
-    ${setupFetchDetails(record, profile, specs, "device.photo / inspect")}
+    <div class="setup-peripheral-copy">
+      <h2>${escapeHtml(record.title)}</h2>
+      ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+    </div>
   </div>`;
 }
 
@@ -2127,6 +2139,12 @@ function setupRecordImage(record) {
 
 function safeExternalUrl(value) {
   return typeof value === "string" && /^https?:\/\/[^\s]+$/i.test(value) ? value : "";
+}
+
+function cleanDisplaySummary(value) {
+  const summary = typeof value === "string" ? value.trim() : "";
+
+  return summary && summary.toLowerCase() !== "no summary recorded." ? summary : "";
 }
 
 function recordWindow(record) {

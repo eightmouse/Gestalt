@@ -236,19 +236,42 @@ function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntr
   const group = setupGroupFor(record);
   const image = setupTileImage(record);
   const profile = setupProfile(record);
-  const action = group === "tools" ? "open" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
-
-  return (
-    <button className={`setup-tile setup-tile--${group}`} type="button" onClick={() => onOpenRecord(record)}>
-      <span className="setup-tile-icon" aria-hidden="true">
+  const externalUrl = safeExternalUrl(record.meta.externalUrl);
+  const action = group === "tools" ? externalUrl ? "launch" : "idle" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
+  const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${profile.category} . ${record.status}`;
+  const content = (
+    <>
+      <span className={image ? "setup-tile-icon has-image" : "setup-tile-icon"} aria-hidden="true">
         {image ? <img src={image} alt="" decoding="async" loading="lazy" /> : null}
         <span className="setup-tile-glyph" />
       </span>
       <span className="setup-tile-body">
         <strong>{record.title}</strong>
-        <small>{profile.category} . {record.status}</small>
+        {metaLine ? <small>{metaLine}</small> : null}
       </span>
       <i>{action}</i>
+    </>
+  );
+
+  if (group === "tools") {
+    if (externalUrl) {
+      return (
+        <a className="setup-tile setup-tile--tools" href={externalUrl} target="_blank" rel="noreferrer">
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <button className="setup-tile setup-tile--tools is-inert" type="button" aria-disabled="true">
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <button className={`setup-tile setup-tile--${group}`} type="button" onClick={() => onOpenRecord(record)}>
+      {content}
     </button>
   );
 }
@@ -257,4 +280,14 @@ function setupTileImage(record: RecordEntry): string {
   const iconImage = typeof record.meta.iconImage === "string" ? record.meta.iconImage : "";
 
   return iconImage || recordHeaderImage(record) || record.banner || "";
+}
+
+function safeExternalUrl(value: unknown): string {
+  return typeof value === "string" && /^https?:\/\/[^\s]+$/i.test(value) ? value : "";
+}
+
+function cleanDisplaySummary(value: string): string {
+  const summary = value.trim();
+
+  return summary && summary.toLowerCase() !== "no summary recorded." ? summary : "";
 }

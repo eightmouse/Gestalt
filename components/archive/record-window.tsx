@@ -209,7 +209,7 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
           {group === "tools" ? (
             <SetupToolBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
           ) : group === "peripherals" ? (
-            <SetupPeripheralBody headerImage={headerImage} profile={profile} record={record} specs={specs} onExpandImage={setExpandedImage} />
+            <SetupPeripheralBody headerImage={headerImage} record={record} onExpandImage={setExpandedImage} />
           ) : group === "notes" ? (
             <SetupNoteBody notes={notes} record={record} />
           ) : (
@@ -317,16 +317,14 @@ function SetupToolBody({
 function SetupPeripheralBody({
   headerImage,
   onExpandImage,
-  profile,
-  record,
-  specs
+  record
 }: {
   headerImage: string;
   onExpandImage: (image: { alt: string; src: string }) => void;
-  profile: { category: string };
   record: RecordEntry;
-  specs: Array<{ label: string; value: string }>;
 }) {
+  const description = cleanDisplaySummary(record.summary);
+
   return (
     <div className="setup-console-body setup-console-body--peripheral">
       <button
@@ -338,8 +336,10 @@ function SetupPeripheralBody({
         {headerImage ? <img src={headerImage} alt="" decoding="async" loading="lazy" /> : null}
         <span>{headerImage ? "inspect photo" : "no capture"}</span>
       </button>
-
-      <SetupFetchDetails command="device.photo / inspect" profile={profile} record={record} specs={specs} />
+      <div className="setup-peripheral-copy">
+        <h2>{record.title}</h2>
+        {description ? <p>{description}</p> : null}
+      </div>
     </div>
   );
 }
@@ -447,6 +447,12 @@ function setupRecordImage(record: RecordEntry): string {
 
 function safeExternalUrl(value: unknown): string {
   return typeof value === "string" && /^https?:\/\/[^\s]+$/i.test(value) ? value : "";
+}
+
+function cleanDisplaySummary(value: string): string {
+  const summary = value.trim();
+
+  return summary && summary.toLowerCase() !== "no summary recorded." ? summary : "";
 }
 
 function recordStateKey(status: string): string {
