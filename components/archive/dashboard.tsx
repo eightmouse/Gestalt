@@ -61,6 +61,13 @@ export function ArchiveDashboard({
   onOpenSection,
   onOpenTimeline
 }: DashboardProps) {
+  const activitySections = new Set<RecordSection>();
+  const activityRows = activity.map((item) => {
+    const freshness = activitySections.has(item.record.section) ? "old" : "new";
+    activitySections.add(item.record.section);
+    return { freshness, item };
+  });
+
   return (
     <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
       <DashboardPanel
@@ -105,15 +112,16 @@ export function ArchiveDashboard({
       </DashboardPanel>
 
       <DashboardPanel title="RECENT ACTIVITY" className="wide-panel activity-panel" footerLabel="View full timeline" onFooter={onOpenTimeline}>
-        {activity.length > 0 ? (
+        {activityRows.length > 0 ? (
           <ol className="activity-feed">
-            {activity.map((item) => (
-              <li data-state={dashboardRecordStateKey(item.record.status)} key={item.record.id}>
+            {activityRows.map(({ freshness, item }) => (
+              <li data-activity-age={freshness} data-state={dashboardRecordStateKey(item.record.status)} key={item.record.id}>
                 <span>[{shortDate(item.date)}]</span>
                 <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
                   <strong>{item.title}</strong>
                   <small>{item.detail}</small>
                 </button>
+                <i className="activity-badge" aria-hidden="true">{freshness}</i>
               </li>
             ))}
           </ol>

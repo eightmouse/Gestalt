@@ -1362,7 +1362,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.27.9</span>
+        <span>v1.28.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1376,7 +1376,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.27.9</span>
+        <span class="version-label">v1.28.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1396,7 +1396,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.27.9</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.28.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1538,7 +1538,13 @@ function dashboard() {
   const activeProjects = updatedProjectRecords();
   const currentGame = currentGameRecord();
   const latestLog = latestLogRecord();
-  const activity = recentActivity(5);
+  const activity = recentActivity(6);
+  const activitySections = new Set();
+  const activityRows = activity.map((item) => {
+    const freshness = activitySections.has(item.record.section) ? "old" : "new";
+    activitySections.add(item.record.section);
+    return { freshness, item };
+  });
 
   const projectList = activeProjects.length
     ? `<div class="record-list">
@@ -1574,16 +1580,17 @@ function dashboard() {
     ? `<div class="latest-log" data-state="${recordStateKey(latestLog.status)}"><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(recordDisplaySummary(latestLog))}</p></div>`
     : `<p class="subtle">No field notes stored.</p>`;
 
-  const feed = activity.length
+  const feed = activityRows.length
     ? `<ol class="activity-feed">
-      ${activity
+      ${activityRows
         .map(
-          (item) => `<li data-state="${recordStateKey(item.record.status)}">
+          ({ freshness, item }) => `<li data-activity-age="${freshness}" data-state="${recordStateKey(item.record.status)}">
           <span>[${shortDate(item.date)}]</span>
           <button type="button" data-open-record="${item.record.id}" ${item.content ? `data-open-content="${item.content}"` : ""}>
             <strong>${escapeHtml(item.title)}</strong>
             <small>${escapeHtml(item.detail)}</small>
           </button>
+          <i class="activity-badge" aria-hidden="true">${freshness}</i>
         </li>`
         )
         .join("")}
