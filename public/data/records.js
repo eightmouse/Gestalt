@@ -377,6 +377,28 @@ window.__GESTALT_RECORDS = [
     "body": ":::note 12 / 06 / 2026 - First (finally) note.\nHere we are with my first, long overdue awaited note (said no one). I'll start this with the screen of my first Chaos Orb drop, cause.. yeah, why note.\n![](public/media/records/path-of-exile-2/1781247073781-screenshot-2026-06-06-143412.png)\n\nSo, I'm screenshot is from last week session... I higher level at the moment and recently started doing maps ~\nI started as a mercenary since that's the class that got me interested for a while, I also have a monk that I started levelling a bit few days ago!\nI've been enjoying the game so far, massive step forward imho. Tons of QoL, feels easier to get into and lots more.\n\nIn this note I don't wanna spend too much talking about my characters or praising the game, cause I'd like to note a BIG issue I encountered that it's not directly tied to PoE2 but has only happened while playing PoE2, more specifically after I close the game.\nLittle disclaimer, I'm writing this here as a personal note and also if someone somehow comes by the same error, this is what happened and what I did to fix the issue.\n\nWhat happened?\nAfter playing the game normally, I closed the game left for dinner and once I came back my PC was shutoff. I initially thought Windows did a random update, somehow it started without asking and.. poof? Nope, that was not the case.\nNext day same thing happened after closing game, so I got more suspicious.. I obviousy did not think of PoE2 at that moment so I started using PC normally and it worked just fine, no issues whatsoever.\nNow, third day is when I started digging to see if something was failing on my end hardware and software wise and.. to my surprise, everything was healthy, nothing weird.. however.\n\nWhat is it?\nWindows, kept saying 'Unexpected shutdown' 5 or so minutes after the game is closed, so I started reproducing the issue on purpose. Opened PoE2, left it open for a bit, closed, rinse and repeat.\nEvery time after around 5 mins or bit more, PC would shut off. Like I said I checked everything to make sure it was not Hardware or Software related and that's when I found out people had similar issues related to the game and not. So, my conclusion is that PoE2 is related but it's not the culprit or the cause:\nPCIe Link State Power Management is just a Windows power-saving setting. Setting it to Off means Windows will stop trying to put PCIe devices, like the NVIDIA GPU, into deeper low-power link states.\nThat was the issue, simply turning that Off fixed the problem.\n\nLike I said in the disclaimer, I don't think the game is causing this directly. Yes game has issues and it's not optimized properly yet but this is more of a nuanced issue.\n\nAnyway, that is it. Next notes will be strictly game related and less bug reporting but I wanted to share it as I think others might run onto this issue.. so why not!\n:::"
   },
   {
+    "id": "vs-code",
+    "title": "VS Code",
+    "section": "setup",
+    "type": "Setup Note",
+    "status": "Draft",
+    "started": "2026-06-12",
+    "updated": "2026-06-12",
+    "summary": "No summary recorded.",
+    "banner": "",
+    "headerImage": "",
+    "samples": [],
+    "attachments": [],
+    "progress": 0,
+    "priority": 50,
+    "dashboardActive": false,
+    "hardware": "",
+    "technicalStack": "",
+    "recommendation": "",
+    "milestones": [],
+    "body": ":::note 12 / 06 / 2026 - New Note\nWrite the first note here.\n:::"
+  },
+  {
     "id": "a-something-signal",
     "title": "A Something Signal",
     "section": "logs",
