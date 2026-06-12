@@ -1435,7 +1435,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.29.3</span>
+        <span>v1.30.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1449,7 +1449,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.29.3</span>
+        <span class="version-label">v1.30.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1469,7 +1469,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.29.3</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.30.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2105,6 +2105,8 @@ function setupNoteBody(record, notes) {
 }
 
 function setupFetchDetails(record, profile, specs, command) {
+  const externalUrl = safeExternalUrl(record.externalUrl);
+
   return `<div class="setup-fetch setup-fetch--terminal">
     <p class="setup-command">&gt; ${escapeHtml(command)}</p>
     <h2>${escapeHtml(record.title)}</h2>
@@ -2113,6 +2115,7 @@ function setupFetchDetails(record, profile, specs, command) {
       <div><dt>TYPE</dt><dd>${escapeHtml(profile.category)}</dd></div>
       <div><dt>STATE</dt><dd>${escapeHtml(record.status)}</dd></div>
       <div><dt>UPDATED</dt><dd>${readableDate(record.updated)}</dd></div>
+      ${externalUrl ? `<div><dt>LINK</dt><dd><a href="${escapeHtml(externalUrl)}" target="_blank" rel="noreferrer">open page</a></dd></div>` : ""}
       ${specs.map((spec) => `<div><dt>${escapeHtml(spec.label)}</dt><dd>${escapeHtml(spec.value)}</dd></div>`).join("")}
     </dl>
   </div>`;
@@ -2120,6 +2123,10 @@ function setupFetchDetails(record, profile, specs, command) {
 
 function setupRecordImage(record) {
   return record.iconImage || recordHeaderImage(record) || record.banner || "";
+}
+
+function safeExternalUrl(value) {
+  return typeof value === "string" && /^https?:\/\/[^\s]+$/i.test(value) ? value : "";
 }
 
 function recordWindow(record) {

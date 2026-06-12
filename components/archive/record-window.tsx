@@ -380,6 +380,8 @@ function SetupFetchDetails({
   record: RecordEntry;
   specs: Array<{ label: string; value: string }>;
 }) {
+  const externalUrl = safeExternalUrl(record.meta.externalUrl);
+
   return (
     <div className="setup-fetch setup-fetch--terminal">
       <p className="setup-command">&gt; {command}</p>
@@ -398,6 +400,12 @@ function SetupFetchDetails({
           <dt>UPDATED</dt>
           <dd>{formatReadableDate(record.updated)}</dd>
         </div>
+        {externalUrl ? (
+          <div>
+            <dt>LINK</dt>
+            <dd><a href={externalUrl} target="_blank" rel="noreferrer">open page</a></dd>
+          </div>
+        ) : null}
         {specs.map((spec, index) => (
           <div key={`${spec.label}-${index}`}>
             <dt>{spec.label}</dt>
@@ -435,6 +443,10 @@ function setupRecordImage(record: RecordEntry): string {
   const iconImage = typeof record.meta.iconImage === "string" ? record.meta.iconImage : "";
 
   return iconImage || recordHeaderImage(record) || record.banner || "";
+}
+
+function safeExternalUrl(value: unknown): string {
+  return typeof value === "string" && /^https?:\/\/[^\s]+$/i.test(value) ? value : "";
 }
 
 function recordStateKey(status: string): string {

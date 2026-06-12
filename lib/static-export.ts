@@ -21,6 +21,7 @@ export async function writeStaticRecords(): Promise<void> {
       dashboardImage: toStaticPath(typeof meta.dashboardImage === "string" ? meta.dashboardImage : ""),
       headerImage: toStaticPath(typeof meta.headerImage === "string" ? meta.headerImage : ""),
       iconImage: toStaticPath(typeof meta.iconImage === "string" ? meta.iconImage : ""),
+      externalUrl: typeof meta.externalUrl === "string" ? meta.externalUrl : "",
       setupGroup: typeof meta.setupGroup === "string"
         ? meta.setupGroup
         : typeof meta.setupKind === "string"

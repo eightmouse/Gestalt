@@ -22,6 +22,7 @@ type EntryPayload = {
   banner?: string;
   headerImage?: string;
   iconImage?: string;
+  externalUrl?: string;
   setupGroup?: string;
   samples?: string[] | string;
   attachments?: string[] | string;
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
   const attachments = normalizeMediaList(payload.attachments);
   const dashboardActive = section === "games" && toBoolean(payload.dashboardActive);
   const steamAppId = parseOptionalInteger(payload.steamAppId);
+  const externalUrl = cleanExternalUrl(payload.externalUrl);
   const filePath = path.join(recordsDirectory, `${id}.mdx`);
 
   if (dashboardActive) {
@@ -105,6 +107,7 @@ export async function POST(request: NextRequest) {
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
     ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
     ...(clean(payload.iconImage) ? [`iconImage: "${escapeFrontmatter(clean(payload.iconImage))}"`] : []),
+    ...(externalUrl ? [`externalUrl: "${escapeFrontmatter(externalUrl)}"`] : []),
     ...(section === "setup" && clean(payload.setupGroup) ? [`setupGroup: "${escapeFrontmatter(normalizeSetupGroup(clean(payload.setupGroup)))}"`] : []),
     ...(samples.length ? [`samples: [${samples.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
     ...(attachments.length ? [`attachments: [${attachments.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
@@ -183,6 +186,20 @@ function normalizeMediaList(value: unknown): string[] {
       .map((item) => item.trim())
       .filter((item) => item.startsWith("/media/") || item.startsWith("/images/") || item.startsWith("public/media/") || item.startsWith("public/images/"))
   )];
+}
+
+function cleanExternalUrl(value: unknown): string {
+  const url = clean(value);
+
+  if (!url) {
+    return "";
+  }
+
+  if (/^https?:\/\/[^\s]+$/i.test(url)) {
+    return url;
+  }
+
+  return "";
 }
 
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {

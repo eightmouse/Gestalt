@@ -5,6 +5,7 @@ import type { RecordEntry, RecordSection } from "@/lib/types";
 
 type StudioSection = Exclude<RecordSection, "system">;
 type StudioContentKey = "overview" | "technical" | "notes" | "samples" | "recommendation" | "hardware" | "attachments";
+type SetupGroupId = "systems" | "tools" | "peripherals" | "notes";
 
 type StudioForm = {
   originalId: string;
@@ -19,6 +20,7 @@ type StudioForm = {
   banner: string;
   headerImage: string;
   iconImage: string;
+  externalUrl: string;
   setupGroup: string;
   samples: string;
   attachments: string;
@@ -41,6 +43,7 @@ type StudioClientProps = {
 };
 
 type MediaTarget = "body" | "banner" | "headerImage" | "iconImage" | "samples" | "attachments";
+type StudioUpdate = <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 type StudioDraft = {
   body: string;
   form: StudioForm;
@@ -81,6 +84,43 @@ const studioSections: Array<{
 
 const sections = studioSections.map((section) => section.id);
 const studioDraftStorageKey = "gestalt-studio-drafts-v1";
+const setupManagerGroups: Array<{
+  id: SetupGroupId;
+  action: string;
+  code: string;
+  description: string;
+  label: string;
+}> = [
+  {
+    id: "systems",
+    action: "+ System",
+    code: "SYS",
+    description: "Operating systems, machines, and terminal-style profiles.",
+    label: "Systems"
+  },
+  {
+    id: "tools",
+    action: "+ Tool",
+    code: "APP",
+    description: "Shortcut icons with an optional public link.",
+    label: "Tools"
+  },
+  {
+    id: "peripherals",
+    action: "+ Peripheral",
+    code: "DEV",
+    description: "Device photos with an optional public description.",
+    label: "Peripherals"
+  },
+  {
+    id: "notes",
+    action: "+ Note",
+    code: "TXT",
+    description: "Setup notes that behave like the rest of the archive notes.",
+    label: "Notes"
+  }
+];
+const setupGroupIds = setupManagerGroups.map((group) => group.id);
 
 export function StudioClient({ records }: StudioClientProps) {
   const firstRecord = records[0];
@@ -220,6 +260,18 @@ export function StudioClient({ records }: StudioClientProps) {
     formRef.current = next;
     setForm(next);
     setMessage(draft ? `Restored unsaved ${section} draft.` : `New ${section} record draft ready.`);
+  }, []);
+
+  const newSetupRecord = useCallback((setupGroup: SetupGroupId) => {
+    setActiveSection("setup");
+    setSelectedId("__new");
+    setActiveContent("overview");
+    setMode("edit");
+    const next = emptyForm("setup", setupGroup);
+    bodyDraftRef.current = next.body;
+    formRef.current = next;
+    setForm(next);
+    setMessage(`New ${setupGroupLabel(setupGroup).toLowerCase()} setup record ready.`);
   }, []);
 
   const writeRecord = async (recordForm: StudioForm, recordBody: string) => {
@@ -568,11 +620,32 @@ export function StudioClient({ records }: StudioClientProps) {
           <StudioNav activeSection={activeSection} onOpenSection={openSection} />
 
           {mode === "section" ? (
-            <StudioSectionPage
-              records={sectionRecords}
-              section={activeSectionConfig}
-              onEdit={loadRecord}
-              onNew={() => newRecord(activeSection)}
+            activeSection === "setup" ? (
+              <StudioSetupManager records={sectionRecords} onEdit={loadRecord} onNewGroup={newSetupRecord} />
+            ) : (
+              <StudioSectionPage
+                records={sectionRecords}
+                section={activeSectionConfig}
+                onEdit={loadRecord}
+                onNew={() => newRecord(activeSection)}
+              />
+            )
+          ) : form.section === "setup" ? (
+            <StudioSetupEditor
+              canDelete={mode === "edit" && selectedId !== "__new"}
+              form={form}
+              message={message}
+              saving={saving}
+              uploading={uploading}
+              onBodyCommit={(value) => {
+                bodyDraftRef.current = value;
+                update("body", value);
+              }}
+              onDelete={deleteRecord}
+              onFileDrop={uploadFiles}
+              onFilePick={chooseFiles}
+              onNoteMediaUpload={uploadNoteMedia}
+              onUpdate={update}
             />
           ) : (
           <section className="studio-record-copy" aria-label="Editable archive preview">
@@ -751,6 +824,379 @@ const StudioNav = memo(function StudioNav({
     </aside>
   );
 });
+
+function StudioSetupManager({
+  onEdit,
+  onNewGroup,
+  records
+}: {
+  onEdit: (id: string) => void;
+  onNewGroup: (setupGroup: SetupGroupId) => void;
+  records: RecordEntry[];
+}) {
+  const grouped = setupManagerGroups.map((group) => ({
+    ...group,
+    records: records.filter((record) => setupGroupForRecord(record) === group.id)
+  }));
+  const recordCount = records.length;
+
+  return (
+    <section className="section-page studio-section-copy studio-setup-manager" aria-label="05_SETUP studio manager">
+      <header className="section-page-header studio-setup-manager-header">
+        <span className="nav-mark" data-icon="setup" aria-hidden="true" />
+        <div>
+          <p>05_SETUP</p>
+          <h2>Device Bay</h2>
+          <small>Systems, shortcuts, device photos, and setup notes are managed in separate lanes.</small>
+        </div>
+        <i>{recordCount} {recordCount === 1 ? "record" : "records"}</i>
+      </header>
+
+      <div className="studio-setup-manager-grid">
+        {grouped.map((group) => (
+          <section className={`studio-setup-group-card is-${group.id}`} key={group.id}>
+            <header>
+              <div>
+                <span>{group.code}</span>
+                <h3>{group.label}</h3>
+                <p>{group.description}</p>
+              </div>
+              <button type="button" onClick={() => onNewGroup(group.id)}>{group.action}</button>
+            </header>
+            <div className="studio-setup-item-grid">
+              {group.records.length > 0 ? (
+                group.records.map((record) => (
+                  <StudioSetupManagerTile group={group.id} key={record.id} record={record} onEdit={onEdit} />
+                ))
+              ) : (
+                <p className="studio-setup-empty">No {group.label.toLowerCase()} filed yet.</p>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StudioSetupManagerTile({
+  group,
+  onEdit,
+  record
+}: {
+  group: SetupGroupId;
+  onEdit: (id: string) => void;
+  record: RecordEntry;
+}) {
+  const media = setupRecordStudioMedia(record);
+  const label = setupGroupLabel(group);
+
+  return (
+    <button className={`studio-setup-item is-${group}`} type="button" onClick={() => onEdit(record.id)}>
+      <span className={media ? "studio-setup-item-media has-media" : "studio-setup-item-media"} aria-hidden="true">
+        {media ? <img src={media} alt="" decoding="async" loading="lazy" /> : <i>{group === "tools" ? "APP" : group === "peripherals" ? "DEV" : group === "notes" ? "TXT" : "SYS"}</i>}
+      </span>
+      <span className="studio-setup-item-copy">
+        <small>{label}</small>
+        <strong>{record.title}</strong>
+        <em>{record.summary || record.status}</em>
+      </span>
+    </button>
+  );
+}
+
+function StudioSetupEditor({
+  canDelete,
+  form,
+  message,
+  onBodyCommit,
+  onDelete,
+  onFileDrop,
+  onFilePick,
+  onNoteMediaUpload,
+  onUpdate,
+  saving,
+  uploading
+}: {
+  canDelete: boolean;
+  form: StudioForm;
+  message: string;
+  onBodyCommit: (value: string) => void;
+  onDelete: () => void;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
+  onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onUpdate: StudioUpdate;
+  saving: boolean;
+  uploading: boolean;
+}) {
+  const setupGroup = normalizeSetupGroup(form.setupGroup);
+
+  const changeSetupGroup = (nextGroup: SetupGroupId) => {
+    onUpdate("setupGroup", nextGroup);
+
+    if (isDefaultSetupType(form.type)) {
+      onUpdate("type", defaultSetupType(nextGroup));
+    }
+  };
+
+  return (
+    <section className={`studio-record-copy studio-setup-editor is-${setupGroup}`} aria-label="Editable setup record">
+      <div className="studio-copy-bar">
+        <span>// SETUP BAY EDITOR</span>
+        <i>{message}</i>
+      </div>
+
+      <div className="studio-setup-editor-layout">
+        <div className="studio-setup-editor-main">
+          <header className="studio-setup-editor-heading">
+            <span className="nav-mark" data-icon="setup" aria-hidden="true" />
+            <div>
+              <p>{setupGroupLabel(setupGroup).toUpperCase()}</p>
+              <h2>
+                <EditableText className="studio-title-edit" label="Title" value={form.title} onChange={(value) => onUpdate("title", value)} />
+              </h2>
+              <small>{setupGroupHelp(setupGroup)}</small>
+            </div>
+          </header>
+
+          <SetupGroupSwitch activeGroup={setupGroup} onChange={changeSetupGroup} />
+
+          {setupGroup === "tools" ? (
+            <StudioSetupToolEditor form={form} uploading={uploading} onFileDrop={onFileDrop} onFilePick={onFilePick} onUpdate={onUpdate} />
+          ) : setupGroup === "peripherals" ? (
+            <StudioSetupPeripheralEditor form={form} uploading={uploading} onFileDrop={onFileDrop} onFilePick={onFilePick} onUpdate={onUpdate} />
+          ) : setupGroup === "notes" ? (
+            <StudioSetupNoteEditor form={form} onBodyCommit={onBodyCommit} onNoteMediaUpload={onNoteMediaUpload} onUpdate={onUpdate} />
+          ) : (
+            <StudioSetupSystemEditor form={form} uploading={uploading} onBodyCommit={onBodyCommit} onFileDrop={onFileDrop} onFilePick={onFilePick} onNoteMediaUpload={onNoteMediaUpload} onUpdate={onUpdate} />
+          )}
+        </div>
+
+        <aside className="studio-setup-editor-aside">
+          <h3>RECORD</h3>
+          <InlineField label="Slug" value={form.id} placeholder="auto-from-title" onChange={(value) => onUpdate("id", value)} />
+          <InlineField label="Status" value={form.status} onChange={(value) => onUpdate("status", value)} />
+          <InlineField label="Created" value={form.started} placeholder="YYYY-MM-DD" onChange={(value) => onUpdate("started", value)} />
+          <InlineField label="Updated" value={form.updated} placeholder="YYYY-MM-DD" onChange={(value) => onUpdate("updated", value)} />
+          <dl>
+            <div><dt>Mode</dt><dd>{setupGroupLabel(setupGroup)}</dd></div>
+            <div><dt>Type</dt><dd>{form.type}</dd></div>
+          </dl>
+          {canDelete ? (
+            <div className="studio-inspector-danger">
+              <span>Danger Zone</span>
+              <button className="studio-danger-action" type="button" disabled={saving} onClick={onDelete}>Delete Record</button>
+            </div>
+          ) : null}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function SetupGroupSwitch({
+  activeGroup,
+  onChange
+}: {
+  activeGroup: SetupGroupId;
+  onChange: (setupGroup: SetupGroupId) => void;
+}) {
+  return (
+    <div className="studio-setup-kind-switch" aria-label="Setup record group">
+      {setupManagerGroups.map((group) => (
+        <button
+          className={activeGroup === group.id ? "is-active" : ""}
+          key={group.id}
+          type="button"
+          onClick={() => onChange(group.id)}
+        >
+          <span>{group.code}</span>
+          <strong>{group.label}</strong>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function StudioSetupToolEditor({
+  form,
+  onFileDrop,
+  onFilePick,
+  onUpdate,
+  uploading
+}: {
+  form: StudioForm;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
+  onUpdate: StudioUpdate;
+  uploading: boolean;
+}) {
+  return (
+    <section className="studio-setup-simple-editor">
+      <div className="studio-setup-form-grid">
+        <InlineField label="Public link" value={form.externalUrl} placeholder="https://example.com" onChange={(value) => onUpdate("externalUrl", value)} />
+        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
+      </div>
+      <SetupMediaInput
+        description="Drop one app icon here. It appears as the shortcut image in the Tools bay."
+        label="Shortcut icon"
+        mediaPath={form.iconImage}
+        target="iconImage"
+        uploading={uploading}
+        onClear={() => onUpdate("iconImage", "")}
+        onFileDrop={onFileDrop}
+        onFilePick={onFilePick}
+      />
+      <label className="studio-textarea-field">
+        Description
+        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+      </label>
+    </section>
+  );
+}
+
+function StudioSetupPeripheralEditor({
+  form,
+  onFileDrop,
+  onFilePick,
+  onUpdate,
+  uploading
+}: {
+  form: StudioForm;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
+  onUpdate: StudioUpdate;
+  uploading: boolean;
+}) {
+  return (
+    <section className="studio-setup-simple-editor">
+      <div className="studio-setup-form-grid">
+        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
+      </div>
+      <SetupMediaInput
+        description="Drop one photo here. It becomes the expandable peripheral preview."
+        label="Device photo"
+        mediaPath={form.headerImage}
+        target="headerImage"
+        uploading={uploading}
+        onClear={() => onUpdate("headerImage", "")}
+        onFileDrop={onFileDrop}
+        onFilePick={onFilePick}
+      />
+      <label className="studio-textarea-field">
+        Description
+        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+      </label>
+    </section>
+  );
+}
+
+function StudioSetupNoteEditor({
+  form,
+  onBodyCommit,
+  onNoteMediaUpload,
+  onUpdate
+}: {
+  form: StudioForm;
+  onBodyCommit: (value: string) => void;
+  onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onUpdate: StudioUpdate;
+}) {
+  return (
+    <section className="studio-setup-simple-editor">
+      <div className="studio-setup-form-grid">
+        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
+      </div>
+      <label className="studio-textarea-field">
+        Summary
+        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+      </label>
+      <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} />
+    </section>
+  );
+}
+
+function StudioSetupSystemEditor({
+  form,
+  onBodyCommit,
+  onFileDrop,
+  onFilePick,
+  onNoteMediaUpload,
+  onUpdate,
+  uploading
+}: {
+  form: StudioForm;
+  onBodyCommit: (value: string) => void;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
+  onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onUpdate: StudioUpdate;
+  uploading: boolean;
+}) {
+  return (
+    <section className="studio-setup-simple-editor">
+      <div className="studio-setup-form-grid">
+        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
+      </div>
+      <SetupMediaInput
+        description="Optional profile image. Keep it public-safe and avoid screenshots with local paths."
+        label="Profile image"
+        mediaPath={form.headerImage}
+        target="headerImage"
+        uploading={uploading}
+        onClear={() => onUpdate("headerImage", "")}
+        onFileDrop={onFileDrop}
+        onFilePick={onFilePick}
+      />
+      <label className="studio-textarea-field">
+        Summary
+        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+      </label>
+      <BufferedBodyEditor label="Specs / Hardware" value={form.hardware} onCommit={(value) => onUpdate("hardware", value)} />
+      <div className="studio-setup-note-stack">
+        <div className="terminal-title">// SETUP NOTES</div>
+        <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} />
+      </div>
+    </section>
+  );
+}
+
+function SetupMediaInput({
+  description,
+  label,
+  mediaPath,
+  onClear,
+  onFileDrop,
+  onFilePick,
+  target,
+  uploading
+}: {
+  description: string;
+  label: string;
+  mediaPath: string;
+  onClear: () => void;
+  onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
+  onFilePick: (target: MediaTarget) => void;
+  target: Extract<MediaTarget, "headerImage" | "iconImage">;
+  uploading: boolean;
+}) {
+  return (
+    <div className="studio-setup-media-field">
+      <div className="studio-setup-media-head">
+        <span>{label}</span>
+        {mediaPath ? <button type="button" onClick={onClear}>Clear</button> : null}
+      </div>
+      <DropZone
+        description={description}
+        uploading={uploading}
+        onDrop={(files) => onFileDrop(files, target)}
+        onPick={() => onFilePick(target)}
+      />
+      {mediaPath ? <MediaPathList paths={[mediaPath]} onRemove={onClear} /> : null}
+    </div>
+  );
+}
 
 function StudioSectionPage({
   onEdit,
@@ -1603,15 +2049,16 @@ function isVideoPath(value: string): boolean {
   return /\.(mp4|webm)$/i.test(value);
 }
 
-function emptyForm(section: StudioSection = "logs"): StudioForm {
+function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "" = ""): StudioForm {
   const today = new Date().toISOString().slice(0, 10);
+  const normalizedSetupGroup = section === "setup" ? normalizeSetupGroup(setupGroup) : "";
 
   return {
     originalId: "",
     id: "",
     title: "Untitled Record",
     section,
-    type: defaultType(section),
+    type: section === "setup" ? defaultSetupType(normalizedSetupGroup) : defaultType(section),
     status: "Draft",
     started: today,
     updated: today,
@@ -1619,7 +2066,8 @@ function emptyForm(section: StudioSection = "logs"): StudioForm {
     banner: "",
     headerImage: "",
     iconImage: "",
-    setupGroup: section === "setup" ? "systems" : "",
+    externalUrl: "",
+    setupGroup: normalizedSetupGroup,
     samples: "",
     attachments: "",
     progress: 0,
@@ -1633,7 +2081,7 @@ function emptyForm(section: StudioSection = "logs"): StudioForm {
     playtime: "",
     lastPlayed: "",
     achievementCount: "",
-    body: defaultStudioBody(section, section === "setup" ? "systems" : "")
+    body: defaultStudioBody(section, normalizedSetupGroup)
   };
 }
 
@@ -1688,6 +2136,7 @@ function fromRecord(record?: RecordEntry): StudioForm {
     banner: record.banner ?? "",
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
     iconImage: typeof record.meta.iconImage === "string" ? record.meta.iconImage : "",
+    externalUrl: typeof record.meta.externalUrl === "string" ? record.meta.externalUrl : "",
     setupGroup: typeof record.meta.setupGroup === "string" ? normalizeSetupGroup(record.meta.setupGroup) : record.section === "setup" ? inferSetupGroup(record) : "",
     samples: metaMediaList(record.meta.samples),
     attachments: metaMediaList(record.meta.attachments),
@@ -1793,11 +2242,11 @@ function defaultType(section: StudioSection): string {
   }[section];
 }
 
-function normalizeSetupGroup(value: string): string {
-  return ["systems", "tools", "peripherals", "notes"].includes(value) ? value : "systems";
+function normalizeSetupGroup(value: string): SetupGroupId {
+  return setupGroupIds.includes(value as SetupGroupId) ? value as SetupGroupId : "systems";
 }
 
-function inferSetupGroup(record: RecordEntry): string {
+function inferSetupGroup(record: RecordEntry): SetupGroupId {
   const haystack = [record.title, record.type, record.summary, metaTextBlock(record.meta.hardware)].join(" ").toLowerCase();
 
   if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
@@ -1831,6 +2280,34 @@ function setupGroupHelp(setupGroup: string): string {
     peripherals: "Appears as an inspection photo tile with expandable media.",
     notes: "Appears as a note/file icon and opens into note content."
   }[normalizeSetupGroup(setupGroup)] ?? "Choose how this Setup record should appear.";
+}
+
+function setupGroupLabel(setupGroup: string): string {
+  return setupManagerGroups.find((group) => group.id === normalizeSetupGroup(setupGroup))?.label ?? "Systems";
+}
+
+function setupGroupForRecord(record: RecordEntry): SetupGroupId {
+  return typeof record.meta.setupGroup === "string" ? normalizeSetupGroup(record.meta.setupGroup) : inferSetupGroup(record);
+}
+
+function setupRecordStudioMedia(record: RecordEntry): string {
+  const iconImage = typeof record.meta.iconImage === "string" ? record.meta.iconImage : "";
+  const headerImage = typeof record.meta.headerImage === "string" ? record.meta.headerImage : "";
+
+  return iconImage || headerImage || record.banner || "";
+}
+
+function defaultSetupType(setupGroup: string): string {
+  return {
+    systems: "System Profile",
+    tools: "Tool Shortcut",
+    peripherals: "Peripheral",
+    notes: "Setup Note"
+  }[normalizeSetupGroup(setupGroup)];
+}
+
+function isDefaultSetupType(value: string): boolean {
+  return ["Setup Note", "Setup", "System Profile", "Tool Shortcut", "Peripheral"].includes(value);
 }
 
 type MilestoneDraft = {
@@ -2025,6 +2502,7 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     meta: {
       headerImage: form.headerImage,
       iconImage: form.iconImage,
+      externalUrl: form.externalUrl,
       setupGroup: form.section === "setup" ? normalizeSetupGroup(form.setupGroup) : "",
       samples: mediaListFromText(form.samples),
       attachments: mediaListFromText(form.attachments),

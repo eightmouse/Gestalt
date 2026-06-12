@@ -103,6 +103,7 @@ for (const filename of filenames) {
     dashboardImage: toStaticPath(data.dashboardImage),
     headerImage: toStaticPath(data.headerImage),
     iconImage: toStaticPath(data.iconImage),
+    externalUrl: typeof data.externalUrl === "string" ? data.externalUrl : "",
     setupGroup: typeof data.setupGroup === "string"
       ? data.setupGroup
       : typeof data.setupKind === "string"
