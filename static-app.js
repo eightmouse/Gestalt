@@ -487,11 +487,12 @@ function recentActivity(limit) {
     .filter((record) => record.section !== "system")
     .map((record) => {
       const trace = activityTrace(record);
+      const setupDetail = setupActivityDetail(record);
 
       return {
-        content: trace ? "notes" : undefined,
+        content: trace && !setupDetail ? "notes" : undefined,
         date: trace?.date || record.updated,
-        detail: trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type,
+        detail: setupDetail || (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
         record,
         title: record.title
       };
@@ -505,6 +506,10 @@ function activityDate(record) {
 }
 
 function activityTrace(record) {
+  if (record.section === "setup" && setupGroupForActivity(record) !== "notes") {
+    return null;
+  }
+
   const latestNote = noteEntries(record.body)
     .map((note) => ({ date: noteTitleDate(note.title), note }))
     .filter((entry) => entry.date)
@@ -515,6 +520,66 @@ function activityTrace(record) {
   }
 
   return latestNote;
+}
+
+function setupActivityDetail(record) {
+  if (record.section !== "setup") {
+    return null;
+  }
+
+  const group = setupGroupForActivity(record);
+
+  if (group === "tools") {
+    return "Setup Tool / Shortcut";
+  }
+
+  if (group === "peripherals") {
+    return "Setup Peripheral / Device";
+  }
+
+  if (group === "systems") {
+    return "Setup System / Profile";
+  }
+
+  return null;
+}
+
+function setupGroupForActivity(record) {
+  const explicitGroup = [record.setupGroup, record.setupKind, record.category]
+    .map((value) => (typeof value === "string" ? value.toLowerCase().trim() : ""))
+    .find(Boolean);
+
+  if (explicitGroup) {
+    if (/\b(tool|tools|app|apps|software|shortcut)\b/.test(explicitGroup)) {
+      return "tools";
+    }
+
+    if (/\b(peripheral|peripherals|device|hardware|gear|photo)\b/.test(explicitGroup)) {
+      return "peripherals";
+    }
+
+    if (/\b(note|notes|file|memo)\b/.test(explicitGroup)) {
+      return "notes";
+    }
+
+    return "systems";
+  }
+
+  const haystack = [record.title, record.type, record.summary, textBlock(record.hardware)].join(" ").toLowerCase();
+
+  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
+    return "peripherals";
+  }
+
+  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
+    return "tools";
+  }
+
+  if (/\b(note|notes|memo|file)\b/.test(haystack) && !/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
+    return "notes";
+  }
+
+  return "systems";
 }
 
 function activityTraceTitle(title) {
@@ -1370,7 +1435,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.29.2</span>
+        <span>v1.29.3</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1384,7 +1449,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.29.2</span>
+        <span class="version-label">v1.29.3</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1404,7 +1469,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.29.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.29.3</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1883,6 +1948,12 @@ function setupPathFor(record) {
 }
 
 function setupNarrativeNotes(record) {
+  const hasExplicitNotes = /(^|\n):::(?:previous-note|note)\s+/i.test(record.body);
+
+  if (setupGroupFor(record) !== "notes" && !hasExplicitNotes) {
+    return [];
+  }
+
   return noteEntries(record.body).filter((note) => !setupNoteIsSpecOnly(note.body));
 }
 

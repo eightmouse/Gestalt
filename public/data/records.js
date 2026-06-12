@@ -382,7 +382,7 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "",
     "milestones": [],
-    "body": ":::note 12 / 06 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": "Shortcut registered."
   },
   {
     "id": "obsidian",
@@ -407,7 +407,7 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "",
     "milestones": [],
-    "body": ":::note 12 / 06 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": "Shortcut registered."
   },
   {
     "id": "path-of-exile-2",
@@ -457,7 +457,7 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "",
     "milestones": [],
-    "body": ":::note 12 / 06 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": "Shortcut registered."
   },
   {
     "id": "vs-code",
@@ -482,7 +482,7 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "",
     "milestones": [],
-    "body": ":::note 12 / 06 / 2026 - New Note\nWrite the first note here.\n:::"
+    "body": "Shortcut registered."
   },
   {
     "id": "a-something-signal",

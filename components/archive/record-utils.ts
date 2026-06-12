@@ -151,11 +151,12 @@ export function recentActivity(records: RecordEntry[], limit: number): ActivityE
     .filter((record) => record.section !== "system")
     .map((record) => {
       const trace = activityTrace(record);
+      const setupDetail = setupActivityDetail(record);
 
       return {
-        content: trace ? "notes" as const : undefined,
+        content: trace && !setupDetail ? "notes" as const : undefined,
         date: trace?.date ?? record.updated,
-        detail: trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type,
+        detail: setupDetail ?? (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
         record,
         title: record.title
       };
@@ -194,6 +195,10 @@ export function activityDate(record: RecordEntry): string {
 }
 
 function activityTrace(record: RecordEntry): { date: string; note: { title: string; body: string } } | null {
+  if (record.section === "setup" && setupGroupForActivity(record) !== "notes") {
+    return null;
+  }
+
   const latestNote = noteEntries(record.body)
     .map((note) => ({ date: noteTitleDate(note.title), note }))
     .filter((entry): entry is { date: string; note: { title: string; body: string } } => Boolean(entry.date))
@@ -204,6 +209,66 @@ function activityTrace(record: RecordEntry): { date: string; note: { title: stri
   }
 
   return latestNote;
+}
+
+function setupActivityDetail(record: RecordEntry): string | null {
+  if (record.section !== "setup") {
+    return null;
+  }
+
+  const group = setupGroupForActivity(record);
+
+  if (group === "tools") {
+    return "Setup Tool / Shortcut";
+  }
+
+  if (group === "peripherals") {
+    return "Setup Peripheral / Device";
+  }
+
+  if (group === "systems") {
+    return "Setup System / Profile";
+  }
+
+  return null;
+}
+
+function setupGroupForActivity(record: RecordEntry): "systems" | "tools" | "peripherals" | "notes" {
+  const explicitGroup = [record.meta.setupGroup, record.meta.setupKind, record.meta.category]
+    .map((value) => (typeof value === "string" ? value.toLowerCase().trim() : ""))
+    .find(Boolean);
+
+  if (explicitGroup) {
+    if (/\b(tool|tools|app|apps|software|shortcut)\b/.test(explicitGroup)) {
+      return "tools";
+    }
+
+    if (/\b(peripheral|peripherals|device|hardware|gear|photo)\b/.test(explicitGroup)) {
+      return "peripherals";
+    }
+
+    if (/\b(note|notes|file|memo)\b/.test(explicitGroup)) {
+      return "notes";
+    }
+
+    return "systems";
+  }
+
+  const haystack = [record.title, record.type, record.summary, metaText(record.meta.hardware)].join(" ").toLowerCase();
+
+  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
+    return "peripherals";
+  }
+
+  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
+    return "tools";
+  }
+
+  if (/\b(note|notes|memo|file)\b/.test(haystack) && !/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
+    return "notes";
+  }
+
+  return "systems";
 }
 
 function activityTraceTitle(title: string): string {

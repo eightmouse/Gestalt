@@ -152,11 +152,22 @@ export function StudioClient({ records }: StudioClientProps) {
   }, []);
 
   const update = useCallback(<Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => {
-    const next = { ...formRef.current, [key]: value };
-    const nextBody = key === "body" && typeof value === "string" ? value : bodyDraftRef.current;
+    let next = { ...formRef.current, [key]: value };
+    let nextBody = key === "body" && typeof value === "string" ? value : bodyDraftRef.current;
 
     if (key === "body" && typeof value === "string") {
       bodyDraftRef.current = value;
+    }
+
+    if (
+      key === "setupGroup" &&
+      typeof value === "string" &&
+      formRef.current.section === "setup" &&
+      isGeneratedSetupBody(bodyDraftRef.current)
+    ) {
+      nextBody = defaultStudioBody("setup", value);
+      next = { ...next, body: nextBody };
+      bodyDraftRef.current = nextBody;
     }
 
     formRef.current = next;
@@ -1594,7 +1605,6 @@ function isVideoPath(value: string): boolean {
 
 function emptyForm(section: StudioSection = "logs"): StudioForm {
   const today = new Date().toISOString().slice(0, 10);
-  const noteTitle = new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note";
 
   return {
     originalId: "",
@@ -1623,8 +1633,41 @@ function emptyForm(section: StudioSection = "logs"): StudioForm {
     playtime: "",
     lastPlayed: "",
     achievementCount: "",
-    body: `:::note ${noteTitle}\nWrite the first note here.\n:::`
+    body: defaultStudioBody(section, section === "setup" ? "systems" : "")
   };
+}
+
+function defaultStudioBody(section: StudioSection, setupGroup = ""): string {
+  if (section !== "setup") {
+    const noteTitle = new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note";
+
+    return `:::note ${noteTitle}\nWrite the first note here.\n:::`;
+  }
+
+  const group = normalizeSetupGroup(setupGroup);
+
+  if (group === "tools") {
+    return "Shortcut registered.";
+  }
+
+  if (group === "peripherals") {
+    return "Device capture registered.";
+  }
+
+  if (group === "notes") {
+    const noteTitle = new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note";
+
+    return `:::note ${noteTitle}\nWrite the first setup note here.\n:::`;
+  }
+
+  return "System profile pending.";
+}
+
+function isGeneratedSetupBody(value: string): boolean {
+  return (
+    /^:::note\s+\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s+-\s+New Note\s*\r?\nWrite the first (setup )?note here\.\s*\r?\n:::\s*$/i.test(value.trim()) ||
+    ["System profile pending.", "Shortcut registered.", "Device capture registered."].includes(value.trim())
+  );
 }
 
 function fromRecord(record?: RecordEntry): StudioForm {
@@ -1937,7 +1980,15 @@ function getStudioContents(section: StudioSection, setupGroup = ""): Array<{ key
   }
 
   if (section === "setup") {
-    if (normalizeSetupGroup(setupGroup) !== "systems") {
+    const group = normalizeSetupGroup(setupGroup);
+
+    if (group === "tools" || group === "peripherals") {
+      return [
+        { key: "overview", label: "Overview" }
+      ];
+    }
+
+    if (group === "notes") {
       return [
         { key: "overview", label: "Overview" },
         { key: "notes", label: "Notes" }

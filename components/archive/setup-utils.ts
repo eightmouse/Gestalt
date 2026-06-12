@@ -88,6 +88,12 @@ export function setupPathFor(record: RecordEntry): string {
 }
 
 export function setupNarrativeNotes(record: RecordEntry): Array<{ title: string; body: string }> {
+  const hasExplicitNotes = /(^|\n):::(?:previous-note|note)\s+/i.test(record.body);
+
+  if (setupGroupFor(record) !== "notes" && !hasExplicitNotes) {
+    return [];
+  }
+
   return noteEntries(record.body).filter((note) => !setupNoteIsSpecOnly(note.body));
 }
 
