@@ -1435,7 +1435,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.30.1</span>
+        <span>v1.30.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1449,7 +1449,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.30.1</span>
+        <span class="version-label">v1.30.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1469,7 +1469,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.30.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.30.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1612,10 +1612,10 @@ function dashboard() {
   const currentGame = currentGameRecord();
   const latestLog = latestLogRecord();
   const activity = recentActivity(6);
-  const activitySections = new Set();
+  const newestActivityDate = activity[0]?.date || "";
   const activityRows = activity.map((item) => {
-    const freshness = activitySections.has(item.record.section) ? "old" : "new";
-    activitySections.add(item.record.section);
+    const freshness = item.date === newestActivityDate ? "new" : "old";
+
     return { freshness, item };
   });
 

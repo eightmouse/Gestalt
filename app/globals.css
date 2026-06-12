@@ -4644,6 +4644,11 @@ button:focus-visible {
   transform: translateY(-50%) translateZ(0);
 }
 
+.is-setup-record--peripherals {
+  inline-size: min(1040px, calc(100vw - var(--sidebar-width) - 72px));
+  max-block-size: min(760px, calc(100dvh - 92px));
+}
+
 .is-setup-record,
 .is-setup-record.is-steady {
   animation: none;
@@ -4669,6 +4674,14 @@ button:focus-visible {
     radial-gradient(ellipse at 50% -10%, rgba(217, 213, 193, 0.06), transparent 36%),
     rgba(0, 0, 0, 0.26);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.is-setup-record--peripherals .setup-window-shell {
+  overflow: hidden;
+}
+
+.is-setup-record--peripherals .setup-console {
+  min-block-size: min(710px, calc(100dvh - 96px));
 }
 
 .setup-console + .setup-console {
@@ -4876,9 +4889,11 @@ button:focus-visible {
 }
 
 .setup-console-body--peripheral .setup-inspection-photo {
+  aspect-ratio: 16 / 9;
   inline-size: 100%;
-  max-inline-size: 720px;
-  min-block-size: clamp(220px, 34vw, 360px);
+  max-inline-size: 920px;
+  min-block-size: clamp(220px, 31dvh, 380px);
+  max-block-size: min(430px, 55dvh);
   justify-self: stretch;
 }
 

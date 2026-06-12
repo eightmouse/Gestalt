@@ -61,10 +61,10 @@ export function ArchiveDashboard({
   onOpenSection,
   onOpenTimeline
 }: DashboardProps) {
-  const activitySections = new Set<RecordSection>();
+  const newestActivityDate = activity[0]?.date ?? "";
   const activityRows = activity.map((item) => {
-    const freshness = activitySections.has(item.record.section) ? "old" : "new";
-    activitySections.add(item.record.section);
+    const freshness = item.date === newestActivityDate ? "new" : "old";
+
     return { freshness, item };
   });
 
