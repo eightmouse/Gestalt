@@ -13,7 +13,7 @@ import {
   UpdateHistoryModal
 } from "@/components/archive/record-content";
 import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
-import { setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
+import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 type RecordWindowProps = {
@@ -173,9 +173,11 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onClose, onMin
 }
 
 function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+  const group = setupGroupFor(record);
   const profile = setupProfile(record);
-  const headerImage = recordHeaderImage(record) || record.banner;
+  const headerImage = setupRecordImage(record);
   const notes = setupNarrativeNotes(record);
+  const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
   const specs = profile.specs.length > 0
     ? profile.specs
     : [
@@ -186,7 +188,7 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
 
   return (
     <motion.article
-      className={`${maximized ? "record-window is-maximized" : "record-window"} is-setup-record`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"} is-setup-record is-setup-record--${group}`}
       data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -195,87 +197,244 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
       aria-label={`${record.title} setup terminal`}
     >
       <div className="setup-window-shell">
-        <section className="setup-console" aria-label={`${record.title} machine profile`}>
-          <div className="setup-console-prompt">
-            <div className="setup-prompt-command">
-              <span>eightmouse@gestalt</span>
-              <i>:</i>
-              <span>{setupPathFor(record)}</span>
-              <i>$</i>
-              <strong>{profile.command}</strong>
-            </div>
-            <div className="window-actions setup-window-actions">
-              <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
-                <Minimize2 size={14} />
-              </button>
-              <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize setup terminal">
-                <Maximize2 size={14} />
-              </button>
-              <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">
-                <X size={15} />
-              </button>
-            </div>
-          </div>
+        <section className={`setup-console setup-console--${group}`} aria-label={`${record.title} setup profile`}>
+          <SetupPrompt
+            command={profile.command}
+            record={record}
+            onClose={onClose}
+            onMaximize={onMaximize}
+            onMinimize={onMinimize}
+          />
 
-          <div className="setup-console-body">
-            <div className={headerImage ? "setup-terminal-avatar has-image" : "setup-terminal-avatar"} aria-hidden="true">
-              {headerImage ? <img src={headerImage} alt="" decoding="async" loading="lazy" /> : null}
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-
-            <div className="setup-fetch setup-fetch--terminal">
-              <p className="setup-command">&gt; profile.loaded / public-safe</p>
-              <h2>{record.title}</h2>
-              {record.summary ? <p className="setup-motd">{record.summary}</p> : null}
-              <dl>
-                <div>
-                  <dt>TYPE</dt>
-                  <dd>{profile.category}</dd>
-                </div>
-                <div>
-                  <dt>STATE</dt>
-                  <dd>{record.status}</dd>
-                </div>
-                <div>
-                  <dt>UPDATED</dt>
-                  <dd>{formatReadableDate(record.updated)}</dd>
-                </div>
-                {specs.map((spec, index) => (
-                  <div key={`${spec.label}-${index}`}>
-                    <dt>{spec.label}</dt>
-                    <dd>{spec.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
+          {group === "tools" ? (
+            <SetupToolBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
+          ) : group === "peripherals" ? (
+            <SetupPeripheralBody headerImage={headerImage} profile={profile} record={record} specs={specs} onExpandImage={setExpandedImage} />
+          ) : group === "notes" ? (
+            <SetupNoteBody notes={notes} record={record} />
+          ) : (
+            <SetupSystemBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
+          )}
         </section>
 
-        {notes.length > 0 ? (
-          <section className="setup-console setup-notes-terminal" aria-label={`${record.title} setup notes`}>
-            <div className="setup-console-prompt">
-              <span>eightmouse@gestalt</span>
-              <i>:</i>
-              <span>{setupPathFor(record)}</span>
-              <i>$</i>
-              <strong>cat notes.log</strong>
-            </div>
-            <div className="setup-note-stack">
-              {notes.map((note) => (
-                <article className="setup-note" key={note.title}>
-                  <h3>// {note.title}</h3>
-                  <RecordBody body={note.body} />
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} /> : null}
       </div>
+      {expandedImage ? (
+        <button className="note-image-lightbox" type="button" aria-label="Close expanded setup image" onClick={() => setExpandedImage(null)}>
+          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
+        </button>
+      ) : null}
     </motion.article>
   );
+}
+
+function SetupPrompt({
+  command,
+  onClose,
+  onMaximize,
+  onMinimize,
+  record
+}: {
+  command: string;
+  record: RecordEntry;
+  onClose: () => void;
+  onMaximize: () => void;
+  onMinimize: () => void;
+}) {
+  return (
+    <div className="setup-console-prompt">
+      <div className="setup-prompt-command">
+        <span>eightmouse@gestalt</span>
+        <i>:</i>
+        <span>{setupPathFor(record)}</span>
+        <i>$</i>
+        <strong>{command}</strong>
+      </div>
+      <div className="window-actions setup-window-actions">
+        <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
+          <Minimize2 size={14} />
+        </button>
+        <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize setup terminal">
+          <Maximize2 size={14} />
+        </button>
+        <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">
+          <X size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SetupSystemBody({
+  headerImage,
+  profile,
+  record,
+  specs
+}: {
+  headerImage: string;
+  profile: { category: string };
+  record: RecordEntry;
+  specs: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="setup-console-body setup-console-body--system">
+      <div className={headerImage ? "setup-terminal-avatar has-image" : "setup-terminal-avatar"} aria-hidden="true">
+        {headerImage ? <img src={headerImage} alt="" decoding="async" loading="lazy" /> : null}
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+
+      <SetupFetchDetails command="profile.loaded / public-safe" profile={profile} record={record} specs={specs} />
+    </div>
+  );
+}
+
+function SetupToolBody({
+  headerImage,
+  profile,
+  record,
+  specs
+}: {
+  headerImage: string;
+  profile: { category: string };
+  record: RecordEntry;
+  specs: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="setup-console-body setup-console-body--tool">
+      <div className={headerImage ? "setup-shortcut-preview has-image" : "setup-shortcut-preview"} aria-hidden="true">
+        {headerImage ? <img src={headerImage} alt="" decoding="async" loading="lazy" /> : null}
+        <span />
+      </div>
+
+      <SetupFetchDetails command="shortcut.loaded / local-use" profile={profile} record={record} specs={specs} />
+    </div>
+  );
+}
+
+function SetupPeripheralBody({
+  headerImage,
+  onExpandImage,
+  profile,
+  record,
+  specs
+}: {
+  headerImage: string;
+  onExpandImage: (image: { alt: string; src: string }) => void;
+  profile: { category: string };
+  record: RecordEntry;
+  specs: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="setup-console-body setup-console-body--peripheral">
+      <button
+        className={headerImage ? "setup-inspection-photo has-image" : "setup-inspection-photo"}
+        disabled={!headerImage}
+        type="button"
+        onClick={() => headerImage && onExpandImage({ alt: record.title, src: headerImage })}
+      >
+        {headerImage ? <img src={headerImage} alt="" decoding="async" loading="lazy" /> : null}
+        <span>{headerImage ? "inspect photo" : "no capture"}</span>
+      </button>
+
+      <SetupFetchDetails command="device.photo / inspect" profile={profile} record={record} specs={specs} />
+    </div>
+  );
+}
+
+function SetupNoteBody({ notes, record }: { notes: Array<{ title: string; body: string }>; record: RecordEntry }) {
+  const noteFiles = notes.length > 0 ? notes : [{ title: record.title, body: record.body }];
+
+  return (
+    <div className="setup-note-file-shell">
+      <div className="setup-note-file-icon" aria-hidden="true">
+        <span />
+      </div>
+      <div className="setup-note-file-copy">
+        <p className="setup-command">&gt; note.opened / public-safe</p>
+        <h2>{record.title}</h2>
+        {record.summary ? <p className="setup-motd">{record.summary}</p> : null}
+      </div>
+      <div className="setup-note-stack">
+        {noteFiles.map((note) => (
+          <article className="setup-note" key={note.title}>
+            <h3>// {note.title}</h3>
+            <RecordBody body={note.body} />
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SetupFetchDetails({
+  command,
+  profile,
+  record,
+  specs
+}: {
+  command: string;
+  profile: { category: string };
+  record: RecordEntry;
+  specs: Array<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="setup-fetch setup-fetch--terminal">
+      <p className="setup-command">&gt; {command}</p>
+      <h2>{record.title}</h2>
+      {record.summary ? <p className="setup-motd">{record.summary}</p> : null}
+      <dl>
+        <div>
+          <dt>TYPE</dt>
+          <dd>{profile.category}</dd>
+        </div>
+        <div>
+          <dt>STATE</dt>
+          <dd>{record.status}</dd>
+        </div>
+        <div>
+          <dt>UPDATED</dt>
+          <dd>{formatReadableDate(record.updated)}</dd>
+        </div>
+        {specs.map((spec, index) => (
+          <div key={`${spec.label}-${index}`}>
+            <dt>{spec.label}</dt>
+            <dd>{spec.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function SetupNotesTerminal({ notes, record }: { notes: Array<{ title: string; body: string }>; record: RecordEntry }) {
+  return (
+    <section className="setup-console setup-notes-terminal" aria-label={`${record.title} setup notes`}>
+      <div className="setup-console-prompt">
+        <span>eightmouse@gestalt</span>
+        <i>:</i>
+        <span>{setupPathFor(record)}</span>
+        <i>$</i>
+        <strong>cat notes.log</strong>
+      </div>
+      <div className="setup-note-stack">
+        {notes.map((note) => (
+          <article className="setup-note" key={note.title}>
+            <h3>// {note.title}</h3>
+            <RecordBody body={note.body} />
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function setupRecordImage(record: RecordEntry): string {
+  const iconImage = typeof record.meta.iconImage === "string" ? record.meta.iconImage : "";
+
+  return iconImage || recordHeaderImage(record) || record.banner || "";
 }
 
 function recordStateKey(status: string): string {

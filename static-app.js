@@ -1370,7 +1370,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.28.7</span>
+        <span>v1.29.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1384,7 +1384,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.28.7</span>
+        <span class="version-label">v1.29.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1404,7 +1404,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.28.7</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.29.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1757,20 +1757,48 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
 }
 
 function renderSetupTile(record) {
-  const image = recordHeaderImage(record) || record.banner;
+  const group = setupGroupFor(record);
+  const image = setupTileImage(record);
   const profile = setupProfile(record);
+  const action = group === "tools" ? "open" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
 
-  return `<button class="setup-tile" type="button" data-open-record="${record.id}">
-    <span class="setup-tile-icon" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}</span>
+  return `<button class="setup-tile setup-tile--${group}" type="button" data-open-record="${record.id}">
+    <span class="setup-tile-icon" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}<span class="setup-tile-glyph"></span></span>
     <span class="setup-tile-body">
       <strong>${escapeHtml(record.title)}</strong>
       <small>${escapeHtml(profile.category)} . ${escapeHtml(record.status)}</small>
     </span>
-    <i>open</i>
+    <i>${action}</i>
   </button>`;
 }
 
+function setupTileImage(record) {
+  return record.iconImage || recordHeaderImage(record) || record.banner || "";
+}
+
 function setupGroupFor(record) {
+  const explicitGroup = [record.setupGroup, record.setupKind, record.category]
+    .map((value) => (typeof value === "string" ? value.toLowerCase().trim() : ""))
+    .find(Boolean);
+
+  if (explicitGroup) {
+    if (/\b(system|systems|machine|rig|os)\b/.test(explicitGroup)) {
+      return "systems";
+    }
+
+    if (/\b(tool|tools|app|apps|software|shortcut)\b/.test(explicitGroup)) {
+      return "tools";
+    }
+
+    if (/\b(peripheral|peripherals|device|hardware|gear|photo)\b/.test(explicitGroup)) {
+      return "peripherals";
+    }
+
+    if (/\b(note|notes|file|memo)\b/.test(explicitGroup)) {
+      return "notes";
+    }
+  }
+
   const haystack = [record.title, record.type, record.summary, textBlock(record.hardware)].join(" ").toLowerCase();
 
   if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
@@ -1794,9 +1822,27 @@ function setupProfile(record) {
 
   return {
     category: groupConfig.title,
-    command: `cat ${groupConfig.path}/${record.id}.log`,
+    command: setupCommandFor(record, group),
     specs: setupSpecRows(record)
   };
+}
+
+function setupCommandFor(record, group = setupGroupFor(record)) {
+  const groupConfig = setupGroupRegistry.find((item) => item.id === group) || setupGroupRegistry[3];
+
+  if (group === "tools") {
+    return `open ${groupConfig.path}/${record.id}.shortcut`;
+  }
+
+  if (group === "peripherals") {
+    return `inspect ${groupConfig.path}/${record.id}.device`;
+  }
+
+  if (group === "notes") {
+    return `less ${groupConfig.path}/${record.id}.note`;
+  }
+
+  return `cat ${groupConfig.path}/${record.id}.log`;
 }
 
 function setupSpecRows(record) {
@@ -1881,8 +1927,9 @@ function workspaceContent() {
 }
 
 function setupRecordWindow(record) {
+  const group = setupGroupFor(record);
   const profile = setupProfile(record);
-  const headerImage = recordHeaderImage(record) || record.banner;
+  const headerImage = setupRecordImage(record);
   const notes = setupNarrativeNotes(record);
   const specs = profile.specs.length
     ? profile.specs
@@ -1892,40 +1939,23 @@ function setupRecordWindow(record) {
         { label: "PROGRESS", value: `${record.progress}%` }
       ];
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} is-setup-record" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
+  const body = group === "tools"
+    ? setupToolBody(record, profile, specs, headerImage)
+    : group === "peripherals"
+      ? setupPeripheralBody(record, profile, specs, headerImage)
+      : group === "notes"
+        ? setupNoteBody(record, notes)
+        : setupSystemBody(record, profile, specs, headerImage);
+
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} is-setup-record is-setup-record--${group}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
     <div class="setup-window-shell">
-      <section class="setup-console" aria-label="${escapeHtml(record.title)} machine profile">
-        <div class="setup-console-prompt">
-          <div class="setup-prompt-command">
-            <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>${escapeHtml(profile.command)}</strong>
-          </div>
-          <div class="window-actions setup-window-actions">
-            <button type="button" data-window-action="minimize" aria-label="Minimize setup terminal">minimize</button>
-            <button type="button" data-window-action="maximize" aria-label="Maximize setup terminal">maximize</button>
-            <button type="button" data-window-action="close" aria-label="Close setup terminal">close</button>
-          </div>
-        </div>
-        <div class="setup-console-body">
-          <div class="${headerImage ? "setup-terminal-avatar has-image" : "setup-terminal-avatar"}" aria-hidden="true">
-            ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="" decoding="async" loading="lazy" />` : ""}
-            <span></span><span></span><span></span><span></span>
-          </div>
-          <div class="setup-fetch setup-fetch--terminal">
-            <p class="setup-command">&gt; profile.loaded / public-safe</p>
-            <h2>${escapeHtml(record.title)}</h2>
-            ${record.summary ? `<p class="setup-motd">${escapeHtml(record.summary)}</p>` : ""}
-            <dl>
-              <div><dt>TYPE</dt><dd>${escapeHtml(profile.category)}</dd></div>
-              <div><dt>STATE</dt><dd>${escapeHtml(record.status)}</dd></div>
-              <div><dt>UPDATED</dt><dd>${readableDate(record.updated)}</dd></div>
-              ${specs.map((spec) => `<div><dt>${escapeHtml(spec.label)}</dt><dd>${escapeHtml(spec.value)}</dd></div>`).join("")}
-            </dl>
-          </div>
-        </div>
+      <section class="setup-console setup-console--${group}" aria-label="${escapeHtml(record.title)} setup profile">
+        ${setupPrompt(record, profile.command)}
+        ${body}
       </section>
 
       ${
-        notes.length
+        group !== "notes" && notes.length
           ? `<section class="setup-console setup-notes-terminal" aria-label="${escapeHtml(record.title)} setup notes">
               <div class="setup-console-prompt">
                 <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>cat notes.log</strong>
@@ -1940,6 +1970,85 @@ function setupRecordWindow(record) {
       }
     </div>
   </article>`;
+}
+
+function setupPrompt(record, command) {
+  return `<div class="setup-console-prompt">
+    <div class="setup-prompt-command">
+      <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>${escapeHtml(command)}</strong>
+    </div>
+    <div class="window-actions setup-window-actions">
+      <button type="button" data-window-action="minimize" aria-label="Minimize setup terminal">minimize</button>
+      <button type="button" data-window-action="maximize" aria-label="Maximize setup terminal">maximize</button>
+      <button type="button" data-window-action="close" aria-label="Close setup terminal">close</button>
+    </div>
+  </div>`;
+}
+
+function setupSystemBody(record, profile, specs, headerImage) {
+  return `<div class="setup-console-body setup-console-body--system">
+    <div class="${headerImage ? "setup-terminal-avatar has-image" : "setup-terminal-avatar"}" aria-hidden="true">
+      ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="" decoding="async" loading="lazy" />` : ""}
+      <span></span><span></span><span></span><span></span>
+    </div>
+    ${setupFetchDetails(record, profile, specs, "profile.loaded / public-safe")}
+  </div>`;
+}
+
+function setupToolBody(record, profile, specs, headerImage) {
+  return `<div class="setup-console-body setup-console-body--tool">
+    <div class="${headerImage ? "setup-shortcut-preview has-image" : "setup-shortcut-preview"}" aria-hidden="true">
+      ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="" decoding="async" loading="lazy" />` : ""}
+      <span></span>
+    </div>
+    ${setupFetchDetails(record, profile, specs, "shortcut.loaded / local-use")}
+  </div>`;
+}
+
+function setupPeripheralBody(record, profile, specs, headerImage) {
+  return `<div class="setup-console-body setup-console-body--peripheral">
+    <button class="${headerImage ? "setup-inspection-photo has-image" : "setup-inspection-photo"}" ${headerImage ? `data-expand-image="${escapeHtml(headerImage)}" data-expand-alt="${escapeHtml(record.title)}"` : "disabled"} type="button">
+      ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="" decoding="async" loading="lazy" />` : ""}
+      <span>${headerImage ? "inspect photo" : "no capture"}</span>
+    </button>
+    ${setupFetchDetails(record, profile, specs, "device.photo / inspect")}
+  </div>`;
+}
+
+function setupNoteBody(record, notes) {
+  const noteFiles = notes.length ? notes : [{ title: record.title, body: record.body }];
+
+  return `<div class="setup-note-file-shell">
+    <div class="setup-note-file-icon" aria-hidden="true"><span></span></div>
+    <div class="setup-note-file-copy">
+      <p class="setup-command">&gt; note.opened / public-safe</p>
+      <h2>${escapeHtml(record.title)}</h2>
+      ${record.summary ? `<p class="setup-motd">${escapeHtml(record.summary)}</p>` : ""}
+    </div>
+    <div class="setup-note-stack">
+      ${noteFiles
+        .map((note) => `<article class="setup-note"><h3>// ${escapeHtml(note.title)}</h3><div class="record-body">${markdownBody(note.body)}</div></article>`)
+        .join("")}
+    </div>
+  </div>`;
+}
+
+function setupFetchDetails(record, profile, specs, command) {
+  return `<div class="setup-fetch setup-fetch--terminal">
+    <p class="setup-command">&gt; ${escapeHtml(command)}</p>
+    <h2>${escapeHtml(record.title)}</h2>
+    ${record.summary ? `<p class="setup-motd">${escapeHtml(record.summary)}</p>` : ""}
+    <dl>
+      <div><dt>TYPE</dt><dd>${escapeHtml(profile.category)}</dd></div>
+      <div><dt>STATE</dt><dd>${escapeHtml(record.status)}</dd></div>
+      <div><dt>UPDATED</dt><dd>${readableDate(record.updated)}</dd></div>
+      ${specs.map((spec) => `<div><dt>${escapeHtml(spec.label)}</dt><dd>${escapeHtml(spec.value)}</dd></div>`).join("")}
+    </dl>
+  </div>`;
+}
+
+function setupRecordImage(record) {
+  return record.iconImage || recordHeaderImage(record) || record.banner || "";
 }
 
 function recordWindow(record) {

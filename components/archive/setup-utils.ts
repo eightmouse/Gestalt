@@ -11,6 +11,28 @@ export const setupGroupRegistry: Array<{ id: SetupGroupId; title: string; path: 
 ];
 
 export function setupGroupFor(record: RecordEntry): SetupGroupId {
+  const explicitGroup = [record.meta.setupGroup, record.meta.setupKind, record.meta.category]
+    .map((value) => (typeof value === "string" ? value.toLowerCase().trim() : ""))
+    .find(Boolean);
+
+  if (explicitGroup) {
+    if (/\b(system|systems|machine|rig|os)\b/.test(explicitGroup)) {
+      return "systems";
+    }
+
+    if (/\b(tool|tools|app|apps|software|shortcut)\b/.test(explicitGroup)) {
+      return "tools";
+    }
+
+    if (/\b(peripheral|peripherals|device|hardware|gear|photo)\b/.test(explicitGroup)) {
+      return "peripherals";
+    }
+
+    if (/\b(note|notes|file|memo)\b/.test(explicitGroup)) {
+      return "notes";
+    }
+  }
+
   const haystack = [record.title, record.type, record.summary, metaText(record.meta.hardware)].join(" ").toLowerCase();
 
   if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
@@ -35,9 +57,27 @@ export function setupProfile(record: RecordEntry): { category: string; command: 
 
   return {
     category,
-    command: `cat ${setupGroupRegistry.find((item) => item.id === group)?.path ?? "/setup/notes"}/${record.id}.log`,
+    command: setupCommandFor(record, group),
     specs
   };
+}
+
+export function setupCommandFor(record: RecordEntry, group = setupGroupFor(record)): string {
+  const path = setupGroupRegistry.find((item) => item.id === group)?.path ?? "/setup/notes";
+
+  if (group === "tools") {
+    return `open ${path}/${record.id}.shortcut`;
+  }
+
+  if (group === "peripherals") {
+    return `inspect ${path}/${record.id}.device`;
+  }
+
+  if (group === "notes") {
+    return `less ${path}/${record.id}.note`;
+  }
+
+  return `cat ${path}/${record.id}.log`;
 }
 
 export function setupPathFor(record: RecordEntry): string {

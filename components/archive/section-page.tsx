@@ -233,19 +233,28 @@ function SetupBay({
 }
 
 function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
-  const image = recordHeaderImage(record) || record.banner;
+  const group = setupGroupFor(record);
+  const image = setupTileImage(record);
   const profile = setupProfile(record);
+  const action = group === "tools" ? "open" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
 
   return (
-    <button className="setup-tile" type="button" onClick={() => onOpenRecord(record)}>
+    <button className={`setup-tile setup-tile--${group}`} type="button" onClick={() => onOpenRecord(record)}>
       <span className="setup-tile-icon" aria-hidden="true">
         {image ? <img src={image} alt="" decoding="async" loading="lazy" /> : null}
+        <span className="setup-tile-glyph" />
       </span>
       <span className="setup-tile-body">
         <strong>{record.title}</strong>
         <small>{profile.category} . {record.status}</small>
       </span>
-      <i>open</i>
+      <i>{action}</i>
     </button>
   );
+}
+
+function setupTileImage(record: RecordEntry): string {
+  const iconImage = typeof record.meta.iconImage === "string" ? record.meta.iconImage : "";
+
+  return iconImage || recordHeaderImage(record) || record.banner || "";
 }

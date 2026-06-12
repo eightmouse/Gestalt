@@ -20,6 +20,14 @@ export async function writeStaticRecords(): Promise<void> {
       banner: toStaticPath(record.banner),
       dashboardImage: toStaticPath(typeof meta.dashboardImage === "string" ? meta.dashboardImage : ""),
       headerImage: toStaticPath(typeof meta.headerImage === "string" ? meta.headerImage : ""),
+      iconImage: toStaticPath(typeof meta.iconImage === "string" ? meta.iconImage : ""),
+      setupGroup: typeof meta.setupGroup === "string"
+        ? meta.setupGroup
+        : typeof meta.setupKind === "string"
+          ? meta.setupKind
+          : typeof meta.category === "string"
+            ? meta.category
+            : "",
       samples: toStaticPathList(meta.samples),
       attachments: toStaticPathList(meta.attachments),
       progress: record.progress,
