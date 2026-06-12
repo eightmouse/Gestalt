@@ -2844,15 +2844,16 @@ button:focus-visible {
 .activity-badge {
   display: none;
   min-inline-size: 31px;
+  block-size: 17px;
   justify-self: end;
   align-self: start;
-  padding: 2px 5px 1px;
+  padding: 0 5px;
   border: 1px solid rgba(217, 213, 193, 0.16);
   background: rgba(217, 213, 193, 0.026);
   color: rgba(217, 213, 193, 0.56);
   font-size: 9px;
   font-style: normal;
-  line-height: 1.15;
+  line-height: 1;
   letter-spacing: 0.08em;
   text-align: center;
   text-transform: uppercase;
@@ -2888,7 +2889,8 @@ button:focus-visible {
   }
 
   .activity-badge {
-    display: inline-block;
+    display: inline-grid;
+    place-items: center;
   }
 }
 
