@@ -2647,6 +2647,7 @@ button:focus-visible {
 
 .current-game[data-state] .game-cover {
   border-color: var(--dashboard-signal);
+  animation: dashboard-cover-neon 8.8s ease-in-out infinite;
 }
 
 .game-cover {
@@ -2664,6 +2665,20 @@ button:focus-visible {
   box-shadow: 0 0 0 1px rgba(217, 213, 193, 0.055), 0 14px 24px rgba(0, 0, 0, 0.26);
 }
 
+.game-cover::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(236, 230, 211, 0.22);
+  box-shadow:
+    inset 0 0 14px rgba(236, 230, 211, 0.09),
+    0 0 14px rgba(217, 213, 193, 0.13);
+  opacity: 0.56;
+  animation: dashboard-cover-signal 7.6s ease-in-out infinite;
+}
+
 .game-cover img {
   position: absolute;
   inset: 0;
@@ -2677,28 +2692,13 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(180deg, transparent 46%, rgba(0, 0, 0, 0.5));
-}
-
-.game-cover-signal {
-  position: absolute;
-  inset-block-start: 7px;
-  inset-inline-end: 7px;
-  z-index: 2;
-  padding: 2px 5px;
-  border: 1px solid var(--dashboard-signal);
-  background: rgba(5, 6, 5, 0.64);
-  color: var(--text);
-  font-size: 9px;
-  font-style: normal;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  animation: dashboard-session-signal 7.4s steps(2, end) infinite;
 }
 
 .game-cover span {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   padding: 4px;
   color: var(--text);
 }
@@ -2863,6 +2863,7 @@ button:focus-visible {
   border-color: rgba(217, 213, 193, 0.32);
   color: var(--text);
   text-shadow: 0 0 8px rgba(236, 230, 211, 0.18);
+  animation: dashboard-new-badge 5.8s ease-in-out infinite;
 }
 
 @media (min-width: 761px) {
@@ -3387,8 +3388,10 @@ button:focus-visible {
 }
 
 .archive-shell.has-record .active-projects-panel .record-list button::after,
-.archive-shell.has-record .game-cover-signal,
+.archive-shell.has-record .current-game[data-state] .game-cover,
+.archive-shell.has-record .current-game[data-state] .game-cover::before,
 .archive-shell.has-record .latest-log::before,
+.archive-shell.has-record .activity-feed li[data-activity-age="new"] .activity-badge,
 .archive-shell.has-record .weather-temp::after {
   animation-play-state: paused;
 }
@@ -6661,25 +6664,63 @@ input.studio-title-edit {
   }
 }
 
-@keyframes dashboard-session-signal {
+@keyframes dashboard-cover-neon {
   0%,
-  82%,
   100% {
-    opacity: 0.82;
-    box-shadow: none;
+    border-color: rgba(217, 213, 193, 0.34);
+    box-shadow:
+      0 0 0 1px rgba(217, 213, 193, 0.055),
+      0 14px 24px rgba(0, 0, 0, 0.26);
   }
 
-  86% {
-    opacity: 1;
-    box-shadow: 0 0 10px rgba(217, 213, 193, 0.18);
+  48% {
+    border-color: rgba(236, 230, 211, 0.58);
+    box-shadow:
+      0 0 0 1px rgba(236, 230, 211, 0.16),
+      0 0 18px rgba(217, 213, 193, 0.2),
+      0 14px 24px rgba(0, 0, 0, 0.26);
   }
 
-  88% {
-    opacity: 0.62;
+  54% {
+    border-color: rgba(217, 213, 193, 0.4);
+  }
+}
+
+@keyframes dashboard-cover-signal {
+  0%,
+  100% {
+    opacity: 0.46;
+    box-shadow:
+      inset 0 0 12px rgba(236, 230, 211, 0.08),
+      0 0 12px rgba(217, 213, 193, 0.1);
   }
 
-  91% {
-    opacity: 1;
+  46% {
+    opacity: 0.76;
+    box-shadow:
+      inset 0 0 18px rgba(236, 230, 211, 0.16),
+      0 0 20px rgba(217, 213, 193, 0.18);
+  }
+
+  58% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes dashboard-new-badge {
+  0%,
+  100% {
+    border-color: rgba(217, 213, 193, 0.28);
+    color: rgba(236, 230, 211, 0.9);
+    text-shadow: 0 0 5px rgba(236, 230, 211, 0.14);
+  }
+
+  52% {
+    border-color: rgba(236, 230, 211, 0.48);
+    color: var(--text-strong);
+    text-shadow:
+      0 0 9px rgba(236, 230, 211, 0.32),
+      0 0 18px rgba(217, 213, 193, 0.12);
   }
 }
 
@@ -8197,7 +8238,9 @@ input.studio-title-edit {
 
 @media (max-width: 760px) {
   .active-projects-panel .record-list button::after,
-  .game-cover-signal {
+  .current-game[data-state] .game-cover,
+  .current-game[data-state] .game-cover::before,
+  .activity-feed li[data-activity-age="new"] .activity-badge {
     animation: none;
   }
 
