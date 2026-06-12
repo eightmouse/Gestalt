@@ -708,6 +708,8 @@ button:focus-visible {
   --nav-row-count: 6;
   --nav-row-step: calc((100% + var(--nav-stack-gap)) / 6);
   --nav-row-size: calc((100% - var(--nav-stack-gap) - var(--nav-stack-gap) - var(--nav-stack-gap) - var(--nav-stack-gap) - var(--nav-stack-gap)) / 6);
+  --nav-rail-top: calc(1px + (var(--active-nav-index, 0) * var(--nav-row-step)));
+  --nav-rail-previous-top: calc(1px + (var(--previous-nav-index, var(--active-nav-index, 0)) * var(--nav-row-step)));
   position: relative;
 }
 
@@ -715,10 +717,10 @@ button:focus-visible {
   content: "";
   position: absolute;
   inset-inline-start: 1px;
-  inset-block-start: calc(3px + (var(--active-nav-index, 0) * var(--nav-row-step)));
+  inset-block-start: var(--nav-rail-top);
   z-index: 3;
   inline-size: 2px;
-  block-size: calc(var(--nav-row-size) - 6px);
+  block-size: calc(var(--nav-row-size) - 2px);
   pointer-events: none;
   background: var(--accent);
   border-radius: 999px;
@@ -729,9 +731,13 @@ button:focus-visible {
   transform: translateZ(0);
   will-change: inset-block-start;
   transition:
-    inset-block-start 340ms cubic-bezier(0.16, 0.84, 0.24, 1),
+    inset-block-start 420ms cubic-bezier(0.14, 0.86, 0.18, 1),
     block-size 180ms ease,
     opacity 180ms ease;
+}
+
+.nav-stack--sidebar.is-sliding::before {
+  animation: nav-marker-slide 420ms cubic-bezier(0.14, 0.86, 0.18, 1) both;
 }
 
 .nav-stack::-webkit-scrollbar {
@@ -1053,6 +1059,16 @@ button:focus-visible {
   100% {
     opacity: 0;
     clip-path: inset(0 0 0 100%);
+  }
+}
+
+@keyframes nav-marker-slide {
+  from {
+    inset-block-start: var(--nav-rail-previous-top);
+  }
+
+  to {
+    inset-block-start: var(--nav-rail-top);
   }
 }
 
@@ -2686,7 +2702,8 @@ button:focus-visible {
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  object-position: center 58%;
+  object-position: center 56%;
+  filter: saturate(1.08) contrast(1.03);
 }
 
 .game-cover::after {
@@ -2694,14 +2711,10 @@ button:focus-visible {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, transparent 46%, rgba(0, 0, 0, 0.5));
-}
-
-.game-cover span {
-  position: relative;
-  z-index: 3;
-  padding: 4px;
-  color: var(--text);
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(236, 230, 211, 0.045), transparent 28%),
+    linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.18));
 }
 
 .current-game strong {

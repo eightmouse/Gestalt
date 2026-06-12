@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { formatDate, formatReadableDate, type ArchiveMetrics } from "@/components/archive/record-utils";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
@@ -41,13 +41,23 @@ export function Sidebar({
 }: SidebarProps) {
   const activeConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const activeSectionIndex = Math.max(0, sections.findIndex((section) => section.id === activeSection));
-  const navStackStyle = { "--active-nav-index": activeSectionIndex } as CSSProperties;
+  const previousActiveIndexRef = useRef(activeSectionIndex);
+  const previousActiveSectionIndex = previousActiveIndexRef.current;
+  const isNavSliding = previousActiveSectionIndex !== activeSectionIndex;
+  const navStackStyle = {
+    "--active-nav-index": activeSectionIndex,
+    "--previous-nav-index": previousActiveSectionIndex
+  } as CSSProperties;
+
+  useEffect(() => {
+    previousActiveIndexRef.current = activeSectionIndex;
+  }, [activeSectionIndex]);
 
   return (
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.28.3</span>
+          <span>v1.28.4</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -71,7 +81,7 @@ export function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.28.3</span>
+          <span className="version-label">v1.28.4</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -79,7 +89,7 @@ export function Sidebar({
 
       <nav aria-label="Archive navigation">
         <p className="sidebar-label">// ARCHIVE NAVIGATION</p>
-        <div className="nav-stack nav-stack--sidebar" style={navStackStyle}>
+        <div key={activeSection} className={isNavSliding ? "nav-stack nav-stack--sidebar is-sliding" : "nav-stack nav-stack--sidebar"} style={navStackStyle}>
           {sections.map((section) => (
             <div className="nav-group" key={section.id}>
               <button
@@ -134,7 +144,7 @@ export function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.28.3</dd>
+            <dd>GESTALT OS v1.28.4</dd>
           </div>
         </dl>
       </div>

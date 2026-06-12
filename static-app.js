@@ -344,10 +344,12 @@ function readLocalMemoryState() {
 
 const initialLocalMemory = readLocalMemoryState();
 let bootPromptTimer = 0;
+let navMotionTimer = 0;
 
 const state = {
   selectedId: "dashboard",
   activeSection: "system",
+  previousActiveSection: "system",
   panelOpen: false,
   panelMinimized: false,
   panelMaximized: false,
@@ -402,6 +404,7 @@ function openSection(sectionId) {
     return;
   }
 
+  state.previousActiveSection = state.activeSection;
   state.headlineAnimating = state.activeSection !== sectionId;
   state.activeSection = sectionId;
   state.panelOpen = false;
@@ -428,6 +431,9 @@ function openTimeline() {
 }
 
 function openHome() {
+  if (state.activeSection !== "system") {
+    state.previousActiveSection = state.activeSection;
+  }
   state.headlineAnimating = state.activeSection !== "system";
   state.activeSection = "system";
   state.panelOpen = false;
@@ -1343,6 +1349,8 @@ function sidebar() {
   const metrics = archiveMetrics();
   const activeConfig = sections.find((section) => section.id === state.activeSection) || sections[0];
   const activeSectionIndex = Math.max(0, sections.findIndex((section) => section.id === state.activeSection));
+  const previousActiveSectionIndex = Math.max(0, sections.findIndex((section) => section.id === state.previousActiveSection));
+  const navMotionClass = previousActiveSectionIndex !== activeSectionIndex ? " is-sliding" : "";
   const groups = sections
     .map(
       (section) => `<div class="nav-group">
@@ -1362,7 +1370,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.28.3</span>
+        <span>v1.28.4</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1376,7 +1384,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.28.3</span>
+        <span class="version-label">v1.28.4</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1384,7 +1392,7 @@ function sidebar() {
 
     <nav aria-label="Archive navigation">
       <p class="sidebar-label">// ARCHIVE NAVIGATION</p>
-      <div class="nav-stack nav-stack--sidebar" style="--active-nav-index: ${activeSectionIndex}">${groups}</div>
+      <div class="nav-stack nav-stack--sidebar${navMotionClass}" style="--active-nav-index: ${activeSectionIndex}; --previous-nav-index: ${previousActiveSectionIndex}">${groups}</div>
     </nav>
 
     <div class="system-status">
@@ -1396,7 +1404,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.28.3</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.28.4</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1564,7 +1572,6 @@ function dashboard() {
     ? `<div class="current-game" data-state="${recordStateKey(currentGame.status)}">
         <div class="game-cover">
           <img src="${escapeHtml(recordImage(currentGame))}" alt="" decoding="async" />
-          <span>${escapeHtml(currentGame.title.slice(0, 10))}</span>
         </div>
         <div>
           <strong>${escapeHtml(currentGame.title)}</strong>
@@ -2174,6 +2181,14 @@ function render() {
 
   syncTime();
   syncWeather();
+
+  if (state.previousActiveSection !== state.activeSection) {
+    window.clearTimeout(navMotionTimer);
+    navMotionTimer = window.setTimeout(() => {
+      state.previousActiveSection = state.activeSection;
+      navMotionTimer = 0;
+    }, 520);
+  }
 
   if (!state.bootDismissed && !bootPromptTimer) {
     bootPromptTimer = window.setTimeout(() => {

@@ -157,7 +157,6 @@ function CurrentGame({ record }: { record: RecordEntry }) {
     <div className="current-game" data-state={dashboardRecordStateKey(record.status)}>
       <div className="game-cover">
         <img src={record.banner || "/images/archive-banner.png"} alt="" decoding="async" />
-        <span>{record.title.slice(0, 10)}</span>
       </div>
       <div>
         <strong>{record.title}</strong>
