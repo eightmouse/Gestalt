@@ -3805,8 +3805,10 @@ button:focus-visible {
 }
 
 .record-window::before {
-  inset: 0;
+  inset: 1px;
   border: 1px solid rgba(255, 255, 255, 0.052);
+  border-block-start-color: transparent;
+  border-inline-start-color: transparent;
   background:
     linear-gradient(90deg, rgba(217, 213, 193, 0.075), rgba(217, 213, 193, 0.075)) calc(100% - 80px) calc(100% - 20px) / 62px 1px no-repeat,
     linear-gradient(rgba(217, 213, 193, 0.075), rgba(217, 213, 193, 0.075)) calc(100% - 18px) calc(100% - 38px) / 1px 18px no-repeat;
@@ -4048,10 +4050,10 @@ button:focus-visible {
 .window-bar::before {
   content: "";
   position: absolute;
-  inset-inline-start: 0;
-  inset-block-start: 0;
+  inset-inline-start: 1px;
+  inset-block-start: 1px;
   inline-size: 4px;
-  block-size: 100%;
+  block-size: calc(100% - 1px);
   background: linear-gradient(180deg, var(--window-signal), transparent 72%);
   opacity: 0.5;
 }
