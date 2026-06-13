@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
+import { activityFreshness, recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
 
 type DashboardProps = {
@@ -61,9 +61,8 @@ export function ArchiveDashboard({
   onOpenSection,
   onOpenTimeline
 }: DashboardProps) {
-  const newestActivityDate = activity[0]?.date ?? "";
   const activityRows = activity.map((item) => {
-    const freshness = item.date === newestActivityDate ? "new" : "old";
+    const freshness = activityFreshness(item.date);
 
     return { freshness, item };
   });

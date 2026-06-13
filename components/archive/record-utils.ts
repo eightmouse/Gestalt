@@ -52,6 +52,19 @@ export function formatReadableDate(value: string): string {
   return year && month && day ? `${day} / ${month} / ${year}` : value;
 }
 
+export function activityFreshness(value: string, now = new Date()): "new" | "old" {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return "old";
+  }
+
+  const activityTime = new Date(year, month - 1, day).getTime();
+  const age = now.getTime() - activityTime;
+
+  return age >= 0 && age <= 48 * 60 * 60 * 1000 ? "new" : "old";
+}
+
 export function recordHeaderImage(record: RecordEntry): string {
   return typeof record.meta.headerImage === "string" ? record.meta.headerImage : "";
 }
