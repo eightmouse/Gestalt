@@ -75,7 +75,7 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
   }
 
   return (
-    <section className="section-page" aria-label={`${section.code} records`}>
+    <section className={`section-page section-page--${section.id}`} aria-label={`${section.code} records`}>
       <header className="section-page-header">
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>

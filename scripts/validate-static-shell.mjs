@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const root = process.cwd();
 const source = readFileSync(path.join(root, "static-app.js"), "utf8");
+const indexHtml = readFileSync(path.join(root, "index.html"), "utf8");
+const recordsData = readFileSync(path.join(root, "public", "data", "records.js"), "utf8");
 const errors = [];
 
 function extractFunction(name) {
@@ -37,6 +40,8 @@ function extractFunction(name) {
 
 const sidebar = extractFunction("sidebar");
 const archiveNavigationMenu = extractFunction("archiveNavigationMenu");
+const recordsScriptIndex = indexHtml.indexOf("public/data/records.js");
+const appScriptIndex = indexHtml.indexOf("static-app.js");
 
 if (sidebar && !/const groups = sections\s*\.map\s*\(/m.test(sidebar)) {
   errors.push("Desktop static sidebar must render every archive section.");
@@ -52,6 +57,36 @@ if (archiveNavigationMenu && !/const archiveGroups = sections\s*\.filter\s*\(\s*
 
 if (archiveNavigationMenu && !archiveNavigationMenu.includes("archive-nav-search--mobile")) {
   errors.push("Mobile archive menu search form is missing.");
+}
+
+if (/window\.__GESTALT_RECORDS\s*\|\|\s*\[/m.test(source)) {
+  errors.push("Static runtime must not embed stale fallback records.");
+}
+
+if (!/recordsLoaded/.test(source) || !/archive-shell--unavailable/.test(source)) {
+  errors.push("Static runtime must render an explicit unavailable-records state.");
+}
+
+if (recordsScriptIndex === -1) {
+  errors.push("index.html must load public/data/records.js.");
+}
+
+if (appScriptIndex === -1) {
+  errors.push("index.html must load static-app.js.");
+}
+
+if (recordsScriptIndex !== -1 && appScriptIndex !== -1 && recordsScriptIndex > appScriptIndex) {
+  errors.push("public/data/records.js must load before static-app.js.");
+}
+
+if (!recordsData.startsWith("window.__GESTALT_RECORDS = [")) {
+  errors.push("public/data/records.js must export window.__GESTALT_RECORDS.");
+}
+
+const swCheck = spawnSync(process.execPath, ["--check", path.join(root, "sw.js")], { encoding: "utf8" });
+
+if (swCheck.status !== 0) {
+  errors.push(`sw.js syntax check failed: ${(swCheck.stderr || swCheck.stdout || "").trim()}`);
 }
 
 if (errors.length > 0) {

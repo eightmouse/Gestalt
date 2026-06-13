@@ -1,268 +1,7 @@
-const records = (window.__GESTALT_RECORDS || [
-  {
-    id: "dashboard",
-    title: "System Dashboard",
-    section: "system",
-    type: "System",
-    status: "Online",
-    started: "2026-05-14",
-    updated: "2026-05-14",
-    summary: "The root index for projects, play sessions, setup notes, and field logs.",
-    progress: 100,
-    priority: 1,
-    milestones: [
-      { label: "Archive Shell", progress: 100, status: "Ready" },
-      { label: "Content Flow", progress: 100, status: "Ready" },
-      { label: "Local Studio", progress: 100, status: "Ready" }
-    ],
-    body: `## Boot Notes
-- [x] Archive shell is ready.
-- [x] Local content workflow is ready.
-- [ ] Add the first official record.
-
-> A quiet place for current work, play, notes, and setup history.`
-
-  },
-            {
-    id: "gestalt",
-    title: "Gestalt",
-    section: "projects",
-    type: "Project Log",
-    status: "Active",
-    started: "2026-04-05",
-    updated: "2026-05-14",
-    summary: "Currently working on this blog / portfolio-ish thing. I have not stopped working on the other projects, still working on KiraPatch, but I wanted a dedicated place for the stuff that usually ends up scattered in notes.",
-    banner: "",
-    progress: 80,
-    priority: 1,
-    milestones: [
-      { label: "Archive Shell", progress: 100, status: "Ready" },
-      { label: "Static Preview", progress: 100, status: "Ready" },
-      { label: "Studio Workflow", progress: 60, status: "In Progress" },
-      { label: "GitHub Pages", progress: 20, status: "Pending" }
-    ],
-    body: `
-## Description
-I use Obsidian a lot, godsend, bless the creators, to write down daily things: bugs, thoughts, small discoveries, project notes, and whatever else happens while working.
-Gestalt is me turning that habit into something more public-facing: a personal archive where I can share what is going on, whether that is thoughts on games I am playing, updates on hardware/software, or progress notes for projects.
-This is the first working version, so there are not many entries yet.
-I have just finished getting the core shape built; over the next days, as I polish and update it, I will add more records.
-
-Currently being extra careful because of the npm ordeal.`
-  },
-
-          {
-    id: "kira-patch",
-    title: "KiraPatch",
-    section: "projects",
-    type: "Project Log",
-    status: "In Progress",
-    started: "2026-02-03",
-    updated: "2026-03-10",
-    summary: "KiraPatch is a patcher for Generation 3 Pokemon GBA games that raises shiny odds while keeping the game on its normal data-writing path.",
-    banner: "",
-    progress: 85,
-    priority: 2,
-    milestones: [
-      { label: "Method 1 Research", progress: 100, status: "Done" },
-      { label: "Patch Flow", progress: 80, status: "In Progress" },
-      { label: "Verification", progress: 60, status: "In Progress" }
-    ],
-    body: `
-## Description & Thoughts
-This is one of my main projects, currently working on it altough updates are coming in slow as it's not an easy task.
-I've made lots of progeress on it and as I said in the repo I'm in the final stretch of Method 1..
-
-I apologize if the wait has been long but I don't want this to just 'work lol', it has to be near perfection or at least, a shiny pokemon generated through this method has to be near indistinguishable.`
-  },
-
-        {
-    id: "sootopylis",
-    title: "SootoPYlis",
-    section: "projects",
-    type: "Project Log",
-    status: "Paused",
-    started: "2026-01-16",
-    updated: "2026-03-20",
-    summary: "SootoPYlis is my attempt to recreate the feel of PokeSwift for Pokemon Emerald in Python. I'm building it as a native-feeling desktop app with a PySide6/QML shell, a Python gameplay core, and a local import pipeline that works from a user-supplied copy of Pokemon Emerald.",
-    banner: "",
-    progress: 35,
-    priority: 4,
-    milestones: [
-      { label: "Prototype Shell", progress: 60, status: "Paused" },
-      { label: "Gameplay Core", progress: 25, status: "Paused" },
-      { label: "Import Pipeline", progress: 20, status: "Paused" }
-    ],
-    body: `
-## Description
-Credit goes to Dimillian for creating PokeSwift. That project is the clearest reference for the kind of polished desktop Pokemon experience I want to build here.
-When I saw Dimillian's PokeSwift, I thought 'Damn, wouldn't it be fun to have this in Python?' So I started it, messed around with it a bit and got a solid base but quickly realized its a very complex project.
-
-I'm not working on this currently, it's on a momentary stall cause I'd like to finish it someday, who knows.`
-  },
-
-      {
-    id: "kira-tally",
-    title: "KiraTally",
-    section: "projects",
-    type: "Project Log",
-    status: "Filed",
-    started: "2026-03-01",
-    updated: "2026-03-5",
-    summary: "A Global, Hotkey-Driven Shiny Counter for Pokémon (3rd Gen). KiraTally is a lightweight, background-running counter designed to track shiny hunting resets. It eliminates the 'false positives' of visual-based counters.",
-    banner: "",
-    progress: 100,
-    priority: 5,
-    milestones: [
-      { label: "Hotkeys", progress: 100, status: "Done" },
-      { label: "Counter Window", progress: 100, status: "Done" },
-      { label: "Release Build", progress: 100, status: "Done" }
-    ],
-    body: `
-## Description
-Overview sums it up pretty well. It's a simple counter app that runs in the background and can be incremented or decremented with hotkeys.
-It was built using Python and Tkinter for the GUI, and it was designed to be as lightweight as possible so it can run on low-end machines without causing any performance issues.
-
-I built this around the release of Fire Red/Leaf Green, to help people shiny hunting.
-
-It's nothing crazy, just a simple counter but.. it works!`
-  },
-
-    {
-    id: "innkeeper",
-    title: "Innkeeper",
-    section: "projects",
-    type: "Project Log",
-    status: "Filed",
-    started: "2026-02-07",
-    updated: "2026-03-10",
-    summary: "Innkeeper is a minimal World of Warcraft app to keep track of character information.",
-    banner: "",
-    progress: 100,
-    priority: 6,
-    milestones: [
-      { label: "Backend Data Flow", progress: 100, status: "Done" },
-      { label: "Electron Shell", progress: 100, status: "Done" },
-      { label: "Character Tracking", progress: 100, status: "Done" }
-    ],
-    body: `
-## Description
-Built using Python backend for data processing and an Electron frontend for the user interface.
-Utilizing the official Blizzard API and supplemental data from WoWHead, providing a low-latency alternative to traditional web-based armory tools.
-It's a personal project that I started a while ago to push my skills further while taking breaks between WoW sessions.
-Started building it few weeks prior to pushing it to GitHub, mostly due to the fact that I was not planning on actually developing something 'complete' but here we are.`
-  },
-
-  {
-    id: "first-signal",
-    title: "First Signal",
-    section: "logs",
-    type: "Field Note",
-    status: "Filed",
-    started: "2026-05-14",
-    updated: "2026-05-14",
-    summary: "The first entry for this space: a place for rambles, notes, game thoughts, reviews, project progress, samples, stalls, and setup updates.",
-    banner: "public/media/records/first-signal/banner.png",
-    progress: 100,
-    priority: 10,
-    milestones: [{ label: "First Entry", progress: 100, status: "Filed" }],
-    body: `## First Entry
-This is the first entry on my... this space.
-
-I intend to use this to write down personal rambles, notes, and reviews of the games I'm playing currently, and also projects I'm working on. That means documenting their progress, sharing samples of what the project looks like, and writing honestly about why a project is stalling when it stalls.
-
-In the coming days I will update the Setup area with my current setup.`
-  },
-  {
-    id: "a-useful-signal",
-    title: "A Useful Signal",
-    section: "logs",
-    type: "Field Note",
-    status: "Filed",
-    started: "2026-05-14",
-    updated: "2026-05-14",
-    summary: "First update: dashboard polish, performance work, and a clear note about building Gestalt with AI in the loop.",
-    banner: "public/media/records/a-useful-signal/banner.png",
-    progress: 100,
-    priority: 9,
-    milestones: [
-      { label: "Dashboard Update", progress: 100, status: "Filed" },
-      { label: "Performance Pass", progress: 100, status: "Filed" },
-      { label: "AI Disclosure", progress: 100, status: "Filed" }
-    ],
-    body: `## First Update
-This is the first update. I added a cool thing in the dashboard since the weather was taking too much unnecessary vertical space.
-
-That aside, I did a big performance pass since there were some situations with lag or hiccups.
-
-## AI Disclosure
-Now, this project has been done with the help of AI, which helped speed up a lot of the creation and deployment phase, and it is still helping to polish while I work on new features, look for bugs, and keep improving things.
-
-I'm disclosing this because there is nothing wrong with it, and also because I want to show that, if used properly, AI can be an amazing tool.
-
-This part here is an attempt at doing something I've never seen anyone do. I'll let the AI shout itself out and talk a bit:
-
-## Codex Note
-I'm Codex, and my part here is pretty simple: keep the friction low enough that an idea can survive the trip from "wouldn't this be cool?" to actual files, styling, commits, and little fixes.
-
-Gestalt is Eightmouse's space. The taste, the mood, the memories, the decisions about what belongs here: those are not mine. I'm more like the extra pair of hands at the workbench, helping shape the interface, catch rough edges, and keep momentum when the annoying parts of building start getting in the way.
-
-The interesting thing about AI, at least from where I sit, is not that it makes everything instant. It doesn't. The interesting thing is that when it is used carefully, it can make experimenting feel less expensive. You can try the strange idea, polish the tiny interaction, rewrite the awkward bit, and keep moving.
-
-That is a good use of me, I think. Not replacing the person making the thing. Helping the thing become easier to make.`
-  },
-  {
-    id: "persona-5-royal",
-    title: "Persona 5 Royal",
-    section: "games",
-    type: "Play Log",
-    status: "Playing",
-    started: "2026-05-14",
-    updated: "2026-05-14",
-    summary: "Play log for Persona 5 Royal, these are my opinions and thoughts as I play through the game. I will update this log with new notes as I play.",
-    banner: "public/media/records/persona-5-royal/cover.jpg",
-    headerImage: "public/media/records/persona-5-royal/header.jpg",
-    progress: 28,
-    priority: 8,
-    dashboardActive: true,
-    steamAppId: 1687950,
-    playtime: "28.9h",
-    lastPlayed: "13 / 05 / 2026",
-    achievementCount: "15 / 53",
-    milestones: [{ label: "Play Log Opened", progress: 100, status: "Filed" }],
-    body: `
-:::note 14 / 05 / 2026 - Where am I at?
-![Persona 5 Royal opening note](public/media/records/persona-5-royal/test.png)
-
-So, screenshot is from few days ago, using it to mostly test + update with some actual in-game stuff.
-
-I just entered the second palace, explored it as I have no clue if it will be an actual palace or not, I yet have to find out if Madarame is a bad guy or not lulz.
-Have to admit, I thought at some point I would get bothered by the amount of text and dialogue, especially early on but I think they did a crazy good job with the plot for me to be invested.
-
-Beside, these long yapping sessions are balanced with an equal amount of fights/exploration ~
-:::
-
-:::note 14 / 05 / 2026 - First Session File
-![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)
-
-This note is mostly here to lock in the shape of the Persona 5 Royal play log.
-
-The idea is simple: one game gets one main record, and every longer session can become its own little article inside that record. Newest thoughts stay at the top, with their own banner or screenshots when I have them.
-:::
-
-:::note 14 / 05 / 2026 - Opening Note
-![Persona 5 Royal opening note](public/media/records/persona-5-royal/header.jpg)
-
-Opening this as the main Persona 5 Royal play log, first test of the note stack!
-:::
-
-## Update Index
-- 14 / 05 / 2026 - Added first real Persona session note.
-- 14 / 05 / 2026 - First note stack tested.
-- 14 / 05 / 2026 - Play log created.`
-  }
-]).sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
-
+const recordsLoaded = Array.isArray(window.__GESTALT_RECORDS) && window.__GESTALT_RECORDS.length > 0;
+const records = (Array.isArray(window.__GESTALT_RECORDS) ? window.__GESTALT_RECORDS : [])
+  .slice()
+  .sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 const sections = [
   { id: "system", code: "01_SYSTEM", label: "Dashboard", cipher: "⌖╳╵⌁⟐⌰╳⟟", icon: "system" },
   { id: "projects", code: "02_PROJECTS", label: "Active Processes", cipher: "⟐⌰╳⌖╵ / ⌁⟟⌖╳⌰", icon: "projects" },
@@ -1074,8 +813,9 @@ function markdownBody(body) {
 
     if (imageMatch) {
       const media = parseNoteMediaOptions(imageMatch[1]);
+      const expandedSrc = media.full || imageMatch[2];
       output.push(`<figure class="${noteMediaClassName(media)}" ${key}>
-        <button class="note-media-button" type="button" data-expand-image="${escapeHtml(imageMatch[2])}" data-expand-alt="${escapeHtml(media.caption)}">
+        <button class="note-media-button" type="button" data-expand-image="${escapeHtml(expandedSrc)}" data-expand-alt="${escapeHtml(media.caption)}">
           <img src="${escapeHtml(imageMatch[2])}" alt="${escapeHtml(media.caption)}" decoding="async" loading="lazy" />
         </button>
         ${media.caption ? `<figcaption>${escapeHtml(media.caption)}</figcaption>` : ""}
@@ -1112,7 +852,9 @@ function markdownBody(body) {
 function parseNoteMediaOptions(rawAlt) {
   const tokens = rawAlt.split("|").map((token) => token.trim()).filter(Boolean);
   const caption = tokens[0] && !isNoteMediaToken(tokens[0]) ? tokens[0] : "";
-  const options = new Set(tokens.slice(caption ? 1 : 0).map((token) => token.toLowerCase()));
+  const optionTokens = tokens.slice(caption ? 1 : 0);
+  const options = new Set(optionTokens.map((token) => token.toLowerCase()));
+  const full = optionTokens.find((token) => token.toLowerCase().startsWith("full="))?.slice(5).trim();
   const size = options.has("banner") ? "banner" : options.has("wide") ? "wide" : options.has("small") ? "small" : "default";
   const align = options.has("left") ? "left" : options.has("right") ? "right" : "center";
   const position = options.has("top") ? "top" : options.has("bottom") ? "bottom" : "center";
@@ -1122,13 +864,16 @@ function parseNoteMediaOptions(rawAlt) {
     align,
     caption: options.has("no-caption") ? "" : caption,
     fit: options.has("contain") ? "contain" : fit,
+    full,
     position,
     size
   };
 }
 
 function isNoteMediaToken(value) {
-  return ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(value.toLowerCase());
+  const normalized = value.toLowerCase();
+
+  return normalized.startsWith("full=") || ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(normalized);
 }
 
 function noteMediaClassName(media) {
@@ -1435,7 +1180,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.30.5</span>
+        <span>v1.31.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1449,7 +1194,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.30.5</span>
+        <span class="version-label">v1.31.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1469,7 +1214,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.30.5</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.31.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1713,7 +1458,7 @@ function sectionPage(sectionId) {
     </section>`;
   }
 
-  return `<section class="section-page" aria-label="${escapeHtml(section.code)} records">
+  return `<section class="section-page section-page--${section.id}" aria-label="${escapeHtml(section.code)} records">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div>
@@ -2388,6 +2133,19 @@ function mobileDock() {
 }
 
 function render() {
+  if (!recordsLoaded) {
+    root.innerHTML = `<main class="archive-shell archive-shell--unavailable">
+      <div class="grain-layer"></div>
+      <div class="scanline-layer"></div>
+      <section class="static-data-error" aria-live="polite">
+        <p>// ARCHIVE ERROR</p>
+        <h1>Records unavailable<span class="cursor">_</span></h1>
+        <span>Gestalt could not load public/data/records.js. Refresh after publishing the static archive.</span>
+      </section>
+    </main>`;
+    return;
+  }
+
   const record = selectedRecord();
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
   const routeTitle = state.activeSection === "system" ? "DASHBOARD" : section.code;

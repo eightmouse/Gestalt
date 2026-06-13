@@ -388,6 +388,7 @@ type NoteMediaOptions = {
   align: "left" | "center" | "right";
   caption: string;
   fit: "contain" | "crop";
+  full?: string;
   position: "top" | "center" | "bottom";
   size: "default" | "wide" | "banner" | "small";
 };
@@ -446,10 +447,11 @@ export function RecordBody({ body }: { body: string }) {
 
     if (imageMatch) {
       const media = parseNoteMediaOptions(imageMatch[1]);
+      const expandedSrc = media.full || imageMatch[2];
 
       nodes.push(
         <figure className={noteMediaClassName(media)} key={key}>
-          <button className="note-media-button" type="button" onClick={() => setExpandedImage({ alt: media.caption, src: imageMatch[2] })}>
+          <button className="note-media-button" type="button" onClick={() => setExpandedImage({ alt: media.caption, src: expandedSrc })}>
             <img src={imageMatch[2]} alt={media.caption} decoding="async" loading="lazy" />
           </button>
           {media.caption ? <figcaption>{media.caption}</figcaption> : null}
@@ -511,7 +513,9 @@ export function RecordBody({ body }: { body: string }) {
 function parseNoteMediaOptions(rawAlt: string): NoteMediaOptions {
   const tokens = rawAlt.split("|").map((token) => token.trim()).filter(Boolean);
   const caption = tokens[0] && !isNoteMediaToken(tokens[0]) ? tokens[0] : "";
-  const options = new Set(tokens.slice(caption ? 1 : 0).map((token) => token.toLowerCase()));
+  const optionTokens = tokens.slice(caption ? 1 : 0);
+  const options = new Set(optionTokens.map((token) => token.toLowerCase()));
+  const full = optionTokens.find((token) => token.toLowerCase().startsWith("full="))?.slice(5).trim();
   const size = options.has("banner") ? "banner" : options.has("wide") ? "wide" : options.has("small") ? "small" : "default";
   const align = options.has("left") ? "left" : options.has("right") ? "right" : "center";
   const position = options.has("top") ? "top" : options.has("bottom") ? "bottom" : "center";
@@ -521,13 +525,16 @@ function parseNoteMediaOptions(rawAlt: string): NoteMediaOptions {
     align,
     caption: options.has("no-caption") ? "" : caption,
     fit: options.has("contain") ? "contain" : fit,
+    full,
     position,
     size
   };
 }
 
 function isNoteMediaToken(value: string): boolean {
-  return ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(value.toLowerCase());
+  const normalized = value.toLowerCase();
+
+  return normalized.startsWith("full=") || ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(normalized);
 }
 
 function noteMediaClassName(media: NoteMediaOptions): string {

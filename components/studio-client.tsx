@@ -43,6 +43,15 @@ type StudioClientProps = {
 };
 
 type MediaTarget = "body" | "banner" | "headerImage" | "iconImage" | "samples" | "attachments";
+type ImportedMedia = {
+  displayPath?: string;
+  fullPath?: string;
+  markdown: string;
+  path: string;
+};
+type MediaImportOptions = {
+  noteDisplayThumbnails?: boolean;
+};
 type StudioUpdate = <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 type StudioDraft = {
   body: string;
@@ -84,6 +93,8 @@ const studioSections: Array<{
 
 const sections = studioSections.map((section) => section.id);
 const studioDraftStorageKey = "gestalt-studio-drafts-v1";
+const noteDisplayMaxWidth = 1600;
+const noteDisplayMinBytes = 900 * 1024;
 const setupManagerGroups: Array<{
   id: SetupGroupId;
   action: string;
@@ -489,31 +500,55 @@ export function StudioClient({ records }: StudioClientProps) {
     fileInputRef.current?.click();
   };
 
-  const importMediaFiles = async (files: FileList | File[]) => {
+  const uploadMediaFile = async (file: File) => {
+    const payload = new FormData();
+    payload.set("recordId", form.id || form.title || "draft");
+    payload.set("file", file);
+
+    const response = await fetch("/api/studio/media", {
+      method: "POST",
+      body: payload
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Upload failed for ${file.name}.`);
+    }
+
+    return {
+      markdown: typeof data.markdown === "string" ? data.markdown : noteMediaMarkdown(String(data.path ?? "")),
+      path: String(data.path ?? "")
+    };
+  };
+
+  const importMediaFiles = async (files: FileList | File[], options: MediaImportOptions = {}) => {
     const list = Array.from(files);
 
     if (list.length === 0) {
       return [];
     }
 
-    const imported: Array<{ markdown: string; path: string }> = [];
+    const imported: ImportedMedia[] = [];
 
     for (const file of list) {
-      const payload = new FormData();
-      payload.set("recordId", form.id || form.title || "draft");
-      payload.set("file", file);
+      const original = await uploadMediaFile(file);
 
-      const response = await fetch("/api/studio/media", {
-        method: "POST",
-        body: payload
-      });
-      const data = await response.json();
+      if (options.noteDisplayThumbnails) {
+        const displayFile = await createDisplayThumbnail(file);
 
-      if (!response.ok) {
-        throw new Error(data.error || `Upload failed for ${file.name}.`);
+        if (displayFile) {
+          const display = await uploadMediaFile(displayFile);
+          imported.push({
+            displayPath: display.path,
+            fullPath: original.path,
+            markdown: noteMediaMarkdown(display.path, original.path),
+            path: display.path
+          });
+          continue;
+        }
       }
 
-      imported.push({ markdown: data.markdown, path: data.path });
+      imported.push(original);
     }
 
     return imported;
@@ -530,7 +565,7 @@ export function StudioClient({ records }: StudioClientProps) {
     setMessage(`Importing ${list.length} media file${list.length === 1 ? "" : "s"}...`);
 
     try {
-      const imported = await importMediaFiles(list);
+      const imported = await importMediaFiles(list, { noteDisplayThumbnails: target === "body" });
       const snippets = imported.map((item) => item.markdown);
       const firstPath = imported[0]?.path ?? "";
 
@@ -569,12 +604,28 @@ export function StudioClient({ records }: StudioClientProps) {
     setMessage(`Importing ${list.length} note image${list.length === 1 ? "" : "s"}...`);
 
     try {
-      const imported = await importMediaFiles(list);
+      const imported = await importMediaFiles(list, { noteDisplayThumbnails: true });
       setMessage("Media inserted into the note.");
       return imported.map((item) => item.markdown);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Upload failed.");
       return [];
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const optimizeNoteMedia = async (markdown: string): Promise<string> => {
+    setUploading(true);
+    setMessage("Generating display thumbnails...");
+
+    try {
+      const nextMarkdown = await optimizeExistingNoteImages(markdown, uploadMediaFile);
+      setMessage(nextMarkdown === markdown ? "No large note images needed thumbnails." : "Display thumbnails generated.");
+      return nextMarkdown;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Thumbnail generation failed.");
+      return markdown;
     } finally {
       setUploading(false);
     }
@@ -645,6 +696,7 @@ export function StudioClient({ records }: StudioClientProps) {
               onFileDrop={uploadFiles}
               onFilePick={chooseFiles}
               onNoteMediaUpload={uploadNoteMedia}
+              onOptimizeNoteMedia={optimizeNoteMedia}
               onUpdate={update}
             />
           ) : (
@@ -669,6 +721,7 @@ export function StudioClient({ records }: StudioClientProps) {
                   onFileDrop={uploadFiles}
                   onFilePick={chooseFiles}
                   onNoteMediaUpload={uploadNoteMedia}
+                  onOptimizeNoteMedia={optimizeNoteMedia}
                   onUpdate={update}
                 />
               </div>
@@ -732,6 +785,152 @@ async function readStudioResponse(response: Response): Promise<{ error?: string;
       output: text
     };
   }
+}
+
+function noteMediaMarkdown(displayPath: string, fullPath = ""): string {
+  if (!displayPath) {
+    return "";
+  }
+
+  return fullPath && fullPath !== displayPath ? `![full=${fullPath}](${displayPath})` : `![](${displayPath})`;
+}
+
+function canThumbnailFile(file: File): boolean {
+  return file.type.startsWith("image/") && !/image\/gif/i.test(file.type) && !/\.(gif|svg)$/i.test(file.name);
+}
+
+async function createDisplayThumbnail(file: File): Promise<File | null> {
+  if (!canThumbnailFile(file)) {
+    return null;
+  }
+
+  const image = await loadCanvasImage(file);
+
+  if (!image.width || image.width <= noteDisplayMaxWidth && file.size <= noteDisplayMinBytes) {
+    return null;
+  }
+
+  const scale = Math.min(1, noteDisplayMaxWidth / image.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+
+  const context = canvas.getContext("2d", { alpha: true });
+
+  if (!context) {
+    return null;
+  }
+
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const webpBlob = await canvasToBlob(canvas, "image/webp", 0.82);
+  const blob = webpBlob ?? await canvasToBlob(canvas, "image/jpeg", 0.84);
+
+  if (!blob) {
+    return null;
+  }
+
+  const extension = blob.type === "image/webp" ? "webp" : "jpg";
+  const baseName = file.name.replace(/\.[^.]+$/, "");
+
+  return new File([blob], `${baseName}-display.${extension}`, { type: blob.type, lastModified: Date.now() });
+}
+
+async function loadCanvasImage(file: File): Promise<HTMLImageElement> {
+  const imageUrl = URL.createObjectURL(file);
+
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = imageUrl;
+
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+    });
+
+    return image;
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality);
+  });
+}
+
+async function optimizeExistingNoteImages(
+  markdown: string,
+  uploadMediaFile: (file: File) => Promise<{ markdown: string; path: string }>
+): Promise<string> {
+  const matches = [...markdown.matchAll(/!\[(.*?)]\((.*?)\)/g)].filter((match) => {
+    const alt = match[1];
+    const src = match[2];
+
+    return !/\|\s*full=/i.test(`|${alt}`) && !/\.(gif|svg|mp4|webm)$/i.test(src);
+  });
+
+  if (!matches.length) {
+    return markdown;
+  }
+
+  let nextMarkdown = markdown;
+  let offset = 0;
+
+  for (const match of matches) {
+    const source = match[2];
+
+    try {
+      const response = await fetch(mediaFetchUrl(source));
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const blob = await response.blob();
+      const filename = source.split("/").at(-1) || "note-image";
+      const file = new File([blob], filename, { type: blob.type || "image/jpeg" });
+      const displayFile = await createDisplayThumbnail(file);
+
+      if (!displayFile) {
+        continue;
+      }
+
+      const display = await uploadMediaFile(displayFile);
+      const rawAlt = match[1];
+      const parts = rawAlt.split("|").map((part) => part.trim()).filter(Boolean);
+      const captionOffset = parts[0] && !isStudioMediaToken(parts[0]) ? 1 : 0;
+      const nextParts = [
+        ...parts.slice(0, captionOffset),
+        `full=${source}`,
+        ...parts.slice(captionOffset)
+      ];
+      const replacement = `![${nextParts.join(" | ")}](${display.path})`;
+      const start = (match.index ?? 0) + offset;
+      const end = start + match[0].length;
+
+      nextMarkdown = `${nextMarkdown.slice(0, start)}${replacement}${nextMarkdown.slice(end)}`;
+      offset += replacement.length - match[0].length;
+    } catch {
+      // Keep the original image syntax when a local media item cannot be read.
+    }
+  }
+
+  return nextMarkdown;
+}
+
+function mediaFetchUrl(source: string): string {
+  if (/^(?:https?:|data:|blob:|\/)/i.test(source)) {
+    return source;
+  }
+
+  if (source.startsWith("public/")) {
+    return `/${source.slice("public/".length)}`;
+  }
+
+  return source;
 }
 
 function PublishNotificationPanel({
@@ -914,6 +1113,7 @@ function StudioSetupEditor({
   onFileDrop,
   onFilePick,
   onNoteMediaUpload,
+  onOptimizeNoteMedia,
   onUpdate,
   saving,
   uploading
@@ -926,6 +1126,7 @@ function StudioSetupEditor({
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onOptimizeNoteMedia: (markdown: string) => Promise<string>;
   onUpdate: StudioUpdate;
   saving: boolean;
   uploading: boolean;
@@ -967,9 +1168,9 @@ function StudioSetupEditor({
           ) : setupGroup === "peripherals" ? (
             <StudioSetupPeripheralEditor form={form} uploading={uploading} onFileDrop={onFileDrop} onFilePick={onFilePick} onUpdate={onUpdate} />
           ) : setupGroup === "notes" ? (
-            <StudioSetupNoteEditor form={form} onBodyCommit={onBodyCommit} onNoteMediaUpload={onNoteMediaUpload} onUpdate={onUpdate} />
+            <StudioSetupNoteEditor form={form} onBodyCommit={onBodyCommit} onNoteMediaUpload={onNoteMediaUpload} onOptimizeNoteMedia={onOptimizeNoteMedia} onUpdate={onUpdate} />
           ) : (
-            <StudioSetupSystemEditor form={form} uploading={uploading} onBodyCommit={onBodyCommit} onFileDrop={onFileDrop} onFilePick={onFilePick} onNoteMediaUpload={onNoteMediaUpload} onUpdate={onUpdate} />
+            <StudioSetupSystemEditor form={form} uploading={uploading} onBodyCommit={onBodyCommit} onFileDrop={onFileDrop} onFilePick={onFilePick} onNoteMediaUpload={onNoteMediaUpload} onOptimizeNoteMedia={onOptimizeNoteMedia} onUpdate={onUpdate} />
           )}
         </div>
 
@@ -1036,7 +1237,6 @@ function StudioSetupToolEditor({
     <section className="studio-setup-simple-editor">
       <div className="studio-setup-form-grid">
         <InlineField label="Public link" value={form.externalUrl} placeholder="https://example.com" onChange={(value) => onUpdate("externalUrl", value)} />
-        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
       </div>
       <SetupMediaInput
         description="Drop one app icon here. It appears as the shortcut image in the Tools bay."
@@ -1048,10 +1248,6 @@ function StudioSetupToolEditor({
         onFileDrop={onFileDrop}
         onFilePick={onFilePick}
       />
-      <label className="studio-textarea-field">
-        Description
-        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
-      </label>
     </section>
   );
 }
@@ -1071,9 +1267,6 @@ function StudioSetupPeripheralEditor({
 }) {
   return (
     <section className="studio-setup-simple-editor">
-      <div className="studio-setup-form-grid">
-        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
-      </div>
       <SetupMediaInput
         description="Drop one photo here. It becomes the expandable peripheral preview."
         label="Device photo"
@@ -1096,23 +1289,22 @@ function StudioSetupNoteEditor({
   form,
   onBodyCommit,
   onNoteMediaUpload,
+  onOptimizeNoteMedia,
   onUpdate
 }: {
   form: StudioForm;
   onBodyCommit: (value: string) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onOptimizeNoteMedia: (markdown: string) => Promise<string>;
   onUpdate: StudioUpdate;
 }) {
   return (
     <section className="studio-setup-simple-editor">
-      <div className="studio-setup-form-grid">
-        <InlineField label="Display type" value={form.type} onChange={(value) => onUpdate("type", value)} />
-      </div>
       <label className="studio-textarea-field">
         Summary
         <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
       </label>
-      <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} />
+      <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} onOptimizeMedia={onOptimizeNoteMedia} />
     </section>
   );
 }
@@ -1123,6 +1315,7 @@ function StudioSetupSystemEditor({
   onFileDrop,
   onFilePick,
   onNoteMediaUpload,
+  onOptimizeNoteMedia,
   onUpdate,
   uploading
 }: {
@@ -1131,6 +1324,7 @@ function StudioSetupSystemEditor({
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onOptimizeNoteMedia: (markdown: string) => Promise<string>;
   onUpdate: StudioUpdate;
   uploading: boolean;
 }) {
@@ -1156,7 +1350,7 @@ function StudioSetupSystemEditor({
       <BufferedBodyEditor label="Specs / Hardware" value={form.hardware} onCommit={(value) => onUpdate("hardware", value)} />
       <div className="studio-setup-note-stack">
         <div className="terminal-title">// SETUP NOTES</div>
-        <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} />
+        <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} onOptimizeMedia={onOptimizeNoteMedia} />
       </div>
     </section>
   );
@@ -1353,6 +1547,7 @@ function StudioContent({
   onFileDrop,
   onFilePick,
   onNoteMediaUpload,
+  onOptimizeNoteMedia,
   onUpdate,
   record,
   uploading
@@ -1363,6 +1558,7 @@ function StudioContent({
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onOptimizeNoteMedia: (markdown: string) => Promise<string>;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
   record: RecordEntry;
   uploading: boolean;
@@ -1429,7 +1625,7 @@ function StudioContent({
     return (
       <section className="studio-content-terminal">
         <div className="terminal-title">// NOTES</div>
-        <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} />
+        <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} onOptimizeMedia={onOptimizeNoteMedia} />
       </section>
     );
   }
@@ -1625,16 +1821,19 @@ function StackEditor({ onChange, value }: { onChange: (value: string) => void; v
 function NoteStackEditor({
   onCommit,
   onMediaUpload,
+  onOptimizeMedia,
   value
 }: {
   onCommit: (value: string) => void;
   onMediaUpload: (files: FileList | File[]) => Promise<string[]>;
+  onOptimizeMedia?: (markdown: string) => Promise<string>;
   value: string;
 }) {
   const initialParts = useMemo(() => splitStudioUpdateIndex(value), [value]);
   const [notes, setNotes] = useState<StudioNote[]>(() => parseStudioNotes(value));
   const [updateIndex, setUpdateIndex] = useState(initialParts.updateIndex);
   const [openIndex, setOpenIndex] = useState(0);
+  const [optimizingIndex, setOptimizingIndex] = useState<number | null>(null);
   const lastSerializedRef = useRef("");
   const noteSelectionsRef = useRef<Record<number, { end: number; start: number }>>({});
 
@@ -1729,6 +1928,21 @@ function NoteStackEditor({
     updateNote(index, "body", nextBody);
   };
 
+  const optimizeMedia = async (index: number) => {
+    if (!onOptimizeMedia) {
+      return;
+    }
+
+    setOptimizingIndex(index);
+    const nextBody = await onOptimizeMedia(notes[index].body);
+    setOptimizingIndex(null);
+
+    if (nextBody !== notes[index].body) {
+      updateNote(index, "body", nextBody);
+      setOpenIndex(index);
+    }
+  };
+
   const removeNote = (index: number) => {
     const nextNotes = notes.filter((_, noteIndex) => noteIndex !== index);
     commitNotes(nextNotes);
@@ -1772,6 +1986,11 @@ function NoteStackEditor({
                       {token}
                     </button>
                   ))}
+                  {onOptimizeMedia ? (
+                    <button type="button" disabled={optimizingIndex === index} onMouseDown={(event) => event.preventDefault()} onClick={() => optimizeMedia(index)}>
+                      {optimizingIndex === index ? "working" : "display thumbs"}
+                    </button>
+                  ) : null}
                 </div>
                 <textarea
                   aria-label={`${note.title} body`}
@@ -1798,7 +2017,9 @@ function NoteStackEditor({
 }
 
 function isStudioMediaToken(value: string): boolean {
-  return ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(value.toLowerCase());
+  const normalized = value.toLowerCase();
+
+  return normalized.startsWith("full=") || ["wide", "banner", "small", "left", "right", "center", "top", "bottom", "crop", "contain", "no-caption"].includes(normalized);
 }
 
 function mediaPartsWithToken(parts: string[], token: string): string[] {
@@ -2062,7 +2283,7 @@ function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "
     status: "Draft",
     started: today,
     updated: today,
-    summary: "No summary recorded.",
+    summary: defaultSummary(section, normalizedSetupGroup),
     banner: "",
     headerImage: "",
     iconImage: "",
@@ -2242,6 +2463,19 @@ function defaultType(section: StudioSection): string {
   }[section];
 }
 
+function defaultSummary(section: StudioSection, setupGroup = ""): string {
+  if (section !== "setup") {
+    return "No summary recorded.";
+  }
+
+  return {
+    systems: "System profile pending.",
+    tools: "Shortcut registered.",
+    peripherals: "Device capture registered.",
+    notes: "Setup note pending."
+  }[normalizeSetupGroup(setupGroup)];
+}
+
 function normalizeSetupGroup(value: string): SetupGroupId {
   return setupGroupIds.includes(value as SetupGroupId) ? value as SetupGroupId : "systems";
 }
@@ -2276,8 +2510,8 @@ function setupDetailsLabel(setupGroup: string): string {
 function setupGroupHelp(setupGroup: string): string {
   return {
     systems: "Opens as a neofetch-style terminal profile.",
-    tools: "Appears as a desktop shortcut and opens as a tool profile.",
-    peripherals: "Appears as an inspection photo tile with expandable media.",
+    tools: "Appears as a desktop shortcut. Add a public link when you want clicks to leave Gestalt.",
+    peripherals: "Appears as an inspection photo tile with expandable media and optional description.",
     notes: "Appears as a note/file icon and opens into note content."
   }[normalizeSetupGroup(setupGroup)] ?? "Choose how this Setup record should appear.";
 }
