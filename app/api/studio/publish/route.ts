@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = spawnSync(
       process.execPath,
-      ["scripts/publish-site.mjs", "--message", "Update archive", "--skip-typecheck"],
+      ["scripts/publish-site.mjs", "--message", "Update archive"],
       {
         cwd: process.cwd(),
         encoding: "utf8",

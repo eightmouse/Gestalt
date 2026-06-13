@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -65,10 +65,42 @@ function fail(file, message) {
   errors.push(`${file}: ${message}`);
 }
 
+function normalizeLocalMediaReference(value) {
+  let normalized = value.replace(/^\/+/, "");
+
+  if (normalized.startsWith("media/") || normalized.startsWith("images/")) {
+    normalized = `public/${normalized}`;
+  }
+
+  if (!normalized.startsWith("public/media/") && !normalized.startsWith("public/images/")) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function collectMediaReferences(file, source) {
+  const pattern = /(?:^|[\s"'(])((?:\/|public\/)(?:media|images)\/[^\s"')\],]+)/g;
+
+  for (const match of source.matchAll(pattern)) {
+    const normalized = normalizeLocalMediaReference(match[1]);
+
+    if (!normalized) {
+      continue;
+    }
+
+    if (!existsSync(path.join(root, normalized))) {
+      fail(file, `missing media file "${normalized}"`);
+    }
+  }
+}
+
 for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".mdx")).sort()) {
   const id = filename.replace(/\.mdx$/, "");
   const source = readFileSync(path.join(recordsDir, filename), "utf8");
   const parsed = parseFrontmatter(source);
+
+  collectMediaReferences(filename, source);
 
   if (seen.has(id)) {
     fail(filename, `duplicate id "${id}"`);

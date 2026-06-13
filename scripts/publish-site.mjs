@@ -253,6 +253,7 @@ if (skipTypecheck) {
   runTypecheck();
 }
 run("node", ["--check", "static-app.js"]);
+run("node", ["--check", "sw.js"]);
 run("git", ["diff", "--check"]);
 
 ensureNoTrackedEnvFiles();
