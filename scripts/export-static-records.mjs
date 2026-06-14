@@ -74,6 +74,8 @@ function toStaticPathList(value) {
 
 function toStaticBody(value) {
   return value
+    .replaceAll("full=/media/", "full=public/media/")
+    .replaceAll("full=/images/", "full=public/images/")
     .replaceAll("](/media/", "](public/media/")
     .replaceAll("](/images/", "](public/images/");
 }

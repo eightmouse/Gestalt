@@ -83,6 +83,10 @@ if (!recordsData.startsWith("window.__GESTALT_RECORDS = [")) {
   errors.push("public/data/records.js must export window.__GESTALT_RECORDS.");
 }
 
+if (/full=\/(?:media|images)\//.test(recordsData)) {
+  errors.push("Static records must convert full=/media and full=/images references for GitHub Pages.");
+}
+
 const swCheck = spawnSync(process.execPath, ["--check", path.join(root, "sw.js")], { encoding: "utf8" });
 
 if (swCheck.status !== 0) {

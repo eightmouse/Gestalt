@@ -80,7 +80,7 @@ function normalizeLocalMediaReference(value) {
 }
 
 function collectMediaReferences(file, source) {
-  const pattern = /(?:^|[\s"'(])((?:\/|public\/)(?:media|images)\/[^\s"')\],]+)/g;
+  const pattern = /(?:^|[\s"'(=])((?:\/|public\/)(?:media|images)\/[^\s"')\],]+)/g;
 
   for (const match of source.matchAll(pattern)) {
     const normalized = normalizeLocalMediaReference(match[1]);
