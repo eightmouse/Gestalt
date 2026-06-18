@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
@@ -85,6 +85,21 @@ if (!recordsData.startsWith("window.__GESTALT_RECORDS = [")) {
 
 if (/(?:\]\(|full=|["'])\/(?:media|images)\//.test(recordsData)) {
   errors.push("Static records must convert root-relative media/image references for GitHub Pages.");
+}
+
+function collectStaticAssetReferences(source) {
+  return [
+    ...new Set(
+      [...source.matchAll(/public\/(?:media|images)\/[^\s"'\\)\]<>]+/g)]
+        .map((match) => match[0].replace(/[.,;:]+$/, ""))
+    )
+  ];
+}
+
+for (const file of collectStaticAssetReferences(`${indexHtml}\n${recordsData}`)) {
+  if (!existsSync(path.join(root, file))) {
+    errors.push(`Static asset reference is missing: ${file}`);
+  }
 }
 
 const swCheck = spawnSync(process.execPath, ["--check", path.join(root, "sw.js")], { encoding: "utf8" });
