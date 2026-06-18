@@ -1,4 +1,4 @@
-const mediaCacheName = "gestalt-media-v1";
+const mediaCacheName = "gestalt-media-v2";
 const mediaRoots = ["/public/images/", "/public/media/"];
 
 function scopedPath(path) {
