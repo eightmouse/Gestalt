@@ -620,8 +620,15 @@ export function StudioClient({ records }: StudioClientProps) {
     setMessage("Generating display thumbnails...");
 
     try {
+      const previousFullCount = countFullImageTokens(markdown);
       const nextMarkdown = await optimizeExistingNoteImages(markdown, uploadMediaFile);
-      setMessage(nextMarkdown === markdown ? "No large note images needed thumbnails." : "Display thumbnails generated.");
+      const generatedCount = Math.max(0, countFullImageTokens(nextMarkdown) - previousFullCount);
+
+      setMessage(
+        nextMarkdown === markdown
+          ? "No large note images needed thumbnails."
+          : `Generated ${generatedCount || 1} display thumbnail${generatedCount === 1 ? "" : "s"}.`
+      );
       return nextMarkdown;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Thumbnail generation failed.");
@@ -795,6 +802,10 @@ function noteMediaMarkdown(displayPath: string, fullPath = ""): string {
   return fullPath && fullPath !== displayPath ? `![full=${fullPath}](${displayPath})` : `![](${displayPath})`;
 }
 
+function countFullImageTokens(markdown: string): number {
+  return markdown.match(/\bfull=(?:\/|public\/)(?:media|images)\//g)?.length ?? 0;
+}
+
 function canThumbnailFile(file: File): boolean {
   return file.type.startsWith("image/") && !/image\/gif/i.test(file.type) && !/\.(gif|svg)$/i.test(file.name);
 }
@@ -904,7 +915,7 @@ async function optimizeExistingNoteImages(
       const captionOffset = parts[0] && !isStudioMediaToken(parts[0]) ? 1 : 0;
       const nextParts = [
         ...parts.slice(0, captionOffset),
-        `full=${source}`,
+        `full=${normalizeStudioFullSource(source)}`,
         ...parts.slice(captionOffset)
       ];
       const replacement = `![${nextParts.join(" | ")}](${display.path})`;
@@ -927,6 +938,18 @@ function mediaFetchUrl(source: string): string {
   }
 
   if (source.startsWith("public/")) {
+    return `/${source.slice("public/".length)}`;
+  }
+
+  return source;
+}
+
+function normalizeStudioFullSource(source: string): string {
+  if (source.startsWith("public/media/")) {
+    return `/${source.slice("public/".length)}`;
+  }
+
+  if (source.startsWith("public/images/")) {
     return `/${source.slice("public/".length)}`;
   }
 
