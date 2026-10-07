@@ -16,7 +16,13 @@ export function isLocalStudioRequest(request: NextRequest): boolean {
     return false;
   }
 
-  return isLocalHeaderUrl(request.headers.get("origin")) && isLocalHeaderUrl(request.headers.get("referer"));
+  const origin = request.headers.get("origin");
+
+  if (!origin || !isLocalHeaderUrl(origin)) {
+    return false;
+  }
+
+  return isLocalHeaderUrl(request.headers.get("referer"));
 }
 
 function isLocalHost(host: string, hostHeader: string): boolean {

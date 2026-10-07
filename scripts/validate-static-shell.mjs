@@ -4,6 +4,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const source = readFileSync(path.join(root, "static-app.js"), "utf8");
+const serviceWorker = readFileSync(path.join(root, "sw.js"), "utf8");
 const indexHtml = readFileSync(path.join(root, "index.html"), "utf8");
 const recordsData = readFileSync(path.join(root, "public", "data", "records.js"), "utf8");
 const errors = [];
@@ -65,6 +66,14 @@ if (/window\.__GESTALT_RECORDS\s*\|\|\s*\[/m.test(source)) {
 
 if (!/recordsLoaded/.test(source) || !/archive-shell--unavailable/.test(source)) {
   errors.push("Static runtime must render an explicit unavailable-records state.");
+}
+
+if (/warmLocalMediaCache|localMediaSourcesForWarmup|GESTALT_PREFETCH_MEDIA/.test(source)) {
+  errors.push("Static runtime must not eagerly prefetch archive media.");
+}
+
+if (/GESTALT_PREFETCH_MEDIA|async function prefetchMedia/.test(serviceWorker)) {
+  errors.push("Service worker must cache media only after it is requested.");
 }
 
 if (recordsScriptIndex === -1) {

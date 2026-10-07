@@ -1193,7 +1193,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.31.5</span>
+        <span>v1.32.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1207,7 +1207,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.31.5</span>
+        <span class="version-label">v1.32.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1227,7 +1227,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.31.5</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.32.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1581,12 +1581,11 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
 function renderSetupTile(record) {
   const group = setupGroupFor(record);
   const image = setupTileImage(record);
-  const imageLoading = group === "tools" || group === "peripherals" ? "eager" : "lazy";
   const profile = setupProfile(record);
   const externalUrl = safeExternalUrl(record.externalUrl);
   const action = group === "tools" ? (externalUrl ? "launch" : "idle") : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
   const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${profile.category} . ${record.status}`;
-  const content = `<span class="${image ? "setup-tile-icon has-image" : "setup-tile-icon"}" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="${imageLoading}" />` : ""}<span class="setup-tile-glyph"></span></span>
+  const content = `<span class="${image ? "setup-tile-icon has-image" : "setup-tile-icon"}" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}<span class="setup-tile-glyph"></span></span>
     <span class="setup-tile-body">
       <strong>${escapeHtml(record.title)}</strong>
       ${metaLine ? `<small>${escapeHtml(metaLine)}</small>` : ""}
@@ -1646,56 +1645,14 @@ function setupGroupFor(record) {
   return "notes";
 }
 
-function isLocalMediaSource(source) {
-  return typeof source === "string"
-    && /^(?:\.\/)?public\/(?:images|media)\//.test(source)
-    && !/^https?:\/\//i.test(source);
-}
-
-function localMediaSourcesForWarmup() {
-  const sources = new Set(["public/images/archive-banner.png"]);
-  const currentGame = currentGameRecord();
-
-  if (currentGame) {
-    sources.add(recordImage(currentGame));
-  }
-
-  for (const record of records) {
-    const group = setupGroupFor(record);
-
-    if (record.section === "setup" && (group === "tools" || group === "peripherals")) {
-      sources.add(setupTileImage(record));
-      sources.add(recordHeaderImage(record));
-      sources.add(record.banner);
-    }
-  }
-
-  return [...sources].filter(isLocalMediaSource);
-}
-
-function warmLocalMediaCache() {
-  for (const source of localMediaSourcesForWarmup()) {
-    const image = new Image();
-    image.decoding = "async";
-    image.src = source;
-  }
-}
-
 function registerMediaCacheWorker() {
   if (!("serviceWorker" in navigator) || window.location.protocol === "file:") {
     return;
   }
 
-  const sources = localMediaSourcesForWarmup();
-
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("./sw.js")
-      .then((registration) => navigator.serviceWorker.ready.then(() => registration))
-      .then((registration) => {
-        const worker = navigator.serviceWorker.controller || registration.active || registration.waiting || registration.installing;
-        worker?.postMessage({ type: "GESTALT_PREFETCH_MEDIA", urls: sources });
-      })
       .catch(() => {
         // Media cache is optional. The archive stays fully usable without it.
       });
@@ -2726,7 +2683,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 registerMediaCacheWorker();
-warmLocalMediaCache();
 render();
 void requestWeather();
 window.setInterval(syncTime, 30_000);
