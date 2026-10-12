@@ -3,6 +3,12 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
+const publishPaths = [
+  "content/records",
+  "public/data/records.js",
+  "public/media/records",
+  "index.html"
+];
 
 function commandFor(command) {
   if (process.platform === "win32" && ["corepack", "npm", "pnpm"].includes(command)) {
@@ -172,11 +178,46 @@ function scanForPrivateMaterial() {
   }
 }
 
-function ensureThereAreChanges() {
-  const status = capture("git", ["status", "--porcelain"]).trim();
+function isPublishPath(file) {
+  return file === "public/data/records.js" ||
+    file === "index.html" ||
+    file.startsWith("content/records/") ||
+    file.startsWith("public/media/records/");
+}
 
-  if (!status) {
-    console.log("\nNo changes to publish.");
+function isArchivePayloadPath(file) {
+  return file === "public/data/records.js" ||
+    file.startsWith("content/records/") ||
+    file.startsWith("public/media/records/");
+}
+
+function ensureNoUnexpectedStagedFiles() {
+  const stagedFiles = capture("git", ["diff", "--cached", "--name-only", "--diff-filter=ACDMRTUXB"])
+    .split(/\r?\n/)
+    .filter(Boolean);
+  const unexpectedFiles = stagedFiles.filter((file) => !isPublishPath(file));
+
+  if (unexpectedFiles.length > 0) {
+    console.error("\nPublish blocked: unrelated files are already staged:");
+    for (const file of unexpectedFiles) {
+      console.error(`- ${file}`);
+    }
+    console.error("\nCommit those separately, or unstage them before publishing archive content.");
+    process.exit(1);
+  }
+}
+
+function ensureThereAreArchiveChanges() {
+  const staged = capture("git", ["diff", "--cached", "--name-only"]);
+  const modified = capture("git", ["ls-files", "--modified"]);
+  const untracked = capture("git", ["ls-files", "--others", "--exclude-standard"]);
+  const changedFiles = [staged, modified, untracked]
+    .join("\n")
+    .split(/\r?\n/)
+    .filter(Boolean);
+
+  if (!changedFiles.some(isArchivePayloadPath)) {
+    console.log("\nNo archive record or media changes to publish. Commit site or Studio code changes separately.");
     process.exit(0);
   }
 }
@@ -242,7 +283,11 @@ if (dryRun) {
   console.log("Dry run: checks will run, but nothing will be committed or pushed.");
 }
 
+ensureNoUnexpectedStagedFiles();
+ensureNoTrackedEnvFiles();
+scanForPrivateMaterial();
 syncSteamIfConfigured(skipSteamSync);
+ensureThereAreArchiveChanges();
 run("node", ["scripts/export-static-records.mjs"]);
 refreshStaticCacheBusters();
 run("node", ["scripts/validate-content.mjs"]);
@@ -256,16 +301,16 @@ run("node", ["--check", "static-app.js"]);
 run("node", ["--check", "sw.js"]);
 run("git", ["diff", "--check"]);
 
-ensureNoTrackedEnvFiles();
 scanForPrivateMaterial();
-ensureThereAreChanges();
+ensureNoUnexpectedStagedFiles();
 
 if (dryRun) {
   console.log("\nDry run passed. Run without --dry-run to commit and push.");
   process.exit(0);
 }
 
-run("git", ["add", "-A"]);
+run("git", ["add", "-A", "--", ...publishPaths]);
+ensureNoUnexpectedStagedFiles();
 run("git", ["diff", "--cached", "--check"]);
 scanForPrivateMaterial();
 

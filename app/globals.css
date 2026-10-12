@@ -4181,6 +4181,25 @@ button:focus-visible {
   z-index: 1;
 }
 
+.window-edit-action {
+  justify-self: end;
+  min-block-size: 28px;
+  padding: 4px 9px;
+  border: 1px solid rgba(217, 213, 193, 0.2);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.window-edit-action:hover,
+.window-edit-action:focus-visible {
+  border-color: rgba(217, 213, 193, 0.48);
+  color: var(--text);
+}
+
 .window-actions {
   display: flex;
   align-items: center;
@@ -4834,6 +4853,10 @@ button:focus-visible {
   font-size: 11px;
   letter-spacing: 0.05em;
   overflow: hidden;
+}
+
+.setup-console-prompt:has(.window-edit-action) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
 .setup-prompt-command {

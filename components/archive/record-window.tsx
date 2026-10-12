@@ -20,20 +20,21 @@ type RecordWindowProps = {
   initialContent: ContentKey;
   maximized: boolean;
   record: RecordEntry;
+  onEdit?: () => void;
   onClose: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
 };
 
-export function RecordWindow({ initialContent, maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow maximized={maximized} record={record} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow initialContent={initialContent} maximized={maximized} record={record} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow initialContent={initialContent} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
-function ArchiveRecordWindow({ initialContent, maximized, record, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
@@ -79,6 +80,7 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onClose, onMin
     >
       <header className="window-bar">
         <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
+        {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
         <div className="window-actions">
           <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
             <Minimize2 size={14} />
@@ -172,7 +174,7 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onClose, onMin
   );
 }
 
-function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
   const headerImage = setupRecordImage(record);
@@ -202,6 +204,7 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
             command={profile.command}
             record={record}
             onClose={onClose}
+            onEdit={onEdit}
             onMaximize={onMaximize}
             onMinimize={onMinimize}
           />
@@ -231,6 +234,7 @@ function SetupRecordWindow({ maximized, record, onClose, onMinimize, onMaximize 
 function SetupPrompt({
   command,
   onClose,
+  onEdit,
   onMaximize,
   onMinimize,
   record
@@ -238,6 +242,7 @@ function SetupPrompt({
   command: string;
   record: RecordEntry;
   onClose: () => void;
+  onEdit?: () => void;
   onMaximize: () => void;
   onMinimize: () => void;
 }) {
@@ -250,6 +255,7 @@ function SetupPrompt({
         <i>$</i>
         <strong>{command}</strong>
       </div>
+      {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
       <div className="window-actions setup-window-actions">
         <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
           <Minimize2 size={14} />

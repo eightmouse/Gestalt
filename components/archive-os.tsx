@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import {
   Clock,
   Square,
@@ -29,6 +30,11 @@ import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/s
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
+
+const LocalStudioEditor = dynamic(
+  () => import("@/components/studio-client").then((module) => module.StudioClient),
+  { ssr: false }
+);
 
 type ArchiveState = {
   selectedId: string;
@@ -117,6 +123,7 @@ function warmArchiveMedia(records: RecordEntry[], currentGame?: RecordEntry) {
 
 export function ArchiveOS({ records }: ArchiveOSProps) {
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
+  const [archiveRecords, setArchiveRecords] = useState(records);
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [panelMaximized, setPanelMaximized] = useState(false);
@@ -129,12 +136,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
   const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
   const [bootComplete, setBootComplete] = useState(false);
+  const [studioRecordId, setStudioRecordId] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
     return sections.reduce<Record<RecordSection, RecordEntry[]>>(
       (acc, section) => {
-        acc[section.id] = records.filter((record) => record.section === section.id);
+        acc[section.id] = archiveRecords.filter((record) => record.section === section.id);
         return acc;
       },
       {
@@ -146,21 +154,25 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         archive: []
       }
     );
-  }, [records]);
+  }, [archiveRecords]);
 
-  const selectedRecord = records.find((record) => record.id === selectedId) ?? records[0];
+  const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? archiveRecords[0];
   const projectDashboardRecords = recordsBySection.projects
     .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const currentGame = recordsBySection.games.find((record) => record.meta.dashboardActive === true)
     ?? recordsBySection.games.find((record) => record.status === "Playing")
     ?? recordsBySection.games[0];
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
-  const activity = recentActivity(records, 6);
-  const metrics = getArchiveMetrics(records, currentGame);
+  const activity = recentActivity(archiveRecords, 6);
+  const metrics = getArchiveMetrics(archiveRecords, currentGame);
 
   useEffect(() => {
-    warmArchiveMedia(records, currentGame);
-  }, [records, currentGame]);
+    setArchiveRecords(records);
+  }, [records]);
+
+  useEffect(() => {
+    warmArchiveMedia(archiveRecords, currentGame);
+  }, [archiveRecords, currentGame]);
 
   useEffect(() => {
     const updateClock = () => setNow(new Date());
@@ -250,10 +262,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [navOpen]);
 
   useEffect(() => {
-    if (!records.some((record) => record.id === selectedId) && records[0]) {
-      setSelectedId(records[0].id);
+    if (!archiveRecords.some((record) => record.id === selectedId) && archiveRecords[0]) {
+      setSelectedId(archiveRecords[0].id);
     }
-  }, [records, selectedId, setSelectedId]);
+  }, [archiveRecords, selectedId, setSelectedId]);
 
   const openRecord = (record: RecordEntry, content: ContentKey = "overview") => {
     setSelectedId(record.id);
@@ -334,8 +346,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   };
 
-  const searchResults = getSearchResults(records, searchQuery, currentGame, latestLog);
-  const timelineItems = getTimelineItems(records, 32);
+  const searchResults = getSearchResults(archiveRecords, searchQuery, currentGame, latestLog);
+  const timelineItems = getTimelineItems(archiveRecords, 32);
 
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
@@ -485,6 +497,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 maximized={panelMaximized}
                 initialContent={initialContent}
                 record={selectedRecord}
+                onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? () => setStudioRecordId(selectedRecord.id) : undefined}
                 onClose={() => {
                   setPanelOpen(false);
                   setPanelMinimized(false);
@@ -539,6 +552,40 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         </AnimatePresence>
         <MobileDock activeSection={activeSection} onHome={openHome} onOpenSection={openSection} />
       </section>
+      <AnimatePresence>
+        {studioRecordId ? (
+          <motion.div
+            className="local-studio-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Local archive record editor"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <LocalStudioEditor
+              embedded
+              initialRecordId={studioRecordId}
+              records={archiveRecords.filter((record) => record.section !== "system")}
+              onExit={() => setStudioRecordId(null)}
+              onRecordsChange={(updatedRecords, currentId) => {
+                setArchiveRecords((current) => [
+                  ...current.filter((record) => record.section === "system"),
+                  ...updatedRecords
+                ]);
+                if (currentId) {
+                  setSelectedId(currentId);
+                } else if (currentId === null) {
+                  setStudioRecordId(null);
+                  setPanelOpen(false);
+                  setPanelMinimized(false);
+                }
+              }}
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }

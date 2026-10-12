@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import "@/app/studio/studio.css";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
 type StudioSection = Exclude<RecordSection, "system">;
@@ -40,6 +41,10 @@ type StudioForm = {
 
 type StudioClientProps = {
   records: RecordEntry[];
+  embedded?: boolean;
+  initialRecordId?: string;
+  onExit?: () => void;
+  onRecordsChange?: (records: RecordEntry[], selectedRecordId?: string | null) => void;
 };
 
 type MediaTarget = "body" | "banner" | "headerImage" | "iconImage" | "samples" | "attachments";
@@ -133,15 +138,19 @@ const setupManagerGroups: Array<{
 ];
 const setupGroupIds = setupManagerGroups.map((group) => group.id);
 
-export function StudioClient({ records }: StudioClientProps) {
-  const firstRecord = records[0];
+export function StudioClient({ embedded = false, initialRecordId, onExit, onRecordsChange, records }: StudioClientProps) {
+  const firstRecord = records.find((record) => record.id === initialRecordId) ?? records[0];
   const [studioRecords, setStudioRecords] = useState<RecordEntry[]>(records);
   const [selectedId, setSelectedId] = useState(firstRecord?.id ?? "__new");
   const [activeSection, setActiveSection] = useState<StudioSection>(firstRecord?.section === "system" || !firstRecord ? "projects" : firstRecord.section);
   const [mode, setMode] = useState<"section" | "edit">(firstRecord ? "edit" : "section");
   const [form, setForm] = useState<StudioForm>(() => fromRecord(firstRecord));
   const [activeContent, setActiveContent] = useState<StudioContentKey>("overview");
-  const [message, setMessage] = useState("Studio edit mode. Changes stay local until you save.");
+  const [message, setMessage] = useState(
+    embedded && firstRecord
+      ? `Editing ${firstRecord.title}. Changes stay local until saved.`
+      : "Studio edit mode. Changes stay local until you save."
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [publishState, setPublishState] = useState<PublishState | null>(null);
@@ -154,6 +163,7 @@ export function StudioClient({ records }: StudioClientProps) {
   const fileTargetRef = useRef<MediaTarget>("body");
   const formRef = useRef(form);
   const selectedIdRef = useRef(selectedId);
+  const embeddedDraftRestoredRef = useRef(false);
 
   const sortedRecords = useMemo(() => [...studioRecords].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [studioRecords]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
@@ -165,6 +175,39 @@ export function StudioClient({ records }: StudioClientProps) {
   useEffect(() => {
     setStudioRecords(records);
   }, [records]);
+
+  useEffect(() => {
+    if (!embedded || !initialRecordId || embeddedDraftRestoredRef.current) {
+      return;
+    }
+
+    embeddedDraftRestoredRef.current = true;
+    const draft = drafts[studioRecordDraftKey(initialRecordId)];
+
+    if (draft) {
+      bodyDraftRef.current = draft.body;
+      formRef.current = draft.form;
+      selectedIdRef.current = initialRecordId;
+      setForm(draft.form);
+      setActiveSection(draft.form.section);
+      setMessage(`Restored unsaved draft for ${draft.form.title}.`);
+    }
+  }, [drafts, embedded, initialRecordId]);
+
+  useEffect(() => {
+    if (!embedded || !onExit) {
+      return;
+    }
+
+    const returnToRecord = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onExit();
+      }
+    };
+
+    document.addEventListener("keydown", returnToRecord);
+    return () => document.removeEventListener("keydown", returnToRecord);
+  }, [embedded, onExit]);
 
   useEffect(() => {
     if (!contents.some((item) => item.key === activeContent)) {
@@ -349,6 +392,11 @@ export function StudioClient({ records }: StudioClientProps) {
 
         return next;
       });
+      let nextRecords = upsertStudioRecord(studioRecords, toRecordPreview(savedForm, bodyDraftRef.current), originalRecordId);
+      for (const { draft } of pendingDrafts) {
+        nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(draft.form, draft.body), draft.form.originalId || draft.form.id);
+      }
+      onRecordsChange?.(nextRecords, savedId);
       setDrafts((current) => {
         const next = { ...current };
         delete next[previousDraftKey];
@@ -416,6 +464,8 @@ export function StudioClient({ records }: StudioClientProps) {
       setMode("section");
       setForm(next);
       setStudioRecords((current) => current.filter((record) => record.id !== form.originalId));
+      const nextRecords = studioRecords.filter((record) => record.id !== form.originalId);
+      onRecordsChange?.(nextRecords, null);
       setDrafts((current) => {
         const updated = { ...current };
         delete updated[studioRecordDraftKey(form.originalId)];
@@ -638,8 +688,10 @@ export function StudioClient({ records }: StudioClientProps) {
     }
   };
 
+  const Shell = embedded ? "div" : "main";
+
   return (
-    <main className="archive-shell studio-shell">
+    <Shell className={`archive-shell studio-shell${embedded ? " is-embedded" : ""}`}>
       <input
         ref={fileInputRef}
         hidden
@@ -651,14 +703,15 @@ export function StudioClient({ records }: StudioClientProps) {
           event.currentTarget.value = "";
         }}
       />
-      <section className="studio-workspace studio-workspace-v2" aria-label="Gestalt local studio">
+      <section className="studio-workspace studio-workspace-v2" aria-label={embedded ? "Gestalt local record editor" : "Gestalt local studio"}>
         <header className="studio-header studio-header-v2">
           <div>
             <p className="route-label">// LOCAL STUDIO</p>
-            <h1>Archive Edit Mode<span className="cursor">_</span></h1>
-            <p className="subtle">A quiet copy of the archive for editing records before saving them to MDX.</p>
+            <h1>{embedded ? "Local Record Edit" : "Archive Edit Mode"}<span className="cursor">_</span></h1>
+            <p className="subtle">{embedded ? "Changes stay local until saved. The public archive remains underneath." : "A quiet copy of the archive for editing records before saving them to MDX."}</p>
           </div>
           <div className="studio-actions">
+            {embedded && onExit ? <button type="button" disabled={saving} onClick={onExit}>Return to Entry</button> : null}
             <button type="button" disabled={saving} onClick={save}>{saving ? "Working..." : "Save Record"}</button>
             <button type="button" disabled={saving} onClick={publishChanges}>Publish Changes</button>
             <button
@@ -675,7 +728,7 @@ export function StudioClient({ records }: StudioClientProps) {
         </header>
 
         <div className="studio-os-grid">
-          <StudioNav activeSection={activeSection} onOpenSection={openSection} />
+          {!embedded ? <StudioNav activeSection={activeSection} onOpenSection={openSection} /> : null}
 
           {mode === "section" ? (
             activeSection === "setup" ? (
@@ -763,7 +816,7 @@ export function StudioClient({ records }: StudioClientProps) {
       {notificationOpen ? (
         <PublishNotificationPanel notification={publishState} onClose={() => setNotificationOpen(false)} />
       ) : null}
-    </main>
+    </Shell>
   );
 }
 

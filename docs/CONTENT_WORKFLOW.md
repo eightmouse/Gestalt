@@ -74,7 +74,7 @@ After saving in Studio, run:
 corepack pnpm run site:publish -- --message "Update archive"
 ```
 
-That command exports the static data used by `index.html`, validates content, runs the TypeScript check, checks `static-app.js`, scans for obvious private material, commits, and pushes the current branch.
+That command exports the static data used by `index.html`, validates content, runs the TypeScript check, checks `static-app.js`, scans for obvious private material, then commits and pushes archive records, generated archive data, uploaded record media, and the static cache token. It refuses to publish if unrelated files are already staged. Commit site or Studio code changes separately.
 
 Use a clear message when you want the GitHub history to say exactly what changed:
 

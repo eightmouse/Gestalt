@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.32.0-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.34.0-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -13,7 +13,7 @@ I wanted a place for the stuff that usually ends up scattered around notes: proj
 
 I use Obsidian a lot, godsend, bless the creators, but I wanted something more public-facing for a while. Not a standard blog layout, more like a little personal operating system where every entry feels like opening a record.
 
-Current public version: `v1.32.0`.
+Current public version: `v1.34.0`.
 
 ## What It Is
 
@@ -62,7 +62,7 @@ corepack pnpm run check
 corepack pnpm run site:publish -- --message "Update archive"
 ```
 
-The publish command refreshes the static data, validates the shell/content, runs the safety checks, commits, and pushes.
+The publish command refreshes the static data, validates the shell/content, runs the safety checks, then commits and pushes archive records and their media. It will not scoop up unrelated source changes. Commit site or Studio code changes separately.
 
 ## Notes
 

@@ -7,6 +7,7 @@ const source = readFileSync(path.join(root, "static-app.js"), "utf8");
 const serviceWorker = readFileSync(path.join(root, "sw.js"), "utf8");
 const indexHtml = readFileSync(path.join(root, "index.html"), "utf8");
 const recordsData = readFileSync(path.join(root, "public", "data", "records.js"), "utf8");
+const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"), "utf8");
 const errors = [];
 
 function extractFunction(name) {
@@ -90,6 +91,18 @@ if (recordsScriptIndex !== -1 && appScriptIndex !== -1 && recordsScriptIndex > a
 
 if (!recordsData.startsWith("window.__GESTALT_RECORDS = [")) {
   errors.push("public/data/records.js must export window.__GESTALT_RECORDS.");
+}
+
+if (/run\("git",\s*\["add",\s*"-A"\]\)/.test(publishScript)) {
+  errors.push("Archive publishing must not stage the entire worktree.");
+}
+
+if (!publishScript.includes('run("git", ["add", "-A", "--", ...publishPaths])')) {
+  errors.push("Archive publishing must stage only its explicit content and media paths.");
+}
+
+if (!publishScript.includes("function ensureNoUnexpectedStagedFiles()")) {
+  errors.push("Archive publishing must block unrelated files that are already staged.");
 }
 
 if (/(?:\]\(|full=|["'])\/(?:media|images)\//.test(recordsData)) {

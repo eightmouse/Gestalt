@@ -5,6 +5,52 @@
   overflow: hidden;
 }
 
+.local-studio-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: #050605;
+}
+
+.studio-shell.is-embedded {
+  position: fixed;
+  z-index: 101;
+  inset: 0;
+  block-size: 100dvh;
+  overflow: auto;
+  background: #050605;
+}
+
+.studio-shell.is-embedded .studio-workspace-v2 {
+  min-block-size: 100%;
+  block-size: auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: clamp(18px, 3vh, 34px) clamp(20px, 5vw, 76px);
+}
+
+.studio-shell.is-embedded .studio-os-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.studio-shell.is-embedded .studio-record-copy,
+.studio-shell.is-embedded .studio-setup-editor {
+  min-block-size: min(72vh, 820px);
+}
+
+.studio-shell.is-embedded .studio-header-v2 {
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .studio-shell.is-embedded .studio-workspace-v2 {
+    padding: 20px 14px 32px;
+  }
+
+  .studio-shell.is-embedded .studio-header-v2 {
+    gap: 14px;
+  }
+}
+
 :where(.studio-content-terminal, .studio-copy-aside, .studio-setup-manager-grid, .studio-setup-item-grid, .studio-setup-editor-main, .studio-setup-editor-aside, .studio-notification-card pre, .studio-textarea-field textarea, .studio-note-edit textarea, .studio-panel textarea) {
   scrollbar-width: thin;
   scrollbar-color: rgba(217, 213, 193, 0.34) rgba(255, 255, 255, 0.035);
