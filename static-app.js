@@ -8,7 +8,7 @@ const sections = [
   { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "╳⌁⟟⟐⌰ / ╵⌖⌁╳", icon: "games" },
   { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "⌰╳╵⌖ / ⟟⌁⌰╳╵", icon: "logs" },
   { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "⌖⟟⌰╳╵ / ⌁⟐⌖", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", cipher: "╵⌖⟐⌰⌁ / ╳⟟⌖╵", icon: "archive" }
+  { id: "archive", code: "06_ARCHIVE", label: "Archive", cipher: "╵⌖⟐⌰⌁ / ╳⟟⌖╵", icon: "archive" }
 ];
 
 const latinSayings = [
@@ -24,7 +24,7 @@ const latinSayings = [
 const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
 const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
 const sectionRegistryLabels = {
-  archive: "Deprecated Index",
+  archive: "Field Archive",
   games: "Play Log Registry",
   logs: "Field Note Index",
   projects: "Process Registry",
@@ -96,6 +96,7 @@ const state = {
   searchOpen: false,
   searchQuery: "",
   timelineOpen: false,
+  archiveFolderWindow: null,
   navOpen: false,
   noteSearchQuery: "",
   updateHistoryOpen: false,
@@ -132,6 +133,7 @@ function openRecord(recordId, contentKey = "overview") {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
@@ -151,6 +153,7 @@ function openSection(sectionId) {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
@@ -165,6 +168,7 @@ function openTimeline() {
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   state.timelineOpen = true;
+  state.archiveFolderWindow = null;
   state.navOpen = false;
   render();
 }
@@ -181,6 +185,7 @@ function openHome() {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
@@ -920,20 +925,21 @@ function recordMilestones(record) {
 function renderOverviewPage(record) {
   const headerImage = recordHeaderImage(record);
   const milestones = recordMilestones(record);
+  const overview = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
 
   return `<div class="overview-stack">
     ${headerImage ? "" : recordBanner(record)}
 
     <section class="record-section">
       <h3>// OVERVIEW</h3>
-      <p>${escapeHtml(record.summary)}</p>
+      <p>${escapeHtml(overview)}</p>
     </section>
 
-    <section class="record-section">
+    ${record.section === "logs" ? "" : `<section class="record-section">
       <div class="section-row"><h3>// CURRENT PROGRESS</h3><span>${record.progress}%</span></div>
       <div class="progress-meter" aria-label="${record.progress}%"><span style="inline-size: ${record.progress}%"></span></div>
       ${milestones ? `<div class="milestone-list">${milestones}</div>` : ""}
-    </section>
+    </section>`}
   </div>`;
 }
 
@@ -1193,7 +1199,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.35.10</span>
+        <span>v1.36.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1207,7 +1213,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.35.10</span>
+        <span class="version-label">v1.36.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1227,7 +1233,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.35.10</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.36.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1437,13 +1443,21 @@ function dashboard() {
 
 function sectionPage(sectionId) {
   const section = sections.find((entry) => entry.id === sectionId) || sections[0];
-  const sectionRecords = recordsFor(sectionId).sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const countLabel = `${sectionRecords.length} ${sectionRecords.length === 1 ? "record" : "records"}`;
-  const splitSection = splitSectionRecords(sectionId, sectionRecords);
-  const readout = sectionReadout(sectionRecords);
+  const sourceRecords = sectionId === "archive"
+    ? [...recordsFor("archive"), ...recordsFor("logs").filter((record) => isLogArchivedByAge(record))]
+    : recordsFor(sectionId);
+  const sectionRecords = sourceRecords.sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const visibleRecords = sectionId === "logs" ? sectionRecords.filter((record) => !isLogArchivedByAge(record)) : sectionRecords;
+  const countLabel = `${visibleRecords.length} ${visibleRecords.length === 1 ? "record" : "records"}`;
+  const splitSection = splitSectionRecords(sectionId, visibleRecords);
+  const readout = sectionReadout(visibleRecords);
 
   if (sectionId === "setup") {
-    return renderSetupBay(section, sectionRecords, countLabel, readout);
+    return renderSetupBay(section, visibleRecords, countLabel, readout);
+  }
+
+  if (sectionId === "archive") {
+    return renderArchiveFolders(section, sectionRecords);
   }
 
   if (splitSection) {
@@ -1480,8 +1494,102 @@ function sectionPage(sectionId) {
       </div>
       <i>${countLabel}</i>
     </header>
-    <div class="section-record-grid">${renderSectionRows(sectionRecords)}</div>
+      <div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>
   </section>`;
+}
+
+const logArchiveAfterDays = 7;
+
+function logArchiveDate(record) {
+  return record.started || record.updated;
+}
+
+function isLogArchivedByAge(record, now = new Date()) {
+  const date = logArchiveDate(record);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+
+  if (!match) return false;
+
+  const [, yearText, monthText, dayText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const entryTime = Date.UTC(year, month - 1, day);
+  const entryDate = new Date(entryTime);
+
+  if (entryDate.getUTCFullYear() !== year || entryDate.getUTCMonth() !== month - 1 || entryDate.getUTCDate() !== day) return false;
+
+  const todayTime = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.floor((todayTime - entryTime) / 86400000) >= logArchiveAfterDays;
+}
+
+function renderArchiveFolders(section, sectionRecords) {
+  const archivedLogs = sectionRecords.filter((record) => record.section === "logs" && isLogArchivedByAge(record));
+  const filedRecords = sectionRecords.filter((record) => record.section !== "logs");
+  const groups = new Map();
+
+  archivedLogs.forEach((record) => {
+    const year = logArchiveDate(record).slice(0, 4) || "Undated";
+    groups.set(year, [...(groups.get(year) || []), record]);
+  });
+
+  const folders = [...groups.entries()]
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([title, groupRecords]) => ({ title, detail: "FIELD NOTES", records: sortArchiveRecords(groupRecords) }));
+
+  if (filedRecords.length) {
+    folders.push({ title: "FILED RECORDS", detail: "MANUAL ARCHIVE", records: sortArchiveRecords(filedRecords) });
+  }
+
+  const archiveDates = folders.flatMap((folder) => folder.records.map((record) => logArchiveDate(record))).sort();
+  const activeFolder = folders.find((folder) => folder.title === state.archiveFolderWindow);
+  const folderButton = (folder, className = "archive-folder-tile") => `<button class="${className}" type="button" data-open-archive-folder="${escapeHtml(folder.title)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>
+    <span><strong>${escapeHtml(folder.title)}</strong><small>${escapeHtml(folder.detail)}</small></span><i>${folder.records.length} ${folder.records.length === 1 ? "file" : "files"}</i>
+  </button>`;
+  const folderWindow = activeFolder ? `<div class="archive-folder-overlay">
+    <button class="archive-folder-backdrop" type="button" aria-label="Close folder window" data-close-archive-folder></button>
+    <section class="archive-folder-window" role="dialog" aria-modal="true" aria-label="${escapeHtml(activeFolder.title)} folder">
+      <header class="archive-folder-titlebar"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>FIELD ARCHIVE / ${escapeHtml(activeFolder.title)}</span><button autofocus type="button" aria-label="Close folder window" title="Close folder" data-close-archive-folder><span aria-hidden="true">×</span></button></header>
+      <div class="archive-folder-pathbar"><button type="button" aria-label="Up to Field Archive" data-close-archive-folder>↑</button><span><span>Field Archive</span><b>/</b><strong>${escapeHtml(activeFolder.title)}</strong></span><small>${activeFolder.records.length} ${activeFolder.records.length === 1 ? "file" : "files"}</small></div>
+      <div class="archive-folder-window-body">
+        <aside class="archive-window-side" aria-label="Archive folders"><p class="archive-manager-label">ARCHIVE</p><button class="archive-window-root" type="button" data-close-archive-folder><span>▧</span>Field Archive</button>
+          <div class="archive-window-tree">${folders.map((folder) => `<button class="${folder.title === activeFolder.title ? "is-active" : ""}" type="button" data-open-archive-folder="${escapeHtml(folder.title)}"><span>▱</span><span>${escapeHtml(folder.title)}</span><i>${folder.records.length}</i></button>`).join("")}</div>
+          <div class="archive-window-selection"><p>SELECTED FOLDER</p><strong>${escapeHtml(activeFolder.title)}</strong><span>${escapeHtml(activeFolder.detail)}</span><small>${activeFolder.records.length} ${activeFolder.records.length === 1 ? "file" : "files"}</small><small>${activeFolder.records.length ? `${readableDate(logArchiveDate(activeFolder.records[activeFolder.records.length - 1]))} - ${readableDate(logArchiveDate(activeFolder.records[0]))}` : "No date range"}</small></div>
+        </aside>
+        <div class="archive-folder-files"><div class="archive-folder-files-toolbar"><span>FILES</span><span>DATE ORDER . NEWEST FIRST</span></div>
+          <div class="archive-file-grid">${activeFolder.records.map((record) => `<button class="archive-file" type="button" data-open-record="${escapeHtml(record.id)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v5h4M9 13h6M9 16h6"/></svg>
+            <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(readableDate(logArchiveDate(record)))} <i>${escapeHtml(record.section === "logs" ? "FIELD NOTE" : record.type.toUpperCase())}</i></small></span>
+          </button>`).join("")}</div>
+          ${activeFolder.records.length ? "" : `<p class="search-empty">This folder contains no files.</p>`}<div class="archive-folder-status"><span>${activeFolder.records.length} items</span><span>Sorted by date . Newest first</span></div>
+        </div>
+      </div>
+    </section>
+  </div>` : "";
+
+  return `<section class="section-page section-page--archive archive-folder-page${activeFolder ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} folders">
+    <header class="section-page-header">
+      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+      <div><p>${escapeHtml(section.code)}</p><h2>${escapeHtml(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(sectionRecords))}</div>
+      <i>${archivedLogs.length} archived logs</i>
+    </header>
+    <div class="archive-manager">
+      <aside class="archive-manager-side" aria-label="Archive locations and details"><div class="archive-manager-section"><p class="archive-manager-label">LOCATIONS</p><div class="archive-manager-tree">
+        <div class="archive-tree-root"><span>▧</span><span>FIELD ARCHIVE</span></div>${folders.map((folder) => folderButton(folder, "archive-tree-folder")).join("") || `<span class="archive-tree-empty">No folders filed.</span>`}
+      </div></div><div class="archive-manager-section archive-manager-details"><p class="archive-manager-label">ARCHIVE STATUS</p><dl>
+        <div><dt>FOLDERS</dt><dd>${String(folders.length).padStart(2, "0")}</dd></div><div><dt>FILES</dt><dd>${String(archiveDates.length).padStart(2, "0")}</dd></div><div><dt>OLDEST</dt><dd>${archiveDates[0] ? readableDate(archiveDates[0]) : "-- / -- / ----"}</dd></div><div><dt>NEWEST</dt><dd>${archiveDates.length ? readableDate(archiveDates[archiveDates.length - 1]) : "-- / -- / ----"}</dd></div><div><dt>LOGS FILED AFTER</dt><dd>${logArchiveAfterDays} DAYS</dd></div>
+      </dl></div></aside>
+      <div class="archive-manager-main"><div class="archive-manager-toolbar"><span><span>▱</span> FIELD ARCHIVE</span><small>${folders.length} ${folders.length === 1 ? "folder" : "folders"}</small></div>
+        <div class="archive-folder-tiles">${folders.map((folder) => folderButton(folder)).join("") || `<p class="search-empty">No records have reached the archive threshold yet.</p>`}</div>
+        <p class="archive-manager-footnote">LOGS ARE FILED HERE AFTER ${logArchiveAfterDays} DAYS . FOLDERS AND FILES ARE ORDERED NEWEST TO OLDEST</p>
+      </div>
+    </div>${folderWindow}
+  </section>`;
+}
+
+function sortArchiveRecords(groupRecords) {
+  return [...groupRecords].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || a.priority - b.priority);
 }
 
 function renderSectionRows(sectionRecords) {
@@ -2474,6 +2582,18 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.dataset.closeArchiveFolder !== undefined) {
+    state.archiveFolderWindow = null;
+    render();
+    return;
+  }
+
+  if (target.dataset.openArchiveFolder) {
+    state.archiveFolderWindow = target.dataset.openArchiveFolder;
+    render();
+    return;
+  }
+
   if (target.dataset.recordBackdrop !== undefined) {
     state.panelOpen = false;
     state.panelMinimized = true;
@@ -2643,6 +2763,12 @@ document.addEventListener("keydown", (event) => {
 
   if (state.timelineOpen) {
     state.timelineOpen = false;
+    render();
+    return;
+  }
+
+  if (state.archiveFolderWindow) {
+    state.archiveFolderWindow = null;
     render();
     return;
   }

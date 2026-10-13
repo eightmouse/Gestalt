@@ -1,7 +1,9 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { Bell } from "lucide-react";
 import "@/app/studio/studio.css";
+import { recordDisplaySummary } from "@/components/archive/record-utils";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
 type StudioSection = Exclude<RecordSection, "system">;
@@ -85,6 +87,20 @@ type PublishSummary = {
   staticExported?: boolean;
 };
 
+type StudioPendingRecord = {
+  id: string;
+  title: string;
+  section?: RecordSection;
+  change: "new" | "edited" | "deleted";
+};
+
+type StudioPendingChanges = {
+  records: StudioPendingRecord[];
+  changedFiles: number;
+  mediaFiles: number;
+  staticDataChanged: boolean;
+};
+
 const studioSections: Array<{
   id: StudioSection;
   code: string;
@@ -95,7 +111,7 @@ const studioSections: Array<{
   { id: "games", code: "03_GAMES", label: "Session Logs", icon: "games" },
   { id: "logs", code: "04_LOGS", label: "Field Notes", icon: "logs" },
   { id: "setup", code: "05_SETUP", label: "Hardware & Software", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", icon: "archive" }
+  { id: "archive", code: "06_ARCHIVE", label: "Archive", icon: "archive" }
 ];
 
 const sections = studioSections.map((section) => section.id);
@@ -164,6 +180,8 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   const [uploading, setUploading] = useState(false);
   const [publishState, setPublishState] = useState<PublishState | null>(null);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<StudioPendingChanges | null>(null);
+  const [pendingChangesError, setPendingChangesError] = useState("");
   const [drafts, setDrafts] = useState<StudioDraftMap>(() => readStudioDrafts());
   const bodyDraftRef = useRef(form.body);
   const activeSectionRef = useRef(activeSection);
@@ -173,6 +191,26 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   const formRef = useRef(form);
   const selectedIdRef = useRef(selectedId);
   const embeddedDraftRestoredRef = useRef(false);
+
+  const refreshPendingChanges = useCallback(async () => {
+    if (process.env.NODE_ENV !== "development") return;
+
+    try {
+      const response = await fetch("/api/studio/changes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      });
+      const data = await readStudioResponse(response);
+
+      if (!response.ok) throw new Error(data.error || "Could not read pending changes.");
+
+      setPendingChanges(data as StudioPendingChanges);
+      setPendingChangesError("");
+    } catch (error) {
+      setPendingChangesError(error instanceof Error ? error.message : "Could not read pending changes.");
+    }
+  }, []);
 
   const sortedRecords = useMemo(() => [...studioRecords].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [studioRecords]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
@@ -184,6 +222,20 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   useEffect(() => {
     setStudioRecords(records);
   }, [records]);
+
+  useEffect(() => {
+    void refreshPendingChanges();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refreshPendingChanges();
+    };
+
+    window.addEventListener("focus", refreshPendingChanges);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", refreshPendingChanges);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [refreshPendingChanges]);
 
   useEffect(() => {
     if (!embedded || (!initialRecordId && !initialSection) || embeddedDraftRestoredRef.current) {
@@ -422,12 +474,13 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
         }
         return next;
       });
-      setMessage(`Saved ${data.path}. Publish when you are ready.`);
+      setMessage(`Saved ${data.path}. Review pending changes when you're ready.`);
       setPublishState({
         phase: "success",
         title: "Record saved locally",
-        detail: "MDX and static archive data were refreshed. Publish Changes when you want GitHub Pages to update."
+        detail: "MDX and static archive data were refreshed. Review the pending list before publishing."
       });
+      await refreshPendingChanges();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Save failed.";
       setMessage(detail);
@@ -484,12 +537,13 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
         delete updated[studioRecordDraftKey(form.originalId)];
         return updated;
       });
-      setMessage(`Deleted ${data.id}. Publish when you are ready.`);
+      setMessage(`Deleted ${data.id}. Review pending changes when you're ready.`);
       setPublishState({
         phase: "success",
         title: "Record deleted locally",
-        detail: "The record file and static archive data were refreshed. Publish Changes when you want GitHub Pages to update."
+        detail: "The record file and static archive data were refreshed. Review the pending list before publishing."
       });
+      await refreshPendingChanges();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Delete failed.";
       setMessage(detail);
@@ -514,6 +568,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
     const publishResponse = await fetch("/api/studio/publish", { method: "POST" });
     const publishData = await readStudioResponse(publishResponse);
+    await refreshPendingChanges();
 
     if (!publishResponse.ok) {
       setMessage("Saved locally, but publish failed.");
@@ -540,7 +595,6 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
   const publishChanges = async () => {
     setSaving(true);
-    setNotificationOpen(false);
 
     try {
       await publishArchive("Published to GitHub.");
@@ -556,6 +610,18 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
     } finally {
       setSaving(false);
     }
+  };
+
+  const reviewPendingRecord = (id: string) => {
+    const record = studioRecords.find((entry) => entry.id === id);
+
+    if (!record) {
+      setMessage("This record was removed locally. Publishing will apply its removal to the public archive.");
+      return;
+    }
+
+    setNotificationOpen(false);
+    loadRecord(id);
   };
 
   const chooseFiles = (target: MediaTarget) => {
@@ -726,16 +792,16 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
           <div className="studio-actions">
             {embedded && onExit ? <button type="button" disabled={saving} onClick={onExit}>Return to Entry</button> : null}
             <button type="button" disabled={saving} onClick={save}>{saving ? "Working..." : "Save Record"}</button>
-            <button type="button" disabled={saving} onClick={publishChanges}>Publish Changes</button>
             <button
-              className={`studio-notification-button ${publishState ? `is-${publishState.phase}` : ""}`}
+              className={`studio-notification-button ${publishState ? `is-${publishState.phase}` : ""} ${pendingChangesError ? "is-error" : ""}`}
               type="button"
-              aria-label="Open publish notifications"
+              aria-label={`Review ${pendingChanges?.records.length ?? 0} pending archive changes`}
               aria-expanded={notificationOpen}
               onClick={() => setNotificationOpen((current) => !current)}
             >
-              <span>NOTIFY</span>
-              <i>{publishState?.phase === "error" ? "!" : publishState?.phase === "running" ? "..." : publishState ? "1" : "0"}</i>
+              <Bell size={16} aria-hidden="true" />
+              <span>PENDING</span>
+              <i>{publishState?.phase === "error" || pendingChangesError ? "!" : publishState?.phase === "running" ? "..." : String(pendingChanges?.records.length ?? 0)}</i>
             </button>
           </div>
         </header>
@@ -827,7 +893,15 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
         </div>
       </section>
       {notificationOpen ? (
-        <PublishNotificationPanel notification={publishState} onClose={() => setNotificationOpen(false)} />
+        <PublishNotificationPanel
+          changes={pendingChanges}
+          error={pendingChangesError}
+          notification={publishState}
+          saving={saving}
+          onClose={() => setNotificationOpen(false)}
+          onPublish={publishChanges}
+          onReview={reviewPendingRecord}
+        />
       ) : null}
     </Shell>
   );
@@ -843,7 +917,18 @@ class StudioRequestError extends Error {
   }
 }
 
-async function readStudioResponse(response: Response): Promise<{ error?: string; id?: string; message?: string; output?: string; path?: string; summary?: PublishSummary }> {
+async function readStudioResponse(response: Response): Promise<{
+  error?: string;
+  id?: string;
+  message?: string;
+  output?: string;
+  path?: string;
+  summary?: PublishSummary;
+  records?: StudioPendingRecord[];
+  changedFiles?: number;
+  mediaFiles?: number;
+  staticDataChanged?: boolean;
+}> {
   const text = await response.text();
 
   if (!text) {
@@ -1023,32 +1108,60 @@ function normalizeStudioFullSource(source: string): string {
 }
 
 function PublishNotificationPanel({
+  changes,
+  error,
   notification,
-  onClose
+  saving,
+  onClose,
+  onPublish,
+  onReview
 }: {
+  changes: StudioPendingChanges | null;
+  error: string;
   notification: PublishState | null;
+  saving: boolean;
   onClose: () => void;
+  onPublish: () => void;
+  onReview: (id: string) => void;
 }) {
   return (
-    <aside className="studio-notification-panel" aria-label="Publish notifications">
+    <aside className="studio-notification-panel studio-change-review-panel" aria-label="Pending archive changes">
       <div className="studio-notification-head">
         <div>
-          <p>// NOTIFICATIONS</p>
-          <h2>{notification?.title ?? "No publish events"}</h2>
+          <p>// CHANGE REVIEW</p>
+          <h2>{changes?.records.length ?? 0} pending {changes?.records.length === 1 ? "record" : "records"}</h2>
+          <small>{changes?.changedFiles ?? 0} publishable files</small>
         </div>
-        <button type="button" onClick={onClose}>Close</button>
+        <button type="button" onClick={onClose} aria-label="Close change review">Close</button>
       </div>
+      {error ? <p className="studio-change-review-error">{error}</p> : null}
+      <ol className="studio-pending-records">
+        {changes?.records.map((record) => (
+          <li key={record.id} data-change={record.change}>
+            <span className="studio-pending-kind">{record.change}</span>
+            <div><strong>{record.title}</strong><small>{record.section ?? "archive"} / {record.id}</small></div>
+            {record.change === "deleted" ? <i>REMOVAL</i> : <button type="button" onClick={() => onReview(record.id)}>Review</button>}
+          </li>
+        ))}
+        {changes && changes.records.length === 0 ? <li className="studio-pending-empty">No record edits are waiting to publish.</li> : null}
+      </ol>
+      {changes && (changes.mediaFiles > 0 || changes.staticDataChanged) ? (
+        <p className="studio-pending-assets">
+          {changes.mediaFiles > 0 ? `${changes.mediaFiles} media file${changes.mediaFiles === 1 ? "" : "s"}` : "No new media"}
+          {changes.staticDataChanged ? " . Static archive index updated" : ""}
+        </p>
+      ) : null}
+      <p className="studio-pending-guidance">Unsaved editor changes are not included. Save the record first.</p>
+      <button className="studio-publish-all" type="button" disabled={saving || !changes?.changedFiles} onClick={onPublish}>
+        {saving ? "Working..." : "Publish all pending changes"}
+      </button>
       {notification ? (
         <article className={`studio-notification-card is-${notification.phase}`}>
-          <span>{notification.detail}</span>
+          <div className="studio-last-publish"><strong>{notification.title}</strong><span>{notification.detail}</span></div>
           {notification.summary ? <PublishSummaryGrid summary={notification.summary} /> : null}
           {notification.output ? <pre>{formatPublishOutput(notification.output)}</pre> : null}
         </article>
-      ) : (
-        <article className="studio-notification-card">
-          <span>No save or publish event has been recorded in this Studio session.</span>
-        </article>
-      )}
+      ) : null}
     </aside>
   );
 }
@@ -1734,16 +1847,35 @@ function StudioContent({
   return (
     <section className="studio-content-terminal">
       <div className="terminal-title">// OVERVIEW</div>
-      <label className="studio-textarea-field">
-        Summary
-        <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
-      </label>
-      <div className="studio-progress-edit">
-        <span>Current Progress</span>
-        <input type="range" min="0" max="100" value={form.progress} onChange={(event) => onUpdate("progress", Number(event.target.value))} />
-        <strong>{record.progress}%</strong>
-      </div>
-      <MilestoneEditor value={form.milestones} onChange={(value) => onUpdate("milestones", value)} />
+      {form.section === "logs" ? (
+        <>
+          <div className="studio-generated-overview">
+            <span>GENERATED FROM LATEST NOTE</span>
+            <p>{recordDisplaySummary(record)}</p>
+            <small>A manual summary of 22 or more words replaces this excerpt.</small>
+          </div>
+          <details className="studio-manual-overview">
+            <summary>Manual overview (optional)</summary>
+            <label className="studio-textarea-field">
+              Summary
+              <textarea value={form.summary.toLowerCase() === "no summary recorded." ? "" : form.summary} onChange={(event) => onUpdate("summary", event.target.value || "No summary recorded.")} />
+            </label>
+          </details>
+        </>
+      ) : (
+        <>
+          <label className="studio-textarea-field">
+            Summary
+            <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+          </label>
+          <div className="studio-progress-edit">
+            <span>Current Progress</span>
+            <input type="range" min="0" max="100" value={form.progress} onChange={(event) => onUpdate("progress", Number(event.target.value))} />
+            <strong>{record.progress}%</strong>
+          </div>
+          <MilestoneEditor value={form.milestones} onChange={(value) => onUpdate("milestones", value)} />
+        </>
+      )}
     </section>
   );
 }

@@ -6,6 +6,7 @@ import {
   formatReadableDate,
   metaText,
   noteEntries,
+  recordDisplaySummary,
   recordHeaderImage,
   splitUpdateIndex
 } from "@/components/archive/record-utils";
@@ -155,6 +156,7 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
 
 function RecordOverviewPage({ record }: { record: RecordEntry }) {
   const headerImage = recordHeaderImage(record);
+  const summary = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
 
   return (
     <div className="overview-stack">
@@ -162,17 +164,19 @@ function RecordOverviewPage({ record }: { record: RecordEntry }) {
 
       <section className="record-section">
         <h3>// OVERVIEW</h3>
-        <p>{record.summary}</p>
+        <p>{summary}</p>
       </section>
 
-      <section className="record-section">
-        <div className="section-row">
-          <h3>// CURRENT PROGRESS</h3>
-          <span>{record.progress}%</span>
-        </div>
-        <ProgressMeter value={record.progress} />
-        {record.milestones.length > 0 ? <MilestoneList record={record} /> : null}
-      </section>
+      {record.section === "logs" ? null : (
+        <section className="record-section">
+          <div className="section-row">
+            <h3>// CURRENT PROGRESS</h3>
+            <span>{record.progress}%</span>
+          </div>
+          <ProgressMeter value={record.progress} />
+          {record.milestones.length > 0 ? <MilestoneList record={record} /> : null}
+        </section>
+      )}
     </div>
   );
 }

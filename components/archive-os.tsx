@@ -25,6 +25,7 @@ import {
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
 import type { SetupGroupId } from "@/components/archive/setup-utils";
+import { isLogArchivedByAge } from "@/lib/log-archive";
 import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
 import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
@@ -158,6 +159,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       }
     );
   }, [archiveRecords]);
+
+  const archivedLogs = recordsBySection.logs.filter((record) => isLogArchivedByAge(record));
+  const archivePageRecords = [...recordsBySection.archive, ...archivedLogs];
 
   const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? archiveRecords[0];
   const projectDashboardRecords = recordsBySection.projects
@@ -480,7 +484,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           />
         ) : (
           <SectionPage
-            records={recordsBySection[activeSection]}
+            records={activeSection === "archive" ? archivePageRecords : recordsBySection[activeSection]}
             section={activeSectionConfig}
             onOpenRecord={openRecord}
             onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}

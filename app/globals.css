@@ -1729,6 +1729,363 @@ button:focus-visible {
   --section-accent-soft: rgba(130, 127, 116, 0.04);
 }
 
+.archive-folder-page {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.archive-folder-rule {
+  margin: 0;
+  padding-inline: 3px;
+  color: var(--muted-2);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+.archive-folder-list {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.archive-folder {
+  min-width: 0;
+  border: 1px solid rgba(217, 213, 193, 0.2);
+  background: linear-gradient(90deg, rgba(217, 213, 193, 0.035), transparent 58%), rgba(8, 9, 8, 0.48);
+}
+
+.archive-folder > summary {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.archive-folder > summary::-webkit-details-marker {
+  display: none;
+}
+
+.archive-folder > summary::marker {
+  content: "";
+}
+
+.archive-folder > summary:hover,
+.archive-folder[open] > summary {
+  color: var(--text-strong);
+}
+
+.archive-folder > summary > svg {
+  flex: 0 0 auto;
+  color: var(--text);
+}
+
+.archive-folder > summary > span,
+.archive-file > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.archive-folder > summary strong {
+  color: inherit;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.archive-folder > summary small,
+.archive-file small {
+  color: var(--muted-2);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.archive-folder > summary i {
+  margin-inline-start: auto;
+  color: var(--muted-2);
+  font-size: 11px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.archive-file-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0 10px;
+  padding: 4px 14px 12px;
+  border-block-start: 1px solid rgba(217, 213, 193, 0.13);
+}
+
+.archive-file {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 5px;
+  border: 0;
+  border-block-end: 1px solid rgba(217, 213, 193, 0.11);
+  background: transparent;
+  color: var(--muted);
+  text-align: start;
+  cursor: pointer;
+}
+
+.archive-file:hover,
+.archive-file:focus-visible {
+  color: var(--text-strong);
+  background: rgba(217, 213, 193, 0.045);
+}
+
+.archive-file:focus-visible {
+  outline: 1px solid rgba(217, 213, 193, 0.46);
+  outline-offset: -1px;
+}
+
+.archive-file > svg {
+  flex: 0 0 auto;
+  color: var(--muted-2);
+}
+
+.archive-file strong {
+  overflow: hidden;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-file small {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 1320px) {
+  .archive-file-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .archive-file-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .archive-folder-page {
+    gap: 12px;
+  }
+
+  .archive-folder > summary {
+    min-height: 56px;
+    padding-inline: 12px;
+  }
+
+  .archive-file-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  .archive-file-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Archive folder manager and its focused directory window. */
+.archive-folder-page {
+  flex: 1 1 auto;
+  inline-size: min(100%, 1320px);
+  max-inline-size: 1320px;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+}
+
+.workspace:has(.archive-folder-page) {
+  --workspace-pad-bottom: 32px;
+  --footer-reserve: 48px;
+}
+
+.section-page--archive.has-folder-window {
+  z-index: 70;
+  contain: none;
+}
+
+.workspace:has(.section-page--archive.has-folder-window) {
+  z-index: 80;
+}
+
+.archive-manager {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.25fr) minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(217, 213, 193, 0.24);
+  background: rgba(8, 9, 8, 0.62);
+}
+
+.archive-manager-side,
+.archive-window-side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border-inline-end: 1px solid rgba(217, 213, 193, 0.17);
+  background: rgba(217, 213, 193, 0.025);
+}
+
+.archive-manager-section { padding: 18px 15px; }
+.archive-manager-label { margin: 0 0 13px; color: var(--muted-2); font-size: 12px; letter-spacing: 0.14em; }
+.archive-manager-tree, .archive-window-tree { display: grid; gap: 3px; }
+
+.archive-tree-root,
+.archive-tree-folder,
+.archive-window-root,
+.archive-window-tree > button {
+  min-width: 0;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: start;
+}
+
+.archive-tree-root { color: var(--text); letter-spacing: 0.08em; }
+.archive-tree-root svg, .archive-tree-folder svg, .archive-window-root svg, .archive-window-tree svg { flex: 0 0 auto; color: var(--text); }
+.archive-tree-folder, .archive-window-root, .archive-window-tree > button { width: 100%; border: 0; background: transparent; cursor: pointer; }
+.archive-tree-folder:hover, .archive-window-root:hover, .archive-window-tree > button:hover, .archive-window-tree > button.is-active { color: var(--text-strong); background: rgba(217, 213, 193, 0.075); }
+.archive-tree-folder span, .archive-window-tree > button span:nth-of-type(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archive-tree-folder i, .archive-window-tree > button i { margin-inline-start: auto; color: var(--muted-2); font-size: 11px; font-style: normal; }
+.archive-tree-empty { padding: 5px 8px; color: var(--muted-2); font-size: 12px; }
+.archive-manager-details { margin-block-start: auto; border-block-start: 1px solid rgba(217, 213, 193, 0.12); }
+.archive-manager-details dl { display: grid; gap: 8px; margin: 0; }
+.archive-manager-details dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.archive-manager-details dt, .archive-manager-details dd { margin: 0; font-size: 12px; }
+.archive-manager-details dt { color: var(--muted-2); letter-spacing: 0.06em; }
+.archive-manager-details dd { color: var(--muted); text-align: end; }
+
+.archive-manager-main { min-width: 0; display: grid; grid-template-rows: 50px minmax(0, 1fr) auto; }
+.archive-manager-toolbar { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-inline: 20px; border-block-end: 1px solid rgba(217, 213, 193, 0.15); color: var(--text); font-size: 13px; letter-spacing: 0.08em; }
+.archive-manager-toolbar > span { display: flex; align-items: center; gap: 9px; }
+.archive-manager-toolbar svg { color: var(--muted); }
+.archive-manager-toolbar small { color: var(--muted-2); font-size: 11px; letter-spacing: 0; }
+.archive-folder-tiles { min-width: 0; align-content: start; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; padding: 22px; overflow: auto; overscroll-behavior: contain; }
+
+.archive-folder-tile {
+  min-width: 0;
+  min-height: 110px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 11px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  text-align: start;
+  cursor: pointer;
+}
+
+.archive-folder-tile:hover, .archive-folder-tile:focus-visible { border-color: rgba(217, 213, 193, 0.22); background: rgba(217, 213, 193, 0.06); color: var(--text-strong); }
+.archive-folder-tile:focus-visible, .archive-tree-folder:focus-visible, .archive-window-tree > button:focus-visible, .archive-window-root:focus-visible { outline: 1px solid rgba(217, 213, 193, 0.46); outline-offset: -1px; }
+.archive-folder-tile > svg { grid-row: span 2; color: var(--text); }
+.archive-folder-tile > span { min-width: 0; display: grid; gap: 4px; }
+.archive-folder-tile strong { overflow: hidden; color: inherit; font-size: 18px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.archive-folder-tile small, .archive-folder-tile i { color: var(--muted-2); font-size: 11px; letter-spacing: 0.09em; }
+.archive-folder-tile i { grid-column: 2; font-style: normal; letter-spacing: 0; }
+.archive-manager-footnote { margin: 0; padding: 13px 20px; border-block-start: 1px solid rgba(217, 213, 193, 0.12); color: var(--muted-2); font-size: 11px; letter-spacing: 0.1em; }
+
+.archive-folder-overlay { position: fixed; z-index: 70; inset-block: 0; inset-inline: var(--sidebar-width) 0; display: grid; place-items: center; padding: clamp(12px, 3vw, 42px); }
+.archive-folder-backdrop { position: absolute; inset: 0; width: 100%; border: 0; background: rgba(2, 3, 3, 0.76); backdrop-filter: blur(7px); cursor: default; }
+.archive-folder-window { position: relative; z-index: 1; inline-size: min(1360px, calc(100vw - var(--sidebar-width) - 72px)); block-size: min(880px, calc(100dvh - 96px)); min-block-size: 360px; display: grid; grid-template-rows: 48px 48px minmax(0, 1fr); overflow: hidden; border: 1px solid var(--line-strong); background: rgba(9, 10, 9, 0.985); box-shadow: 0 28px 90px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.archive-folder-titlebar, .archive-folder-pathbar { min-width: 0; display: flex; align-items: center; gap: 9px; padding-inline: 12px; }
+.archive-folder-titlebar { justify-content: space-between; border-block-end: 1px solid rgba(217, 213, 193, 0.17); color: var(--text); font-size: 13px; letter-spacing: 0.12em; }
+.archive-folder-titlebar > span { min-width: 0; display: flex; align-items: center; gap: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archive-folder-titlebar svg { flex: 0 0 auto; color: var(--text); }
+.archive-folder-titlebar button, .archive-folder-pathbar button { flex: 0 0 auto; display: grid; place-items: center; inline-size: 28px; block-size: 28px; padding: 0; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
+.archive-folder-titlebar button:hover, .archive-folder-pathbar button:hover { border-color: rgba(217, 213, 193, 0.18); background: rgba(217, 213, 193, 0.06); color: var(--text-strong); }
+.archive-folder-pathbar { border-block-end: 1px solid rgba(217, 213, 193, 0.13); background: rgba(217, 213, 193, 0.025); }
+.archive-folder-pathbar > span { min-width: 0; display: flex; align-items: center; gap: 9px; margin-inline-start: 5px; color: var(--muted-2); font-size: 14px; }
+.archive-folder-pathbar > span strong { overflow: hidden; color: var(--text); font-weight: 400; text-overflow: ellipsis; }
+.archive-folder-pathbar > small { margin-inline-start: auto; color: var(--muted-2); font-size: 13px; white-space: nowrap; }
+.archive-folder-window-body { min-height: 0; display: grid; grid-template-columns: minmax(180px, 0.23fr) minmax(0, 1fr); }
+.archive-window-side { padding: 14px 10px 0; overflow: auto; }
+.archive-window-side .archive-manager-label { padding-inline: 7px; }
+.archive-window-root { justify-content: flex-start; gap: 8px; color: var(--text); }
+.archive-window-tree { margin-block-start: 4px; padding-inline-start: 14px; border-inline-start: 1px solid rgba(217, 213, 193, 0.14); }
+.archive-window-tree > button { min-height: 34px; gap: 7px; padding-inline: 7px; font-size: 12px; }
+.archive-window-selection { display: grid; gap: 7px; margin-block-start: auto; padding: 14px 7px 17px; border-block-start: 1px solid rgba(217, 213, 193, 0.13); }
+.archive-window-selection p, .archive-window-selection strong, .archive-window-selection span, .archive-window-selection small { margin: 0; }
+.archive-window-selection p { color: var(--muted-2); font-size: 9px; letter-spacing: 0.12em; }
+.archive-window-selection strong { color: var(--text); font-size: 14px; font-weight: 400; }
+.archive-window-selection span, .archive-window-selection small { color: var(--muted-2); font-size: 12px; }
+.archive-folder-files { min-width: 0; min-height: 0; display: grid; grid-template-rows: 38px minmax(0, 1fr) 36px; padding-inline: 14px; overflow: auto; overscroll-behavior: contain; }
+.archive-folder-files-toolbar { position: sticky; inset-block-start: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-block-end: 1px solid rgba(217, 213, 193, 0.14); background: rgba(9, 10, 9, 0.98); color: var(--muted-2); font-size: 12px; letter-spacing: 0.1em; }
+.archive-file-grid { min-width: 0; align-content: start; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px 8px; padding-block: 10px; }
+.archive-file { min-width: 0; min-height: 80px; display: flex; align-items: center; gap: 11px; padding: 11px 9px; border: 1px solid transparent; background: transparent; color: var(--muted); text-align: start; cursor: pointer; }
+.archive-file:hover, .archive-file:focus-visible { border-color: rgba(217, 213, 193, 0.18); background: rgba(217, 213, 193, 0.05); color: var(--text-strong); }
+.archive-file:focus-visible { outline: 1px solid rgba(217, 213, 193, 0.46); outline-offset: -1px; }
+.archive-file > svg { flex: 0 0 auto; color: var(--text); }
+.archive-file > span { min-width: 0; display: grid; gap: 5px; }
+.archive-file strong { overflow: hidden; color: inherit; font-size: 14px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.archive-file small { overflow: hidden; color: var(--muted-2); font-size: 12px; letter-spacing: 0.02em; text-overflow: ellipsis; white-space: nowrap; }
+.archive-file small i { display: none; }
+.archive-folder-status { position: sticky; inset-block-end: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-block-start: 1px solid rgba(217, 213, 193, 0.13); background: rgba(9, 10, 9, 0.98); color: var(--muted-2); font-size: 10px; }
+.archive-folder-overlay .search-empty { grid-column: 1 / -1; padding: 16px; }
+
+@media (max-width: 1320px) { .archive-file-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 980px) {
+  .archive-manager { grid-template-columns: minmax(160px, 0.3fr) minmax(0, 1fr); }
+  .archive-file-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .archive-folder-overlay { inset-inline-start: 0; }
+  .archive-manager { grid-template-columns: minmax(0, 1fr); }
+  .archive-manager-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 0.7fr); border-inline-end: 0; border-block-end: 1px solid rgba(217, 213, 193, 0.17); }
+  .archive-manager-section { padding: 12px; }
+  .archive-manager-details { margin: 0; border-block-start: 0; border-inline-start: 1px solid rgba(217, 213, 193, 0.12); }
+  .archive-manager-details dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; }
+  .archive-folder-window { inline-size: calc(100vw - 24px); block-size: min(760px, calc(100dvh - 24px)); min-block-size: 0; }
+  .archive-folder-window-body { grid-template-columns: 150px minmax(0, 1fr); }
+  .archive-file-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .archive-manager-side { grid-template-columns: 1fr; }
+  .archive-manager-details { display: none; }
+  .archive-manager-main { grid-template-rows: 40px minmax(0, 1fr) auto; }
+  .archive-folder-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
+  .archive-folder-tile { min-height: 70px; grid-template-columns: 26px minmax(0, 1fr); gap: 3px 7px; padding: 7px; }
+  .archive-folder-tile > svg { width: 24px; }
+  .archive-folder-tile strong { font-size: 13px; }
+  .archive-folder-window { grid-template-rows: 40px 40px minmax(0, 1fr); }
+  .archive-folder-window-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .archive-window-side { max-height: 132px; padding: 8px; }
+  .archive-window-side > .archive-manager-label, .archive-window-selection { display: none; }
+  .archive-window-root { min-height: 28px; }
+  .archive-window-tree { display: flex; gap: 4px; padding: 4px 0 0; overflow-x: auto; border-inline-start: 0; border-block-start: 1px solid rgba(217, 213, 193, 0.12); }
+  .archive-window-tree > button { width: auto; flex: 0 0 auto; }
+  .archive-window-tree > button i { display: none; }
+  .archive-folder-files { padding-inline: 7px; }
+  .archive-folder-files-toolbar span:last-child { font-size: 8px; }
+  .archive-file-grid { grid-template-columns: 1fr; }
+  .archive-folder-status span:last-child { display: none; }
+}
+
 .section-page-header {
   position: relative;
   overflow: hidden;

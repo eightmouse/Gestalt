@@ -1,7 +1,9 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
-import { Plus } from "lucide-react";
+import { ArrowUp, FileText, Folder, FolderOpen, HardDrive, Plus, X } from "lucide-react";
+import { isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
+import { useEffect, useState } from "react";
 
 type ArchiveSectionConfig = {
   id: RecordSection;
@@ -19,7 +21,7 @@ type SectionPageProps = {
 };
 
 const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
-  archive: "Deprecated Index",
+  archive: "Field Archive",
   games: "Play Log Registry",
   logs: "Field Note Index",
   projects: "Process Registry",
@@ -29,13 +31,18 @@ const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
 const sessionGameStatuses = new Set(["active", "in progress", "on hold", "paused", "planning", "playing"]);
 
 export function SectionPage({ records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord }: SectionPageProps) {
-  const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const visibleRecords = section.id === "logs" ? records.filter((record) => !isLogArchivedByAge(record)) : records;
+  const sortedRecords = [...visibleRecords].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
   const readout = sectionReadout(sortedRecords);
 
   if (section.id === "setup") {
     return <SetupBay countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} readout={readout} records={sortedRecords} section={section} />;
+  }
+
+  if (section.id === "archive") {
+    return <ArchiveFolders onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
   }
 
   if (splitSection) {
@@ -106,6 +113,150 @@ export function SectionPage({ records, section, onOpenRecord, onCreateRecord, on
       </div>
     </section>
   );
+}
+
+function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (record: RecordEntry) => void; records: RecordEntry[]; section: ArchiveSectionConfig }) {
+  const nowArchivedLogs = records.filter((record) => record.section === "logs" && isLogArchivedByAge(record));
+  const filedRecords = records.filter((record) => record.section !== "logs");
+  const yearGroups = new Map<string, RecordEntry[]>();
+  for (const record of nowArchivedLogs) {
+    const year = logArchiveDate(record).slice(0, 4) || "Undated";
+    yearGroups.set(year, [...(yearGroups.get(year) ?? []), record]);
+  }
+  const folders = [...yearGroups.entries()]
+    .sort(([left], [right]) => right.localeCompare(left))
+    .map(([year, yearRecords]) => ({ title: year, detail: "FIELD NOTES", records: sortByArchiveDate(yearRecords) }));
+
+  if (filedRecords.length) {
+    folders.push({ title: "FILED RECORDS", detail: "MANUAL ARCHIVE", records: sortByArchiveDate(filedRecords) });
+  }
+
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const activeFolderData = folders.find((folder) => folder.title === activeFolder) ?? null;
+  const archiveDates = folders.flatMap((folder) => folder.records.map((record) => logArchiveDate(record))).sort();
+  const oldestDate = archiveDates[0] ? formatReadableDate(archiveDates[0]) : "-- / -- / ----";
+  const newestDateValue = archiveDates.at(-1);
+  const newestDate = newestDateValue ? formatReadableDate(newestDateValue) : "-- / -- / ----";
+
+  useEffect(() => {
+    if (!activeFolderData) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveFolder(null);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [activeFolder]);
+
+  return (
+    <section className={`section-page section-page--archive archive-folder-page${activeFolderData ? " has-folder-window" : ""}`} aria-label={`${section.code} folders`}>
+      <header className="section-page-header">
+        <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+        <div>
+          <p>{section.code}</p>
+          <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
+          <SectionReadout items={sectionReadout(records)} />
+        </div>
+        <i>{nowArchivedLogs.length} archived logs</i>
+      </header>
+      <div className="archive-manager">
+        <aside className="archive-manager-side" aria-label="Archive locations and details">
+          <div className="archive-manager-section">
+            <p className="archive-manager-label">LOCATIONS</p>
+            <div className="archive-manager-tree">
+              <div className="archive-tree-root"><HardDrive size={15} aria-hidden="true" /><span>FIELD ARCHIVE</span></div>
+              {folders.map((folder) => (
+                <button className="archive-tree-folder" key={folder.title} type="button" onClick={() => setActiveFolder(folder.title)}>
+                  <Folder size={15} aria-hidden="true" /><span>{folder.title}</span><i>{folder.records.length}</i>
+                </button>
+              ))}
+              {!folders.length ? <span className="archive-tree-empty">No folders filed.</span> : null}
+            </div>
+          </div>
+          <div className="archive-manager-section archive-manager-details">
+            <p className="archive-manager-label">ARCHIVE STATUS</p>
+            <dl>
+              <div><dt>FOLDERS</dt><dd>{String(folders.length).padStart(2, "0")}</dd></div>
+              <div><dt>FILES</dt><dd>{String(archiveDates.length).padStart(2, "0")}</dd></div>
+              <div><dt>OLDEST</dt><dd>{oldestDate}</dd></div>
+              <div><dt>NEWEST</dt><dd>{newestDate}</dd></div>
+              <div><dt>LOGS FILED AFTER</dt><dd>{LOG_ARCHIVE_AFTER_DAYS} DAYS</dd></div>
+            </dl>
+          </div>
+        </aside>
+        <div className="archive-manager-main">
+          <div className="archive-manager-toolbar">
+            <span><FolderOpen size={16} aria-hidden="true" /> FIELD ARCHIVE</span>
+            <small>{folders.length} {folders.length === 1 ? "folder" : "folders"}</small>
+          </div>
+          <div className="archive-folder-tiles">
+            {folders.length ? folders.map((folder) => (
+              <button className="archive-folder-tile" key={folder.title} type="button" onClick={() => setActiveFolder(folder.title)}>
+                <Folder size={30} strokeWidth={1.25} aria-hidden="true" />
+                <span><strong>{folder.title}</strong><small>{folder.detail}</small></span>
+                <i>{folder.records.length} {folder.records.length === 1 ? "file" : "files"}</i>
+              </button>
+            )) : <p className="search-empty">No records have reached the archive threshold yet.</p>}
+          </div>
+          <p className="archive-manager-footnote">LOGS ARE FILED HERE AFTER {LOG_ARCHIVE_AFTER_DAYS} DAYS . FOLDERS AND FILES ARE ORDERED NEWEST TO OLDEST</p>
+        </div>
+      </div>
+      {activeFolderData ? (
+        <div className="archive-folder-overlay">
+          <button className="archive-folder-backdrop" type="button" aria-label="Close folder window" onClick={() => setActiveFolder(null)} />
+          <section className="archive-folder-window" role="dialog" aria-modal="true" aria-label={`${activeFolderData.title} folder`}>
+            <header className="archive-folder-titlebar">
+              <span><FolderOpen size={16} aria-hidden="true" /> FIELD ARCHIVE / {activeFolderData.title}</span>
+              <button autoFocus type="button" aria-label="Close folder window" title="Close folder" onClick={() => setActiveFolder(null)}><X size={16} /></button>
+            </header>
+            <div className="archive-folder-pathbar">
+              <button type="button" aria-label="Up to Field Archive" onClick={() => setActiveFolder(null)}><ArrowUp size={15} /></button>
+              <span><span>Field Archive</span><b>/</b><strong>{activeFolderData.title}</strong></span>
+              <small>{activeFolderData.records.length} {activeFolderData.records.length === 1 ? "file" : "files"}</small>
+            </div>
+            <div className="archive-folder-window-body">
+              <aside className="archive-window-side" aria-label="Archive folders">
+                <p className="archive-manager-label">ARCHIVE</p>
+                <button className="archive-window-root" type="button" onClick={() => setActiveFolder(null)}><HardDrive size={15} /> Field Archive</button>
+                <div className="archive-window-tree">
+                  {folders.map((folder) => (
+                    <button className={folder.title === activeFolderData.title ? "is-active" : ""} key={folder.title} type="button" onClick={() => setActiveFolder(folder.title)}>
+                      <Folder size={14} /><span>{folder.title}</span><i>{folder.records.length}</i>
+                    </button>
+                  ))}
+                </div>
+                <div className="archive-window-selection">
+                  <p>SELECTED FOLDER</p>
+                  <strong>{activeFolderData.title}</strong>
+                  <span>{activeFolderData.detail}</span>
+                  <small>{activeFolderData.records.length} {activeFolderData.records.length === 1 ? "file" : "files"}</small>
+                  <small>{activeFolderData.records.length ? `${formatReadableDate(logArchiveDate(activeFolderData.records.at(-1)!))} - ${formatReadableDate(logArchiveDate(activeFolderData.records[0]))}` : "No date range"}</small>
+                </div>
+              </aside>
+              <div className="archive-folder-files">
+                <div className="archive-folder-files-toolbar"><span>FILES</span><span>DATE ORDER . NEWEST FIRST</span></div>
+                <div className="archive-file-grid">
+                  {activeFolderData.records.map((record) => (
+                    <button className="archive-file" key={record.id} type="button" onClick={() => { setActiveFolder(null); onOpenRecord(record); }}>
+                      <FileText size={18} strokeWidth={1.5} aria-hidden="true" />
+                      <span><strong>{record.title}</strong><small>{formatReadableDate(logArchiveDate(record))} <i>{record.section === "logs" ? "FIELD NOTE" : record.type.toUpperCase()}</i></small></span>
+                    </button>
+                  ))}
+                </div>
+                {!activeFolderData.records.length ? <p className="search-empty">This folder contains no files.</p> : null}
+                <div className="archive-folder-status"><span>{activeFolderData.records.length} items</span><span>Sorted by date . Newest first</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function sortByArchiveDate(records: RecordEntry[]): RecordEntry[] {
+  return [...records].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || a.priority - b.priority);
 }
 
 function CreateRecordButton({ onClick, label = "Create record" }: { onClick: () => void; label?: string }) {

@@ -17,7 +17,7 @@ export const sections: Array<{
   { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "\u2573\u2301\u27DF\u27D0\u2330 / \u2575\u2316\u2301\u2573", icon: "games" },
   { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "\u2330\u2573\u2575\u2316 / \u27DF\u2301\u2330\u2573\u2575", icon: "logs" },
   { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "\u2316\u27DF\u2330\u2573\u2575 / \u2301\u27D0\u2316", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Deprecated Records", cipher: "\u2575\u2316\u27D0\u2330\u2301 / \u2573\u27DF\u2316\u2575", icon: "archive" }
+  { id: "archive", code: "06_ARCHIVE", label: "Archive", cipher: "\u2575\u2316\u27D0\u2330\u2301 / \u2573\u27DF\u2316\u2575", icon: "archive" }
 ];
 
 type SidebarProps = {
@@ -57,7 +57,7 @@ export function Sidebar({
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.35.10</span>
+          <span>v1.36.2</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -81,7 +81,7 @@ export function Sidebar({
           </button>
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.35.10</span>
+          <span className="version-label">v1.36.2</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -144,7 +144,7 @@ export function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.35.10</dd>
+            <dd>GESTALT OS v1.36.2</dd>
           </div>
         </dl>
       </div>
