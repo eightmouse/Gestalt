@@ -24,6 +24,7 @@ import {
   recordHeaderImage,
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
+import type { SetupGroupId } from "@/components/archive/setup-utils";
 import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
 import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
@@ -137,6 +138,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
   const [bootComplete, setBootComplete] = useState(false);
   const [studioRecordId, setStudioRecordId] = useState<string | null>(null);
+  const [studioCreateSection, setStudioCreateSection] = useState<Exclude<RecordSection, "system"> | null>(null);
+  const [studioSetupGroup, setStudioSetupGroup] = useState<SetupGroupId | undefined>();
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const recordsBySection = useMemo(() => {
@@ -277,6 +280,18 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchQuery("");
     setTimelineOpen(false);
     setNavOpen(false);
+  };
+
+  const openLocalEditor = (recordId: string) => {
+    setStudioCreateSection(null);
+    setStudioSetupGroup(undefined);
+    setStudioRecordId(recordId);
+  };
+
+  const createLocalRecord = (section: Exclude<RecordSection, "system">, setupGroup?: SetupGroupId) => {
+    setStudioCreateSection(section);
+    setStudioSetupGroup(setupGroup);
+    setStudioRecordId("__new");
   };
 
   const openSection = (section: RecordSection) => {
@@ -468,6 +483,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             records={recordsBySection[activeSection]}
             section={activeSectionConfig}
             onOpenRecord={openRecord}
+            onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}
+            onCreateSetupRecord={process.env.NODE_ENV === "development" ? (group) => createLocalRecord("setup", group) : undefined}
           />
         )}
 
@@ -497,7 +514,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 maximized={panelMaximized}
                 initialContent={initialContent}
                 record={selectedRecord}
-                onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? () => setStudioRecordId(selectedRecord.id) : undefined}
+                onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? () => openLocalEditor(selectedRecord.id) : undefined}
                 onClose={() => {
                   setPanelOpen(false);
                   setPanelMinimized(false);
@@ -566,7 +583,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           >
             <LocalStudioEditor
               embedded
-              initialRecordId={studioRecordId}
+              initialRecordId={studioRecordId === "__new" ? undefined : studioRecordId}
+              initialSection={studioCreateSection ?? undefined}
+              initialSetupGroup={studioSetupGroup}
               records={archiveRecords.filter((record) => record.section !== "system")}
               onExit={() => setStudioRecordId(null)}
               onRecordsChange={(updatedRecords, currentId) => {
@@ -576,6 +595,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 ]);
                 if (currentId) {
                   setSelectedId(currentId);
+                  if (studioRecordId === "__new") {
+                    setInitialContent("overview");
+                    setPanelOpen(true);
+                    setPanelMinimized(false);
+                    setPanelMaximized(false);
+                  }
                 } else if (currentId === null) {
                   setStudioRecordId(null);
                   setPanelOpen(false);

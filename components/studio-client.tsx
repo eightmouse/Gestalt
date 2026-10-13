@@ -43,6 +43,8 @@ type StudioClientProps = {
   records: RecordEntry[];
   embedded?: boolean;
   initialRecordId?: string;
+  initialSection?: StudioSection;
+  initialSetupGroup?: SetupGroupId;
   onExit?: () => void;
   onRecordsChange?: (records: RecordEntry[], selectedRecordId?: string | null) => void;
 };
@@ -138,18 +140,25 @@ const setupManagerGroups: Array<{
 ];
 const setupGroupIds = setupManagerGroups.map((group) => group.id);
 
-export function StudioClient({ embedded = false, initialRecordId, onExit, onRecordsChange, records }: StudioClientProps) {
-  const firstRecord = records.find((record) => record.id === initialRecordId) ?? records[0];
+export function StudioClient({ embedded = false, initialRecordId, initialSection, initialSetupGroup, onExit, onRecordsChange, records }: StudioClientProps) {
+  const firstRecord = initialRecordId
+    ? records.find((record) => record.id === initialRecordId)
+    : embedded && initialSection
+      ? undefined
+      : records[0];
+  const initialForm = firstRecord ? fromRecord(firstRecord) : emptyForm(initialSection ?? "projects", initialSetupGroup ?? "");
   const [studioRecords, setStudioRecords] = useState<RecordEntry[]>(records);
   const [selectedId, setSelectedId] = useState(firstRecord?.id ?? "__new");
-  const [activeSection, setActiveSection] = useState<StudioSection>(firstRecord?.section === "system" || !firstRecord ? "projects" : firstRecord.section);
-  const [mode, setMode] = useState<"section" | "edit">(firstRecord ? "edit" : "section");
-  const [form, setForm] = useState<StudioForm>(() => fromRecord(firstRecord));
+  const [activeSection, setActiveSection] = useState<StudioSection>(initialForm.section);
+  const [mode, setMode] = useState<"section" | "edit">(firstRecord || (embedded && initialSection) ? "edit" : "section");
+  const [form, setForm] = useState<StudioForm>(() => initialForm);
   const [activeContent, setActiveContent] = useState<StudioContentKey>("overview");
   const [message, setMessage] = useState(
     embedded && firstRecord
       ? `Editing ${firstRecord.title}. Changes stay local until saved.`
-      : "Studio edit mode. Changes stay local until you save."
+      : embedded && initialSection
+        ? `New ${initialSection === "setup" ? initialSetupGroup ?? "systems" : initialSection} record. Changes stay local until saved.`
+        : "Studio edit mode. Changes stay local until you save."
   );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -177,22 +186,26 @@ export function StudioClient({ embedded = false, initialRecordId, onExit, onReco
   }, [records]);
 
   useEffect(() => {
-    if (!embedded || !initialRecordId || embeddedDraftRestoredRef.current) {
+    if (!embedded || (!initialRecordId && !initialSection) || embeddedDraftRestoredRef.current) {
       return;
     }
 
     embeddedDraftRestoredRef.current = true;
-    const draft = drafts[studioRecordDraftKey(initialRecordId)];
+    const draftKey = initialRecordId
+      ? studioRecordDraftKey(initialRecordId)
+      : studioNewDraftKey(initialSection ?? "projects");
+    const draft = drafts[draftKey];
 
     if (draft) {
       bodyDraftRef.current = draft.body;
       formRef.current = draft.form;
-      selectedIdRef.current = initialRecordId;
+      selectedIdRef.current = initialRecordId ?? "__new";
       setForm(draft.form);
       setActiveSection(draft.form.section);
+      setMode("edit");
       setMessage(`Restored unsaved draft for ${draft.form.title}.`);
     }
-  }, [drafts, embedded, initialRecordId]);
+  }, [drafts, embedded, initialRecordId, initialSection]);
 
   useEffect(() => {
     if (!embedded || !onExit) {

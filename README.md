@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.34.0-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.35.10-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -13,7 +13,7 @@ I wanted a place for the stuff that usually ends up scattered around notes: proj
 
 I use Obsidian a lot, godsend, bless the creators, but I wanted something more public-facing for a while. Not a standard blog layout, more like a little personal operating system where every entry feels like opening a record.
 
-Current public version: `v1.34.0`.
+Current public version: `v1.35.10`.
 
 ## What It Is
 
@@ -54,9 +54,12 @@ There is also a mobile layout, treated as a separate handheld field mode instead
 
 I edit records locally through the Studio view, then publish the generated static site to GitHub Pages.
 
+On this machine, double-click the local `Gestalt` shortcut to open the archive and Studio. In a fresh clone, double-click `Gestalt.cmd` instead. The launcher does not install packages or publish anything. Its console stays open while Gestalt is running; press `Ctrl+C` or close the launcher window to stop it. If dependencies have not been installed yet, run `corepack pnpm install --ignore-scripts` once from the project folder, then start the launcher again. The local shortcut uses the same mark as the site favicon; `Gestalt.ico` is included if you create a matching shortcut in another checkout. The machine-specific `.lnk` stays local.
+
 Useful commands:
 
 ```powershell
+corepack pnpm install --ignore-scripts
 corepack pnpm run dev
 corepack pnpm run check
 corepack pnpm run site:publish -- --message "Update archive"

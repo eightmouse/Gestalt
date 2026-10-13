@@ -80,17 +80,19 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onEdit, onClos
     >
       <header className="window-bar">
         <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
-        {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
-        <div className="window-actions">
-          <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
-            <Minimize2 size={14} />
-          </button>
-          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize record">
-            <Maximize2 size={14} />
-          </button>
-          <button type="button" data-window-action="close" onClick={onClose} aria-label="Close record">
-            <X size={15} />
-          </button>
+        <div className="window-bar-actions">
+          {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
+          <div className="window-actions">
+            <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
+              <Minimize2 size={14} />
+            </button>
+            <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize record">
+              <Maximize2 size={14} />
+            </button>
+            <button type="button" data-window-action="close" onClick={onClose} aria-label="Close record">
+              <X size={15} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -255,17 +257,19 @@ function SetupPrompt({
         <i>$</i>
         <strong>{command}</strong>
       </div>
-      {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
-      <div className="window-actions setup-window-actions">
-        <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
-          <Minimize2 size={14} />
-        </button>
-        <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize setup terminal">
-          <Maximize2 size={14} />
-        </button>
-        <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">
-          <X size={15} />
-        </button>
+      <div className="setup-prompt-actions">
+        {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
+        <div className="window-actions setup-window-actions">
+          <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
+            <Minimize2 size={14} />
+          </button>
+          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize setup terminal">
+            <Maximize2 size={14} />
+          </button>
+          <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">
+            <X size={15} />
+          </button>
+        </div>
       </div>
     </div>
   );

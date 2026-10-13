@@ -6,6 +6,8 @@ const root = process.cwd();
 const publishPaths = [
   "content/records",
   "public/data/records.js",
+  "public/favicon.ico",
+  "public/favicon.svg",
   "public/media/records",
   "index.html"
 ];
@@ -180,6 +182,8 @@ function scanForPrivateMaterial() {
 
 function isPublishPath(file) {
   return file === "public/data/records.js" ||
+    file === "public/favicon.ico" ||
+    file === "public/favicon.svg" ||
     file === "index.html" ||
     file.startsWith("content/records/") ||
     file.startsWith("public/media/records/");

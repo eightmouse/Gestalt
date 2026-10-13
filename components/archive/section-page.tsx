@@ -1,6 +1,7 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
-import { setupGroupFor, setupGroupRegistry, setupProfile } from "@/components/archive/setup-utils";
+import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
+import { Plus } from "lucide-react";
 
 type ArchiveSectionConfig = {
   id: RecordSection;
@@ -13,6 +14,8 @@ type SectionPageProps = {
   records: RecordEntry[];
   section: ArchiveSectionConfig;
   onOpenRecord: (record: RecordEntry) => void;
+  onCreateRecord?: () => void;
+  onCreateSetupRecord?: (group: SetupGroupId) => void;
 };
 
 const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
@@ -25,14 +28,14 @@ const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
 
 const sessionGameStatuses = new Set(["active", "in progress", "on hold", "paused", "planning", "playing"]);
 
-export function SectionPage({ records, section, onOpenRecord }: SectionPageProps) {
+export function SectionPage({ records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord }: SectionPageProps) {
   const sortedRecords = [...records].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
   const readout = sectionReadout(sortedRecords);
 
   if (section.id === "setup") {
-    return <SetupBay countLabel={countLabel} onOpenRecord={onOpenRecord} readout={readout} records={sortedRecords} section={section} />;
+    return <SetupBay countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} readout={readout} records={sortedRecords} section={section} />;
   }
 
   if (splitSection) {
@@ -45,7 +48,10 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
             <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
             <SectionReadout items={readout} />
           </div>
-          <i>{countLabel}</i>
+          <div className="section-page-header-actions">
+            <i>{countLabel}</i>
+            {onCreateRecord ? <CreateRecordButton onClick={onCreateRecord} /> : null}
+          </div>
         </header>
 
         <div className="section-split-grid">
@@ -83,7 +89,10 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
           <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
           <SectionReadout items={readout} />
         </div>
-        <i>{countLabel}</i>
+        <div className="section-page-header-actions">
+          <i>{countLabel}</i>
+          {onCreateRecord ? <CreateRecordButton onClick={onCreateRecord} /> : null}
+        </div>
       </header>
 
       <div className="section-record-grid">
@@ -96,6 +105,14 @@ export function SectionPage({ records, section, onOpenRecord }: SectionPageProps
         )}
       </div>
     </section>
+  );
+}
+
+function CreateRecordButton({ onClick, label = "Create record" }: { onClick: () => void; label?: string }) {
+  return (
+    <button className="archive-create-record" type="button" aria-label={label} title={label} onClick={onClick}>
+      <Plus size={15} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -177,12 +194,14 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
 
 function SetupBay({
   countLabel,
+  onCreateRecord,
   onOpenRecord,
   readout,
   records,
   section
 }: {
   countLabel: string;
+  onCreateRecord?: (group: SetupGroupId) => void;
   onOpenRecord: (record: RecordEntry) => void;
   readout: Array<{ label: string; value: string }>;
   records: RecordEntry[];
@@ -213,7 +232,10 @@ function SetupBay({
                 <span>{group.path}</span>
                 <h3>{group.title}</h3>
               </div>
-              <i>{group.records.length}</i>
+              <div className="setup-group-actions">
+                <i>{group.records.length}</i>
+                {onCreateRecord ? <CreateRecordButton onClick={() => onCreateRecord(group.id)} label={`Add ${group.title.toLowerCase()} record`} /> : null}
+              </div>
             </header>
             <p>{group.detail}</p>
             <div className="setup-tile-grid">

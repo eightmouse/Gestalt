@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse, type NextRequest } from "next/server";
 import {
@@ -90,6 +90,13 @@ export async function POST(request: NextRequest) {
   const steamAppId = parseOptionalInteger(payload.steamAppId);
   const externalUrl = cleanExternalUrl(payload.externalUrl);
   const filePath = path.join(recordsDirectory, `${id}.mdx`);
+
+  if (id !== originalId && await recordExists(filePath)) {
+    return NextResponse.json(
+      { error: `A record named "${title}" already exists. Open it to edit, or choose a different title.` },
+      { status: 409 }
+    );
+  }
 
   if (dashboardActive) {
     await unsetOtherActiveGames(id);
@@ -263,6 +270,19 @@ async function removeRecordFile(id: string): Promise<void> {
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && error.code === "ENOENT") {
       return;
+    }
+
+    throw error;
+  }
+}
+
+async function recordExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && error.code === "ENOENT") {
+      return false;
     }
 
     throw error;

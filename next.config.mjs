@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  allowedDevOrigins: []
+  allowedDevOrigins: [],
+  agentRules: false
 };
 
 export default nextConfig;

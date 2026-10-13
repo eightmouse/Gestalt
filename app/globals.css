@@ -1782,6 +1782,41 @@ button:focus-visible {
   letter-spacing: 0.12em;
 }
 
+.section-page-header-actions,
+.setup-group-actions {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 10px;
+}
+
+.archive-create-record {
+  inline-size: 30px;
+  block-size: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(217, 213, 193, 0.24);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background-color 140ms ease;
+}
+
+.archive-create-record:hover,
+.archive-create-record:focus-visible {
+  border-color: rgba(217, 213, 193, 0.52);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-strong);
+}
+
+.archive-create-record:focus-visible {
+  outline: 1px solid var(--text-strong);
+  outline-offset: 2px;
+}
+
 .section-page-header h2 {
   margin-block-start: 5px;
   color: var(--text-strong);
@@ -4181,8 +4216,13 @@ button:focus-visible {
   z-index: 1;
 }
 
+.window-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .window-edit-action {
-  justify-self: end;
   min-block-size: 28px;
   padding: 4px 9px;
   border: 1px solid rgba(217, 213, 193, 0.2);
@@ -4855,10 +4895,6 @@ button:focus-visible {
   overflow: hidden;
 }
 
-.setup-console-prompt:has(.window-edit-action) {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-}
-
 .setup-prompt-command {
   min-width: 0;
   display: flex;
@@ -4891,6 +4927,12 @@ button:focus-visible {
 
 .setup-window-actions {
   flex: 0 0 auto;
+}
+
+.setup-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .setup-console-body {
@@ -7524,6 +7566,10 @@ button:focus-visible {
   }
 
   .setup-window-actions {
+    justify-self: end;
+  }
+
+  .setup-prompt-actions {
     justify-self: end;
   }
 
