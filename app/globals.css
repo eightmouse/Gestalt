@@ -1965,7 +1965,8 @@ button:focus-visible {
 }
 
 .archive-tree-root { color: var(--text); letter-spacing: 0.08em; }
-.archive-tree-root svg, .archive-tree-folder svg, .archive-window-root svg, .archive-window-tree svg { flex: 0 0 auto; color: var(--text); }
+.archive-tree-root svg, .archive-tree-folder svg, .archive-window-root svg { flex: 0 0 auto; inline-size: 15px; block-size: 15px; color: var(--text); }
+.archive-window-tree svg { flex: 0 0 auto; inline-size: 14px; block-size: 14px; color: var(--text); }
 .archive-tree-folder, .archive-window-root, .archive-window-tree > button { width: 100%; border: 0; background: transparent; cursor: pointer; }
 .archive-tree-folder:hover, .archive-window-root:hover, .archive-window-tree > button:hover, .archive-window-tree > button.is-active { color: var(--text-strong); background: rgba(217, 213, 193, 0.075); }
 .archive-tree-folder span, .archive-window-tree > button span:nth-of-type(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2003,7 +2004,7 @@ button:focus-visible {
 
 .archive-folder-tile:hover, .archive-folder-tile:focus-visible { border-color: rgba(217, 213, 193, 0.22); background: rgba(217, 213, 193, 0.06); color: var(--text-strong); }
 .archive-folder-tile:focus-visible, .archive-tree-folder:focus-visible, .archive-window-tree > button:focus-visible, .archive-window-root:focus-visible { outline: 1px solid rgba(217, 213, 193, 0.46); outline-offset: -1px; }
-.archive-folder-tile > svg { grid-row: span 2; color: var(--text); }
+.archive-folder-tile > svg { grid-row: span 2; inline-size: 30px; block-size: 30px; color: var(--text); }
 .archive-folder-tile > span { min-width: 0; display: grid; gap: 4px; }
 .archive-folder-tile strong { overflow: hidden; color: inherit; font-size: 18px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
 .archive-folder-tile small, .archive-folder-tile i { color: var(--muted-2); font-size: 11px; letter-spacing: 0.09em; }
@@ -2016,7 +2017,7 @@ button:focus-visible {
 .archive-folder-titlebar, .archive-folder-pathbar { min-width: 0; display: flex; align-items: center; gap: 9px; padding-inline: 12px; }
 .archive-folder-titlebar { justify-content: space-between; border-block-end: 1px solid rgba(217, 213, 193, 0.17); color: var(--text); font-size: 13px; letter-spacing: 0.12em; }
 .archive-folder-titlebar > span { min-width: 0; display: flex; align-items: center; gap: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.archive-folder-titlebar svg { flex: 0 0 auto; color: var(--text); }
+.archive-folder-titlebar svg { flex: 0 0 auto; inline-size: 16px; block-size: 16px; color: var(--text); }
 .archive-folder-titlebar button, .archive-folder-pathbar button { flex: 0 0 auto; display: grid; place-items: center; inline-size: 28px; block-size: 28px; padding: 0; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
 .archive-folder-titlebar button:hover, .archive-folder-pathbar button:hover { border-color: rgba(217, 213, 193, 0.18); background: rgba(217, 213, 193, 0.06); color: var(--text-strong); }
 .archive-folder-pathbar { border-block-end: 1px solid rgba(217, 213, 193, 0.13); background: rgba(217, 213, 193, 0.025); }
@@ -2040,7 +2041,7 @@ button:focus-visible {
 .archive-file { min-width: 0; min-height: 80px; display: flex; align-items: center; gap: 11px; padding: 11px 9px; border: 1px solid transparent; background: transparent; color: var(--muted); text-align: start; cursor: pointer; }
 .archive-file:hover, .archive-file:focus-visible { border-color: rgba(217, 213, 193, 0.18); background: rgba(217, 213, 193, 0.05); color: var(--text-strong); }
 .archive-file:focus-visible { outline: 1px solid rgba(217, 213, 193, 0.46); outline-offset: -1px; }
-.archive-file > svg { flex: 0 0 auto; color: var(--text); }
+.archive-file > svg { flex: 0 0 auto; inline-size: 18px; block-size: 18px; color: var(--text); }
 .archive-file > span { min-width: 0; display: grid; gap: 5px; }
 .archive-file strong { overflow: hidden; color: inherit; font-size: 14px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
 .archive-file small { overflow: hidden; color: var(--muted-2); font-size: 12px; letter-spacing: 0.02em; text-overflow: ellipsis; white-space: nowrap; }
@@ -2070,7 +2071,7 @@ button:focus-visible {
   .archive-manager-main { grid-template-rows: 40px minmax(0, 1fr) auto; }
   .archive-folder-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
   .archive-folder-tile { min-height: 70px; grid-template-columns: 26px minmax(0, 1fr); gap: 3px 7px; padding: 7px; }
-  .archive-folder-tile > svg { width: 24px; }
+  .archive-folder-tile > svg { inline-size: 24px; block-size: 24px; }
   .archive-folder-tile strong { font-size: 13px; }
   .archive-folder-window { grid-template-rows: 40px 40px minmax(0, 1fr); }
   .archive-folder-window-body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
