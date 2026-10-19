@@ -171,6 +171,7 @@ function MemoryLoop() {
   const memoryRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<number | null>(null);
   const boundsRef = useRef<DOMRectReadOnly | null>(null);
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
 
   const setMemoryPointer = (x: number, y: number) => {
     const node = memoryRef.current;
@@ -204,13 +205,19 @@ function MemoryLoop() {
     const x = clampPointer((event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2));
     const y = clampPointer((event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2));
 
+    pointerRef.current = { x, y };
+
     if (frameRef.current !== null) {
-      window.cancelAnimationFrame(frameRef.current);
+      return;
     }
 
     frameRef.current = window.requestAnimationFrame(() => {
-      setMemoryPointer(x, y);
       frameRef.current = null;
+      const pointer = pointerRef.current;
+
+      if (pointer) {
+        setMemoryPointer(pointer.x, pointer.y);
+      }
     });
   };
 
@@ -226,6 +233,8 @@ function MemoryLoop() {
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
       }
+
+      pointerRef.current = null;
     };
   }, []);
 

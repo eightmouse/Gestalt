@@ -353,8 +353,8 @@ function NotesPage({ query, record }: { query: string; record: RecordEntry }) {
       </div>
       <div className="note-stack">
         {filteredNotes.length > 0 ? (
-          filteredNotes.map((note) => (
-            <NoteEntry body={note.body} defaultOpen={note.index === 0} key={note.title} title={note.title} />
+          filteredNotes.map((note, visibleIndex) => (
+            <NoteEntry body={note.body} defaultOpen={visibleIndex === 0} key={note.title} title={note.title} />
           ))
         ) : (
           <p className="notes-empty">No note matches that signal.</p>
@@ -367,6 +367,7 @@ function NotesPage({ query, record }: { query: string; record: RecordEntry }) {
 function NoteEntry({ body, defaultOpen, title }: { body: string; defaultOpen: boolean; title: string }) {
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const initializedRef = useRef(false);
+  const [hasLoaded, setHasLoaded] = useState(defaultOpen);
 
   useEffect(() => {
     if (!initializedRef.current && detailsRef.current) {
@@ -376,14 +377,18 @@ function NoteEntry({ body, defaultOpen, title }: { body: string; defaultOpen: bo
   }, [defaultOpen]);
 
   return (
-    <details className="note-entry" ref={detailsRef}>
+    <details
+      className="note-entry"
+      ref={detailsRef}
+      onToggle={(event) => {
+        if (event.currentTarget.open) setHasLoaded(true);
+      }}
+    >
       <summary>
         <span>{title}</span>
         <i>open</i>
       </summary>
-      <div className="note-entry-body">
-        <RecordBody body={body} />
-      </div>
+      {hasLoaded ? <div className="note-entry-body"><RecordBody body={body} /></div> : null}
     </details>
   );
 }
@@ -418,17 +423,7 @@ export function RecordBody({ body }: { body: string }) {
         index += 1;
       }
 
-      nodes.push(
-        <details className="note-entry" key={key}>
-          <summary>
-            <span>{title}</span>
-            <i>open</i>
-          </summary>
-          <div className="note-entry-body">
-            <RecordBody body={innerLines.join("\n")} />
-          </div>
-        </details>
-      );
+      nodes.push(<NoteEntry body={innerLines.join("\n")} defaultOpen={false} key={key} title={title} />);
       continue;
     }
 

@@ -17,6 +17,8 @@ import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 type RecordWindowProps = {
+  accessPending?: boolean;
+  accessComplete?: boolean;
   initialContent: ContentKey;
   maximized: boolean;
   record: RecordEntry;
@@ -26,15 +28,15 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-export function RecordWindow({ initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ accessPending = false, accessComplete = false, initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow initialContent={initialContent} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
-function ArchiveRecordWindow({ initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
@@ -70,7 +72,7 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onEdit, onClos
   return (
     <>
     <motion.article
-      className={`${maximized ? "record-window is-maximized" : "record-window"}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
       data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -78,6 +80,7 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onEdit, onClos
       transition={{ duration: 0.2, ease: "easeOut" }}
       aria-label={`${record.title} archive entry`}
     >
+      <RecordAccessSurface />
       <header className="window-bar">
         <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
         <div className="window-bar-actions">
@@ -176,7 +179,7 @@ function ArchiveRecordWindow({ initialContent, maximized, record, onEdit, onClos
   );
 }
 
-function SetupRecordWindow({ maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ accessPending, accessComplete, maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
   const headerImage = setupRecordImage(record);
@@ -192,7 +195,7 @@ function SetupRecordWindow({ maximized, record, onEdit, onClose, onMinimize, onM
 
   return (
     <motion.article
-      className={`${maximized ? "record-window is-maximized" : "record-window"} is-setup-record is-setup-record--${group}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""} is-setup-record is-setup-record--${group}`}
       data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -200,6 +203,7 @@ function SetupRecordWindow({ maximized, record, onEdit, onClose, onMinimize, onM
       transition={{ duration: 0.2, ease: "easeOut" }}
       aria-label={`${record.title} setup terminal`}
     >
+      <RecordAccessSurface />
       <div className="setup-window-shell">
         <section className={`setup-console setup-console--${group}`} aria-label={`${record.title} setup profile`}>
           <SetupPrompt
@@ -230,6 +234,35 @@ function SetupRecordWindow({ maximized, record, onEdit, onClose, onMinimize, onM
         </button>
       ) : null}
     </motion.article>
+  );
+}
+
+function RecordAccessSurface() {
+  return (
+    <div className="record-access-surface" aria-hidden="true">
+      <div className="record-access-identity">
+        <small>ARCHIVE LINK // 01</small>
+        <strong>ACCESSING</strong>
+        <span className="record-access-meter"><i /></span>
+        <small className="record-access-state">INDEXING RECORD</small>
+      </div>
+      <div className="record-access-frame" aria-hidden="true">
+        <i className="record-access-rule record-access-rule--top" />
+        <i className="record-access-rule record-access-rule--right" />
+        <i className="record-access-rule record-access-rule--bottom" />
+        <i className="record-access-rule record-access-rule--left" />
+        <span className="record-access-corners">
+          <i /><i /><i /><i />
+        </span>
+        <span className="record-access-traces">
+          <i /><i /><i /><i />
+        </span>
+        <span className="record-access-ticks">
+          <i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i />
+        </span>
+      </div>
+      <i className="record-access-scan" />
+    </div>
   );
 }
 

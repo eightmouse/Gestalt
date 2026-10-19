@@ -12,7 +12,7 @@ This repo is designed to be safe to publish and cautious to install.
 ## Dependency Guardrails
 
 - Dependencies are pinned to exact versions, not `latest`.
-- `next` is pinned to `16.3.6` to include the current patched Next.js release for this app's dependency line.
+- `next` is pinned to `16.3.8` to include the current patched Next.js release for this app's dependency line.
 - React Server Component transport packages are overridden to `19.2.6`, which is outside the vulnerable `19.2.0` through `19.2.5` range from CVE-2026-23870.
 - Install scripts are disabled in `.npmrc`.
 - pnpm is configured with a seven-day release-age delay, `trustPolicy: no-downgrade`, blocked exotic transitive dependencies, and strict dependency builds.

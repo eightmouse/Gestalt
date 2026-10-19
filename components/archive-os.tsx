@@ -127,6 +127,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
   const [archiveRecords, setArchiveRecords] = useState(records);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [recordAccessPending, setRecordAccessPending] = useState(false);
+  const [recordAccessComplete, setRecordAccessComplete] = useState(false);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [panelMaximized, setPanelMaximized] = useState(false);
   const [initialContent, setInitialContent] = useState<ContentKey>("overview");
@@ -142,6 +144,43 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [studioCreateSection, setStudioCreateSection] = useState<Exclude<RecordSection, "system"> | null>(null);
   const [studioSetupGroup, setStudioSetupGroup] = useState<SetupGroupId | undefined>();
   const searchRef = useRef<HTMLDivElement | null>(null);
+  const recordAccessTimerRef = useRef<number | null>(null);
+  const recordAccessPlayedRef = useRef(false);
+
+  const stopRecordAccess = () => {
+    if (recordAccessTimerRef.current !== null) {
+      window.clearTimeout(recordAccessTimerRef.current);
+      recordAccessTimerRef.current = null;
+    }
+    setRecordAccessPending(false);
+    setRecordAccessComplete(false);
+  };
+
+  const startRecordAccess = () => {
+    stopRecordAccess();
+
+    if (
+      recordAccessPlayedRef.current ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    recordAccessPlayedRef.current = true;
+    setRecordAccessPending(true);
+    setRecordAccessComplete(false);
+    recordAccessTimerRef.current = window.setTimeout(() => {
+      recordAccessTimerRef.current = null;
+      setRecordAccessPending(false);
+      setRecordAccessComplete(true);
+    }, 3250);
+  };
+
+  useEffect(() => () => {
+    if (recordAccessTimerRef.current !== null) {
+      window.clearTimeout(recordAccessTimerRef.current);
+    }
+  }, []);
 
   const recordsBySection = useMemo(() => {
     return sections.reduce<Record<RecordSection, RecordEntry[]>>(
@@ -275,6 +314,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [archiveRecords, selectedId, setSelectedId]);
 
   const openRecord = (record: RecordEntry, content: ContentKey = "overview") => {
+    startRecordAccess();
     setSelectedId(record.id);
     setInitialContent(content);
     setPanelOpen(true);
@@ -302,6 +342,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     const sectionChanged = activeSection !== section;
 
     setActiveSection(section);
+    stopRecordAccess();
     setHeadlineAnimating(sectionChanged);
     setPanelOpen(false);
     setPanelMinimized(false);
@@ -312,6 +353,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
 
   const openTimeline = () => {
+    stopRecordAccess();
     setPanelOpen(false);
     setPanelMinimized(false);
     setSearchOpen(false);
@@ -323,6 +365,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const openHome = () => {
     const sectionChanged = activeSection !== "system";
 
+    stopRecordAccess();
     setActiveSection("system");
     setHeadlineAnimating(sectionChanged);
     setPanelOpen(false);
@@ -511,10 +554,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 onClick={() => {
                   setPanelOpen(false);
                   setPanelMinimized(true);
+                  stopRecordAccess();
                 }}
               />
               <RecordWindow
                 key={selectedRecord.id}
+                accessPending={recordAccessPending}
+                accessComplete={recordAccessComplete}
                 maximized={panelMaximized}
                 initialContent={initialContent}
                 record={selectedRecord}
@@ -522,10 +568,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 onClose={() => {
                   setPanelOpen(false);
                   setPanelMinimized(false);
+                  stopRecordAccess();
                 }}
                 onMinimize={() => {
                   setPanelOpen(false);
                   setPanelMinimized(true);
+                  stopRecordAccess();
                 }}
                 onMaximize={() => setPanelMaximized((current) => !current)}
               />
@@ -609,6 +657,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                   setStudioRecordId(null);
                   setPanelOpen(false);
                   setPanelMinimized(false);
+                  stopRecordAccess();
                 }
               }}
             />

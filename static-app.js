@@ -84,12 +84,39 @@ function readLocalMemoryState() {
 const initialLocalMemory = readLocalMemoryState();
 let bootPromptTimer = 0;
 let navMotionTimer = 0;
+let recordAccessTimers = [];
+
+function stopRecordAccessSequence() {
+  for (const timer of recordAccessTimers) {
+    window.clearTimeout(timer);
+  }
+  recordAccessTimers = [];
+  state.accessPending = false;
+}
+
+function startRecordAccessSequence() {
+  if (!state.accessPending) {
+    return;
+  }
+
+  recordAccessTimers.push(window.setTimeout(() => {
+    state.accessPending = false;
+    const recordWindow = document.querySelector(".record-window");
+    recordWindow?.classList.remove("is-access-pending");
+    recordWindow?.classList.add("is-access-complete");
+    state.accessComplete = true;
+    recordAccessTimers = [];
+  }, 3250));
+}
 
 const state = {
   selectedId: "dashboard",
   activeSection: "system",
   previousActiveSection: "system",
   panelOpen: false,
+  accessPending: false,
+  accessComplete: false,
+  recordAccessPlayed: false,
   panelMinimized: false,
   panelMaximized: false,
   activeContent: "overview",
@@ -124,6 +151,12 @@ function openRecord(recordId, contentKey = "overview") {
     return;
   }
 
+  stopRecordAccessSequence();
+  state.accessPending = !state.recordAccessPlayed && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (state.accessPending) {
+    state.recordAccessPlayed = true;
+  }
+  state.accessComplete = false;
   state.headlineAnimating = false;
   state.selectedId = record.id;
   state.activeContent = contentKey;
@@ -138,6 +171,7 @@ function openRecord(recordId, contentKey = "overview") {
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   render();
+  startRecordAccessSequence();
 }
 
 function openSection(sectionId) {
@@ -146,6 +180,7 @@ function openSection(sectionId) {
   }
 
   state.previousActiveSection = state.activeSection;
+  stopRecordAccessSequence();
   state.headlineAnimating = state.activeSection !== sectionId;
   state.activeSection = sectionId;
   state.panelOpen = false;
@@ -161,6 +196,7 @@ function openSection(sectionId) {
 }
 
 function openTimeline() {
+  stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
   state.searchOpen = false;
@@ -174,6 +210,7 @@ function openTimeline() {
 }
 
 function openHome() {
+  stopRecordAccessSequence();
   if (state.activeSection !== "system") {
     state.previousActiveSection = state.activeSection;
   }
@@ -1022,14 +1059,14 @@ function recordMediaSources(record, key) {
 function renderNotesPage(record) {
   const notes = noteEntries(record.body);
   const cleanQuery = state.noteSearchQuery.trim().toLowerCase();
-  const filteredNotes = cleanQuery ? notes.filter((note) => note.title.toLowerCase().includes(cleanQuery)) : notes;
+  const indexedNotes = notes.map((note, index) => ({ ...note, index }));
+  const filteredNotes = cleanQuery ? indexedNotes.filter((note) => note.title.toLowerCase().includes(cleanQuery)) : indexedNotes;
   const noteList = notes.length
     ? filteredNotes
-        .map((note, index) => ({ ...note, index }))
         .map(
-          (note) => `<details class="note-entry" data-note-index="${note.index}" ${note.index === 0 ? "open" : ""}>
+          (note, visibleIndex) => `<details class="note-entry" data-note-index="${note.index}" ${visibleIndex === 0 ? 'data-note-loaded="true" open' : ""}>
             <summary><span>${escapeHtml(note.title)}</span><i>open</i></summary>
-            <div class="note-entry-body"><div class="record-body">${markdownBody(note.body)}</div></div>
+            <div class="note-entry-body" data-note-body>${visibleIndex === 0 ? `<div class="record-body">${markdownBody(note.body)}</div>` : ""}</div>
           </details>`
         )
         .join("")
@@ -1199,7 +1236,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.36.3</span>
+        <span>v1.36.11</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1213,7 +1250,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.36.3</span>
+        <span class="version-label">v1.36.11</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1233,7 +1270,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.36.3</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.36.11</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1883,6 +1920,22 @@ function workspaceContent() {
   return state.activeSection === "system" ? dashboard() : sectionPage(state.activeSection);
 }
 
+function recordAccessSurfaceMarkup() {
+  return `<div class="record-access-surface" aria-hidden="true">
+    <div class="record-access-identity"><small>ARCHIVE LINK // 01</small><strong>ACCESSING</strong><span class="record-access-meter"><i></i></span><small class="record-access-state">INDEXING RECORD</small></div>
+    <div class="record-access-frame" aria-hidden="true">
+      <i class="record-access-rule record-access-rule--top"></i>
+      <i class="record-access-rule record-access-rule--right"></i>
+      <i class="record-access-rule record-access-rule--bottom"></i>
+      <i class="record-access-rule record-access-rule--left"></i>
+      <span class="record-access-corners"><i></i><i></i><i></i><i></i></span>
+      <span class="record-access-traces"><i></i><i></i><i></i><i></i></span>
+      <span class="record-access-ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </div>
+    <i class="record-access-scan"></i>
+  </div>`;
+}
+
 function setupRecordWindow(record) {
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
@@ -1904,7 +1957,8 @@ function setupRecordWindow(record) {
         ? setupNoteBody(record, notes)
         : setupSystemBody(record, profile, specs, headerImage);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} is-setup-record is-setup-record--${group}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} is-setup-record is-setup-record--${group}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
+    ${recordAccessSurfaceMarkup()}
     <div class="setup-window-shell">
       <section class="setup-console setup-console--${group}" aria-label="${escapeHtml(record.title)} setup profile">
         ${setupPrompt(record, profile.command)}
@@ -2043,7 +2097,8 @@ function recordWindow(record) {
 
   const headerImage = recordHeaderImage(record);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
+  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
+    ${recordAccessSurfaceMarkup()}
     <header class="window-bar">
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-actions">
@@ -2460,6 +2515,7 @@ function setMemoryPointer(node, x, y) {
 let memoryFrame = 0;
 let memoryNode = null;
 let memoryBounds = null;
+let memoryPointer = null;
 
 function updateMemoryBounds() {
   memoryNode = document.querySelector("[data-memory-loop]");
@@ -2475,13 +2531,17 @@ document.addEventListener("pointermove", (event) => {
   const x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
   const y = Math.max(-1, Math.min(1, (event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2)));
 
+  memoryPointer = { x, y };
+
   if (memoryFrame) {
-    window.cancelAnimationFrame(memoryFrame);
+    return;
   }
 
   memoryFrame = window.requestAnimationFrame(() => {
-    if (memoryNode instanceof HTMLElement) {
-      setMemoryPointer(memoryNode, x, y);
+    const pointer = memoryPointer;
+
+    if (memoryNode instanceof HTMLElement && pointer) {
+      setMemoryPointer(memoryNode, pointer.x, pointer.y);
     }
     memoryFrame = 0;
   });
@@ -2494,6 +2554,19 @@ document.addEventListener("click", (event) => {
 
   if (!(clickTarget instanceof Element)) {
     return;
+  }
+
+  const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
+
+  if (lazyNote instanceof HTMLDetailsElement && lazyNote.dataset.noteLoaded !== "true") {
+    const noteIndex = Number(lazyNote.dataset.noteIndex);
+    const note = noteEntries(selectedRecord().body)[noteIndex];
+    const noteBody = lazyNote.querySelector("[data-note-body]");
+
+    if (note && noteBody instanceof HTMLElement) {
+      noteBody.innerHTML = `<div class="record-body">${markdownBody(note.body)}</div>`;
+      lazyNote.dataset.noteLoaded = "true";
+    }
   }
 
   if (clickTarget.closest("[data-local-memory-allow]")) {
@@ -2552,6 +2625,7 @@ document.addEventListener("click", (event) => {
 
   if (!target) {
     if (state.panelOpen && !clickTarget.closest(".record-window")) {
+      stopRecordAccessSequence();
       state.panelOpen = false;
       state.panelMinimized = true;
       render();
@@ -2595,6 +2669,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.dataset.recordBackdrop !== undefined) {
+    stopRecordAccessSequence();
     state.panelOpen = false;
     state.panelMinimized = true;
     render();
@@ -2680,12 +2755,14 @@ document.addEventListener("click", (event) => {
   }
 
   if (windowAction === "minimize") {
+    stopRecordAccessSequence();
     state.panelOpen = false;
     state.panelMinimized = true;
     render();
   }
 
   if (windowAction === "close") {
+    stopRecordAccessSequence();
     state.panelOpen = false;
     state.panelMinimized = false;
     render();
@@ -2697,6 +2774,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (state.panelOpen && !recordId && !sectionId && !contentKey && !windowAction && !clickTarget.closest(".record-window")) {
+    stopRecordAccessSequence();
     state.panelOpen = false;
     state.panelMinimized = true;
     render();
