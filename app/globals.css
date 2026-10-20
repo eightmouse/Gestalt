@@ -196,7 +196,7 @@ button:focus-visible {
   gap: 14px;
   background:
     radial-gradient(ellipse at 50% 45%, rgba(217, 213, 193, 0.055), transparent 34%),
-    rgba(5, 6, 5, 0.98);
+    #050605;
   color: var(--text);
   pointer-events: none;
   animation: boot-exit 2400ms ease 350ms both;
@@ -1780,7 +1780,7 @@ button:focus-visible {
 .record-access-identity small { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; opacity: 0; }
 .record-access-identity .record-access-state { font-size: 9px; letter-spacing: 0.18em; }
 .record-access-identity strong { color: var(--text-strong); font-family: var(--sans); font-size: clamp(20px, 2.2vw, 30px); font-weight: 400; line-height: 1.1; letter-spacing: 0.12em; }
-.record-access-meter { position: relative; inline-size: 100%; block-size: 3px; overflow: hidden; background: repeating-linear-gradient(90deg, rgba(217, 213, 193, 0.2) 0 18px, transparent 18px 21px); }
+.record-access-meter { position: relative; inline-size: 100%; block-size: 3px; overflow: hidden; background: rgba(217, 213, 193, 0.2); }
 .record-access-meter i { display: block; inline-size: 100%; block-size: 100%; background: var(--text); transform: scaleX(0); transform-origin: left center; }
 
 .section-page {
@@ -2638,6 +2638,7 @@ button:focus-visible {
 
 .section-page--logs .section-record-grid {
   position: relative;
+  padding-inline-end: 0;
 }
 
 .section-page--logs .section-record-grid::before {
@@ -2670,7 +2671,7 @@ button:focus-visible {
   gap: 14px;
   overflow: auto;
   overscroll-behavior: contain;
-  padding-inline-end: 6px;
+  padding-inline-end: 0;
 }
 
 .setup-group {
@@ -3145,6 +3146,10 @@ button:focus-visible {
   grid-column: span 2;
 }
 
+.dashboard-grid.without-memory .activity-panel {
+  grid-column: 1 / -1;
+}
+
 .activity-panel {
   align-self: stretch;
   grid-template-rows: auto minmax(0, 1fr);
@@ -3366,7 +3371,8 @@ button:focus-visible {
 .active-projects-panel .record-list {
   block-size: 100%;
   min-block-size: 0;
-  align-content: space-evenly;
+  grid-auto-rows: minmax(0, 1fr);
+  align-content: stretch;
 }
 
 .record-list button {
@@ -4855,28 +4861,48 @@ button:focus-visible {
   z-index: 1;
 }
 
-.window-bar-actions {
+.window-title-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
+  min-inline-size: 0;
 }
 
 .window-edit-action {
-  min-block-size: 28px;
-  padding: 4px 9px;
-  border: 1px solid rgba(217, 213, 193, 0.2);
-  background: rgba(255, 255, 255, 0.025);
+  inline-size: 28px;
+  block-size: 28px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid rgba(217, 213, 193, 0.18);
+  background: rgba(255, 255, 255, 0.018);
   color: var(--muted);
-  font: inherit;
-  font-size: 10px;
-  letter-spacing: 0.08em;
   cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.window-edit-action svg {
+  inline-size: 15px;
+  block-size: 15px;
+  stroke-width: 1.45;
+  transition: transform 220ms ease;
 }
 
 .window-edit-action:hover,
 .window-edit-action:focus-visible {
   border-color: rgba(217, 213, 193, 0.48);
+  background: rgba(255, 255, 255, 0.065);
   color: var(--text);
+}
+
+.window-edit-action:hover svg {
+  transform: rotate(22deg);
+}
+
+.window-edit-action:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .window-actions {
@@ -4892,11 +4918,13 @@ button:focus-visible {
   display: grid;
   place-items: center;
   padding: 0;
-  background: transparent;
+  border: 1px solid rgba(217, 213, 193, 0.18);
+  background: rgba(255, 255, 255, 0.018);
   color: var(--text);
   font-size: 0;
   line-height: 1;
   cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .window-actions button svg {
@@ -4915,51 +4943,69 @@ button:focus-visible {
   content: "";
   position: absolute;
   display: block;
+  box-sizing: border-box;
 }
 
 .window-actions button[data-window-action="minimize"]::before {
-  inline-size: 12px;
-  block-size: 4px;
-  border-block: 1px solid currentColor;
-  transform: skewX(-22deg);
-}
-
-.window-actions button[data-window-action="minimize"]::after {
-  inline-size: 6px;
+  inset-inline-start: 7px;
+  inset-block-end: 7px;
+  inline-size: 10px;
   border-block-start: 1px solid currentColor;
-  transform: translate(5px, 6px) skewX(-22deg);
 }
 
 .window-actions button[data-window-action="maximize"]::before {
-  inline-size: 10px;
-  block-size: 10px;
+  inline-size: 12px;
+  block-size: 12px;
   border: 1px solid currentColor;
-  transform: rotate(45deg) scale(0.78);
 }
 
 .window-actions button[data-window-action="maximize"]::after {
-  inline-size: 14px;
-  block-size: 14px;
+  display: none;
+}
+
+.record-window.is-maximized .window-actions button[data-window-action="maximize"]::before {
+  inline-size: 10px;
+  block-size: 10px;
+  transform: translate(2px, 2px);
+}
+
+.record-window.is-maximized .window-actions button[data-window-action="maximize"]::after {
+  display: block;
+  inline-size: 10px;
+  block-size: 10px;
+  inset-block-start: 5px;
+  inset-inline-start: 5px;
   border: 1px solid currentColor;
-  opacity: 0.35;
+  border-inline-end-color: var(--panel);
+  border-block-end-color: var(--panel);
 }
 
 .window-actions button[data-window-action="close"]::before,
 .window-actions button[data-window-action="close"]::after {
-  inline-size: 15px;
+  inline-size: 13px;
   border-block-start: 1px solid currentColor;
 }
 
 .window-actions button[data-window-action="close"]::before {
-  transform: rotate(28deg);
+  transform: rotate(45deg);
 }
 
 .window-actions button[data-window-action="close"]::after {
-  transform: rotate(-28deg);
+  transform: rotate(-45deg);
 }
 
 .window-actions button:hover {
-  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(217, 213, 193, 0.48);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.window-actions button[data-window-action="close"]:hover {
+  color: #e3b9a7;
+}
+
+.window-actions button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .record-layout {
@@ -5336,6 +5382,15 @@ button:focus-visible {
     rgba(255, 255, 255, 0.014);
 }
 
+@media (min-width: 1181px) {
+  .record-layout:has(.record-heading.has-heading-banner) .record-aside > div:first-child {
+    min-block-size: clamp(230px, 30vh, 310px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
 .record-aside ol {
   list-style: none;
   display: grid;
@@ -5571,7 +5626,7 @@ button:focus-visible {
 .setup-prompt-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .setup-console-body {
@@ -5969,6 +6024,60 @@ button:focus-visible {
   margin-block-start: 0;
 }
 
+.log-entry-preview {
+  display: grid;
+  align-content: start;
+  gap: clamp(14px, 2vh, 22px);
+  min-inline-size: 0;
+  padding: clamp(18px, 2.6vw, 30px);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(110deg, rgba(217, 213, 193, 0.045), transparent 62%),
+    rgba(255, 255, 255, 0.018);
+}
+
+.log-entry-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 20px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.log-entry-preview h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.log-entry-preview p {
+  max-inline-size: 82ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.72;
+}
+
+@media (max-width: 760px) {
+  .log-entry-preview {
+    padding: 16px;
+  }
+
+  .log-entry-preview h2 {
+    font-size: 20px;
+  }
+
+  .log-entry-preview p {
+    font-size: 15px;
+  }
+}
+
 .sample-kicker {
   margin-block: -6px 14px;
   color: var(--muted);
@@ -6319,6 +6428,11 @@ button:focus-visible {
   gap: 12px;
 }
 
+.notes-page .note-stack {
+  gap: 0;
+  border-block-start: 1px solid var(--line);
+}
+
 .notes-empty {
   margin: 0;
   color: var(--muted);
@@ -6440,7 +6554,7 @@ button:focus-visible {
   background: rgba(5, 6, 5, 0.36);
 }
 
-.note-entry summary {
+.note-entry > summary {
   min-block-size: 42px;
   display: flex;
   align-items: center;
@@ -6452,20 +6566,20 @@ button:focus-visible {
   list-style: none;
 }
 
-.note-entry summary::-webkit-details-marker {
+.note-entry > summary::-webkit-details-marker {
   display: none;
 }
 
-.note-entry summary::before {
+.note-entry > summary::before {
   content: ">";
   color: var(--accent);
 }
 
-.note-entry summary span {
+.note-entry > summary > span {
   flex: 1;
 }
 
-.note-entry summary i {
+.note-entry > summary > i {
   color: var(--muted-2);
   font-style: normal;
   font-size: 0;
@@ -6473,25 +6587,97 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
-.note-entry summary i::before {
+.note-entry > summary > i::before {
   content: "open";
   font-size: 11px;
 }
 
-.note-entry[open] summary {
+.note-entry[open] > summary {
   border-bottom: 1px solid var(--line);
 }
 
-.note-entry[open] summary i {
+.note-entry[open] > summary > i {
   color: var(--muted);
 }
 
-.note-entry[open] summary i::before {
+.note-entry[open] > summary > i::before {
   content: "close";
+}
+
+.notes-page > .note-stack > .note-entry--indexed {
+  margin: 0;
+  border: 0;
+  border-block-end: 1px solid var(--line);
+  background: transparent;
+}
+
+.note-entry--indexed > summary {
+  min-block-size: 52px;
+  display: grid;
+  grid-template-columns: 34px minmax(126px, 158px) minmax(0, 1fr) 44px;
+  justify-content: initial;
+  gap: 12px;
+  padding: 11px 10px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.note-entry--indexed > summary::before {
+  content: none;
+}
+
+.note-entry--indexed > summary:hover {
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.note-entry--indexed > summary > .note-entry-index,
+.note-entry--indexed > summary > .note-entry-date {
+  color: var(--muted-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.note-entry--indexed > summary > .note-entry-index {
+  color: var(--accent);
+}
+
+.note-entry--indexed > summary > .note-entry-date {
+  white-space: nowrap;
+}
+
+.note-entry--indexed > summary > .note-entry-title {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+
+.note-entry--indexed > summary > i {
+  justify-self: end;
+  color: var(--muted-2);
+}
+
+.note-entry--indexed > summary > i::before {
+  font-size: 10px;
+}
+
+.note-entry--indexed[open] > summary {
+  border: 0;
+  background: rgba(217, 213, 193, 0.035);
+}
+
+.note-entry--indexed[open] > summary > .note-entry-title {
+  color: var(--text-strong);
 }
 
 .note-entry-body {
   padding: 12px;
+}
+
+.note-entry--indexed > .note-entry-body {
+  margin: 0 10px 16px 46px;
+  padding: clamp(16px, 2vw, 24px);
+  border-inline-start: 1px solid rgba(217, 213, 193, 0.24);
+  background: rgba(0, 0, 0, 0.14);
 }
 
 .note-entry-body > .record-body {
@@ -6499,6 +6685,29 @@ button:focus-visible {
   border: 0;
   background: transparent;
   inline-size: 100%;
+}
+
+@media (max-width: 700px) {
+  .note-entry--indexed > summary {
+    grid-template-columns: 24px minmax(78px, 92px) minmax(0, 1fr) 34px;
+    gap: 8px;
+    padding-inline: 6px;
+    font-size: 13px;
+  }
+
+  .note-entry--indexed > summary > .note-entry-index,
+  .note-entry--indexed > summary > .note-entry-date {
+    font-size: 10px;
+  }
+
+  .note-entry--indexed > summary > i::before {
+    font-size: 9px;
+  }
+
+  .note-entry--indexed > .note-entry-body {
+    margin-inline: 32px 4px;
+    padding: 14px;
+  }
 }
 
 .update-history {

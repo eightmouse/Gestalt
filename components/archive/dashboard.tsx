@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { activityFreshness, recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
+import { steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 
 type DashboardProps = {
   activity: ActivityEntry[];
   currentGame?: RecordEntry;
+  currentGameDisplay: CurrentGameDisplay | null;
   latestLog?: RecordEntry;
   panelOpen: boolean;
   projectRecords: RecordEntry[];
@@ -39,6 +41,8 @@ type WeatherLocation = {
   longitude: number;
 };
 
+const MEMORY_STATE_ENABLED = true;
+
 const defaultWeatherState: WeatherState = {
   label: "AUTO WEATHER",
   temp: "--",
@@ -54,6 +58,7 @@ let weatherLoaded = false;
 export function ArchiveDashboard({
   activity,
   currentGame,
+  currentGameDisplay,
   latestLog,
   panelOpen,
   projectRecords,
@@ -68,7 +73,7 @@ export function ArchiveDashboard({
   });
 
   return (
-    <div className={panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}>
+    <div className={`dashboard-grid${panelOpen ? " is-muted" : ""}${MEMORY_STATE_ENABLED ? "" : " without-memory"}`}>
       <DashboardPanel
         title="PROJECTS"
         className="wide-panel active-projects-panel"
@@ -88,16 +93,18 @@ export function ArchiveDashboard({
         footerLabel={currentGame ? "Read note" : undefined}
         onFooter={() => currentGame && onOpenRecord(currentGame, "notes")}
       >
-        {currentGame ? <CurrentGame record={currentGame} /> : <p className="subtle">No session active.</p>}
+        {currentGameDisplay ? <CurrentGame display={currentGameDisplay} record={currentGame} /> : <p className="subtle">No session active.</p>}
       </DashboardPanel>
 
       <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
         <WeatherPanel />
       </DashboardPanel>
 
-      <DashboardPanel title="MEMORY STATE" className="memory-panel">
-        <MemoryLoop />
-      </DashboardPanel>
+      {MEMORY_STATE_ENABLED ? (
+        <DashboardPanel title="MEMORY STATE" className="memory-panel">
+          <MemoryLoop />
+        </DashboardPanel>
+      ) : null}
 
       <DashboardPanel title="LATEST LOG" className="latest-log-panel" footerLabel="Read log" onFooter={() => latestLog && onOpenRecord(latestLog)}>
         {latestLog ? (
@@ -151,17 +158,24 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
   );
 }
 
-function CurrentGame({ record }: { record: RecordEntry }) {
+function CurrentGame({ display, record }: { display: CurrentGameDisplay; record?: RecordEntry }) {
+  const image = record ? recordDashboardImage(record) : steamCoverUrl(display.coverAppId) || "/images/archive-banner.png";
+  const hint = display.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : undefined;
   return (
-    <div className="current-game" data-state={dashboardRecordStateKey(record.status)}>
+    <div className="current-game" data-state={dashboardRecordStateKey(display.status)} title={hint}>
       <div className="game-cover">
-        <img src={recordDashboardImage(record)} alt="" decoding="async" fetchPriority="low" />
+        <img key={image} src={image} alt="" decoding="async" fetchPriority="low" referrerPolicy="no-referrer" onError={(event) => {
+          if (!event.currentTarget.dataset.coverFallback) {
+            event.currentTarget.dataset.coverFallback = "true";
+            event.currentTarget.src = "/images/archive-banner.png";
+          }
+        }} />
       </div>
       <div>
-        <strong>{record.title}</strong>
-        <span>{record.progress}% Complete</span>
-        <span>{String(record.meta.playtime ?? "18.7h")} Play Time</span>
-        <span>Last Played: {String(record.meta.lastPlayed ?? "Today")}</span>
+        <strong>{display.title}</strong>
+        {display.completion ? <span>{display.completion}</span> : null}
+        {display.playtime ? <span>{display.playtime} Play Time</span> : null}
+        {display.lastPlayed ? <span>Last Played: {display.lastPlayed}</span> : null}
       </div>
     </div>
   );

@@ -119,6 +119,7 @@ const state = {
   recordAccessPlayed: false,
   panelMinimized: false,
   panelMaximized: false,
+  memoryStateEnabled: true,
   activeContent: "overview",
   searchOpen: false,
   searchQuery: "",
@@ -135,6 +136,9 @@ const state = {
 };
 
 const root = document.querySelector("#root");
+let steamDisplayModule = null;
+let steamDisplaySnapshot = null;
+let steamDisplayStarted = false;
 
 function recordsFor(sectionId) {
   return records.filter((record) => record.section === sectionId);
@@ -554,9 +558,59 @@ function updatedProjectRecords() {
 }
 
 function currentGameRecord() {
+  if (steamDisplayModule) {
+    const display = steamDisplayModule.resolveCurrentGame(steamDisplaySnapshot, recordsFor("games"));
+    return recordsFor("games").find((record) => record.id === display?.recordId);
+  }
+
   return recordsFor("games").find((record) => record.dashboardActive)
     || recordsFor("games").find((record) => record.status === "Playing")
     || recordsFor("games")[0];
+}
+
+function currentGameDisplay() {
+  if (steamDisplayModule) return steamDisplayModule.resolveCurrentGame(steamDisplaySnapshot, recordsFor("games"));
+  const record = currentGameRecord();
+  if (!record) return null;
+  return {
+    title: record.title,
+    status: record.status,
+    recordId: record.id,
+    completion: Number.isFinite(record.progress) && record.progress >= 0 && record.progress <= 100
+      ? `${record.progress}% ${record.achievementCount ? "Achievements" : "Complete"}` : null,
+    playtime: record.playtime || null,
+    lastPlayed: record.lastPlayed || null
+  };
+}
+
+async function initializeSteamDisplay() {
+  if (steamDisplayStarted || !state.bootDismissed) return;
+  steamDisplayStarted = true;
+  try {
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.36.30");
+    steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
+    // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
+    const panel = document.querySelector(".current-game-panel");
+    if (panel) panel.outerHTML = currentGamePanel();
+    const display = currentGameDisplay();
+    const label = document.querySelector("[data-current-game-label]");
+    if (label) label.textContent = display?.title || "None";
+    const record = currentGameRecord();
+    document.querySelectorAll("[data-current-game-action]").forEach((button) => {
+      button.disabled = !record;
+      if (record) button.dataset.openRecord = record.id;
+      else button.removeAttribute("data-open-record");
+    });
+    const suggestions = document.querySelector(".search-suggestions");
+    if (suggestions && state.searchOpen) {
+      const template = document.createElement("template");
+      template.innerHTML = searchPanel();
+      const updated = template.content.querySelector(".search-suggestions");
+      if (updated) suggestions.replaceChildren(...updated.childNodes);
+    }
+  } catch {
+    // A missing optional module/snapshot must leave the authored fallback usable.
+  }
 }
 
 function latestLogRecord() {
@@ -720,11 +774,12 @@ function getRecordContents(record) {
   }
 
   if (record.section === "logs") {
-    return [
+    const contents = [
       { key: "overview", label: "Entry" },
-      { key: "notes", label: "Field Notes" },
-      { key: "attachments", label: "Attachments" }
+      { key: "notes", label: "Field Notes" }
     ];
+
+    return hasRecordAttachments(record) ? [...contents, { key: "attachments", label: "Attachments" }] : contents;
   }
 
   if (record.section === "projects") {
@@ -746,6 +801,13 @@ function getRecordContents(record) {
 function normalizeContentKey(record) {
   const contents = getRecordContents(record);
   return contents.some((item) => item.key === state.activeContent) ? state.activeContent : contents[0].key;
+}
+
+function hasRecordAttachments(record) {
+  const value = record.attachments;
+  const list = Array.isArray(value) ? value : typeof value === "string" ? value.split(/\r?\n|,/) : [];
+
+  return list.some((item) => String(item).trim().length > 0);
 }
 
 function contentOrdinal(record, index) {
@@ -963,14 +1025,19 @@ function renderOverviewPage(record) {
   const headerImage = recordHeaderImage(record);
   const milestones = recordMilestones(record);
   const overview = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
+  const latestNote = record.section === "logs" ? noteEntries(record.body)[0] : null;
+  const noteHeading = latestNote?.title.match(/^\s*(\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4})\s*[-:–—]?\s*(.*)$/);
+  const entryPreview = record.section === "logs"
+    ? `<section class="log-entry-preview" aria-label="Field note preview">
+      <div class="log-entry-preview-meta"><span>// FIELD NOTE</span><time datetime="${escapeHtml(record.updated)}">${escapeHtml(noteHeading?.[1]?.replace(/\s*\/\s*/g, " / ") || readableDate(record.updated))}</time></div>
+      <h2>${escapeHtml(noteHeading?.[2]?.trim() || latestNote?.title || "Untitled entry")}</h2>
+      <p>${escapeHtml(overview)}</p>
+    </section>`
+    : `<section class="record-section"><h3>// OVERVIEW</h3><p>${escapeHtml(overview)}</p></section>`;
 
   return `<div class="overview-stack">
     ${headerImage ? "" : recordBanner(record)}
-
-    <section class="record-section">
-      <h3>// OVERVIEW</h3>
-      <p>${escapeHtml(overview)}</p>
-    </section>
+    ${entryPreview}
 
     ${record.section === "logs" ? "" : `<section class="record-section">
       <div class="section-row"><h3>// CURRENT PROGRESS</h3><span>${record.progress}%</span></div>
@@ -1064,10 +1131,18 @@ function renderNotesPage(record) {
   const noteList = notes.length
     ? filteredNotes
         .map(
-          (note, visibleIndex) => `<details class="note-entry" data-note-index="${note.index}" ${visibleIndex === 0 ? 'data-note-loaded="true" open' : ""}>
-            <summary><span>${escapeHtml(note.title)}</span><i>open</i></summary>
+          (note, visibleIndex) => {
+            const titleParts = splitNoteTitle(note.title);
+            return `<details class="note-entry note-entry--indexed" data-note-index="${note.index}" ${visibleIndex === 0 ? 'data-note-loaded="true" open' : ""}>
+            <summary>
+              <span class="note-entry-index">${String(note.index + 1).padStart(2, "0")}</span>
+              ${titleParts.date ? `<time class="note-entry-date" datetime="${titleParts.dateTime}">${escapeHtml(titleParts.date)}</time>` : '<span class="note-entry-date"></span>'}
+              <span class="note-entry-title">${escapeHtml(titleParts.title)}</span>
+              <i aria-hidden="true">open</i>
+            </summary>
             <div class="note-entry-body" data-note-body>${visibleIndex === 0 ? `<div class="record-body">${markdownBody(note.body)}</div>` : ""}</div>
-          </details>`
+          </details>`;
+          }
         )
         .join("")
     : "";
@@ -1080,10 +1155,25 @@ function renderNotesPage(record) {
   </section>`;
 }
 
+function splitNoteTitle(title) {
+  const match = title.match(/^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*[-:–—]?\s*(.*)$/);
+
+  if (!match) {
+    return { date: "", dateTime: "", title: title.trim() || "Untitled note" };
+  }
+
+  const [, day, month, year, noteTitle] = match;
+  return {
+    date: `${day.padStart(2, "0")} / ${month.padStart(2, "0")} / ${year}`,
+    dateTime: `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
+    title: noteTitle.trim() || "Untitled note"
+  };
+}
+
 function renderNoteSearch(record) {
   const notes = noteEntries(record.body);
 
-  if (!notes.length) {
+  if (notes.length < 2) {
     return "";
   }
 
@@ -1236,7 +1326,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.36.11</span>
+        <span>v1.36.30</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1250,7 +1340,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.36.11</span>
+        <span class="version-label">v1.36.30</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1268,9 +1358,9 @@ function sidebar() {
         <div><dt>RECORDS</dt><dd>${metrics.recordCount}</dd></div>
         <div><dt>MEDIA</dt><dd>${metrics.mediaCount}</dd></div>
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
-        <div><dt>ACTIVE GAME</dt><dd>${escapeHtml(metrics.activeGame?.title || "None")}</dd></div>
+        <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.36.11</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.36.30</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1323,7 +1413,7 @@ function archiveNavigationMenu() {
       <div class="archive-nav-actions archive-nav-actions--desktop" aria-label="Quick archive actions">
         <button class="${state.searchOpen ? "is-active" : ""}" type="button" data-search-toggle><span class="search-icon" aria-hidden="true"></span>Search</button>
         <button type="button" data-open-timeline><span>⌬</span>Trace</button>
-        <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
+        <button type="button" data-current-game-action ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>◇</span>Current</button>
       </div>
       <div class="archive-nav-search archive-nav-search--mobile" role="search">
         <label for="mobile-archive-search">// SEARCH</label>
@@ -1331,7 +1421,7 @@ function archiveNavigationMenu() {
       </div>
       <div class="archive-nav-actions archive-nav-actions--mobile" aria-label="Mobile archive actions">
         <button type="button" data-open-timeline><span>&#9004;</span>Trace</button>
-        <button type="button" ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>&#9671;</span>Current</button>
+        <button type="button" data-current-game-action ${currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "disabled"}><span>&#9671;</span>Current</button>
       </div>
       <div class="nav-stack nav-stack--desktop">${groups}</div>
       <div class="nav-stack nav-stack--mobile-archive">${archiveGroups}</div>
@@ -1408,9 +1498,24 @@ function memoryLoop() {
   </div>`;
 }
 
+function currentGamePanel() {
+  const currentGame = currentGameRecord();
+  const display = currentGameDisplay();
+  const image = currentGame ? recordImage(currentGame) : steamDisplayModule?.steamCoverUrl(display?.coverAppId) || "public/images/archive-banner.png";
+  const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : "";
+  const content = display ? `<div class="current-game" data-state="${recordStateKey(display.status)}" title="${escapeHtml(hint)}">
+    <div class="game-cover"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /></div>
+    <div><strong>${escapeHtml(display.title)}</strong>
+      ${display.completion ? `<span>${escapeHtml(display.completion)}</span>` : ""}
+      ${display.playtime ? `<span>${escapeHtml(display.playtime)} Play Time</span>` : ""}
+      ${display.lastPlayed ? `<span>Last Played: ${escapeHtml(display.lastPlayed)}</span>` : ""}
+    </div>
+  </div>` : `<p class="subtle">No session active.</p>`;
+  return dashboardPanel("CURRENT GAME", content, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "", "current-game-panel");
+}
+
 function dashboard() {
   const activeProjects = updatedProjectRecords();
-  const currentGame = currentGameRecord();
   const latestLog = latestLogRecord();
   const activity = recentActivity(6);
   const activityRows = activity.map((item) => {
@@ -1433,20 +1538,6 @@ function dashboard() {
     </div>`
     : `<p class="subtle">No projects filed yet.</p>`;
 
-  const game = currentGame
-    ? `<div class="current-game" data-state="${recordStateKey(currentGame.status)}">
-        <div class="game-cover">
-          <img src="${escapeHtml(recordImage(currentGame))}" alt="" decoding="async" />
-        </div>
-        <div>
-          <strong>${escapeHtml(currentGame.title)}</strong>
-          <span>${currentGame.progress}% Complete</span>
-          <span>${escapeHtml(currentGame.playtime || "18.7h")} Play Time</span>
-          <span>Last Played: ${escapeHtml(currentGame.lastPlayed || "Today")}</span>
-        </div>
-      </div>`
-    : `<p class="subtle">No session active.</p>`;
-
   const log = latestLog
     ? `<div class="latest-log" data-state="${recordStateKey(latestLog.status)}"><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(recordDisplaySummary(latestLog))}</p></div>`
     : `<p class="subtle">No field notes stored.</p>`;
@@ -1468,11 +1559,11 @@ function dashboard() {
     </ol>`
     : `<p class="subtle">No activity filed yet.</p>`;
 
-  return `<div class="${state.panelOpen ? "dashboard-grid is-muted" : "dashboard-grid"}">
+  return `<div class="dashboard-grid${state.panelOpen ? " is-muted" : ""}${state.memoryStateEnabled ? "" : " without-memory"}">
     ${dashboardPanel("PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
-    ${dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel")}
-    ${dashboardPanel("CURRENT GAME", game, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "", "current-game-panel")}
+    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel") : ""}
+    ${currentGamePanel()}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "", "latest-log-panel")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
   </div>`;
@@ -1990,7 +2081,7 @@ function setupPrompt(record, command) {
     </div>
     <div class="window-actions setup-window-actions">
       <button type="button" data-window-action="minimize" aria-label="Minimize setup terminal">minimize</button>
-      <button type="button" data-window-action="maximize" aria-label="Maximize setup terminal">maximize</button>
+      <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore setup terminal" : "Maximize setup terminal"}">${state.panelMaximized ? "restore" : "maximize"}</button>
       <button type="button" data-window-action="close" aria-label="Close setup terminal">close</button>
     </div>
   </div>`;
@@ -2103,7 +2194,7 @@ function recordWindow(record) {
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-actions">
         <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
-        <button type="button" data-window-action="maximize" aria-label="Maximize record">maximize</button>
+        <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore record" : "Maximize record"}">${state.panelMaximized ? "restore" : "maximize"}</button>
         <button type="button" data-window-action="close" aria-label="Close record">close</button>
       </div>
     </header>
@@ -2359,6 +2450,7 @@ function render() {
   }
 
   updateMemoryBounds();
+  void initializeSteamDisplay();
 
   if (state.searchOpen) {
     const input = document.querySelector("[data-search-input]");
@@ -2885,6 +2977,14 @@ document.addEventListener("keydown", (event) => {
     render();
   }
 });
+
+document.addEventListener("error", (event) => {
+  const image = event.target;
+  if (image instanceof HTMLImageElement && image.matches(".current-game img") && !image.dataset.coverFallback) {
+    image.dataset.coverFallback = "true";
+    image.src = "public/images/archive-banner.png";
+  }
+}, true);
 
 registerMediaCacheWorker();
 render();

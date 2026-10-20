@@ -1,7 +1,7 @@
 import type { RecordEntry } from "@/lib/types";
 
 export type ArchiveMetrics = {
-  activeGame?: RecordEntry;
+  activeGame?: Pick<RecordEntry, "title">;
   activeProjects: number;
   latestActivityDate: string;
   mediaCount: number;

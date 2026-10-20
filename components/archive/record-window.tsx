@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { motion } from "framer-motion";
-import { Maximize2, Minimize2, X } from "lucide-react";
+import { Maximize2, Minimize2, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   contentOrdinal,
@@ -82,20 +82,20 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, ma
     >
       <RecordAccessSurface />
       <header className="window-bar">
-        <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
-        <div className="window-bar-actions">
-          {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
-          <div className="window-actions">
-            <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
-              <Minimize2 size={14} />
-            </button>
-            <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize record">
-              <Maximize2 size={14} />
-            </button>
-            <button type="button" data-window-action="close" onClick={onClose} aria-label="Close record">
-              <X size={15} />
-            </button>
-          </div>
+        <div className="window-title-group">
+          <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
+          {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit} aria-label="Edit this record locally" title="Edit locally"><Settings size={15} aria-hidden="true" /></button> : null}
+        </div>
+        <div className="window-actions">
+          <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
+            <Minimize2 size={14} />
+          </button>
+          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label={maximized ? "Restore record" : "Maximize record"}>
+            <Maximize2 size={14} />
+          </button>
+          <button type="button" data-window-action="close" onClick={onClose} aria-label="Close record">
+            <X size={15} />
+          </button>
         </div>
       </header>
 
@@ -208,6 +208,7 @@ function SetupRecordWindow({ accessPending, accessComplete, maximized, record, o
         <section className={`setup-console setup-console--${group}`} aria-label={`${record.title} setup profile`}>
           <SetupPrompt
             command={profile.command}
+            maximized={maximized}
             record={record}
             onClose={onClose}
             onEdit={onEdit}
@@ -268,6 +269,7 @@ function RecordAccessSurface() {
 
 function SetupPrompt({
   command,
+  maximized,
   onClose,
   onEdit,
   onMaximize,
@@ -275,6 +277,7 @@ function SetupPrompt({
   record
 }: {
   command: string;
+  maximized: boolean;
   record: RecordEntry;
   onClose: () => void;
   onEdit?: () => void;
@@ -291,12 +294,12 @@ function SetupPrompt({
         <strong>{command}</strong>
       </div>
       <div className="setup-prompt-actions">
-        {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit}>Edit locally</button> : null}
+        {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit} aria-label="Edit this record locally" title="Edit locally"><Settings size={15} aria-hidden="true" /></button> : null}
         <div className="window-actions setup-window-actions">
           <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
             <Minimize2 size={14} />
           </button>
-          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label="Maximize setup terminal">
+          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label={maximized ? "Restore setup terminal" : "Maximize setup terminal"}>
             <Maximize2 size={14} />
           </button>
           <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">

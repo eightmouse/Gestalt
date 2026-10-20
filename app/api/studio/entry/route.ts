@@ -1,4 +1,5 @@
-import { access, mkdir, readdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { NextResponse, type NextRequest } from "next/server";
 import {
@@ -8,6 +9,7 @@ import {
   slugify
 } from "@/lib/studio";
 import { writeStaticRecords } from "@/lib/static-export";
+import { beginStudioOperation, setStaticExportRequired } from "@/lib/studio-operation";
 
 type EntryPayload = {
   originalId?: string;
@@ -47,6 +49,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Studio writes are local-development only." }, { status: 404 });
   }
 
+  const release = beginStudioOperation("save");
+  if (!release) return NextResponse.json({ error: "Studio is already writing or publishing. Try again when it finishes." }, { status: 409 });
+  try {
+    return await saveEntry(request);
+  } catch (error) {
+    console.error("Studio record write failed:", error);
+    return NextResponse.json({ error: "Could not finish saving the record. Keep your draft and retry." }, { status: 500 });
+  } finally {
+    release();
+  }
+}
+
+async function saveEntry(request: NextRequest) {
   const payload = (await request.json()) as EntryPayload;
   const title = clean(payload.title);
   const section = payload.section;
@@ -135,17 +150,26 @@ export async function POST(request: NextRequest) {
   ];
 
   await mkdir(recordsDirectory, { recursive: true });
-  await writeFile(filePath, lines.join("\n"), "utf8");
+  const temporaryPath = `${filePath}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temporaryPath, lines.join("\n"), { encoding: "utf8", flag: "wx" });
+    await rename(temporaryPath, filePath);
+  } finally {
+    await unlink(temporaryPath).catch(() => {});
+  }
+  setStaticExportRequired(true);
 
   if (originalId && originalId !== id) {
     await removeRecordFile(originalId);
   }
 
-  await writeStaticRecords();
+  const exportResult = await refreshSavedRecords();
 
   return NextResponse.json({
     id,
-    path: path.relative(process.cwd(), filePath).replaceAll("\\", "/")
+    path: path.relative(process.cwd(), filePath).replaceAll("\\", "/"),
+    saved: true,
+    ...exportResult
   });
 }
 
@@ -154,6 +178,19 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Studio writes are local-development only." }, { status: 404 });
   }
 
+  const release = beginStudioOperation("delete");
+  if (!release) return NextResponse.json({ error: "Studio is already writing or publishing. Try again when it finishes." }, { status: 409 });
+  try {
+    return await deleteEntry(request);
+  } catch (error) {
+    console.error("Studio record deletion failed:", error);
+    return NextResponse.json({ error: "Could not finish deleting the record. Refresh the local change list before retrying." }, { status: 500 });
+  } finally {
+    release();
+  }
+}
+
+async function deleteEntry(request: NextRequest) {
   const payload = (await request.json()) as Pick<EntryPayload, "id" | "originalId">;
   const id = slugify(clean(payload.id) || clean(payload.originalId));
 
@@ -162,9 +199,19 @@ export async function DELETE(request: NextRequest) {
   }
 
   await removeRecordFile(id);
-  await writeStaticRecords();
+  setStaticExportRequired(true);
+  const exportResult = await refreshSavedRecords();
 
-  return NextResponse.json({ id });
+  return NextResponse.json({ id, deleted: true, ...exportResult });
+}
+
+async function refreshSavedRecords() {
+  try {
+    await writeStaticRecords();
+    return { staticExported: true };
+  } catch {
+    return { staticExported: false, warning: "The local record change is saved, but the static archive could not refresh. Use Refresh archive to retry without saving the record again." };
+  }
 }
 
 function clean(value: unknown): string {

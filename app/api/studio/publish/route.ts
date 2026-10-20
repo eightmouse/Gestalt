@@ -1,11 +1,10 @@
-import { spawnSync } from "node:child_process";
 import { NextResponse, type NextRequest } from "next/server";
 import { isLocalStudioRequest } from "@/lib/studio";
+import { beginStudioOperation, setStaticExportRequired } from "@/lib/studio-operation";
+import { runStudioProcess } from "@/lib/studio-process";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-let publishRunning = false;
 
 type PublishSummary = {
   branch: string;
@@ -22,62 +21,58 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Studio publishing is local-development only." }, { status: 404 });
   }
 
-  if (publishRunning) {
-    return NextResponse.json({ error: "A publish is already running." }, { status: 409 });
-  }
-
-  publishRunning = true;
+  const release = beginStudioOperation("publish");
+  if (!release) return NextResponse.json({ error: "Studio is already writing or publishing. Try again when it finishes." }, { status: 409 });
 
   try {
-    const result = spawnSync(
+    const result = await runStudioProcess(
       process.execPath,
       ["scripts/publish-site.mjs", "--message", "Update archive"],
-      {
-        cwd: process.cwd(),
-        encoding: "utf8",
-        maxBuffer: 10 * 1024 * 1024,
-        timeout: 180000
-      }
+      180_000
     );
     const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
 
+    const summary = summarizeFailedPublish(output);
+    if (summary.staticExported) setStaticExportRequired(false);
     if (result.error) {
       return NextResponse.json(
         {
-          error: result.error.message,
-          output
+          error: result.error,
+          output,
+          summary
         },
         { status: 500 }
       );
     }
 
-    if (result.status !== 0) {
+    if (result.code !== 0) {
       return NextResponse.json(
         {
-          error: `Publish failed with exit code ${result.status ?? "unknown"}.`,
+          error: `Publish failed with exit code ${result.code ?? "unknown"}.`,
           output,
-          summary: summarizeFailedPublish(output)
+          summary
         },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      message: "Published to GitHub.",
+      message: /Published .+ to GitHub\./.test(output) ? "Published to GitHub." : "No saved changes or local commits needed publishing.",
+      published: /Published .+ to GitHub\./.test(output),
       output,
-      summary: summarizeSuccessfulPublish(output)
+      summary: await summarizeSuccessfulPublish(output)
     });
   } finally {
-    publishRunning = false;
+    release();
   }
 }
 
-function summarizeSuccessfulPublish(output: string): PublishSummary {
+async function summarizeSuccessfulPublish(output: string): Promise<PublishSummary> {
   const commit = matchFirst(output, /\[main\s+([a-f0-9]+)]/i) || matchFirst(output, /commit\s+([a-f0-9]{7,40})/i);
   const changedFiles = Number(matchFirst(output, /(\d+)\s+files?\s+changed/i) ?? "0");
   const cacheToken = matchFirst(output, /Updated index\.html cache token:\s*(\d+)/);
-  const branch = capture("git", ["rev-parse", "--abbrev-ref", "HEAD"]) || "main";
-  const changed = commit ? capture("git", ["show", "--name-only", "--format=", "--no-renames", commit]).split(/\r?\n/).filter(Boolean) : [];
+  const branch = await capture("git", ["rev-parse", "--abbrev-ref", "HEAD"]) || "main";
+  const changed = commit ? (await capture("git", ["show", "--name-only", "--format=", "--no-renames", commit])).split(/\r?\n/).filter(Boolean) : [];
 
   return {
     branch,
@@ -99,14 +94,10 @@ function summarizeFailedPublish(output: string): Partial<PublishSummary> {
   };
 }
 
-function capture(command: string, args: string[]): string {
-  const result = spawnSync(command, args, {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "ignore"]
-  });
+async function capture(command: string, args: string[]): Promise<string> {
+  const result = await runStudioProcess(command, args);
 
-  return result.status === 0 ? result.stdout.trim() : "";
+  return result.code === 0 && !result.error ? result.stdout.trim() : "";
 }
 
 function matchFirst(value: string, pattern: RegExp): string | undefined {

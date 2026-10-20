@@ -40,7 +40,7 @@ Use `:::note ... :::` for each game note. The Notes page turns each note into an
 
 ## Local Studio
 
-For form-based editing and drag/drop media, run the Next app locally and open:
+Use the launcher to edit a record through its local gear button, or open the standalone Studio:
 
 ```text
 http://127.0.0.1:3000/studio
@@ -53,6 +53,8 @@ Studio can:
 - upload screenshots, gifs, videos, and project samples into `public/media/records/`
 - insert uploaded media into the note body
 - save records back into `content/records/`
+
+`Save Record` writes locally and refreshes the static data. If the record was written but export failed, the notification panel reports the saved state and offers `Refresh archive`. This retries the generated data without saving the record again. The pending change list also identifies commits waiting to be pushed, so a failed publish can be retried after its commit already succeeded. See [Studio workflow and recovery](STUDIO_WORKFLOW.md).
 
 Studio is disabled outside local development. The write and upload routes return `404` unless the app is running in development on `localhost` or `127.0.0.1`.
 

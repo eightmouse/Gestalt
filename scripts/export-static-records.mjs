@@ -1,4 +1,5 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 
 const root = process.cwd();
@@ -133,5 +134,11 @@ for (const filename of filenames) {
 records.sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 
 await mkdir(path.dirname(outputPath), { recursive: true });
-await writeFile(outputPath, `window.__GESTALT_RECORDS = ${JSON.stringify(records, null, 2)};\n`, "utf8");
+const temporaryPath = `${outputPath}.${randomUUID()}.tmp`;
+try {
+  await writeFile(temporaryPath, `window.__GESTALT_RECORDS = ${JSON.stringify(records, null, 2)};\n`, { encoding: "utf8", flag: "wx" });
+  await rename(temporaryPath, outputPath);
+} finally {
+  await unlink(temporaryPath).catch(() => {});
+}
 console.log(`Exported ${records.length} records to ${path.relative(root, outputPath)}`);

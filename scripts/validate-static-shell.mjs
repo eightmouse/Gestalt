@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
+import { updateStaticCacheTokens } from "./static-cache.mjs";
 
 const root = process.cwd();
 const source = readFileSync(path.join(root, "static-app.js"), "utf8");
@@ -9,6 +10,20 @@ const indexHtml = readFileSync(path.join(root, "index.html"), "utf8");
 const recordsData = readFileSync(path.join(root, "public", "data", "records.js"), "utf8");
 const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"), "utf8");
 const errors = [];
+
+const cacheTokenCases = [
+  ['href="app/globals.css?v=1.36.24"', 'href="app/globals.css?v=12345"'],
+  ['src="public/data/records.js?v=1700000000"', 'src="public/data/records.js?v=12345"'],
+  ["src='static-app.js'", "src='static-app.js?v=12345'"],
+  ['src="static-app.js?mode=preview&v=1.36.24#entry"', 'src="static-app.js?mode=preview&v=12345#entry"'],
+  ['src="public/images/archive-banner.png?v=1.36.24"', 'src="public/images/archive-banner.png?v=1.36.24"']
+];
+
+for (const [input, expected] of cacheTokenCases) {
+  if (updateStaticCacheTokens(input, 12345) !== expected || updateStaticCacheTokens(expected, 12345) !== expected) {
+    errors.push(`Cache-token replacement regression: ${input}`);
+  }
+}
 
 function extractFunction(name) {
   const marker = `function ${name}(`;
@@ -128,6 +143,18 @@ const swCheck = spawnSync(process.execPath, ["--check", path.join(root, "sw.js")
 
 if (swCheck.status !== 0) {
   errors.push(`sw.js syntax check failed: ${(swCheck.stderr || swCheck.stdout || "").trim()}`);
+}
+
+const mediaCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-media-cache.mjs")], { encoding: "utf8" });
+
+if (mediaCheck.status !== 0) {
+  errors.push(`Media cache regression check failed: ${(mediaCheck.stderr || mediaCheck.stdout || "").trim()}`);
+}
+
+const steamDisplayCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-steam-display.mjs")], { encoding: "utf8" });
+
+if (steamDisplayCheck.status !== 0) {
+  errors.push(`Steam display regression check failed: ${(steamDisplayCheck.stderr || steamDisplayCheck.stdout || "").trim()}`);
 }
 
 if (errors.length > 0) {

@@ -32,6 +32,7 @@ import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/s
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
+import { loadSteamSnapshot, resolveCurrentGame, type SteamSnapshot } from "@/public/steam-display.mjs";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -126,6 +127,7 @@ function warmArchiveMedia(records: RecordEntry[], currentGame?: RecordEntry) {
 export function ArchiveOS({ records }: ArchiveOSProps) {
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
   const [archiveRecords, setArchiveRecords] = useState(records);
+  const [steamSnapshot, setSteamSnapshot] = useState<SteamSnapshot | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [recordAccessPending, setRecordAccessPending] = useState(false);
   const [recordAccessComplete, setRecordAccessComplete] = useState(false);
@@ -205,12 +207,20 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? archiveRecords[0];
   const projectDashboardRecords = recordsBySection.projects
     .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const currentGame = recordsBySection.games.find((record) => record.meta.dashboardActive === true)
-    ?? recordsBySection.games.find((record) => record.status === "Playing")
-    ?? recordsBySection.games[0];
+  const currentGameDisplay = useMemo(() => resolveCurrentGame(steamSnapshot, recordsBySection.games), [steamSnapshot, recordsBySection.games]);
+  const currentGame = recordsBySection.games.find((record) => record.id === currentGameDisplay?.recordId);
   const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
   const activity = recentActivity(archiveRecords, 6);
-  const metrics = getArchiveMetrics(archiveRecords, currentGame);
+  const metrics = { ...getArchiveMetrics(archiveRecords, currentGame), activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
+
+  useEffect(() => {
+    if (!bootComplete) return;
+    let active = true;
+    void loadSteamSnapshot("/data/steam-current.json").then((snapshot) => {
+      if (active && snapshot) setSteamSnapshot(snapshot);
+    });
+    return () => { active = false; };
+  }, [bootComplete]);
 
   useEffect(() => {
     setArchiveRecords(records);
@@ -518,6 +528,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           <ArchiveDashboard
             activity={activity}
             currentGame={currentGame}
+            currentGameDisplay={currentGameDisplay}
             latestLog={latestLog}
             panelOpen={panelOpen}
             projectRecords={projectDashboardRecords}
@@ -640,7 +651,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
               initialSetupGroup={studioSetupGroup}
               records={archiveRecords.filter((record) => record.section !== "system")}
               onExit={() => setStudioRecordId(null)}
-              onRecordsChange={(updatedRecords, currentId) => {
+              onRecordsChange={(updatedRecords, currentId, options) => {
                 setArchiveRecords((current) => [
                   ...current.filter((record) => record.section === "system"),
                   ...updatedRecords
@@ -654,7 +665,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                     setPanelMaximized(false);
                   }
                 } else if (currentId === null) {
-                  setStudioRecordId(null);
+                  if (!options?.keepEditorOpen) setStudioRecordId(null);
                   setPanelOpen(false);
                   setPanelMinimized(false);
                   stopRecordAccess();

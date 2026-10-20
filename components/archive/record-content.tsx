@@ -31,11 +31,12 @@ export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey;
   }
 
   if (record.section === "logs") {
-    return [
+    const contents: Array<{ key: ContentKey; label: string }> = [
       { key: "overview", label: "Entry" },
-      { key: "notes", label: "Full Note" },
-      { key: "attachments", label: "Attachments" }
+      { key: "notes", label: "Full Note" }
     ];
+
+    return hasRecordAttachments(record) ? [...contents, { key: "attachments", label: "Attachments" }] : contents;
   }
 
   if (record.section === "projects") {
@@ -157,15 +158,28 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
 function RecordOverviewPage({ record }: { record: RecordEntry }) {
   const headerImage = recordHeaderImage(record);
   const summary = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
+  const latestNote = record.section === "logs" ? noteEntries(record.body)[0] : undefined;
+  const noteHeading = latestNote?.title.match(/^\s*(\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4})\s*[-:–—]?\s*(.*)$/);
 
   return (
     <div className="overview-stack">
       {headerImage ? null : <RecordBanner record={record} />}
 
-      <section className="record-section">
-        <h3>// OVERVIEW</h3>
-        <p>{summary}</p>
-      </section>
+      {record.section === "logs" ? (
+        <section className="log-entry-preview" aria-label="Field note preview">
+          <div className="log-entry-preview-meta">
+            <span>// FIELD NOTE</span>
+            <time dateTime={record.updated}>{noteHeading?.[1]?.replace(/\s*\/\s*/g, " / ") || formatReadableDate(record.updated)}</time>
+          </div>
+          <h2>{noteHeading?.[2]?.trim() || latestNote?.title || "Untitled entry"}</h2>
+          <p>{summary}</p>
+        </section>
+      ) : (
+        <section className="record-section">
+          <h3>// OVERVIEW</h3>
+          <p>{summary}</p>
+        </section>
+      )}
 
       {record.section === "logs" ? null : (
         <section className="record-section">
@@ -312,10 +326,21 @@ function recordMediaSources(record: RecordEntry, key: "attachments" | "samples")
   return record.banner ? [record.banner] : [];
 }
 
+function hasRecordAttachments(record: RecordEntry): boolean {
+  const attachments = record.meta.attachments;
+  const list = Array.isArray(attachments)
+    ? attachments
+    : typeof attachments === "string"
+      ? attachments.split(/\r?\n|,/)
+      : [];
+
+  return list.some((item) => String(item).trim().length > 0);
+}
+
 export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange: (value: string) => void; query: string; record: RecordEntry }) {
   const notes = noteEntries(record.body);
 
-  if (!notes.length) {
+  if (notes.length < 2) {
     return null;
   }
 
@@ -354,7 +379,7 @@ function NotesPage({ query, record }: { query: string; record: RecordEntry }) {
       <div className="note-stack">
         {filteredNotes.length > 0 ? (
           filteredNotes.map((note, visibleIndex) => (
-            <NoteEntry body={note.body} defaultOpen={visibleIndex === 0} key={note.title} title={note.title} />
+            <NoteEntry body={note.body} defaultOpen={visibleIndex === 0} index={note.index} key={note.title} title={note.title} />
           ))
         ) : (
           <p className="notes-empty">No note matches that signal.</p>
@@ -364,10 +389,11 @@ function NotesPage({ query, record }: { query: string; record: RecordEntry }) {
   );
 }
 
-function NoteEntry({ body, defaultOpen, title }: { body: string; defaultOpen: boolean; title: string }) {
+function NoteEntry({ body, defaultOpen, index, title }: { body: string; defaultOpen: boolean; index?: number; title: string }) {
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const initializedRef = useRef(false);
   const [hasLoaded, setHasLoaded] = useState(defaultOpen);
+  const titleParts = splitNoteTitle(title);
 
   useEffect(() => {
     if (!initializedRef.current && detailsRef.current) {
@@ -378,19 +404,42 @@ function NoteEntry({ body, defaultOpen, title }: { body: string; defaultOpen: bo
 
   return (
     <details
-      className="note-entry"
+      className={index === undefined ? "note-entry" : "note-entry note-entry--indexed"}
       ref={detailsRef}
       onToggle={(event) => {
         if (event.currentTarget.open) setHasLoaded(true);
       }}
     >
       <summary>
-        <span>{title}</span>
-        <i>open</i>
+        {index === undefined ? (
+          <span>{title}</span>
+        ) : (
+          <>
+            <span className="note-entry-index">{String(index + 1).padStart(2, "0")}</span>
+            {titleParts.date ? <time className="note-entry-date" dateTime={titleParts.dateTime}>{titleParts.date}</time> : <span className="note-entry-date" />}
+            <span className="note-entry-title">{titleParts.title}</span>
+          </>
+        )}
+        <i aria-hidden="true">open</i>
       </summary>
       {hasLoaded ? <div className="note-entry-body"><RecordBody body={body} /></div> : null}
     </details>
   );
+}
+
+function splitNoteTitle(title: string) {
+  const match = title.match(/^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*[-:–—]?\s*(.*)$/);
+
+  if (!match) {
+    return { date: "", dateTime: "", title: title.trim() || "Untitled note" };
+  }
+
+  const [, day, month, year, noteTitle] = match;
+  return {
+    date: `${day.padStart(2, "0")} / ${month.padStart(2, "0")} / ${year}`,
+    dateTime: `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`,
+    title: noteTitle.trim() || "Untitled note"
+  };
 }
 
 type NoteMediaOptions = {

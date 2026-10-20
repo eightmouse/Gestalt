@@ -1,7 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { NextResponse, type NextRequest } from "next/server";
 import { getRecords } from "@/lib/content";
 import { isLocalStudioRequest } from "@/lib/studio";
+import { staticExportNeedsRefresh } from "@/lib/static-export";
+import { runStudioProcess } from "@/lib/studio-process";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,15 +21,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Studio change review is local-development only." }, { status: 404 });
   }
 
-  const status = spawnSync("git", ["status", "--porcelain=v1", "--untracked-files=all", "--", ...publishPaths], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    windowsHide: true
-  });
+  const status = await runStudioProcess("git", ["status", "--porcelain=v1", "--untracked-files=all", "--", ...publishPaths]);
 
-  if (status.error || status.status !== 0) {
+  if (status.error || status.code !== 0) {
     return NextResponse.json({ error: "Could not read the local archive change list." }, { status: 500 });
   }
+
+  const branch = await runStudioProcess("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
+  const ahead = branch.code === 0 && !branch.error
+    ? await runStudioProcess("git", ["rev-list", "--count", `origin/${branch.stdout.trim()}..HEAD`]) : null;
+  const unpushedCommits = ahead?.code === 0 && !ahead.error ? Number(ahead.stdout.trim()) || 0 : 0;
 
   const recordMap = new Map(getRecords().map((record) => [record.id, record]));
   const changedEntries = status.stdout
@@ -59,6 +61,8 @@ export async function POST(request: NextRequest) {
     records: changedRecords,
     changedFiles: changedPaths.length,
     mediaFiles: changedPaths.filter((path) => path.startsWith("public/media/records/")).length,
-    staticDataChanged: changedPaths.includes("public/data/records.js")
+    staticDataChanged: changedPaths.includes("public/data/records.js"),
+    staticExportRequired: await staticExportNeedsRefresh(),
+    unpushedCommits
   });
 }

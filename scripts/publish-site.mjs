@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { updateStaticCacheTokens } from "./static-cache.mjs";
 
 const root = process.cwd();
 const publishPaths = [
@@ -88,9 +89,9 @@ function listPublishableFiles() {
 }
 
 function ensureNoTrackedEnvFiles() {
-  const trackedEnvFiles = capture("git", ["ls-files", ".env", ".env.local", ".env.production", ".env.development"])
+  const trackedEnvFiles = capture("git", ["ls-files", "--", ".env", ".env.*"])
     .split(/\r?\n/)
-    .filter(Boolean);
+    .filter((file) => file && file !== ".env.example");
 
   if (trackedEnvFiles.length > 0) {
     console.error("\nPublish blocked: environment files are tracked by git:");
@@ -146,7 +147,7 @@ function scanForPrivateMaterial() {
     ["GitHub fine-grained token", /\bgithub_pat_[A-Za-z0-9_]{20,}/],
     ["Google API key", /\bAIza[0-9A-Za-z_-]{20,}/],
     ["Private key block", /-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----/],
-    ["Local Windows user path", /C:\\Users\\lucam\\/i]
+    ["Local user path", /(?:[A-Z]:[\\/]+Users[\\/]+|\/(?:Users|home)\/)[^\\/\s"'<>]+[\\/]/i]
   ];
   const findings = [];
 
@@ -211,7 +212,7 @@ function ensureNoUnexpectedStagedFiles() {
   }
 }
 
-function ensureThereAreArchiveChanges() {
+function hasArchiveChanges() {
   const staged = capture("git", ["diff", "--cached", "--name-only"]);
   const modified = capture("git", ["ls-files", "--modified"]);
   const untracked = capture("git", ["ls-files", "--others", "--exclude-standard"]);
@@ -220,10 +221,12 @@ function ensureThereAreArchiveChanges() {
     .split(/\r?\n/)
     .filter(Boolean);
 
-  if (!changedFiles.some(isArchivePayloadPath)) {
-    console.log("\nNo archive record or media changes to publish. Commit site or Studio code changes separately.");
-    process.exit(0);
-  }
+  return changedFiles.some(isArchivePayloadPath);
+}
+
+function hasUnpushedCommits(branch) {
+  const result = spawnSync(commandFor("git"), ["rev-list", "--count", `origin/${branch}..HEAD`], { cwd: root, encoding: "utf8" });
+  return result.status === 0 && Number(result.stdout.trim()) > 0;
 }
 
 function syncRemoteBranch(branch) {
@@ -244,10 +247,7 @@ function refreshStaticCacheBusters() {
   const indexPath = path.join(root, "index.html");
   const source = readFileSync(indexPath, "utf8");
   const token = Date.now();
-  const next = source
-    .replace(/app\/globals\.css(?:\?v=\d+)?/g, `app/globals.css?v=${token}`)
-    .replace(/public\/data\/records\.js(?:\?v=\d+)?/g, `public/data/records.js?v=${token}`)
-    .replace(/static-app\.js(?:\?v=\d+)?/g, `static-app.js?v=${token}`);
+  const next = updateStaticCacheTokens(source, token);
 
   if (next !== source) {
     writeFileSync(indexPath, next, "utf8");
@@ -291,9 +291,18 @@ ensureNoUnexpectedStagedFiles();
 ensureNoTrackedEnvFiles();
 scanForPrivateMaterial();
 syncSteamIfConfigured(skipSteamSync);
-ensureThereAreArchiveChanges();
-run("node", ["scripts/export-static-records.mjs"]);
-refreshStaticCacheBusters();
+const archiveChanged = hasArchiveChanges();
+const branch = capture("git", ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
+if (!archiveChanged && !hasUnpushedCommits(branch)) {
+  console.log("\nNo archive changes or local commits waiting to publish. Commit site or Studio code changes separately.");
+  process.exit(0);
+}
+if (archiveChanged) {
+  run("node", ["scripts/export-static-records.mjs"]);
+  refreshStaticCacheBusters();
+} else {
+  console.log("\nRetrying local commits that have not reached GitHub.");
+}
 run("node", ["scripts/validate-content.mjs"]);
 run("node", ["scripts/validate-static-shell.mjs"]);
 if (skipTypecheck) {
@@ -313,21 +322,17 @@ if (dryRun) {
   process.exit(0);
 }
 
-run("git", ["add", "-A", "--", ...publishPaths]);
-ensureNoUnexpectedStagedFiles();
-run("git", ["diff", "--cached", "--check"]);
-scanForPrivateMaterial();
+if (archiveChanged) {
+  run("git", ["add", "-A", "--", ...publishPaths]);
+  ensureNoUnexpectedStagedFiles();
+  run("git", ["diff", "--cached", "--check"]);
+  scanForPrivateMaterial();
 
-const stagedDiff = spawnSync(commandFor("git"), ["diff", "--cached", "--quiet"], { cwd: root });
+  const stagedDiff = spawnSync(commandFor("git"), ["diff", "--cached", "--quiet"], { cwd: root });
 
-if (stagedDiff.status === 0) {
-  console.log("\nNo staged changes to publish.");
-  process.exit(0);
+  if (stagedDiff.status !== 0) run("git", ["commit", "-m", message]);
 }
 
-run("git", ["commit", "-m", message]);
-
-const branch = capture("git", ["rev-parse", "--abbrev-ref", "HEAD"]).trim();
 syncRemoteBranch(branch);
 run("git", ["push", "origin", branch]);
 

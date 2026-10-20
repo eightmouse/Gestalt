@@ -48,7 +48,7 @@ type StudioClientProps = {
   initialSection?: StudioSection;
   initialSetupGroup?: SetupGroupId;
   onExit?: () => void;
-  onRecordsChange?: (records: RecordEntry[], selectedRecordId?: string | null) => void;
+  onRecordsChange?: (records: RecordEntry[], selectedRecordId?: string | null, options?: { keepEditorOpen?: boolean }) => void;
 };
 
 type MediaTarget = "body" | "banner" | "headerImage" | "iconImage" | "samples" | "attachments";
@@ -99,6 +99,8 @@ type StudioPendingChanges = {
   changedFiles: number;
   mediaFiles: number;
   staticDataChanged: boolean;
+  staticExportRequired: boolean;
+  unpushedCommits: number;
 };
 
 const studioSections: Array<{
@@ -182,6 +184,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<StudioPendingChanges | null>(null);
   const [pendingChangesError, setPendingChangesError] = useState("");
+  const [archiveRefreshRequired, setArchiveRefreshRequired] = useState(false);
   const [drafts, setDrafts] = useState<StudioDraftMap>(() => readStudioDrafts());
   const bodyDraftRef = useRef(form.body);
   const activeSectionRef = useRef(activeSection);
@@ -191,9 +194,11 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   const formRef = useRef(form);
   const selectedIdRef = useRef(selectedId);
   const embeddedDraftRestoredRef = useRef(false);
+  const pendingRequestRef = useRef(0);
 
   const refreshPendingChanges = useCallback(async () => {
     if (process.env.NODE_ENV !== "development") return;
+    const requestId = ++pendingRequestRef.current;
 
     try {
       const response = await fetch("/api/studio/changes", {
@@ -204,10 +209,13 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       const data = await readStudioResponse(response);
 
       if (!response.ok) throw new Error(data.error || "Could not read pending changes.");
+      if (requestId !== pendingRequestRef.current) return;
 
       setPendingChanges(data as StudioPendingChanges);
+      setArchiveRefreshRequired(data.staticExportRequired === true);
       setPendingChangesError("");
     } catch (error) {
+      if (requestId !== pendingRequestRef.current) return;
       setPendingChangesError(error instanceof Error ? error.message : "Could not read pending changes.");
     }
   }, []);
@@ -413,7 +421,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       throw new StudioRequestError("Save response was missing record details.", data.output);
     }
 
-    return { id: String(data.id), path: String(data.path) };
+    return { id: String(data.id), path: String(data.path), staticExported: data.staticExported !== false, warning: data.warning };
   };
 
   const save = async () => {
@@ -426,72 +434,67 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
     });
     setNotificationOpen(false);
 
+    let savedCount = 0;
     try {
+      const currentForm = { ...formRef.current };
+      const currentBody = bodyDraftRef.current;
+      const currentKey = studioDraftKey(currentForm, selectedIdRef.current, activeSectionRef.current);
       const pendingDrafts = Object.entries(draftsRef.current)
-        .filter(([key, draft]) => key.startsWith("record:") && key !== studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current) && draft.form.originalId)
+        .filter(([key, draft]) => key.startsWith("record:") && key !== currentKey && draft.form.originalId)
         .map(([key, draft]) => ({ key, draft }));
-      const originalRecordId = formRef.current.originalId || selectedIdRef.current;
-      const data = await writeRecord(form, bodyDraftRef.current);
-      const savedId = data.id;
-      const previousDraftKey = studioDraftKey(formRef.current, selectedIdRef.current, activeSectionRef.current);
-      const savedForm = { ...formRef.current, body: bodyDraftRef.current, id: savedId, originalId: savedId };
+      const writes = [{ key: currentKey, draft: { form: currentForm, body: currentBody }, current: true },
+        ...pendingDrafts.map((item) => ({ ...item, current: false }))];
+      let nextRecords = studioRecords;
+      let exportRequired = false;
 
-      if (pendingDrafts.length > 0) {
-        setMessage(`Saved current record. Applying ${pendingDrafts.length} pending draft${pendingDrafts.length === 1 ? "" : "s"} locally...`);
+      for (const item of writes) {
+        const data = await writeRecord(item.draft.form, item.draft.body);
+        const savedForm = { ...item.draft.form, body: item.draft.body, id: data.id, originalId: data.id };
+        savedCount += 1;
+        exportRequired = !data.staticExported;
+        setArchiveRefreshRequired(exportRequired);
 
-        for (const { draft } of pendingDrafts) {
-          await writeRecord(draft.form, draft.body);
+        if (item.current) {
+          formRef.current = savedForm;
+          selectedIdRef.current = data.id;
+          setSelectedId(data.id);
+          setForm(savedForm);
         }
+
+        nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(savedForm, item.draft.body), item.draft.form.originalId || item.draft.form.id);
+        if (savedForm.dashboardActive) {
+          nextRecords = nextRecords.map((record) => record.section === "games" && record.id !== data.id
+            ? { ...record, meta: { ...record.meta, dashboardActive: false } } : record);
+        }
+        setStudioRecords(nextRecords);
+        onRecordsChange?.(nextRecords, selectedIdRef.current);
+        setDrafts((current) => {
+          const next = { ...current };
+          delete next[item.key];
+          delete next[studioRecordDraftKey(data.id)];
+          return next;
+        });
       }
-
-      formRef.current = savedForm;
-      selectedIdRef.current = savedId;
-      setSelectedId(savedId);
-      setForm(savedForm);
-      setStudioRecords((current) => {
-        let next = upsertStudioRecord(current, toRecordPreview(savedForm, bodyDraftRef.current), originalRecordId);
-
-        for (const { draft } of pendingDrafts) {
-          next = upsertStudioRecord(next, toRecordPreview(draft.form, draft.body), draft.form.originalId || draft.form.id);
-        }
-
-        return next;
-      });
-      let nextRecords = upsertStudioRecord(studioRecords, toRecordPreview(savedForm, bodyDraftRef.current), originalRecordId);
-      for (const { draft } of pendingDrafts) {
-        nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(draft.form, draft.body), draft.form.originalId || draft.form.id);
-      }
-      onRecordsChange?.(nextRecords, savedId);
-      setDrafts((current) => {
-        const next = { ...current };
-        delete next[previousDraftKey];
-        delete next[studioRecordDraftKey(savedId)];
-        delete next[studioNewDraftKey(savedForm.section)];
-        for (const { key, draft } of pendingDrafts) {
-          delete next[key];
-          delete next[studioRecordDraftKey(draft.form.id)];
-          delete next[studioRecordDraftKey(draft.form.originalId)];
-        }
-        return next;
-      });
-      setMessage(`Saved ${data.path}. Review pending changes when you're ready.`);
+      setMessage(exportRequired ? "Records saved locally. Refresh the archive before publishing." : `Saved ${savedCount} record${savedCount === 1 ? "" : "s"} locally. Review pending changes when you're ready.`);
       setPublishState({
-        phase: "success",
-        title: "Record saved locally",
-        detail: "MDX and static archive data were refreshed. Review the pending list before publishing."
+        phase: exportRequired ? "error" : "success",
+        title: exportRequired ? "Saved locally; archive refresh needed" : "Records saved locally",
+        detail: exportRequired ? "Your MDX changes are on disk. Use Refresh archive to retry the export without saving again." : "MDX and static archive data were refreshed. Review the pending list before publishing."
       });
-      await refreshPendingChanges();
+      if (exportRequired) setNotificationOpen(true);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : "Save failed.";
+      const failure = error instanceof Error ? error.message : "Save failed.";
+      const detail = savedCount ? `${savedCount} record${savedCount === 1 ? " was" : "s were"} saved. Remaining drafts are retained. ${failure}` : failure;
       setMessage(detail);
       setPublishState({
         phase: "error",
-        title: "Save failed",
+        title: savedCount ? "Some records saved" : "Save failed",
         detail,
         output: error instanceof StudioRequestError ? error.output : undefined
       });
       setNotificationOpen(true);
     } finally {
+      await refreshPendingChanges();
       setSaving(false);
     }
   };
@@ -531,18 +534,21 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       setForm(next);
       setStudioRecords((current) => current.filter((record) => record.id !== form.originalId));
       const nextRecords = studioRecords.filter((record) => record.id !== form.originalId);
-      onRecordsChange?.(nextRecords, null);
+      const exportRequired = data.staticExported === false;
+      onRecordsChange?.(nextRecords, null, { keepEditorOpen: exportRequired });
       setDrafts((current) => {
         const updated = { ...current };
         delete updated[studioRecordDraftKey(form.originalId)];
         return updated;
       });
       setMessage(`Deleted ${data.id}. Review pending changes when you're ready.`);
+      setArchiveRefreshRequired(exportRequired);
       setPublishState({
-        phase: "success",
-        title: "Record deleted locally",
-        detail: "The record file and static archive data were refreshed. Review the pending list before publishing."
+        phase: exportRequired ? "error" : "success",
+        title: exportRequired ? "Deleted locally; archive refresh needed" : "Record deleted locally",
+        detail: exportRequired ? "The record was removed from disk. Use Refresh archive to update the public preview without deleting again." : "The record file and static archive data were refreshed. Review the pending list before publishing."
       });
+      if (exportRequired) setNotificationOpen(true);
       await refreshPendingChanges();
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Delete failed.";
@@ -555,6 +561,24 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       });
       setNotificationOpen(true);
     } finally {
+      setSaving(false);
+    }
+  };
+
+  const refreshArchive = async () => {
+    setSaving(true);
+    setPublishState({ phase: "running", title: "Refreshing archive", detail: "Rebuilding the static archive from saved records." });
+    try {
+      const response = await fetch("/api/studio/export", { method: "POST" });
+      const data = await readStudioResponse(response);
+      if (!response.ok) throw new Error(data.error || "Archive refresh failed.");
+      setArchiveRefreshRequired(false);
+      setPublishState({ phase: "success", title: "Archive refreshed", detail: data.message || "Saved records are ready to publish." });
+    } catch (error) {
+      setArchiveRefreshRequired(true);
+      setPublishState({ phase: "error", title: "Archive refresh failed", detail: error instanceof Error ? error.message : "Retry the archive refresh." });
+    } finally {
+      await refreshPendingChanges();
       setSaving(false);
     }
   };
@@ -586,7 +610,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
     setMessage(successMessage);
     setPublishState({
       phase: "success",
-      title: "Archive published",
+      title: publishData.published === false ? "Nothing to publish" : "Archive published",
       detail: publishData.message || "GitHub received the latest archive update.",
       summary: publishData.summary,
       output: publishData.output
@@ -791,7 +815,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
           </div>
           <div className="studio-actions">
             {embedded && onExit ? <button type="button" disabled={saving} onClick={onExit}>Return to Entry</button> : null}
-            <button type="button" disabled={saving} onClick={save}>{saving ? "Working..." : "Save Record"}</button>
+            <button type="button" disabled={saving || uploading} onClick={save}>{saving ? "Working..." : "Save Record"}</button>
             <button
               className={`studio-notification-button ${publishState ? `is-${publishState.phase}` : ""} ${pendingChangesError ? "is-error" : ""}`}
               type="button"
@@ -806,7 +830,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
           </div>
         </header>
 
-        <div className="studio-os-grid">
+        <div className="studio-os-grid" inert={saving} aria-busy={saving}>
           {!embedded ? <StudioNav activeSection={activeSection} onOpenSection={openSection} /> : null}
 
           {mode === "section" ? (
@@ -897,9 +921,11 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
           changes={pendingChanges}
           error={pendingChangesError}
           notification={publishState}
-          saving={saving}
+          saving={saving || uploading}
+          refreshRequired={archiveRefreshRequired}
           onClose={() => setNotificationOpen(false)}
           onPublish={publishChanges}
+          onRefresh={refreshArchive}
           onReview={reviewPendingRecord}
         />
       ) : null}
@@ -928,6 +954,11 @@ async function readStudioResponse(response: Response): Promise<{
   changedFiles?: number;
   mediaFiles?: number;
   staticDataChanged?: boolean;
+  staticExportRequired?: boolean;
+  staticExported?: boolean;
+  published?: boolean;
+  unpushedCommits?: number;
+  warning?: string;
 }> {
   const text = await response.text();
 
@@ -1112,16 +1143,20 @@ function PublishNotificationPanel({
   error,
   notification,
   saving,
+  refreshRequired,
   onClose,
   onPublish,
+  onRefresh,
   onReview
 }: {
   changes: StudioPendingChanges | null;
   error: string;
   notification: PublishState | null;
   saving: boolean;
+  refreshRequired: boolean;
   onClose: () => void;
   onPublish: () => void;
+  onRefresh: () => void;
   onReview: (id: string) => void;
 }) {
   return (
@@ -1140,7 +1175,7 @@ function PublishNotificationPanel({
           <li key={record.id} data-change={record.change}>
             <span className="studio-pending-kind">{record.change}</span>
             <div><strong>{record.title}</strong><small>{record.section ?? "archive"} / {record.id}</small></div>
-            {record.change === "deleted" ? <i>REMOVAL</i> : <button type="button" onClick={() => onReview(record.id)}>Review</button>}
+            {record.change === "deleted" ? <i>REMOVAL</i> : <button type="button" disabled={saving} onClick={() => onReview(record.id)}>Review</button>}
           </li>
         ))}
         {changes && changes.records.length === 0 ? <li className="studio-pending-empty">No record edits are waiting to publish.</li> : null}
@@ -1151,8 +1186,10 @@ function PublishNotificationPanel({
           {changes.staticDataChanged ? " . Static archive index updated" : ""}
         </p>
       ) : null}
+      {changes && changes.unpushedCommits > 0 ? <p className="studio-pending-assets">{changes.unpushedCommits} local commit{changes.unpushedCommits === 1 ? " is" : "s are"} waiting to reach GitHub.</p> : null}
       <p className="studio-pending-guidance">Unsaved editor changes are not included. Save the record first.</p>
-      <button className="studio-publish-all" type="button" disabled={saving || !changes?.changedFiles} onClick={onPublish}>
+      {refreshRequired ? <button className="studio-publish-all" type="button" disabled={saving} onClick={onRefresh}>Refresh archive</button> : null}
+      <button className="studio-publish-all" type="button" disabled={saving || refreshRequired || !(changes?.changedFiles || changes?.unpushedCommits)} onClick={onPublish}>
         {saving ? "Working..." : "Publish all pending changes"}
       </button>
       {notification ? (
