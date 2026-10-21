@@ -2,7 +2,9 @@ import { appendFile, copyFile, lstat, mkdir, readdir, writeFile } from "node:fs/
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createSteamSnapshotLoader } from "../public/steam-display.mjs";
-import { fetchSteamSnapshot, writeSteamSnapshot } from "./steam-snapshot.mjs";
+import { fetchSteamSnapshot, safeSteamFailure, writeSteamSnapshot } from "./steam-snapshot.mjs";
+
+class SteamPreparationError extends Error {}
 
 const publicFiles = [
   "index.html", "static-app.js", "sw.js", "app/globals.css",
@@ -72,12 +74,16 @@ export async function preparePages({ root, destination, baseUrl, refreshSteam = 
   const previous = await deployedSnapshot(baseUrl, fetchImpl);
   let snapshot = previous;
   let refreshFailed = false;
+  let refreshFailure;
   if (refreshSteam) {
     try {
       snapshot = (await fetchSteamSnapshot({ apiKey, steamId, previous, fetchImpl, now })).snapshot;
-    } catch {
+    } catch (error) {
       refreshFailed = true;
-      if (scheduled) throw new Error("Scheduled Steam refresh failed; the deployed site was not changed.");
+      refreshFailure = safeSteamFailure(error);
+      if (scheduled || !previous) {
+        throw new SteamPreparationError(`Steam refresh failed; no deployment was requested. ${refreshFailure}`);
+      }
       // Content publishing may proceed with the verified last good public snapshot.
     }
   }
@@ -90,7 +96,7 @@ export async function preparePages({ root, destination, baseUrl, refreshSteam = 
   for (const relative of ["public/images", "public/media", "public/audio"]) await copyPublicMedia(root, destination, relative);
   if (snapshot) await writeSteamSnapshot(path.join(destination, "public/data/steam-current.json"), snapshot);
   await writeFile(path.join(destination, ".nojekyll"), "");
-  return { deploy: true, changed, refreshFailed };
+  return { deploy: true, changed, refreshFailed, ...(refreshFailure ? { refreshFailure } : {}) };
 }
 
 async function main() {
@@ -101,12 +107,13 @@ async function main() {
   });
   if (process.env.GITHUB_OUTPUT) await appendFile(process.env.GITHUB_OUTPUT, `deploy=${result.deploy}\n`);
   console.log(result.deploy ? "Public Pages artifact prepared." : "Steam display unchanged; no deployment needed.");
-  if (result.refreshFailed) console.log("Steam refresh unavailable; content deployment retains the verified public fallback.");
+  if (result.refreshFailed) console.warn(`::warning::Steam refresh unavailable; retained the verified public fallback. ${result.refreshFailure}`);
+  else console.log(process.env.STEAM_REFRESH_ENABLED === "true" ? "Steam refresh succeeded; public snapshot verified." : "Steam refresh disabled; no Steam API request was made.");
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
-  main().catch(() => {
-    console.error("Pages preparation failed. No deployment was requested; check public assets, Pages URL and Steam configuration.");
+  main().catch((error) => {
+    console.error(error instanceof SteamPreparationError ? error.message : "Pages preparation failed. No deployment was requested; check public assets, Pages URL and Steam configuration.");
     process.exitCode = 1;
   });
 }

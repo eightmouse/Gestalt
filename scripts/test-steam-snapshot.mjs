@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fetchSteamSnapshot, publicSnapshot, readSteamSnapshot, selectLastPlayed, writeSteamSnapshot } from "./steam-snapshot.mjs";
+import { fetchSteamSnapshot, publicSnapshot, readSteamSnapshot, safeSteamFailure, selectLastPlayed, writeSteamSnapshot } from "./steam-snapshot.mjs";
 
 const now = new Date("2026-10-20T12:00:00.000Z");
 const played = Math.floor(now.getTime() / 1000) - 3600;
@@ -100,6 +100,24 @@ assert.equal(publicSnapshot({ ...first.snapshot, updatedAt: "not a date" }), nul
 const failed = api();
 await assert.rejects(fetchSteamSnapshot({ apiKey: "", steamId: id, fetchImpl: failed.fetchImpl }));
 assert.equal(failed.requests.length, 0);
+for (const [apiKey, steamId, expected] of [["", id, "STEAM_API_KEY is missing"], [key, "", "STEAM_ID is missing"], [key, "STEAM_ID=private-value", "STEAM_ID must be"]]) {
+  await assert.rejects(fetchSteamSnapshot({ apiKey, steamId, fetchImpl: failed.fetchImpl }), (error) => safeSteamFailure(error).includes(expected));
+}
+assert.equal(failed.requests.length, 0, "Configuration diagnostics do not send incomplete credentials");
+for (const [status, expected] of [[401, "HTTP 401/403"], [403, "HTTP 401/403"], [429, "HTTP 429"], [500, "Steam request failed"]]) {
+  await assert.rejects(fetchSteamSnapshot({ apiKey: key, steamId: id, fetchImpl: async () => new Response(`private ${key} ${id}`, { status }) }), (error) => {
+    const reason = safeSteamFailure(error);
+    assert.ok(!reason.includes(key) && !reason.includes(id) && !reason.includes("https://"));
+    return reason.includes(expected);
+  });
+}
+for (const error of [new Error(`https://private.invalid/?key=${key}&id=${id}`), { name: "SteamSnapshotError", code: `injected ${key}`, message: key }]) {
+  const reason = safeSteamFailure(error);
+  assert.ok(!reason.includes(key) && !reason.includes(id) && !reason.includes("https://"), "Unknown upstream details never enter logs");
+}
+const trimmed = api();
+await fetchSteamSnapshot({ apiKey: `  ${key}\n`, steamId: id, now, fetchImpl: trimmed.fetchImpl });
+assert.equal(trimmed.requests[0].searchParams.get("key"), key, "Outer copy/paste whitespace is removed without logging the key");
 
 const dir = await mkdtemp(path.join(os.tmpdir(), "gestalt-steam-test-"));
 try {

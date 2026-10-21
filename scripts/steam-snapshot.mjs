@@ -6,6 +6,32 @@ import { publicSnapshot } from "../public/steam-display.mjs";
 
 export { publicSnapshot };
 
+const failureMessages = {
+  missingKey: "STEAM_API_KEY is missing. Add it as a repository Actions secret, not an environment secret or variable.",
+  missingIdentity: "STEAM_ID is missing. Add it as a repository Actions secret, not an environment secret or variable.",
+  invalidIdentity: "STEAM_ID must be a SteamID64, vanity name, or HTTPS Steam profile URL. Use the value only, without an assignment or surrounding quotes.",
+  unresolvedProfile: "Steam profile could not be resolved. Check the STEAM_ID secret value.",
+  libraryUnavailable: "Steam library is unavailable. Check public Game details visibility for the configured profile.",
+  noLastPlayed: "Steam returned no usable last-played game. Check Game details visibility and recent Steam play history.",
+  rejected: "Steam rejected the request (HTTP 401/403). Check that the API key secret contains only the current key value.",
+  rateLimited: "Steam rate-limited the request (HTTP 429). Retry later.",
+  unavailable: "Steam request failed or returned an unreadable response. Check connectivity or retry later."
+};
+
+class SteamSnapshotError extends Error {
+  constructor(code) {
+    super(failureMessages[code]);
+    this.name = "SteamSnapshotError";
+    this.code = code;
+  }
+}
+
+export function safeSteamFailure(error) {
+  return error instanceof SteamSnapshotError && Object.hasOwn(failureMessages, error.code)
+    ? failureMessages[error.code]
+    : "Steam refresh failed. Check repository secrets, profile visibility and connectivity; private upstream details were suppressed.";
+}
+
 function positiveInteger(value) {
   return Number.isSafeInteger(value) && value > 0;
 }
@@ -24,7 +50,7 @@ function achievementCounts(value) {
 
 export function selectLastPlayed(games, now = new Date()) {
   if (!Array.isArray(games)) {
-    throw new Error("Steam library is unavailable; the existing snapshot was kept.");
+    throw new SteamSnapshotError("libraryUnavailable");
   }
 
   const latest = games.filter((game) => game && positiveInteger(game.appid) && game.appid <= 0xffffffff
@@ -33,7 +59,7 @@ export function selectLastPlayed(games, now = new Date()) {
     .sort((a, b) => b.rtime_last_played - a.rtime_last_played || a.appid - b.appid)[0];
 
   if (!latest) {
-    throw new Error("No usable last-played Steam game; the existing snapshot was kept.");
+    throw new SteamSnapshotError("noLastPlayed");
   }
 
   return latest;
@@ -60,7 +86,7 @@ function steamIdentity(value) {
     return { vanity: clean };
   }
 
-  throw new Error("STEAM_ID must be a SteamID64, vanity name, or HTTPS Steam profile URL.");
+  throw new SteamSnapshotError("invalidIdentity");
 }
 
 async function steamJson(endpoint, parameters, apiKey, fetchImpl) {
@@ -69,18 +95,21 @@ async function steamJson(endpoint, parameters, apiKey, fetchImpl) {
 
   try {
     const response = await fetchImpl(url, { signal: AbortSignal.timeout(15_000), redirect: "error" });
-    if (!response.ok) throw new Error();
+    if (!response.ok) {
+      throw new SteamSnapshotError([401, 403].includes(response.status) ? "rejected" : response.status === 429 ? "rateLimited" : "unavailable");
+    }
     return await response.json();
-  } catch {
+  } catch (error) {
     // Upstream exceptions can contain a credential-bearing request URL.
-    throw new Error("Steam request unavailable; no private request details were logged.");
+    if (error instanceof SteamSnapshotError) throw error;
+    throw new SteamSnapshotError("unavailable");
   }
 }
 
 export async function fetchSteamSnapshot({ apiKey, steamId, previous, fetchImpl = fetch, now = new Date() }) {
-  if (typeof apiKey !== "string" || !apiKey.trim() || typeof steamId !== "string" || !steamId.trim()) {
-    throw new Error("STEAM_API_KEY and STEAM_ID are required; no snapshot was changed.");
-  }
+  if (typeof apiKey !== "string" || !apiKey.trim()) throw new SteamSnapshotError("missingKey");
+  if (typeof steamId !== "string" || !steamId.trim()) throw new SteamSnapshotError("missingIdentity");
+  apiKey = apiKey.trim();
 
   if (!(now instanceof Date) || !Number.isFinite(now.getTime())) throw new Error("Invalid snapshot date.");
   const identity = steamIdentity(steamId);
@@ -89,7 +118,7 @@ export async function fetchSteamSnapshot({ apiKey, steamId, previous, fetchImpl 
   if (!id) {
     const resolved = await steamJson("ISteamUser/ResolveVanityURL", { vanityurl: identity.vanity }, apiKey, fetchImpl);
     if (!/^\d{17}$/.test(resolved?.response?.steamid || "") || resolved.response.success !== 1) {
-      throw new Error("Steam profile could not be resolved; the existing snapshot was kept.");
+      throw new SteamSnapshotError("unresolvedProfile");
     }
     id = resolved.response.steamid;
   }
@@ -169,8 +198,8 @@ async function main() {
 }
 
 if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
-  main().catch(() => {
-    console.error("Steam snapshot refresh failed. The existing snapshot was kept; check configuration, profile visibility, and connectivity.");
+  main().catch((error) => {
+    console.error(safeSteamFailure(error));
     process.exitCode = 1;
   });
 }

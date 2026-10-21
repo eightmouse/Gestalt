@@ -73,8 +73,16 @@ try {
   await assert.rejects(preparePages(failed), (error) => !error.message.includes(secretKey));
   assert.equal(existsSync(failed.destination), false, "A failed scheduled request cannot replace a good site");
   const fallback = config({ ...credentials, fetchImpl: mockFetch({ steamFailure: true }).fetchImpl });
-  assert.equal((await preparePages(fallback)).refreshFailed, true);
+  const fallbackResult = await preparePages(fallback);
+  assert.equal(fallbackResult.refreshFailed, true);
+  assert.ok(fallbackResult.refreshFailure.includes("Steam request failed"));
+  assert.ok(!fallbackResult.refreshFailure.includes(secretKey) && !fallbackResult.refreshFailure.includes(secretId));
   assert.deepEqual(JSON.parse(await readFile(path.join(fallback.destination, "public/data/steam-current.json"), "utf8")), previous);
+  for (const extra of [{ fetchImpl: mockFetch({ deployed: null, steamFailure: true }).fetchImpl }, { apiKey: "", fetchImpl: mockFetch({ deployed: null }).fetchImpl }]) {
+    const firstFailure = config({ ...credentials, ...extra });
+    await assert.rejects(preparePages(firstFailure), (error) => error.message.includes("no deployment was requested") && !error.message.includes(secretKey) && !error.message.includes(secretId));
+    assert.equal(existsSync(firstFailure.destination), false, "The first failed Steam sync must not masquerade as a green deployment");
+  }
   for (const fetchImpl of [mockFetch({ publicFailure: true }).fetchImpl, async () => Response.json({ schemaVersion: 999 }), async () => new Response("<html>fallback</html>")]) {
     const unsafe = config({ fetchImpl });
     await assert.rejects(preparePages(unsafe));
