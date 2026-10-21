@@ -1,0 +1,77 @@
+name: Publish Gestalt Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 * * * *'
+
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: >-
+      github.ref == 'refs/heads/main' && vars.GESTALT_PAGES_ENABLED == 'true' &&
+      (github.event_name != 'schedule' || vars.STEAM_REFRESH_ENABLED == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      deploy: ${{ steps.prepare.outputs.deploy }}
+    steps:
+      - name: Check out current main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Read Pages configuration
+        id: pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Check dependency-free runtime syntax
+        run: |
+          node --check static-app.js
+          node --check sw.js
+          node --check public/data/records.js
+          node --check public/note-inline.js
+          node --check public/steam-display.mjs
+          node --check scripts/prepare-pages.mjs
+          node scripts/validate-content.mjs
+          node scripts/test-steam-snapshot.mjs
+          node scripts/test-pages-preparation.mjs
+      - name: Prepare public site and optional Steam snapshot
+        id: prepare
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          STEAM_REFRESH_ENABLED: ${{ vars.STEAM_REFRESH_ENABLED }}
+          STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
+          STEAM_ID: ${{ secrets.STEAM_ID }}
+        run: node scripts/prepare-pages.mjs
+      - name: Upload only the public artifact
+        if: steps.prepare.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: .pages-site
+          retention-days: 1
+
+  deploy:
+    needs: prepare
+    if: needs.prepare.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy public site
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

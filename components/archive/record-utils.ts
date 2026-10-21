@@ -85,7 +85,7 @@ export function splitUpdateIndex(body: string): { mainBody: string; updates: str
   let endIndex = lines.length;
 
   for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (lines[index].startsWith("## ") || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
+    if (/^#{1,3} /.test(lines[index]) || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
       endIndex = index;
       break;
     }

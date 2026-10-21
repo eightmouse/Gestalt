@@ -42,9 +42,11 @@ function text(value) {
 
 export function resolveCurrentGame(value, records) {
   const snapshot = publicSnapshot(value);
-  if (snapshot) {
+  const pinned = records.find((entry) => field(entry, "dashboardActive") === true);
+  // A pin selects the game, not the age of its stats. Never borrow another game's data.
+  if (snapshot && (!pinned || Number(field(pinned, "steamAppId")) === snapshot.game.appId)) {
     const game = snapshot.game;
-    const record = records.find((entry) => Number(field(entry, "steamAppId")) === game.appId);
+    const record = pinned ?? records.find((entry) => Number(field(entry, "steamAppId")) === game.appId);
     const date = new Date(game.lastPlayedAt);
     return {
       source: "steam",
@@ -59,7 +61,7 @@ export function resolveCurrentGame(value, records) {
     };
   }
 
-  const record = records.find((entry) => field(entry, "dashboardActive") === true)
+  const record = pinned
     ?? records.find((entry) => entry.status === "Playing") ?? records[0];
   if (!record) return null;
   return {

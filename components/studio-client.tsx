@@ -1,11 +1,12 @@
 "use client";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { Bell, Heading2, Heading3, List, Quote } from "lucide-react";
+import { Bell, Bold, Check, Code, Heading1, Heading2, Heading3, Italic, Link, List, Quote, X } from "lucide-react";
 import "@/app/studio/studio.css";
 import { recordDisplaySummary } from "@/components/archive/record-utils";
 import { compareSectionRecords } from "@/lib/log-archive";
-import { formatNoteSelection, type NoteFormat } from "@/lib/note-formatting";
+import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
+import { formatNoteSelection, insertNoteLink, type NoteFormat } from "@/lib/note-formatting";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
 type StudioSection = Exclude<RecordSection, "system">;
@@ -38,6 +39,8 @@ type StudioForm = {
   technicalStack: string;
   recommendation: string;
   dashboardActive: boolean;
+  gamePlacement: "session" | "past" | "";
+  gameActivity: "active" | "inactive" | "";
   steamAppId: string;
   playtime: string;
   lastPlayed: string;
@@ -1702,23 +1705,17 @@ function StudioSectionPage({
 
 function StudioSectionRecordButton({ onEdit, record }: { onEdit: (id: string) => void; record: RecordEntry }) {
   return (
-    <button className="section-record" data-state={studioRecordStateKey(record.status)} type="button" onClick={() => onEdit(record.id)}>
+    <button className="section-record" data-state={studioRecordStateKey(gameActivityLabel(record))} type="button" onClick={() => onEdit(record.id)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
       <span>{record.section === "logs" ? recordDisplaySummary(record) : record.summary}</span>
-      <i>{record.status} . {formatStudioDate(record.updated)}</i>
+      <i>{gameActivityLabel(record)} . {formatStudioDate(record.updated)}</i>
     </button>
   );
 }
 
 function studioRecordStateKey(status: string): string {
   return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
-}
-
-const sessionGameStatuses = new Set(["active", "in progress", "on hold", "paused", "planning", "playing"]);
-
-function isSessionGameStatus(status: string): boolean {
-  return sessionGameStatuses.has(status.toLowerCase());
 }
 
 function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[]): Array<{ records: RecordEntry[]; title: string }> | null {
@@ -1733,8 +1730,8 @@ function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[
 
   if (section === "games") {
     return [
-      { title: "SESSION LOGS", records: records.filter((record) => isSessionGameStatus(record.status)) },
-      { title: "PAST LOGS", records: records.filter((record) => !isSessionGameStatus(record.status)) }
+      { title: "SESSION LOGS", records: records.filter((record) => gameLogPlacement(record) === "session") },
+      { title: "PAST LOGS", records: records.filter((record) => gameLogPlacement(record) === "past") }
     ];
   }
 
@@ -1987,7 +1984,7 @@ function Inspector({
   saving: boolean;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
-  const gamePlacement = isSessionGameStatus(form.status) ? "session" : "past";
+  const gamePlacement = gameLogPlacement(form);
 
   return (
     <div className="studio-inspector">
@@ -2003,14 +2000,9 @@ function Inspector({
             <select
               value={gamePlacement}
               onChange={(event) => {
-                if (event.target.value === "session") {
-                  onUpdate("status", isSessionGameStatus(form.status) ? form.status : "Playing");
-                  return;
-                }
-
-                onUpdate("status", "Completed");
-
-                if (form.dashboardActive) {
+                const placement = event.target.value === "past" ? "past" : "session";
+                onUpdate("gamePlacement", placement);
+                if (placement === "past" && form.dashboardActive) {
                   onUpdate("dashboardActive", false);
                 }
               }}
@@ -2018,11 +2010,20 @@ function Inspector({
               <option value="session">Session Logs</option>
               <option value="past">Past Logs</option>
             </select>
-            <small>Session Logs are still alive. Past Logs are completed, filed, or archived.</small>
           </label>
-          <label className="studio-check">
+          {gamePlacement === "session" ? (
+            <label className="studio-placement-field">
+              Session activity
+              <select value={form.gameActivity || ""} onChange={(event) => onUpdate("gameActivity", event.target.value === "active" ? "active" : event.target.value === "inactive" ? "inactive" : "")}>
+                <option value="">Record status ({form.status})</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+          ) : null}
+          <label className="studio-check" title="Override automatic Steam selection with this game. Uncheck to follow the latest Steam game.">
             <input type="checkbox" checked={form.dashboardActive} onChange={(event) => onUpdate("dashboardActive", event.target.checked)} />
-            <span>Dashboard active game</span>
+            <span>Pin as Current Game</span>
           </label>
           <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
         </>
@@ -2102,6 +2103,8 @@ function NoteStackEditor({
   const noteSelectionsRef = useRef<Record<number, { end: number; start: number }>>({});
   const noteInputsRef = useRef<Record<number, HTMLTextAreaElement | null>>({});
   const pendingFormatRef = useRef<{ index: number; start: number; end: number; scrollTop: number } | null>(null);
+  const [formatMessage, setFormatMessage] = useState<{ index: number; text: string } | null>(null);
+  const [linkDraft, setLinkDraft] = useState<{ index: number; start: number; end: number; url: string; body: string } | null>(null);
 
   useLayoutEffect(() => {
     const pending = pendingFormatRef.current;
@@ -2124,6 +2127,8 @@ function NoteStackEditor({
     setNotes(parseStudioNotes(value));
     setUpdateIndex(parts.updateIndex);
     setOpenIndex(0);
+    setLinkDraft(null);
+    setFormatMessage(null);
   }, [value]);
 
   const commitNotes = (nextNotes: StudioNote[]) => {
@@ -2135,6 +2140,7 @@ function NoteStackEditor({
   };
 
   const addNote = () => {
+    setLinkDraft(null);
     commitNotes([
       {
         title: new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note",
@@ -2164,7 +2170,29 @@ function NoteStackEditor({
     const input = noteInputsRef.current[index];
     if (!input) return;
     const result = formatNoteSelection(notes[index].body, input.selectionStart, input.selectionEnd, format);
+    setFormatMessage("error" in result && result.error ? { index, text: result.error } : null);
+    if ("error" in result && result.error) return;
     if (result.body === notes[index].body) return;
+    pendingFormatRef.current = { index, start: result.start, end: result.end, scrollTop: input.scrollTop };
+    updateNote(index, "body", result.body);
+  };
+
+  const addLink = () => {
+    if (!linkDraft) return;
+    const { index, start, end, url } = linkDraft;
+    const input = noteInputsRef.current[index];
+    if (!input) return;
+    if (notes[index]?.body !== linkDraft.body) {
+      setFormatMessage({ index, text: "The note changed while adding this link. Cancel and select the text again." });
+      return;
+    }
+    const result = insertNoteLink(notes[index].body, start, end, url);
+    if (result.error) {
+      setFormatMessage({ index, text: result.error });
+      return;
+    }
+    setFormatMessage(null);
+    setLinkDraft(null);
     pendingFormatRef.current = { index, start: result.start, end: result.end, scrollTop: input.scrollTop };
     updateNote(index, "body", result.body);
   };
@@ -2231,6 +2259,8 @@ function NoteStackEditor({
   };
 
   const removeNote = (index: number) => {
+    setLinkDraft(null);
+    setFormatMessage(null);
     const nextNotes = notes.filter((_, noteIndex) => noteIndex !== index);
     commitNotes(nextNotes);
     setOpenIndex(Math.max(0, Math.min(openIndex, nextNotes.length - 1)));
@@ -2264,8 +2294,12 @@ function NoteStackEditor({
                 <p className="studio-note-hint">Drop screenshots inside the note body to insert them at the cursor.</p>
                 <div className="studio-note-format-tools" role="group" aria-label="Note formatting">
                   {([
-                    { format: "heading", label: "Heading", Icon: Heading2 },
-                    { format: "subheading", label: "Subheading", Icon: Heading3 },
+                    { format: "bold", label: "Bold", Icon: Bold },
+                    { format: "italic", label: "Italic", Icon: Italic },
+                    { format: "code", label: "Inline code", Icon: Code },
+                    { format: "heading1", label: "Heading 1", Icon: Heading1 },
+                    { format: "heading", label: "Heading 2", Icon: Heading2 },
+                    { format: "subheading", label: "Heading 3", Icon: Heading3 },
                     { format: "list", label: "Bullet list", Icon: List },
                     { format: "quote", label: "Quote", Icon: Quote }
                   ] as const).map(({ format, label, Icon }) => (
@@ -2273,7 +2307,24 @@ function NoteStackEditor({
                       <Icon size={17} aria-hidden="true" />
                     </button>
                   ))}
+                  <button type="button" aria-label="Add link" title="Add link" onMouseDown={(event) => event.preventDefault()} onClick={() => {
+                    const input = noteInputsRef.current[index];
+                    if (!input) return;
+                    setFormatMessage(null);
+                    setLinkDraft({ index, start: input.selectionStart, end: input.selectionEnd, url: "", body: notes[index].body });
+                  }}><Link size={17} aria-hidden="true" /></button>
                 </div>
+                {linkDraft?.index === index ? (
+                  <div className="studio-note-link-editor">
+                    <input autoFocus type="url" aria-label="Link destination" placeholder="https://" value={linkDraft.url} onChange={(event) => setLinkDraft({ ...linkDraft, url: event.target.value })} onKeyDown={(event) => {
+                      if (event.key === "Enter") { event.preventDefault(); addLink(); }
+                      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setLinkDraft(null); noteInputsRef.current[index]?.focus({ preventScroll: true }); }
+                    }} />
+                    <button type="button" aria-label="Insert link" title="Insert link" onClick={addLink}><Check size={17} aria-hidden="true" /></button>
+                    <button type="button" aria-label="Cancel link" title="Cancel link" onClick={() => { setLinkDraft(null); setFormatMessage(null); noteInputsRef.current[index]?.focus({ preventScroll: true }); }}><X size={17} aria-hidden="true" /></button>
+                  </div>
+                ) : null}
+                {formatMessage?.index === index ? <p className="studio-note-format-message" role="status">{formatMessage.text}</p> : null}
                 <div className="studio-note-media-tools" aria-label="Apply style to the last image in this note">
                   {["wide", "banner", "small", "top", "bottom", "contain", "no-caption"].map((token) => (
                     <button
@@ -2301,6 +2352,15 @@ function NoteStackEditor({
                       end: event.currentTarget.selectionEnd,
                       start: event.currentTarget.selectionStart
                     };
+                  }}
+                  onKeyDown={(event) => {
+                    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+                    const key = event.key.toLowerCase();
+                    if (key === "b" || key === "i") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      formatNote(index, key === "b" ? "bold" : "italic");
+                    }
                   }}
                   onDragOver={(event) => event.preventDefault()}
                   onDrop={(event) => dropMediaIntoNote(event, index)}
@@ -2598,6 +2658,8 @@ function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "
     technicalStack: "",
     recommendation: "",
     dashboardActive: false,
+    gamePlacement: section === "games" ? "session" : "",
+    gameActivity: section === "games" ? "active" : "",
     steamAppId: "",
     playtime: "",
     lastPlayed: "",
@@ -2670,6 +2732,8 @@ function fromRecord(record?: RecordEntry): StudioForm {
     technicalStack: metaTextBlock(record.meta.technicalStack),
     recommendation: metaTextBlock(record.meta.recommendation),
     dashboardActive: record.meta.dashboardActive === true,
+    gamePlacement: record.section === "games" ? gameLogPlacement(record) : "",
+    gameActivity: gameActivityValue(record),
     steamAppId: typeof record.meta.steamAppId === "number" || typeof record.meta.steamAppId === "string" ? String(record.meta.steamAppId) : "",
     playtime: typeof record.meta.playtime === "string" ? record.meta.playtime : "",
     lastPlayed: typeof record.meta.lastPlayed === "string" ? record.meta.lastPlayed : "",
@@ -2705,7 +2769,14 @@ function readStudioDrafts(): StudioDraftMap {
   try {
     const raw = window.localStorage.getItem(studioDraftStorageKey);
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed as StudioDraftMap : {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(Object.entries(parsed as StudioDraftMap)
+      .filter(([, draft]) => draft && draft.form && typeof draft.form.status === "string")
+      .map(([key, draft]) => [key, { ...draft, form: {
+        ...draft.form,
+        gamePlacement: draft.form.section === "games" ? gameLogPlacement(draft.form) : "",
+        gameActivity: gameActivityValue(draft.form)
+      } }]));
   } catch {
     return {};
   }
@@ -3045,6 +3116,8 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
       samples: mediaListFromText(form.samples),
       attachments: mediaListFromText(form.attachments),
       dashboardActive: form.dashboardActive,
+      gamePlacement: form.gamePlacement || (form.section === "games" ? gameLogPlacement(form) : ""),
+      gameActivity: form.gameActivity || "",
       hardware: form.hardware,
       technicalStack: form.technicalStack,
       recommendation: form.recommendation,

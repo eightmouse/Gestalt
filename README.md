@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.39.1-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.44.2-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -9,68 +9,39 @@
 
 Gestalt is my personal archive / blog / portfolio-ish thing.
 
-I wanted a place for the stuff that usually ends up scattered around notes: project progress, game thoughts, setup changes, small logs, things that broke, things that worked, and whatever else is worth keeping around.
+A place for the stuff that usually ends up scattered around notes: project progress, game thoughts, setup changes, small logs, things that broke, things that worked, and whatever else is worth keeping around.
 
-I use Obsidian a lot, godsend, bless the creators, but I wanted something more public-facing for a while. Not a standard blog layout, more like a little personal operating system where every entry feels like opening a record.
+Obsidian gets used a lot, godsend, bless the creators, but I've wanted somewhere to share some of that stuff for a while. Not a standard blog layout, more like a little personal operating system where opening an entry feels like digging into a record.
 
-Current public version: `v1.39.1`.
+Current version: `v1.44.2`.
 
-## What It Is
+## What's In Here
 
-Gestalt is built around records instead of traditional posts.
+Records rather than traditional posts, split into a few places:
 
-- **Dashboard** is the current snapshot: active projects, current game, weather, recent activity, and a small memory state panel.
-- **Projects** is for things I am building, polishing, pausing, or slowly resurrecting from the archive.
-- **Games** is for play logs, notes, thoughts, progress, screenshots, and eventually recommendations.
-- **Logs** is for shorter updates and general rambles that do not belong to one specific project or game.
-- **Setup** is for hardware, software, tools, and whatever I am using day to day.
-- **Archive** is for older records that I still want visible but no longer treat as active.
+- **Dashboard:** a snapshot of what I am up to, with projects, my current game, weather, recent activity, and a small memory state panel.
+- **Projects:** things I'm building, polishing, pausing, or slowly resurrecting from the archive.
+- **Games:** my play logs, thoughts, progress, screenshots, and recommendations.
+- **Logs:** shorter updates and general rambles that do not belong to one specific project or game.
+- **Setup:** my hardware, software, tools, and whatever I am using day to day.
+- **Archive:** older records worth keeping around, without leaving everything in the active sections forever.
 
-The whole thing is meant to feel calm, readable, slightly weird, and very much mine. Archival interface, not fake hacker dashboard~
+The idea is something calm, readable, slightly weird, and very much mine. Archival interface, not fake hacker dashboard~
 
-## Stack
+## Under The Hood
 
 - **Next.js App Router** for the local development/studio side.
-- **TypeScript** because the content shape needs guardrails.
+- **TypeScript** to catch mistakes in how I handle records and interface state.
 - **Framer Motion** for the small interactions and transitions.
 - **Zustand** for lightweight interface state.
-- **MDX-style content files** for records, so entries stay readable and easy to edit.
-- **Static export shell** for GitHub Pages, so the public site is just static files.
+- **MDX-style content files** to keep my entries readable and easy to edit.
+- **Static export shell** to publish the public site as static files on GitHub Pages.
 - **Steam Web API integration** for game playtime / achievement sync where it makes sense.
 
-The public site is hosted through GitHub Pages. The editing studio only runs locally, so visitors cannot edit entries from the live site.
+The public archive lives on GitHub Pages; my editing Studio stays local. Nothing to edit on the live site, just stuff to read.
 
-## Supported Platforms
+## Desktop And Handheld
 
-Gestalt is designed for modern desktop browsers first:
+Desktop comes first, with Firefox, Chrome, and Edge in mind.
 
-- Firefox
-- Chrome
-- Edge
-
-There is also a mobile layout, treated as a separate handheld field mode instead of just squishing the desktop UI into a phone screen. It is intentionally simpler, but it should still carry the same vibe.
-
-## Editing
-
-I edit records locally through the Studio view, then publish the generated static site to GitHub Pages.
-
-On this machine, double-click the local `Gestalt` shortcut to open the archive and Studio. In a fresh clone, double-click `Gestalt.cmd` instead. The launcher does not install packages or publish anything. Its console stays open while Gestalt is running; press `Ctrl+C` or close the launcher window to stop it. If dependencies have not been installed yet, run `corepack pnpm install --ignore-scripts` once from the project folder, then start the launcher again. The local shortcut uses the same mark as the site favicon; `Gestalt.ico` is included if you create a matching shortcut in another checkout. The machine-specific `.lnk` stays local.
-
-Useful commands:
-
-```powershell
-corepack pnpm install --ignore-scripts
-corepack pnpm run dev
-corepack pnpm run check
-corepack pnpm run site:publish -- --message "Update archive"
-```
-
-The publish command refreshes the static data, validates the shell/content, runs the safety checks, then commits and pushes archive records and their media. It will not scoop up unrelated source changes. Commit site or Studio code changes separately.
-
-## Notes
-
-This repo is public mostly because I like keeping the project backed up and visible. It is not really meant to be a general app for everyone, but if someone wants to fork it and make their own weird little archive, go for it.
-
-Currently being extra careful because of the npm ordeal, so dependencies are pinned and installs are kept boring on purpose.
-
-For development context and where we left things, see the [project checkpoint](docs/PROJECT_CHECKPOINT.md) and [roadmap](docs/ROADMAP.md).
+Mobile has its own handheld field mode instead of just squishing the desktop UI into a phone screen. A little simpler, same Gestalt vibe. Still building and polishing as things come to mind~

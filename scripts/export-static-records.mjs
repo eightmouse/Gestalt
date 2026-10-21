@@ -121,6 +121,8 @@ for (const filename of filenames) {
     progress: Number(data.progress) || 0,
     priority: Number(data.priority) || 99,
     dashboardActive: data.dashboardActive === true,
+    gamePlacement: data.gamePlacement === "session" || data.gamePlacement === "past" ? data.gamePlacement : "",
+    gameActivity: data.gameActivity === "active" || data.gameActivity === "inactive" ? data.gameActivity : "",
     steamAppId: data.steamAppId,
     playtime: data.playtime,
     lastPlayed: data.lastPlayed,

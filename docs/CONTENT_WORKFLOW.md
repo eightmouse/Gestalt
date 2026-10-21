@@ -30,6 +30,12 @@ For same-day historical entries whose relative order is known but exact times ar
 
 ## Game Note Stack
 
+Game records have independent placement and optional session activity. In Studio's Inspector, `Log placement` chooses `Session Logs` or `Past Logs`; it does not rewrite Status, completion, or existing notes. `Session activity` offers `Active`, `Inactive`, or the existing record status. Inactive games stay in Session Logs. Moving a game to Past Logs clears its dashboard pin, but does not declare it completed. Move the same record back for DLC without creating a duplicate.
+
+`Pin as Current Game` overrides automatic Steam game selection using the existing `dashboardActive` field. Only one saved game is pinned at a time. Matching Steam snapshot data can refresh its stats, but another game's snapshot never replaces its title or supplies its stats. Uncheck and save to follow the latest Steam game when a snapshot is available. Without that optional data, the dashboard still falls back to an authored Playing/first game. Hosted periodic refresh is not enabled yet; see [Steam snapshot status](STEAM_SNAPSHOT.md).
+
+Saved game frontmatter uses `gamePlacement: "session"` or `"past"`, with optional `gameActivity: "active"` or `"inactive"`. Without activity, the authored Status stays visible. An explicit activity appears on Session cards and alongside Status in the entry header; Past cards use the authored Status. Recommendation/completion fields remain authored independently. Legacy files keep their existing status-based placement until saved; Studio then stores the placement so later status/note edits cannot move the record accidentally. Older drafts remain readable. Steam stats do not change these fields. No subscription/account tracking is added.
+
 Keep one record per game. Add the newest note at the top of the body, with an optional banner image first:
 
 ```md
@@ -45,6 +51,10 @@ Older note content.
 ```
 
 Use `:::note ... :::` for each game note. The Notes page turns each note into an expandable record, and the record sidebar can search notes by title or date.
+
+## Note Headings
+
+The H1, H2 and H3 toolbar icons write `# `, `## ` and `### ` respectively. Selecting an existing heading and choosing another level replaces its marker; choosing the same level removes it. Inline formatting and media stay intact. Headings are note-relative, rendered as document levels 3/4/5 beneath Gestalt's existing page and record titles, so adding H1 text does not create another page-level title. Reading sizes are 20/17/15px with wrapping for long names and clearer H3 contrast.
 
 ## Entry Animation Preference
 
@@ -68,13 +78,19 @@ Studio can:
 - insert uploaded media into the note body
 - save records back into `content/records/`
 
-Each open note has compact heading, subheading, bullet-list and quote buttons. They format the current line or selected lines and toggle the same style back off. Standalone media lines are preserved. Inline bold/italic/link controls are deliberately withheld until the public readers support them; the toolbar does not enable raw HTML or change the content format.
+Each open note has compact heading, subheading, bullet-list, quote, bold, italic, inline-code and link buttons. Block controls format the current or selected lines; inline controls use the selected text, with a replaceable placeholder when nothing is selected. Bold/italic also support the usual Ctrl/Cmd+B and Ctrl/Cmd+I shortcuts within the note body. Selection, focus and scroll position are restored after formatting.
+
+Links use a small inline destination field, with confirm/cancel controls and Enter/Escape support. Only valid absolute HTTP/HTTPS URLs without embedded credentials are accepted. If the note body changes while the link field is open, cancel and reselect before inserting; stale offsets are never applied to the new text. Link labels can contain bold/italic, but not brackets or line breaks. Public links open in a new tab without sharing a referrer or granting opener access.
+
+Both public readers support `**bold**`, `*italic*`, combined/nested styles, backtick code spans and `[label](https://example.test/)` links. Code is literal; raw HTML remains escaped. This is a bounded inline subset, not a full Markdown engine: underscore emphasis, underline, arbitrary HTML, reference-style links and nested links are not added. Existing media lines, captions and full-original tokens remain unchanged. Very long or deeply nested lines safely fall back to literal text rather than unbounded parsing.
 
 `Save Record` writes locally and refreshes the static data. If the record was written but export failed, the notification panel reports the saved state and offers `Refresh archive`. This retries the generated data without saving the record again. The pending change list also identifies commits waiting to be pushed, so a failed publish can be retried after its commit already succeeded. See [Studio workflow and recovery](STUDIO_WORKFLOW.md).
 
 Studio is disabled outside local development. The write and upload routes return `404` unless the app is running in development on `localhost` or `127.0.0.1`.
 
 ## Validate Before Commit
+
+Code updates and note publishing are separate on purpose. If the public runtime or its shared scripts have uncommitted changes, `Publish Changes` stops before syncing or staging content and asks for the site-code batch to be committed first. This prevents Pages receiving new HTML without its matching reader code. Local saves remain available; no notes need to be deleted or recreated. Once the code batch is committed, normal content publishing works again and can also push that commit if it is still local.
 
 Run:
 

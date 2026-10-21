@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { Cpu } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { ImageLightbox } from "@/components/archive/image-lightbox";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   formatReadableDate,
   metaText,
@@ -13,6 +14,7 @@ import {
 import { setupHardwareSource } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
+import noteInline, { type NoteInlineToken } from "@/public/note-inline.js";
 export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label: string }> {
   if (record.section === "games") {
     return [
@@ -40,12 +42,17 @@ export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey;
   }
 
   if (record.section === "projects") {
-    return [
+    const contents: Array<{ key: ContentKey; label: string }> = [
       { key: "technical", label: "Technical Stack" },
       { key: "overview", label: "Overview" },
       { key: "notes", label: "Notes" },
       { key: "samples", label: "Samples" }
     ];
+    return contents.filter((item) => {
+      if (item.key === "technical") return getTextList(record.meta.technicalStack).length > 0;
+      if (item.key === "samples") return recordMediaSources(record, "samples").length > 0;
+      return true;
+    });
   }
 
   return [
@@ -56,7 +63,7 @@ export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey;
 }
 
 export function contentOrdinal(record: RecordEntry, index: number): string {
-  return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
+  return String(record.section === "projects" && getTextList(record.meta.technicalStack).length > 0 ? index : index + 1).padStart(2, "0");
 }
 
 function getTextList(value: unknown): string[] {
@@ -76,7 +83,7 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
   }
 
   if (activeContent === "attachments") {
-    return <MediaPopupField prefix="ATTACH" record={record} title="ATTACHMENTS" />;
+    return <AttachmentGrid prefix="ATTACH" record={record} title="ATTACHMENTS" />;
   }
 
   if (activeContent === "notes") {
@@ -90,7 +97,7 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
       <section className="content-terminal" aria-label={`${record.title} technical stack`}>
         <div className="terminal-title">// TECHNICAL STACK</div>
         <div className="detail-list">
-          {(stackItems.length > 0 ? stackItems : ["Next.js App Router", "MDX records", "restrained panel transitions", "lightweight local archive state", "public-safe content files only"]).map((item) => (
+          {stackItems.map((item) => (
             <p key={item}>&gt; {item}</p>
           ))}
         </div>
@@ -225,48 +232,36 @@ function MilestoneList({ record }: { record: RecordEntry }) {
   );
 }
 
-function MediaPopupField({ prefix, record, title }: { prefix: string; record: RecordEntry; title: string }) {
+function AttachmentGrid({ prefix, record, title }: { prefix: string; record: RecordEntry; title: string }) {
   const mediaSources = recordMediaSources(record, "attachments");
   const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
 
   return (
     <section className="content-terminal" aria-label={`${record.title} media`}>
       <div className="terminal-title">// {title}</div>
-      <div className="media-alert-field">
-        <div className="media-alert-header">
-          <span>MEDIA</span>
-          <i>MAX_06</i>
-        </div>
-        <div className="media-popup-layer">
-          {Array.from({ length: 6 }).map((_, index) => {
-            const slot = index + 1;
-            const imageSource = mediaSources[index];
+      <div className="sample-kicker">Media</div>
+      <div className="sample-grid" aria-label={`${record.title} attachments`}>
+        {mediaSources.map((imageSource, index) => {
+          const slot = index + 1;
 
-            return (
-              <button
-                className="media-popup"
-                disabled={!imageSource}
-                style={{ "--slot": slot } as CSSProperties}
-                type="button"
-                key={`${record.id}-media-${slot}`}
-                onClick={() => imageSource && setExpandedImage({ alt: `${record.title} attachment ${slot}`, src: imageSource })}
-              >
-                <span>
-                {prefix}_{String(slot).padStart(2, "0")}
-              </span>
-              <div className="media-frame">
-                {imageSource ? <img src={imageSource} alt="" decoding="async" loading="lazy" /> : <div className="media-placeholder">NO CAPTURE</div>}
+          return (
+            <button
+              className="sample-terminal"
+              type="button"
+              key={`${record.id}-media-${slot}`}
+              onClick={() => setExpandedImage({ alt: `${record.title} attachment ${slot}`, src: imageSource })}
+            >
+              <span>{prefix}_{String(slot).padStart(2, "0")}</span>
+              <div className="sample-frame">
+                <img src={imageSource} alt="" decoding="async" loading="lazy" />
               </div>
-              <i>{imageSource ? "Primary capture" : "Awaiting media"}</i>
+              <i>Capture {String(slot).padStart(2, "0")}</i>
             </button>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
       {expandedImage ? (
-        <button className="note-image-lightbox" type="button" aria-label="Close expanded attachment" onClick={() => setExpandedImage(null)}>
-          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
-        </button>
+        <ImageLightbox image={expandedImage} label="Close expanded attachment" onClose={() => setExpandedImage(null)} />
       ) : null}
     </section>
   );
@@ -281,31 +276,27 @@ function SampleGrid({ record }: { record: RecordEntry }) {
       <div className="terminal-title">// SAMPLE</div>
       <div className="sample-kicker">Media</div>
       <div className="sample-grid" aria-label={`${record.title} media samples`}>
-        {Array.from({ length: 6 }).map((_, index) => {
+        {mediaSources.map((imageSource, index) => {
           const slot = index + 1;
-          const imageSource = mediaSources[index];
 
           return (
             <button
               className="sample-terminal"
-              disabled={!imageSource}
               type="button"
               key={`${record.id}-sample-${slot}`}
-              onClick={() => imageSource && setExpandedImage({ alt: `${record.title} sample ${slot}`, src: imageSource })}
+              onClick={() => setExpandedImage({ alt: `${record.title} sample ${slot}`, src: imageSource })}
             >
               <span>MEDIA_{String(slot).padStart(2, "0")}</span>
               <div className="sample-frame">
-                {imageSource ? <img src={imageSource} alt="" decoding="async" loading="lazy" /> : <div className="media-placeholder">NO MEDIA</div>}
+                <img src={imageSource} alt="" decoding="async" loading="lazy" />
               </div>
-              <i>{imageSource ? "Primary sample" : "Awaiting sample"}</i>
+              <i>Sample {String(slot).padStart(2, "0")}</i>
             </button>
           );
         })}
       </div>
       {expandedImage ? (
-        <button className="note-image-lightbox" type="button" aria-label="Close expanded sample" onClick={() => setExpandedImage(null)}>
-          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
-        </button>
+        <ImageLightbox image={expandedImage} label="Close expanded sample" onClose={() => setExpandedImage(null)} />
       ) : null}
     </section>
   );
@@ -319,22 +310,11 @@ function recordMediaSources(record: RecordEntry, key: "attachments" | "samples")
       ? sources.split(/\r?\n|,/)
       : [];
 
-  if (list.length > 0) {
-    return list.map((item) => item.trim()).filter(Boolean).slice(0, 6);
-  }
-
-  return record.banner ? [record.banner] : [];
+  return list.map((item) => item.trim()).filter(Boolean).slice(0, 6);
 }
 
 function hasRecordAttachments(record: RecordEntry): boolean {
-  const attachments = record.meta.attachments;
-  const list = Array.isArray(attachments)
-    ? attachments
-    : typeof attachments === "string"
-      ? attachments.split(/\r?\n|,/)
-      : [];
-
-  return list.some((item) => String(item).trim().length > 0);
+  return recordMediaSources(record, "attachments").length > 0;
 }
 
 export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange: (value: string) => void; query: string; record: RecordEntry }) {
@@ -451,6 +431,17 @@ type NoteMediaOptions = {
   size: "default" | "wide" | "banner" | "small";
 };
 
+function renderNoteInline(value: string): ReactNode[] {
+  const render = (tokens: NoteInlineToken[]): ReactNode[] => tokens.map((token, index) => {
+    if (token.type === "strong") return <strong key={index}>{render(token.children || [])}</strong>;
+    if (token.type === "em") return <em key={index}>{render(token.children || [])}</em>;
+    if (token.type === "code") return <code key={index}>{token.value}</code>;
+    if (token.type === "link") return <a key={index} href={token.href} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{render(token.children || [])}</a>;
+    return token.value || "";
+  });
+  return render(noteInline.tokenizeNoteInline(value));
+}
+
 export function RecordBody({ body }: { body: string }) {
   const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
   const lines = body.split(/\r?\n/);
@@ -481,13 +472,18 @@ export function RecordBody({ body }: { body: string }) {
       continue;
     }
 
+    if (line.startsWith("# ")) {
+      nodes.push(<h3 key={key}>{renderNoteInline(line.slice(2))}</h3>);
+      continue;
+    }
+
     if (line.startsWith("## ")) {
-      nodes.push(<h4 key={key}>// {line.slice(3)}</h4>);
+      nodes.push(<h4 key={key}>// {renderNoteInline(line.slice(3))}</h4>);
       continue;
     }
 
     if (line.startsWith("### ")) {
-      nodes.push(<h5 key={key}>{line.slice(4)}</h5>);
+      nodes.push(<h5 key={key}>{renderNoteInline(line.slice(4))}</h5>);
       continue;
     }
 
@@ -512,7 +508,7 @@ export function RecordBody({ body }: { body: string }) {
       nodes.push(
         <p className="check-line" key={key}>
           <span>[x]</span>
-          {line.slice(6)}
+          {renderNoteInline(line.slice(6))}
         </p>
       );
       continue;
@@ -522,7 +518,7 @@ export function RecordBody({ body }: { body: string }) {
       nodes.push(
         <p className="check-line is-open" key={key}>
           <span>[ ]</span>
-          {line.slice(6)}
+          {renderNoteInline(line.slice(6))}
         </p>
       );
       continue;
@@ -532,27 +528,25 @@ export function RecordBody({ body }: { body: string }) {
       nodes.push(
         <p className="bullet-line" key={key}>
           <span>&gt;</span>
-          {line.slice(2)}
+          {renderNoteInline(line.slice(2))}
         </p>
       );
       continue;
     }
 
     if (line.startsWith("> ")) {
-      nodes.push(<blockquote key={key}>{line.slice(2)}</blockquote>);
+      nodes.push(<blockquote key={key}>{renderNoteInline(line.slice(2))}</blockquote>);
       continue;
     }
 
-    nodes.push(<p key={key}>{line}</p>);
+    nodes.push(<p key={key}>{renderNoteInline(line)}</p>);
   }
 
   return (
     <div className="record-body">
       {nodes}
       {expandedImage ? (
-        <button className="note-image-lightbox" type="button" aria-label="Close expanded image" onClick={() => setExpandedImage(null)}>
-          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
-        </button>
+        <ImageLightbox image={expandedImage} label="Close expanded image" onClose={() => setExpandedImage(null)} />
       ) : null}
     </div>
   );

@@ -123,6 +123,13 @@ for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".
     fail(filename, `invalid section "${parsed.data.section}"`);
   }
 
+  if (parsed.data.gamePlacement !== undefined && !["session", "past"].includes(parsed.data.gamePlacement)) {
+    fail(filename, "gamePlacement must be session or past");
+  }
+  if (parsed.data.gameActivity !== undefined && !["active", "inactive"].includes(parsed.data.gameActivity)) {
+    fail(filename, "gameActivity must be active or inactive");
+  }
+
   if (typeof parsed.data.updated === "string" && !/^\d{4}-\d{2}-\d{2}$/.test(parsed.data.updated)) {
     fail(filename, "updated must use YYYY-MM-DD");
   }

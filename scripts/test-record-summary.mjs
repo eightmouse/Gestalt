@@ -23,6 +23,8 @@ const cases = [
   { summary: "", body: "## Heading\n- First thought\n- Second thought", expected: "First thought Second thought" },
   { summary: "NO SUMMARY RECORDED.", body: ":::note Current\nLatest thoughts.\n:::\n:::previous-note Older\nOld thoughts.\n:::", expected: "Latest thoughts." },
   { summary: "", body: "## Update Index\n- Old update\n", expected: "No summary recorded." },
+  { summary: "", body: "## Update Index\n- Old update\n# New heading\nNew content.", expected: "New content." },
+  { summary: "", body: "## Update Index\n- Old update\n### New heading\nNew content.", expected: "New content." },
   { summary: "", body: "# Only a heading\n![Image](/media/example.webp)", expected: "No summary recorded." },
   { summary: "", body: "", expected: "No summary recorded." },
   { summary: "", body: "An update. ".repeat(40), expected: `${"An update. ".repeat(40).trim().slice(0, 177).trim()}...` }

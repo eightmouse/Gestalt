@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import { motion } from "framer-motion";
+import { ImageLightbox } from "@/components/archive/image-lightbox";
+import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { Maximize2, Minimize2, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
@@ -38,7 +40,8 @@ export function RecordWindow({ accessPending = false, accessComplete = false, in
 
 function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
-  const [activeContent, setActiveContent] = useState<ContentKey>(initialContent);
+  const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
+  const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
@@ -117,6 +120,7 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, ma
             </h2>
             <p>
               Status: {record.status}
+              {record.section === "games" && gameLogPlacement(record) === "session" && gameActivityValue(record) ? <><span>.</span>Activity: {gameActivityLabel(record)}</> : null}
               <span>.</span>
               Type: {record.type}
               {record.started ? (
@@ -230,9 +234,7 @@ function SetupRecordWindow({ accessPending, accessComplete, maximized, record, o
         {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} /> : null}
       </div>
       {expandedImage ? (
-        <button className="note-image-lightbox" type="button" aria-label="Close expanded setup image" onClick={() => setExpandedImage(null)}>
-          <img src={expandedImage.src} alt={expandedImage.alt} decoding="async" />
-        </button>
+        <ImageLightbox image={expandedImage} label="Close expanded setup image" onClose={() => setExpandedImage(null)} />
       ) : null}
     </motion.article>
   );

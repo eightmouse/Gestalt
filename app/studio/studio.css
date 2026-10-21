@@ -1354,6 +1354,35 @@ input.studio-title-edit {
   gap: 4px;
 }
 
+.studio-note-link-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.studio-note-link-editor input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.studio-note-link-editor button {
+  flex: 0 0 34px;
+  block-size: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.studio-note-format-message {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+}
+
 .studio-note-format-tools button {
   inline-size: 34px;
   block-size: 34px;

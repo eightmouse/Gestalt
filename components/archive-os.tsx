@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
+import { scheduleBootCompletion } from "@/lib/boot";
 import { ArchiveDashboard } from "@/components/archive/dashboard";
 import { renderHeadlineLetters } from "@/components/archive/headline-text";
 import { MobileDock } from "@/components/archive/mobile-dock";
@@ -32,13 +33,15 @@ import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/s
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { loadSteamSnapshot, resolveCurrentGame, type SteamSnapshot } from "@/public/steam-display.mjs";
+import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, type SteamSnapshot } from "@/public/steam-display.mjs";
 import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, shouldPlayEntryAccess, type EntryAccessMode } from "@/lib/entry-access";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
   { ssr: false }
 );
+
+const loadLocalSteamPreview = createSteamSnapshotLoader((url, options) => fetch(url, { ...options, method: "POST", credentials: "same-origin" }));
 
 type ArchiveState = {
   selectedId: string;
@@ -244,7 +247,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   useEffect(() => {
     if (!bootComplete) return;
     let active = true;
-    void loadSteamSnapshot("/data/steam-current.json").then((snapshot) => {
+    const loading = process.env.NODE_ENV === "development"
+      ? loadLocalSteamPreview("/api/studio/steam").then((snapshot) => snapshot ?? loadSteamSnapshot("/data/steam-current.json"))
+      : loadSteamSnapshot("/data/steam-current.json");
+    void loading.then((snapshot) => {
       if (active && snapshot) setSteamSnapshot(snapshot);
     });
     return () => { active = false; };
@@ -283,8 +289,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       return;
     }
 
-    const timer = window.setTimeout(() => setBootComplete(true), 2800);
-    return () => window.clearTimeout(timer);
+    return scheduleBootCompletion(() => setBootComplete(true));
   }, [bootComplete, localMemory]);
 
   useEffect(() => {
@@ -479,7 +484,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const showBoot = !bootComplete;
 
   return (
-    <main className={hasFocusWindow ? "archive-shell has-record" : "archive-shell"}>
+    <main className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}`} inert={showBoot} aria-busy={showBoot}>
       {showBoot ? <BootScreen /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
@@ -714,7 +719,7 @@ function LocalMemoryPrompt({ onAllow, onContinue }: { onAllow: () => void; onCon
         <p>// LOCAL MEMORY REQUEST</p>
         <h2 id="local-memory-title">Remember this terminal?</h2>
         <span>
-          Gestalt can store one local preference in this browser so repeat visits skip the full boot sequence. No
+          Gestalt can remember this choice in your browser so this prompt stays out of the way on repeat visits. No
           account, tracking, analytics, or personal data.
         </span>
         <div>

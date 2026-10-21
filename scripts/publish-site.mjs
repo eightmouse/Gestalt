@@ -219,6 +219,19 @@ function ensureNoUnexpectedStagedFiles() {
   }
 }
 
+function ensurePublicRuntimeCommitted() {
+  const paths = ["static-app.js", "app/globals.css", "public/note-inline.js", "public/steam-display.mjs"];
+  const changed = capture("git", ["diff", "--name-only", "HEAD", "--", ...paths]);
+  const untracked = capture("git", ["ls-files", "--others", "--exclude-standard", "--", ...paths]);
+  const pending = [...new Set(`${changed}\n${untracked}`.split(/\r?\n/).filter(Boolean))];
+  if (pending.length > 0) {
+    console.error("\nPublish blocked: public site code has uncommitted changes:");
+    for (const file of pending) console.error(`- ${file}`);
+    console.error("\nCommit the site-code batch first, then retry Publish Changes. Your saved records are safe; a note-only publish must not ship HTML that depends on code still only on this PC.");
+    process.exit(1);
+  }
+}
+
 function hasArchiveChanges() {
   const staged = capture("git", ["diff", "--cached", "--name-only"]);
   const modified = capture("git", ["ls-files", "--modified"]);
@@ -295,6 +308,7 @@ if (dryRun) {
 }
 
 ensureNoUnexpectedStagedFiles();
+ensurePublicRuntimeCommitted();
 ensureNoTrackedEnvFiles();
 scanForPrivateMaterial();
 syncSteamIfConfigured(skipSteamSync);

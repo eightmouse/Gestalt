@@ -1,6 +1,7 @@
 node_modules
 .next
 out
+.pages-site
 dist
 .pnpm-store
 .pnpm-store-fresh

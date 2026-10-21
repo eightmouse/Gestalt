@@ -199,7 +199,21 @@ button:focus-visible {
     #050605;
   color: var(--text);
   pointer-events: none;
-  animation: boot-exit 2400ms ease 350ms both;
+  animation: boot-exit 2800ms linear var(--boot-elapsed, 0ms) both;
+}
+
+/* Two broad surfaces come online during the existing loader's final half-second. */
+.archive-shell.is-booting > .sidebar {
+  animation: boot-surface 420ms ease-out calc(2240ms + var(--boot-elapsed, 0ms)) both;
+}
+
+.archive-shell.is-booting > .workspace {
+  animation: boot-surface 450ms ease-out calc(2350ms + var(--boot-elapsed, 0ms)) both;
+}
+
+@keyframes boot-surface {
+  from { opacity: 0; visibility: hidden; }
+  to { opacity: 1; visibility: visible; }
 }
 
 .boot-screen > span {
@@ -213,15 +227,15 @@ button:focus-visible {
   letter-spacing: 0.42em;
   text-align: center;
   animation:
-    boot-type 620ms steps(7, end) 70ms both,
-    boot-flicker 130ms steps(2, end) 90ms 5;
+    boot-type 620ms steps(7, end) calc(70ms + var(--boot-elapsed, 0ms)) both,
+    boot-flicker 130ms steps(2, end) calc(90ms + var(--boot-elapsed, 0ms)) 5;
 }
 
 .boot-status {
   --headline-step: 28ms;
   --headline-settle: 220ms;
   --headline-duration: calc((var(--headline-chars, 19) * var(--headline-step)) + var(--headline-settle));
-  --headline-start-delay: 260ms;
+  --headline-start-delay: calc(260ms + var(--boot-elapsed, 0ms));
   inline-size: var(--boot-width);
   justify-content: center;
   font-style: normal;
@@ -246,7 +260,7 @@ button:focus-visible {
   transform: scaleX(0);
   transform-origin: left center;
   background: rgba(217, 213, 193, 0.72);
-  animation: boot-load 2100ms steps(22, end) 120ms both;
+  animation: boot-load 2100ms steps(22, end) calc(120ms + var(--boot-elapsed, 0ms)) both;
 }
 
 .local-memory-consent {
@@ -2138,12 +2152,48 @@ button:focus-visible {
 .archive-manager-details dt { color: var(--muted); letter-spacing: 0.06em; }
 .archive-manager-details dd { color: var(--text); text-align: end; }
 
-.archive-manager-main { min-width: 0; display: grid; grid-template-rows: 50px minmax(0, 1fr) auto; }
+.archive-manager-main { min-width: 0; min-height: 0; display: grid; grid-template-rows: 50px minmax(0, 1fr) auto; }
 .archive-manager-toolbar { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-inline: 20px; border-block-end: 1px solid rgba(217, 213, 193, 0.15); color: var(--text); font-size: 13px; letter-spacing: 0.08em; }
 .archive-manager-toolbar > span { display: flex; align-items: center; gap: 9px; }
 .archive-manager-toolbar svg { color: var(--muted); }
 .archive-manager-toolbar small { color: var(--muted); font-size: 12px; letter-spacing: 0; }
 .archive-folder-tiles { min-width: 0; align-content: start; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; padding: 22px; overflow: auto; overscroll-behavior: contain; }
+
+.archive-root-files {
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 20px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.archive-root-group + .archive-root-group { margin-block-start: 20px; }
+.archive-root-group > h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+  margin: 0;
+  padding-block-end: 10px;
+  border-block-end: 1px solid var(--line);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 400;
+}
+.archive-root-group > h3 small { color: var(--muted); font-size: 12px; font-weight: 400; }
+.archive-root-files .archive-file { align-items: flex-start; }
+.archive-root-files .archive-file-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(170px, calc((100% - 40px) / 6))), 1fr));
+}
+.archive-root-files .archive-file > svg { margin-block-start: 2px; }
+.archive-root-files .archive-file strong { white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+.archive-tree-date { display: flex; justify-content: space-between; gap: 8px; padding: 8px; color: var(--muted); font-size: 14px; }
+.archive-tree-date i { font-style: normal; }
+
+@media (max-width: 480px) {
+  .archive-root-files { padding: 12px; }
+}
 
 .archive-folder-tile {
   min-width: 0;
@@ -5289,21 +5339,12 @@ button:focus-visible {
   contain: layout paint;
 }
 
-.record-section h3,
-.record-body h4,
-.record-body h5 {
+.record-section h3 {
   margin: 0 0 13px;
   color: var(--text);
   font-size: 15px;
   font-weight: 400;
   letter-spacing: 0.08em;
-}
-
-.record-body h5 {
-  margin-block: 6px 2px;
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 0.06em;
 }
 
 .record-section p,
@@ -5331,9 +5372,55 @@ button:focus-visible {
   max-inline-size: none;
 }
 
+.record-body strong {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.record-body code {
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  background: rgba(217, 213, 193, 0.05);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+.record-body a {
+  color: var(--text-strong);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.record-body a:hover,
+.record-body a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.record-body :is(h3, h4, h5) {
+  min-inline-size: 0;
+  margin: 10px 0 6px;
+  color: var(--text-strong);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.record-body h3 {
+  margin-block-start: 14px;
+  font-size: 20px;
+}
+
 .record-body h4 {
-  margin-block-start: 10px;
+  font-size: 17px;
+}
+
+.record-body h5 {
+  margin-block-start: 8px;
   color: var(--text);
+  font-size: 15px;
 }
 
 .record-body blockquote {
@@ -5442,15 +5529,6 @@ button:focus-visible {
   background:
     linear-gradient(180deg, rgba(217, 213, 193, 0.026), transparent 36%),
     rgba(255, 255, 255, 0.014);
-}
-
-@media (min-width: 1181px) {
-  .record-layout:has(.record-heading.has-heading-banner) .record-aside > div:first-child {
-    min-block-size: clamp(230px, 30vh, 310px);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
 }
 
 .record-aside ol {
@@ -6167,11 +6245,7 @@ button:focus-visible {
   cursor: zoom-in;
 }
 
-.sample-terminal:disabled {
-  cursor: default;
-}
-
-.sample-terminal:not(:disabled):hover {
+.sample-terminal:hover {
   border-color: var(--line-strong);
   color: var(--text);
 }
@@ -6214,126 +6288,6 @@ button:focus-visible {
   background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 8px);
 }
 
-.media-alert-field {
-  position: relative;
-  min-block-size: clamp(360px, 48vh, 440px);
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background:
-    linear-gradient(90deg, rgba(217, 213, 193, 0.08), transparent 32%),
-    radial-gradient(circle at 50% 48%, rgba(217, 213, 193, 0.05), transparent 38%),
-    rgba(5, 6, 5, 0.35);
-}
-
-.media-alert-field::before {
-  content: "";
-  position: absolute;
-  inset: 18px;
-  pointer-events: none;
-  border: 1px dashed rgba(217, 213, 193, 0.12);
-}
-
-.media-alert-header {
-  position: absolute;
-  inset-block-start: 18px;
-  inset-inline-start: 18px;
-  z-index: 2;
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
-  border: 1px solid rgba(217, 213, 193, 0.2);
-  background: rgba(5, 6, 5, 0.62);
-  color: var(--muted);
-}
-
-.media-alert-header span {
-  color: var(--text);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-}
-
-.media-alert-header i {
-  font-style: normal;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
-
-.media-popup-layer {
-  position: absolute;
-  inset: 0;
-}
-
-.media-popup {
-  position: absolute;
-  min-width: 0;
-  inline-size: clamp(126px, 24%, 196px);
-  display: grid;
-  gap: 8px;
-  padding: 9px;
-  border: 1px solid rgba(217, 213, 193, 0.24);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 52%),
-    rgba(5, 6, 5, 0.78);
-  color: var(--muted);
-  text-align: left;
-  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.42);
-  cursor: pointer;
-  animation: media-pop 300ms cubic-bezier(0.2, 0.9, 0.24, 1.2) both;
-  animation-delay: calc(var(--slot) * 55ms);
-}
-
-.media-popup:nth-child(1) {
-  inset-block-start: 70px;
-  inset-inline-start: 35%;
-}
-
-.media-popup:nth-child(2) {
-  inset-block-start: 124px;
-  inset-inline-start: 4%;
-}
-
-.media-popup:nth-child(3) {
-  inset-block-start: 116px;
-  inset-inline-end: 5%;
-}
-
-.media-popup:nth-child(4) {
-  inset-block-start: 198px;
-  inset-inline-start: 11%;
-}
-
-.media-popup:nth-child(5) {
-  inset-block-start: 220px;
-  inset-inline-start: 38%;
-}
-
-.media-popup:nth-child(6) {
-  inset-block-start: 190px;
-  inset-inline-end: 9%;
-}
-
-.media-popup:disabled {
-  cursor: default;
-}
-
-.media-popup:not(:disabled):hover {
-  z-index: 3;
-  border-color: var(--line-strong);
-  color: var(--text);
-  transform: translateY(-2px);
-}
-
-.media-popup > span {
-  color: var(--text);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-}
-
-.media-popup i {
-  color: var(--muted);
-  font-style: normal;
-  line-height: 1.4;
-}
 
 .dispatch-panel {
   min-block-size: 180px;
@@ -6341,7 +6295,6 @@ button:focus-visible {
   align-content: center;
 }
 
-.media-frame,
 .note-banner {
   position: relative;
   overflow: hidden;
@@ -6351,15 +6304,10 @@ button:focus-visible {
     rgba(255, 255, 255, 0.026);
 }
 
-.media-frame {
-  aspect-ratio: 2 / 1;
-}
-
 .note-banner {
   aspect-ratio: 2.72 / 1;
 }
 
-.media-frame img,
 .note-banner img {
   inline-size: 100%;
   block-size: 100%;
@@ -6373,20 +6321,12 @@ button:focus-visible {
   object-position: center 58%;
 }
 
-.media-frame::after,
 .note-banner::after {
   content: "";
   position: absolute;
   inset: 0;
   opacity: 0.08;
   background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 8px);
-}
-
-.media-placeholder {
-  display: grid;
-  place-items: center;
-  block-size: 100%;
-  color: var(--muted-2);
 }
 
 .notes-page {
@@ -6590,13 +6530,30 @@ button:focus-visible {
   text-align: right;
 }
 
+.note-image-dialog {
+  position: fixed;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.note-image-dialog::backdrop { background: transparent; }
+
 .note-image-lightbox {
+  --lightbox-padding: clamp(18px, 4vw, 52px);
   position: fixed;
   inset: 0;
   z-index: 80;
   display: grid;
   place-items: center;
-  padding: clamp(18px, 4vw, 52px);
+  padding: var(--lightbox-padding);
   border: 0;
   background: rgba(0, 0, 0, 0.82);
   cursor: zoom-out;
@@ -6604,7 +6561,7 @@ button:focus-visible {
 
 .note-image-lightbox img {
   max-inline-size: min(100%, 1180px);
-  max-block-size: 88vh;
+  max-block-size: calc(100dvh - (var(--lightbox-padding) * 2));
   object-fit: contain;
   border: 1px solid rgba(217, 213, 193, 0.32);
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
@@ -7190,17 +7147,6 @@ button:focus-visible {
   100% { opacity: 0; transform: translateY(100%); }
 }
 
-@keyframes media-pop {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 @keyframes dashboard-project-line {
   0%,
@@ -7317,7 +7263,7 @@ button:focus-visible {
 
 @keyframes boot-exit {
   0%,
-  58% {
+  80% {
     opacity: 1;
   }
 
@@ -8315,33 +8261,6 @@ button:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .media-alert-field {
-    min-block-size: auto;
-    padding: 78px 12px 12px;
-  }
-
-  .media-alert-header {
-    inset-block-start: 12px;
-    inset-inline: 12px;
-  }
-
-  .media-popup-layer {
-    position: relative;
-    display: grid;
-    gap: 12px;
-  }
-
-  .media-popup,
-  .media-popup:nth-child(1),
-  .media-popup:nth-child(2),
-  .media-popup:nth-child(3),
-  .media-popup:nth-child(4),
-  .media-popup:nth-child(5),
-  .media-popup:nth-child(6) {
-    position: relative;
-    inset: auto;
-    inline-size: 100%;
-  }
 
 }
 
@@ -8676,7 +8595,7 @@ button:focus-visible {
   }
 
   .note-image-lightbox {
-    padding: 12px;
+    --lightbox-padding: 12px;
   }
 
   .reopen-control {
@@ -8808,6 +8727,17 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .archive-shell.is-booting > .sidebar,
+  .archive-shell.is-booting > .workspace {
+    animation: none;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .boot-screen {
+    display: none;
+  }
+
   *,
   *::before,
   *::after {

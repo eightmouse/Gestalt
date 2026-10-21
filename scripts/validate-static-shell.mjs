@@ -14,6 +14,7 @@ const errors = [];
 const cacheTokenCases = [
   ['href="app/globals.css?v=1.36.24"', 'href="app/globals.css?v=12345"'],
   ['src="public/data/records.js?v=1700000000"', 'src="public/data/records.js?v=12345"'],
+  ['src="public/note-inline.js?v=1.40.0"', 'src="public/note-inline.js?v=12345"'],
   ["src='static-app.js'", "src='static-app.js?v=12345'"],
   ['src="static-app.js?mode=preview&v=1.36.24#entry"', 'src="static-app.js?mode=preview&v=12345#entry"'],
   ['src="public/images/archive-banner.png?v=1.36.24"', 'src="public/images/archive-banner.png?v=1.36.24"']
@@ -59,6 +60,11 @@ const sidebar = extractFunction("sidebar");
 const archiveNavigationMenu = extractFunction("archiveNavigationMenu");
 const recordsScriptIndex = indexHtml.indexOf("public/data/records.js");
 const appScriptIndex = indexHtml.indexOf("static-app.js");
+const inlineScriptIndex = indexHtml.indexOf("public/note-inline.js");
+
+if (inlineScriptIndex === -1 || inlineScriptIndex > appScriptIndex || !existsSync(path.join(root, "public/note-inline.js"))) {
+  errors.push("The shared note-inline helper must exist and load before the static runtime.");
+}
 
 if (sidebar && !/const groups = sections\s*\.map\s*\(/m.test(sidebar)) {
   errors.push("Desktop static sidebar must render every archive section.");
@@ -140,6 +146,10 @@ for (const file of collectStaticAssetReferences(`${indexHtml}\n${recordsData}`))
 }
 
 const swCheck = spawnSync(process.execPath, ["--check", path.join(root, "sw.js")], { encoding: "utf8" });
+const inlineCheck = spawnSync(process.execPath, ["--check", path.join(root, "public/note-inline.js")], { encoding: "utf8" });
+if (inlineCheck.status !== 0) {
+  errors.push(`Note inline helper syntax check failed: ${(inlineCheck.stderr || inlineCheck.stdout || "").trim()}`);
+}
 
 if (swCheck.status !== 0) {
   errors.push(`sw.js syntax check failed: ${(swCheck.stderr || swCheck.stdout || "").trim()}`);
@@ -176,6 +186,36 @@ if (entryAccessCheck.status !== 0) {
 const noteFormattingCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-note-formatting.mjs")], { encoding: "utf8" });
 if (noteFormattingCheck.status !== 0) {
   errors.push(`Note formatting regression check failed: ${(noteFormattingCheck.stderr || noteFormattingCheck.stdout || "").trim()}`);
+}
+
+const bootCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-boot.mjs")], { encoding: "utf8" });
+if (bootCheck.status !== 0) {
+  errors.push(`Boot regression check failed: ${(bootCheck.stderr || bootCheck.stdout || "").trim()}`);
+}
+
+const archiveCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-field-archive.mjs")], { encoding: "utf8" });
+if (archiveCheck.status !== 0) {
+  errors.push(`Field Archive regression check failed: ${(archiveCheck.stderr || archiveCheck.stdout || "").trim()}`);
+}
+
+const contextualCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-contextual-content.mjs")], { encoding: "utf8" });
+if (contextualCheck.status !== 0) {
+  errors.push(`Contextual content regression check failed: ${(contextualCheck.stderr || contextualCheck.stdout || "").trim()}`);
+}
+
+const imageViewerCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-image-lightbox.mjs")], { encoding: "utf8" });
+if (imageViewerCheck.status !== 0) {
+  errors.push(`Image viewer regression check failed: ${(imageViewerCheck.stderr || imageViewerCheck.stdout || "").trim()}`);
+}
+
+const gameStateCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-game-state.mjs")], { encoding: "utf8" });
+if (gameStateCheck.status !== 0) {
+  errors.push(`Game state regression check failed: ${(gameStateCheck.stderr || gameStateCheck.stdout || "").trim()}`);
+}
+
+const pagesSyntaxCheck = spawnSync(process.execPath, ["--check", path.join(root, "scripts", "prepare-pages.mjs")], { encoding: "utf8" });
+if (pagesSyntaxCheck.status !== 0 || !existsSync(path.join(root, ".github", "workflows", "pages.yml"))) {
+  errors.push("Pages preparation script/workflow is missing or has invalid JavaScript syntax.");
 }
 
 if (errors.length > 0) {

@@ -11,6 +11,7 @@ import {
 import { writeStaticRecords } from "@/lib/static-export";
 import { beginStudioOperation, setStaticExportRequired } from "@/lib/studio-operation";
 import { parseFrontmatter } from "@/lib/content";
+import { gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 
 type EntryPayload = {
   originalId?: string;
@@ -36,6 +37,8 @@ type EntryPayload = {
   technicalStack?: string;
   recommendation?: string;
   dashboardActive?: boolean | string;
+  gamePlacement?: string;
+  gameActivity?: string;
   steamAppId?: number | string;
   playtime?: string;
   lastPlayed?: string;
@@ -116,6 +119,19 @@ async function saveEntry(request: NextRequest) {
     ? clean(existing?.writtenAt) || (existing ? clean(existing.started) || clean(existing.updated) : new Date().toISOString())
     : clean(existing?.writtenAt);
   const writtenOrder = typeof existing?.writtenOrder === "number" ? existing.writtenOrder : 0;
+  if (section === "games" && (
+    (payload.gamePlacement !== undefined && payload.gamePlacement !== "" && payload.gamePlacement !== "session" && payload.gamePlacement !== "past") ||
+    (payload.gameActivity !== undefined && payload.gameActivity !== "" && payload.gameActivity !== "active" && payload.gameActivity !== "inactive")
+  )) {
+    return NextResponse.json({ error: "Invalid game placement or activity." }, { status: 400 });
+  }
+  const previousGame = { status: clean(existing?.status) || clean(payload.status) || defaultStatus(section), meta: existing };
+  const gamePlacement = section === "games"
+    ? payload.gamePlacement || gameLogPlacement(previousGame)
+    : "";
+  const gameActivity = section === "games"
+    ? payload.gameActivity === undefined ? gameActivityValue(previousGame) : payload.gameActivity
+    : "";
 
   if (id !== originalId && await recordExists(filePath)) {
     return NextResponse.json(
@@ -149,6 +165,8 @@ async function saveEntry(request: NextRequest) {
     `progress: ${progress}`,
     `priority: ${priority}`,
     ...(dashboardActive ? ["dashboardActive: true"] : []),
+    ...(gamePlacement ? [`gamePlacement: "${gamePlacement}"`] : []),
+    ...(gameActivity ? [`gameActivity: "${gameActivity}"`] : []),
     ...(steamAppId ? [`steamAppId: ${steamAppId}`] : []),
     ...(clean(payload.playtime) ? [`playtime: "${escapeFrontmatter(clean(payload.playtime))}"`] : []),
     ...(clean(payload.lastPlayed) ? [`lastPlayed: "${escapeFrontmatter(clean(payload.lastPlayed))}"`] : []),

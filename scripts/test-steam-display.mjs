@@ -9,7 +9,7 @@ import { createSteamSnapshotLoader, publicSnapshot, resolveCurrentGame, steamCov
 const now = "2026-10-20T12:00:00.000Z";
 const snapshot = { schemaVersion: 1, updatedAt: now, game: { appId: 2, title: "Latest <Game>", playtimeMinutes: 123, lastPlayedAt: now, achievements: { unlocked: 1, total: 4 } } };
 const reactRecords = [
-  { id: "manual", section: "games", title: "Manual Game", status: "Playing", progress: 42, meta: { dashboardActive: true } },
+  { id: "manual", section: "games", title: "Manual Game", status: "Playing", progress: 42, meta: {} },
   { id: "matched", section: "games", title: "Authored title", status: "Filed", progress: 100, meta: { steamAppId: "2", playtime: "older" } }
 ];
 const staticRecords = reactRecords.map(({ meta, ...record }) => ({ ...record, ...meta }));
@@ -28,6 +28,25 @@ assert.equal(resolveCurrentGame(null, []), null);
 assert.equal(resolveCurrentGame(null, reactRecords).playtime, null, "No fabricated playtime");
 assert.equal(resolveCurrentGame(null, reactRecords).lastPlayed, null, "No fabricated Today");
 assert.equal(resolveCurrentGame({ ...snapshot, game: { ...snapshot.game, achievements: null, playtimeMinutes: null } }, []).completion, null);
+const pinnedRecords = reactRecords.map((record) => ({ ...record, meta: { ...record.meta, dashboardActive: record.id === "manual" } }));
+const pinnedBefore = JSON.stringify(pinnedRecords);
+const pin = resolveCurrentGame(snapshot, pinnedRecords);
+assert.equal(pin.recordId, "manual", "A deliberate pin overrides automatic game selection");
+assert.equal(pin.source, "manual");
+assert.equal(pin.completion, "42% Complete", "An unrelated snapshot never supplies the pinned game's stats");
+assert.equal(pin.playtime, null);
+assert.equal(pin.lastPlayed, null);
+assert.deepEqual(pin, resolveCurrentGame(snapshot, pinnedRecords.map(({ meta, ...record }) => ({ ...record, ...meta }))), "Flat Pages pins match nested React pins");
+assert.equal(resolveCurrentGame(null, pinnedRecords).recordId, "manual", "Pins survive unavailable/private Steam data");
+const matchingPin = pinnedRecords.map((record) => ({ ...record, meta: { ...record.meta, dashboardActive: record.id === "matched" } }));
+assert.deepEqual(resolveCurrentGame(snapshot, matchingPin), display, "A matching pin still receives Steam hours and achievements");
+assert.deepEqual(resolveCurrentGame(snapshot, reactRecords), display, "Unpinning restores automatic selection without rewriting records");
+assert.equal(JSON.stringify(pinnedRecords), pinnedBefore, "Selection does not mutate pin, placement, notes or authored stats");
+const unavailableStats = { ...snapshot, game: { ...snapshot.game, achievements: null, playtimeMinutes: null } };
+assert.equal(resolveCurrentGame(unavailableStats, matchingPin).completion, null, "Unavailable achievements are not replaced with authored story completion");
+assert.equal(resolveCurrentGame(unavailableStats, matchingPin).playtime, null);
+const falsePin = [{ ...reactRecords[0], meta: { dashboardActive: "true" } }, reactRecords[1]];
+assert.equal(resolveCurrentGame(snapshot, falsePin).recordId, "matched", "Only a true boolean enables pinning");
 assert.equal(steamCoverUrl("../../elsewhere"), null);
 assert.equal(steamCoverUrl(0), null);
 assert.match(steamCoverUrl(2), /^https:\/\/shared\.fastly\.steamstatic\.com\//);
@@ -86,4 +105,4 @@ for (const model of [display, { ...display, completion: null, playtime: null, la
 staticContext.currentGameRecord = () => undefined;
 assert.equal(vm.runInContext("currentGamePanel()", staticContext).includes("data-open-record"), false);
 
-console.log("Steam display tests passed: React/static parity, optional stats, escaping, fallback, one-shot fetch and bounded JSON.");
+console.log("Steam display tests passed: automatic selection, manual pins, matching-only stats, React/static parity, escaping, fallback and bounded one-shot fetch.");

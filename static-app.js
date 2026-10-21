@@ -47,6 +47,24 @@ function projectStatusRank(status) {
   return rank === -1 ? projectStatusOrder.length : rank;
 }
 
+function gameLogPlacement(record) {
+  const fields = record.meta ?? record;
+  if (fields.gamePlacement === "session" || fields.gamePlacement === "past") return fields.gamePlacement;
+  return ["active", "in progress", "on hold", "paused", "planning", "playing"].includes(record.status.toLowerCase()) ? "session" : "past";
+}
+
+function gameActivityValue(record) {
+  const value = (record.meta ?? record).gameActivity;
+  return value === "active" || value === "inactive" ? value : "";
+}
+
+function gameActivityLabel(record) {
+  const activity = gameActivityValue(record);
+  return record.section === "games" && gameLogPlacement(record) === "session" && activity
+    ? activity === "active" ? "Active" : "Inactive"
+    : record.status;
+}
+
 function renderHeadlineLetters(value) {
   const cipher = cipherizeText(value).split("");
 
@@ -82,7 +100,28 @@ function readLocalMemoryState() {
 }
 
 const initialLocalMemory = readLocalMemoryState();
-let bootPromptTimer = 0;
+const bootStartedAt = performance.now();
+let bootCleanup = null;
+
+function scheduleBootCompletion(onComplete, elapsed = 0) {
+  const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let timer = 0;
+  const stop = () => {
+    window.clearTimeout(timer);
+    motion.removeEventListener("change", onMotionChange);
+  };
+  const finish = () => {
+    stop();
+    onComplete();
+  };
+  const onMotionChange = () => {
+    if (motion.matches) finish();
+  };
+  motion.addEventListener("change", onMotionChange);
+  if (motion.matches) finish();
+  else timer = window.setTimeout(finish, Math.max(0, 2800 - elapsed));
+  return stop;
+}
 let navMotionTimer = 0;
 let recordAccessTimers = [];
 
@@ -604,7 +643,7 @@ function currentGameRecord() {
     return recordsFor("games").find((record) => record.id === display?.recordId);
   }
 
-  return recordsFor("games").find((record) => record.dashboardActive)
+  return recordsFor("games").find((record) => record.dashboardActive === true)
     || recordsFor("games").find((record) => record.status === "Playing")
     || recordsFor("games")[0];
 }
@@ -628,7 +667,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.39.1");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.44.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
@@ -820,19 +859,24 @@ function getRecordContents(record) {
   if (record.section === "logs") {
     const contents = [
       { key: "overview", label: "Entry" },
-      { key: "notes", label: "Field Notes" }
+      { key: "notes", label: "Full Note" }
     ];
 
     return hasRecordAttachments(record) ? [...contents, { key: "attachments", label: "Attachments" }] : contents;
   }
 
   if (record.section === "projects") {
-    return [
+    const contents = [
       { key: "technical", label: "Technical Stack" },
       { key: "overview", label: "Overview" },
       { key: "notes", label: "Notes" },
       { key: "samples", label: "Samples" }
     ];
+    return contents.filter((item) => {
+      if (item.key === "technical") return textList(record.technicalStack).length > 0;
+      if (item.key === "samples") return recordMediaSources(record, "samples").length > 0;
+      return true;
+    });
   }
 
   return [
@@ -844,18 +888,15 @@ function getRecordContents(record) {
 
 function normalizeContentKey(record) {
   const contents = getRecordContents(record);
-  return contents.some((item) => item.key === state.activeContent) ? state.activeContent : contents[0].key;
+  return contents.some((item) => item.key === state.activeContent) ? state.activeContent : "overview";
 }
 
 function hasRecordAttachments(record) {
-  const value = record.attachments;
-  const list = Array.isArray(value) ? value : typeof value === "string" ? value.split(/\r?\n|,/) : [];
-
-  return list.some((item) => String(item).trim().length > 0);
+  return recordMediaSources(record, "attachments").length > 0;
 }
 
 function contentOrdinal(record, index) {
-  return String(record.section === "projects" ? index : index + 1).padStart(2, "0");
+  return String(record.section === "projects" && textList(record.technicalStack).length > 0 ? index : index + 1).padStart(2, "0");
 }
 
 function splitUpdateIndex(body) {
@@ -869,7 +910,7 @@ function splitUpdateIndex(body) {
   let endIndex = lines.length;
 
   for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (lines[index].startsWith("## ") || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
+    if (/^#{1,3} /.test(lines[index]) || lines[index].startsWith(":::note ") || lines[index].startsWith(":::previous-note ")) {
       endIndex = index;
       break;
     }
@@ -928,6 +969,19 @@ function setupHardwareFallback(body) {
   return notes.map((note) => note.body).filter(Boolean).join("\n\n") || body;
 }
 
+function renderNoteInline(value) {
+  const tokens = window.GestaltNoteInline?.tokenizeNoteInline(value);
+  if (!tokens) return escapeHtml(value);
+  const render = (items) => items.map((token) => {
+    if (token.type === "strong") return `<strong>${render(token.children || [])}</strong>`;
+    if (token.type === "em") return `<em>${render(token.children || [])}</em>`;
+    if (token.type === "code") return `<code>${escapeHtml(token.value || "")}</code>`;
+    if (token.type === "link") return `<a href="${escapeHtml(token.href)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${render(token.children || [])}</a>`;
+    return escapeHtml(token.value || "");
+  }).join("");
+  return render(tokens);
+}
+
 function markdownBody(body) {
   const lines = body.split(/\r?\n/);
   const output = [];
@@ -960,13 +1014,18 @@ function markdownBody(body) {
       continue;
     }
 
+    if (line.startsWith("# ")) {
+      output.push(`<h3 ${key}>${renderNoteInline(line.slice(2))}</h3>`);
+      continue;
+    }
+
     if (line.startsWith("## ")) {
-      output.push(`<h4 ${key}>// ${escapeHtml(line.slice(3))}</h4>`);
+      output.push(`<h4 ${key}>// ${renderNoteInline(line.slice(3))}</h4>`);
       continue;
     }
 
     if (line.startsWith("### ")) {
-      output.push(`<h5 ${key}>${escapeHtml(line.slice(4))}</h5>`);
+      output.push(`<h5 ${key}>${renderNoteInline(line.slice(4))}</h5>`);
       continue;
     }
 
@@ -985,26 +1044,26 @@ function markdownBody(body) {
     }
 
     if (line.startsWith("- [x] ")) {
-      output.push(`<p class="check-line" ${key}><span>[x]</span>${escapeHtml(line.slice(6))}</p>`);
+      output.push(`<p class="check-line" ${key}><span>[x]</span>${renderNoteInline(line.slice(6))}</p>`);
       continue;
     }
 
     if (line.startsWith("- [ ] ")) {
-      output.push(`<p class="check-line is-open" ${key}><span>[ ]</span>${escapeHtml(line.slice(6))}</p>`);
+      output.push(`<p class="check-line is-open" ${key}><span>[ ]</span>${renderNoteInline(line.slice(6))}</p>`);
       continue;
     }
 
     if (line.startsWith("- ")) {
-      output.push(`<p class="bullet-line" ${key}><span>&gt;</span>${escapeHtml(line.slice(2))}</p>`);
+      output.push(`<p class="bullet-line" ${key}><span>&gt;</span>${renderNoteInline(line.slice(2))}</p>`);
       continue;
     }
 
     if (line.startsWith("> ")) {
-      output.push(`<blockquote ${key}>${escapeHtml(line.slice(2))}</blockquote>`);
+      output.push(`<blockquote ${key}>${renderNoteInline(line.slice(2))}</blockquote>`);
       continue;
     }
 
-    output.push(`<p ${key}>${escapeHtml(line)}</p>`);
+    output.push(`<p ${key}>${renderNoteInline(line)}</p>`);
   }
 
   return output.join("");
@@ -1092,58 +1151,46 @@ function renderOverviewPage(record) {
 }
 
 function renderMediaPage(record, title = "MEDIA", prefix = "MEDIA") {
-  const slots = Array.from({ length: 6 }, (_, index) => index + 1);
   const mediaSources = recordMediaSources(record, "attachments");
 
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} media">
     <div class="terminal-title">// ${title}</div>
-    <div class="media-alert-field">
-      <div class="media-alert-header"><span>MEDIA</span><i>MAX_06</i></div>
-      <div class="media-popup-layer">
-        ${slots
-          .map((slot, index) => {
-            const mediaSource = mediaSources[index];
+    <div class="sample-kicker">Media</div>
+      <div class="sample-grid">
+        ${mediaSources
+          .map((mediaSource, index) => {
+            const slot = index + 1;
 
-            return `<button class="media-popup" type="button" style="--slot: ${slot}" ${mediaSource ? `data-expand-image="${escapeHtml(mediaSource)}" data-expand-alt="${escapeHtml(`${record.title} attachment ${slot}`)}"` : "disabled"}>
+            return `<button class="sample-terminal" type="button" data-expand-image="${escapeHtml(mediaSource)}" data-expand-alt="${escapeHtml(`${record.title} attachment ${slot}`)}">
               <span>${prefix}_${String(slot).padStart(2, "0")}</span>
-              <div class="media-frame">
-                ${
-                  mediaSource
-                    ? `<img src="${escapeHtml(mediaSource)}" alt="" decoding="async" loading="lazy" />`
-                    : `<div class="media-placeholder">NO CAPTURE</div>`
-                }
+              <div class="sample-frame">
+                <img src="${escapeHtml(mediaSource)}" alt="" decoding="async" loading="lazy" />
               </div>
-              <i>${mediaSource ? "Primary capture" : "Awaiting media"}</i>
+              <i>Capture ${String(slot).padStart(2, "0")}</i>
             </button>`;
           })
           .join("")}
       </div>
-    </div>
   </section>`;
 }
 
 function renderSamplePage(record) {
-  const slots = Array.from({ length: 6 }, (_, index) => index + 1);
   const mediaSources = recordMediaSources(record, "samples");
 
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} sample media">
     <div class="terminal-title">// SAMPLE</div>
     <div class="sample-kicker">Media</div>
     <div class="sample-grid" aria-label="${escapeHtml(record.title)} media samples">
-      ${slots
-        .map((slot, index) => {
-          const mediaSource = mediaSources[index];
+      ${mediaSources
+        .map((mediaSource, index) => {
+          const slot = index + 1;
 
-          return `<button class="sample-terminal" type="button" ${mediaSource ? `data-expand-image="${escapeHtml(mediaSource)}" data-expand-alt="${escapeHtml(`${record.title} sample ${slot}`)}"` : "disabled"}>
+          return `<button class="sample-terminal" type="button" data-expand-image="${escapeHtml(mediaSource)}" data-expand-alt="${escapeHtml(`${record.title} sample ${slot}`)}">
             <span>MEDIA_${String(slot).padStart(2, "0")}</span>
             <div class="sample-frame">
-              ${
-                mediaSource
-                  ? `<img src="${escapeHtml(mediaSource)}" alt="" decoding="async" loading="lazy" />`
-                  : `<div class="media-placeholder">NO MEDIA</div>`
-              }
+              <img src="${escapeHtml(mediaSource)}" alt="" decoding="async" loading="lazy" />
             </div>
-            <i>${mediaSource ? "Primary sample" : "Awaiting sample"}</i>
+            <i>Sample ${String(slot).padStart(2, "0")}</i>
           </button>`;
         })
         .join("")}
@@ -1160,11 +1207,7 @@ function recordMediaSources(record, key) {
       : [];
   const cleanSources = sources.map((source) => String(source).trim()).filter(Boolean);
 
-  if (cleanSources.length > 0) {
-    return cleanSources.slice(0, 6);
-  }
-
-  return record.banner ? [record.banner] : [];
+  return cleanSources.slice(0, 6);
 }
 
 function renderNotesPage(record) {
@@ -1269,7 +1312,7 @@ function renderTechnicalPage(record) {
   return `<section class="content-terminal" aria-label="${escapeHtml(record.title)} technical stack">
     <div class="terminal-title">// TECHNICAL STACK</div>
     <div class="detail-list">
-      ${(stackItems.length ? stackItems : ["Next.js App Router", "MDX-style records", "small local archive store", "restrained window transitions", "public-safe content files only"])
+      ${stackItems
         .map((item) => `<p>&gt; ${escapeHtml(item)}</p>`)
         .join("")}
     </div>
@@ -1370,7 +1413,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.39.1</span>
+        <span>v1.44.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1384,7 +1427,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.39.1</span>
+        <span class="version-label">v1.44.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1404,7 +1447,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.39.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.44.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1493,7 +1536,7 @@ function localMemoryPrompt() {
     <div>
       <p>// LOCAL MEMORY REQUEST</p>
       <h2 id="local-memory-title">Remember this terminal?</h2>
-      <span>Gestalt can store one local preference in this browser so repeat visits skip the full boot sequence. No account, tracking, analytics, or personal data.</span>
+      <span>Gestalt can remember this choice in your browser so this prompt stays out of the way on repeat visits. No account, tracking, analytics, or personal data.</span>
       <div>
         <button type="button" data-local-memory-allow>Allow local memory</button>
         <button type="button" data-local-memory-session>Continue once</button>
@@ -1732,6 +1775,8 @@ function renderArchiveFolders(section, sectionRecords) {
   }
 
   const archiveDates = folders.flatMap((folder) => folder.records.map((record) => logArchiveDate(record))).sort();
+  const usesFolders = archiveUsesFolders(archiveDates.length);
+  if (!usesFolders) state.archiveFolderWindow = "";
   const activeFolder = folders.find((folder) => folder.title === state.archiveFolderWindow);
   const folderButton = (folder, className = "archive-folder-tile") => `<button class="${className}" type="button" data-open-archive-folder="${escapeHtml(folder.title)}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>
@@ -1748,30 +1793,27 @@ function renderArchiveFolders(section, sectionRecords) {
           <div class="archive-window-selection"><p>SELECTED FOLDER</p><strong>${escapeHtml(activeFolder.title)}</strong><span>${escapeHtml(activeFolder.detail)}</span><small>${activeFolder.records.length} ${activeFolder.records.length === 1 ? "file" : "files"}</small><small>${activeFolder.records.length ? `${readableDate(logArchiveDate(activeFolder.records[activeFolder.records.length - 1]))} - ${readableDate(logArchiveDate(activeFolder.records[0]))}` : "No date range"}</small></div>
         </aside>
         <div class="archive-folder-files"><div class="archive-folder-files-toolbar"><span>FILES</span><span>DATE ORDER . NEWEST FIRST</span></div>
-          <div class="archive-file-grid">${activeFolder.records.map((record) => `<button class="archive-file" type="button" data-open-record="${escapeHtml(record.id)}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v5h4M9 13h6M9 16h6"/></svg>
-            <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(readableDate(logArchiveDate(record)))} <i>${escapeHtml(record.section === "logs" ? "FIELD NOTE" : record.type.toUpperCase())}</i></small></span>
-          </button>`).join("")}</div>
+          <div class="archive-file-grid">${activeFolder.records.map(renderArchiveFile).join("")}</div>
           ${activeFolder.records.length ? "" : `<p class="search-empty">This folder contains no files.</p>`}<div class="archive-folder-status"><span>${activeFolder.records.length} items</span><span>Sorted by date . Newest first</span></div>
         </div>
       </div>
     </section>
   </div>` : "";
 
-  return `<section class="section-page section-page--archive archive-folder-page${activeFolder ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} folders">
+  return `<section class="section-page section-page--archive archive-folder-page${activeFolder ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} files">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div><p>${escapeHtml(section.code)}</p><h2>${escapeHtml(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(sectionRecords))}</div>
       <i>${archivedLogs.length} archived logs</i>
     </header>
     <div class="archive-manager">
-      <aside class="archive-manager-side" aria-label="Archive locations and details"><div class="archive-manager-section"><p class="archive-manager-label">LOCATIONS</p><div class="archive-manager-tree">
-        <div class="archive-tree-root"><span>▧</span><span>FIELD ARCHIVE</span></div>${folders.map((folder) => folderButton(folder, "archive-tree-folder")).join("") || `<span class="archive-tree-empty">No folders filed.</span>`}
+      <aside class="archive-manager-side" aria-label="Archive locations and details"><div class="archive-manager-section"><p class="archive-manager-label">${usesFolders ? "LOCATIONS" : "DATE INDEX"}</p><div class="archive-manager-tree">
+        <div class="archive-tree-root"><span>▧</span><span>FIELD ARCHIVE</span></div>${folders.map((folder) => usesFolders ? folderButton(folder, "archive-tree-folder") : `<div class="archive-tree-date"><span>${escapeHtml(folder.title)}</span><i>${folder.records.length}</i></div>`).join("") || `<span class="archive-tree-empty">No files filed.</span>`}
       </div></div><div class="archive-manager-section archive-manager-details"><p class="archive-manager-label">ARCHIVE STATUS</p><dl>
-        <div><dt>FOLDERS</dt><dd>${String(folders.length).padStart(2, "0")}</dd></div><div><dt>FILES</dt><dd>${String(archiveDates.length).padStart(2, "0")}</dd></div><div><dt>OLDEST</dt><dd>${archiveDates[0] ? readableDate(archiveDates[0]) : "-- / -- / ----"}</dd></div><div><dt>NEWEST</dt><dd>${archiveDates.length ? readableDate(archiveDates[archiveDates.length - 1]) : "-- / -- / ----"}</dd></div><div><dt>LOGS FILED AFTER</dt><dd>${logArchiveAfterDays} DAYS</dd></div>
+        <div><dt>FOLDERS</dt><dd>${String(usesFolders ? folders.length : 0).padStart(2, "0")}</dd></div><div><dt>FILES</dt><dd>${String(archiveDates.length).padStart(2, "0")}</dd></div><div><dt>OLDEST</dt><dd>${archiveDates[0] ? readableDate(archiveDates[0]) : "-- / -- / ----"}</dd></div><div><dt>NEWEST</dt><dd>${archiveDates.length ? readableDate(archiveDates[archiveDates.length - 1]) : "-- / -- / ----"}</dd></div><div><dt>LOGS FILED AFTER</dt><dd>${logArchiveAfterDays} DAYS</dd></div>
       </dl></div></aside>
-      <div class="archive-manager-main"><div class="archive-manager-toolbar"><span><span>▱</span> FIELD ARCHIVE</span><small>${folders.length} ${folders.length === 1 ? "folder" : "folders"}</small></div>
-        <div class="archive-folder-tiles">${folders.map((folder) => folderButton(folder)).join("") || `<p class="search-empty">No records have reached the archive threshold yet.</p>`}</div>
+      <div class="archive-manager-main"><div class="archive-manager-toolbar"><span><span>▱</span> FIELD ARCHIVE</span><small>${usesFolders ? `${folders.length} ${folders.length === 1 ? "folder" : "folders"}` : `${archiveDates.length} ${archiveDates.length === 1 ? "file" : "files"}`}</small></div>
+        ${usesFolders ? `<div class="archive-folder-tiles">${folders.map((folder) => folderButton(folder)).join("")}</div>` : `<div class="archive-root-files">${folders.map((group) => `<section class="archive-root-group" aria-label="${escapeHtml(group.title)} files"><h3><span>${escapeHtml(group.title)}</span><small>${escapeHtml(group.detail)} / ${group.records.length} ${group.records.length === 1 ? "FILE" : "FILES"}</small></h3><div class="archive-file-grid">${group.records.map(renderArchiveFile).join("")}</div></section>`).join("") || `<p class="search-empty">No records have reached the archive threshold yet.</p>`}</div>`}
         <p class="archive-manager-footnote">LOGS ARE FILED HERE AFTER ${logArchiveAfterDays} DAYS . FOLDERS AND FILES ARE ORDERED NEWEST TO OLDEST</p>
       </div>
     </div>${folderWindow}
@@ -1782,15 +1824,26 @@ function sortArchiveRecords(groupRecords) {
   return [...groupRecords].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || compareSectionRecords(a, b));
 }
 
+function archiveUsesFolders(recordCount) {
+  return recordCount > 24;
+}
+
+function renderArchiveFile(record) {
+  return `<button class="archive-file" type="button" title="${escapeHtml(record.title)}" data-open-record="${escapeHtml(record.id)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v5h4M9 13h6M9 16h6"/></svg>
+    <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(readableDate(logArchiveDate(record)))} <i>${escapeHtml(record.section === "logs" ? "FIELD NOTE" : record.type.toUpperCase())}</i></small></span>
+  </button>`;
+}
+
 function renderSectionRows(sectionRecords) {
   return sectionRecords.length
     ? sectionRecords
         .map(
-          (record) => `<button class="section-record" type="button" data-open-record="${record.id}" data-state="${recordStateKey(record.status)}">
+          (record) => `<button class="section-record" type="button" data-open-record="${record.id}" data-state="${recordStateKey(gameActivityLabel(record))}">
             <span class="section-record-kind"><span>${escapeHtml(record.type)}</span><small>${escapeHtml(recordTraceId(record))}</small></span>
             <strong>${escapeHtml(record.title)}</strong>
             <span>${escapeHtml(record.section === "logs" ? recordDisplaySummary(record) : record.summary)}</span>
-            <i>${escapeHtml(record.status)} . ${readableDate(record.updated)}</i>
+            <i>${escapeHtml(gameActivityLabel(record))} . ${readableDate(record.updated)}</i>
           </button>`
         )
         .join("")
@@ -1807,7 +1860,7 @@ function recordTraceId(record) {
 
 function sectionReadout(sectionRecords) {
   const archivedStatuses = new Set(["archived", "completed", "deprecated", "done", "filed"]);
-  const openCount = sectionRecords.filter((record) => !archivedStatuses.has(record.status.toLowerCase())).length;
+  const openCount = sectionRecords.filter((record) => record.section === "games" ? gameLogPlacement(record) === "session" : !archivedStatuses.has(record.status.toLowerCase())).length;
   const filedCount = sectionRecords.length - openCount;
 
   return [
@@ -1824,6 +1877,10 @@ function renderSectionReadout(items) {
 }
 
 function groupStatusLine(sectionRecords) {
+  if (sectionRecords.length > 0 && sectionRecords[0].section === "games") {
+    const activeCount = sectionRecords.filter((record) => ["active", "playing", "in progress"].includes(gameActivityLabel(record).toLowerCase())).length;
+    return `${activeCount} active / ${sectionRecords.length} indexed`;
+  }
   const liveStatuses = new Set(["active", "blocked", "in progress", "on hold", "paused", "planning", "playing"]);
   const liveCount = sectionRecords.filter((record) => liveStatuses.has(record.status.toLowerCase())).length;
 
@@ -2058,11 +2115,9 @@ function splitSectionRecords(sectionId, sectionRecords) {
   }
 
   if (sectionId === "games") {
-    const activeStatuses = new Set(["active", "in progress", "on hold", "paused", "planning", "playing"]);
-
     return [
-      { title: "SESSION LOGS", records: sectionRecords.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
-      { title: "PAST LOGS", records: sectionRecords.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+      { title: "SESSION LOGS", records: sectionRecords.filter((record) => gameLogPlacement(record) === "session") },
+      { title: "PAST LOGS", records: sectionRecords.filter((record) => gameLogPlacement(record) === "past") }
     ];
   }
 
@@ -2270,6 +2325,7 @@ function recordWindow(record) {
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span></h2>
           <p>
             Status: ${escapeHtml(record.status)}
+            ${record.section === "games" && gameLogPlacement(record) === "session" && gameActivityValue(record) ? `<span>.</span> Activity: ${escapeHtml(gameActivityLabel(record))}` : ""}
             <span>.</span>
             Type: ${escapeHtml(record.type)}
             ${record.started ? `<span>.</span>Started: ${readableDate(record.started)}` : ""}
@@ -2298,7 +2354,7 @@ function recordWindow(record) {
           <div><dt>Last Updated:</dt><dd>${readableDate(record.updated)}</dd></div>
         </dl>
 
-        ${state.activeContent === "notes" ? renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
+        ${activeContent === "notes" ? renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
       </aside>
     </div>
     ${record.section === "games" ? "" : renderUpdateHistoryModal(record)}
@@ -2421,6 +2477,46 @@ function mobileDock() {
   </nav>`;
 }
 
+function syncImageLightbox() {
+  let dialog = document.getElementById("gestalt-image-viewer");
+  if (!state.expandedImage) {
+    if (dialog) {
+      if (dialog.open) dialog.close();
+      dialog.remove();
+    }
+    return;
+  }
+
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.id = "gestalt-image-viewer";
+    dialog.className = "note-image-dialog";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "note-image-lightbox";
+    button.setAttribute("aria-label", "Close expanded image");
+    button.dataset.closeExpandedImage = "";
+    const image = document.createElement("img");
+    image.decoding = "async";
+    button.append(image);
+    dialog.append(button);
+    dialog.addEventListener("keydown", (event) => event.stopPropagation());
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      state.expandedImage = null;
+      syncImageLightbox();
+    });
+    document.body.append(dialog);
+  }
+
+  const image = dialog.querySelector("img");
+  if (image.getAttribute("src") !== state.expandedImage.src) image.src = state.expandedImage.src;
+  image.alt = state.expandedImage.alt;
+  dialog.setAttribute("aria-label", state.expandedImage.alt || "Expanded image");
+  if (!dialog.open) dialog.showModal();
+}
+
 function render() {
   if (!recordsLoaded) {
     root.innerHTML = `<main class="archive-shell archive-shell--unavailable">
@@ -2444,7 +2540,7 @@ function render() {
 
   const hasFocusWindow = state.panelOpen || state.timelineOpen;
 
-  root.innerHTML = `<main class="${hasFocusWindow ? "archive-shell has-record" : "archive-shell"}">
+  root.innerHTML = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
       <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
@@ -2485,9 +2581,9 @@ function render() {
       ${timelineWindow()}
       ${mobileDock()}
     </section>
-    ${state.expandedImage ? `<button class="note-image-lightbox" type="button" aria-label="Close expanded image" data-close-expanded-image><img src="${escapeHtml(state.expandedImage.src)}" alt="${escapeHtml(state.expandedImage.alt)}" decoding="async" /></button>` : ""}
   </main>`;
 
+  syncImageLightbox();
   syncTime();
   syncWeather();
 
@@ -2499,12 +2595,12 @@ function render() {
     }, 520);
   }
 
-  if (!state.bootDismissed && !bootPromptTimer) {
-    bootPromptTimer = window.setTimeout(() => {
+  if (!state.bootDismissed && !bootCleanup) {
+    bootCleanup = scheduleBootCompletion(() => {
       state.bootDismissed = true;
-      bootPromptTimer = 0;
+      bootCleanup = null;
       render();
-    }, 2800);
+    }, performance.now() - bootStartedAt);
   }
 
   if (state.windowSteady) {
@@ -2728,10 +2824,8 @@ document.addEventListener("click", (event) => {
   }
 
   if (clickTarget.closest("[data-local-memory-allow]")) {
-    if (bootPromptTimer) {
-      window.clearTimeout(bootPromptTimer);
-      bootPromptTimer = 0;
-    }
+    bootCleanup?.();
+    bootCleanup = null;
 
     try {
       window.localStorage.setItem(localMemoryKey, "granted");
@@ -2747,10 +2841,8 @@ document.addEventListener("click", (event) => {
   }
 
   if (clickTarget.closest("[data-local-memory-session]")) {
-    if (bootPromptTimer) {
-      window.clearTimeout(bootPromptTimer);
-      bootPromptTimer = 0;
-    }
+    bootCleanup?.();
+    bootCleanup = null;
 
     state.localMemory = "session";
     state.bootDismissed = true;
@@ -2839,13 +2931,13 @@ document.addEventListener("click", (event) => {
       src: target.dataset.expandImage,
       alt: target.dataset.expandAlt || ""
     };
-    render();
+    syncImageLightbox();
     return;
   }
 
   if (target.dataset.closeExpandedImage !== undefined) {
     state.expandedImage = null;
-    render();
+    syncImageLightbox();
     return;
   }
 
@@ -2993,7 +3085,7 @@ document.addEventListener("keydown", (event) => {
 
   if (state.expandedImage) {
     state.expandedImage = null;
-    render();
+    syncImageLightbox();
     return;
   }
 

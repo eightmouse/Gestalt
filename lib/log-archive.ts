@@ -1,8 +1,12 @@
 import type { RecordEntry } from "@/lib/types";
 
 export const LOG_ARCHIVE_AFTER_DAYS = 7;
+export const ARCHIVE_ROOT_FILE_LIMIT = 24;
 const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
+export function archiveUsesFolders(recordCount: number): boolean {
+  return recordCount > ARCHIVE_ROOT_FILE_LIMIT;
+}
 export function logArchiveDate(record: RecordEntry): string {
   if (record.section === "logs" && record.writtenAt) {
     return record.writtenAt.slice(0, 10);

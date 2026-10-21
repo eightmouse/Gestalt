@@ -18,10 +18,10 @@ const previousMode = process.env.NODE_ENV;
 const exec = promisify(execFile);
 const nextServer = pathToFileURL(createRequire(import.meta.url).resolve("next/server.js")).href;
 const moduleFiles = {
-  studio: "lib/studio.ts", "studio-operation": "lib/studio-operation.ts", "studio-process": "lib/studio-process.ts",
+  studio: "lib/studio.ts", "game-state": "lib/game-state.ts", "studio-operation": "lib/studio-operation.ts", "studio-process": "lib/studio-process.ts",
   "static-export": "lib/static-export.ts", "studio-media": "lib/studio-media.ts", content: "lib/content.ts",
   entry: "app/api/studio/entry/route.ts", media: "app/api/studio/media/route.ts", export: "app/api/studio/export/route.ts",
-  changes: "app/api/studio/changes/route.ts", publish: "app/api/studio/publish/route.ts"
+  changes: "app/api/studio/changes/route.ts", publish: "app/api/studio/publish/route.ts", steam: "app/api/studio/steam/route.ts"
 };
 const git = async (...args) => (await exec("git", args, { cwd: fixture, windowsHide: true })).stdout.trim();
 const request = (body = {}, origin = "http://127.0.0.1:3000", method = "POST") => new NextRequest("http://127.0.0.1:3000/api/studio/entry", {
@@ -36,6 +36,7 @@ try {
     const source = await readFile(path.join(root, sourceFile), "utf8");
     const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
       .replace(/from "@\/lib\/([^"/]+)"/g, (_, dependency) => `from "${pathToFileURL(path.join(modules, `${dependency}.mjs`)).href}"`)
+      .replace(/from "@\/public\/steam-display\.mjs"/g, `from "${pathToFileURL(path.join(root, "public/steam-display.mjs")).href}"`)
       .replace(/from "next\/server"/g, `from "${nextServer}"`);
     await writeFile(path.join(modules, `${name}.mjs`), compiled);
   }
@@ -45,11 +46,41 @@ try {
   process.chdir(fixture);
   process.env.NODE_ENV = "development";
   const load = (name) => import(pathToFileURL(path.join(modules, `${name}.mjs`)).href);
-  const entry = await load("entry"), refresh = await load("export"), changes = await load("changes"), publish = await load("publish"), media = await load("media");
+  const entry = await load("entry"), refresh = await load("export"), changes = await load("changes"), publish = await load("publish"), media = await load("media"), steam = await load("steam");
   const { beginStudioOperation } = await load("studio-operation");
   const { runStudioProcess } = await load("studio-process");
 
-  for (const route of [entry, refresh, changes, publish, media]) assert.equal((await route.POST(request({}, "https://untrusted.invalid"))).status, 404);
+  for (const route of [entry, refresh, changes, publish, media, steam]) assert.equal((await route.POST(request({}, "https://untrusted.invalid"))).status, 404);
+  const realFetch = globalThis.fetch;
+  let publicReads = 0;
+  const publicSteam = { schemaVersion: 1, updatedAt: "2026-10-21T10:00:00.000Z", game: { appId: 2, title: "Public game", playtimeMinutes: 120, lastPlayedAt: "2026-10-21T09:00:00.000Z", achievements: null } };
+  try {
+    globalThis.fetch = async (url, options) => {
+      publicReads += 1;
+      assert.equal(url, "https://eightmouse.github.io/Gestalt/public/data/steam-current.json");
+      assert.equal(options.redirect, "error");
+      assert.ok(options.signal instanceof AbortSignal);
+      assert.equal(options.headers, undefined);
+      return Response.json({ ...publicSteam, privateField: "must not appear" });
+    };
+    const preview = await steam.POST(request({ url: "https://untrusted.invalid/target", key: "ignored" }));
+    assert.equal(preview.status, 200);
+    assert.equal(preview.headers.get("cache-control"), "no-store");
+    assert.deepEqual(await preview.json(), publicSteam);
+    process.env.NODE_ENV = "production";
+    assert.equal((await steam.POST(request())).status, 404);
+    process.env.NODE_ENV = "development";
+    assert.equal((await steam.POST(request({}, "https://untrusted.invalid"))).status, 404);
+    assert.equal(publicReads, 1, "Forbidden requests cannot initiate an upstream request");
+    globalThis.fetch = async () => new Response("missing", { status: 404 });
+    assert.equal(await (await steam.POST(request())).json(), null, "Missing hosted data permits the local fallback");
+    globalThis.fetch = async () => { throw new Error("private upstream detail"); };
+    assert.equal(await (await steam.POST(request())).json(), null, "Upstream errors are not disclosed");
+    console.log("Steam preview: local-only access, fixed public URL, allowlisted response and offline fallback passed.");
+  } finally {
+    globalThis.fetch = realFetch;
+    process.env.NODE_ENV = "development";
+  }
   const partial = await entry.POST(request(record));
   assert.equal(partial.status, 200);
   const partialData = await partial.json();
@@ -99,6 +130,66 @@ try {
   assert.equal((await entry.POST(request(record))).status, 200);
   console.log("Save/export: partial success, duplicate protection, refresh retry, rename, deletion, and lock release passed.");
 
+  const game = { ...record, id: "workflow-game", title: "Workflow game", section: "games", status: "Completed", progress: 100, body: ":::note Original session\nKeep this note.\n:::" };
+  assert.equal((await entry.POST(request(game))).status, 200);
+  const gamePath = path.join(fixture, "content/records/workflow-game.mdx");
+  const initialGame = await readFile(gamePath, "utf8");
+  assert.match(initialGame, /gamePlacement: "past"/);
+  await writeFile(gamePath, initialGame.replace(/\ngamePlacement: "past"/, ""));
+  assert.equal((await entry.POST(request({ ...game, originalId: game.id, status: "Playing" }))).status, 200);
+  assert.match(await readFile(gamePath, "utf8"), /gamePlacement: "past"/, "A legacy save freezes the original placement before status edits");
+  const returningGame = { ...game, originalId: game.id, gamePlacement: "session", gameActivity: "inactive" };
+  assert.equal((await entry.POST(request(returningGame))).status, 200);
+  const returnSource = await readFile(gamePath, "utf8");
+  assert.match(returnSource, /gamePlacement: "session"/);
+  assert.match(returnSource, /gameActivity: "inactive"/);
+  assert.match(returnSource, /status: "Completed"/);
+  assert.match(returnSource, /progress: 100/);
+  assert.ok(returnSource.includes(game.body), "DLC returns retain notes");
+  const exportedGames = { window: {} };
+  const { runInNewContext } = await import("node:vm");
+  runInNewContext(await readFile(path.join(fixture, "public/data/records.js"), "utf8"), exportedGames);
+  const exportedGame = exportedGames.window.__GESTALT_RECORDS.find((item) => item.id === game.id);
+  assert.equal(exportedGame.gamePlacement, "session");
+  assert.equal(exportedGame.gameActivity, "inactive");
+  assert.equal(exportedGame.status, "Completed");
+  assert.equal((await entry.POST(request({ ...game, originalId: game.id }))).status, 200);
+  assert.match(await readFile(gamePath, "utf8"), /gameActivity: "inactive"/, "Older clients preserve activity when omitted");
+  assert.match(await readFile(gamePath, "utf8"), /gamePlacement: "session"/, "Notes/status edits do not relocate an explicit placement");
+  for (const placement of ["past", "session"]) {
+    assert.equal((await entry.POST(request({ ...returningGame, gamePlacement: placement }))).status, 200);
+    const movedGame = await readFile(gamePath, "utf8");
+    assert.match(movedGame, new RegExp(`gamePlacement: "${placement}"`));
+    assert.match(movedGame, /status: "Completed"/);
+    assert.match(movedGame, /progress: 100/);
+    assert.ok(movedGame.includes(game.body));
+  }
+  const beforeInvalidGame = await readFile(gamePath, "utf8");
+  assert.equal((await entry.POST(request({ ...returningGame, gamePlacement: "elsewhere" }))).status, 400);
+  assert.equal((await entry.POST(request({ ...returningGame, gameActivity: "streaming" }))).status, 400);
+  assert.equal(await readFile(gamePath, "utf8"), beforeInvalidGame);
+  assert.equal((await entry.POST(request({ ...returningGame, gameActivity: "" }))).status, 200);
+  assert.ok(!(await readFile(gamePath, "utf8")).includes("gameActivity:"), "Activity can be explicitly reset to record status");
+  assert.equal((await entry.POST(request({ ...returningGame, dashboardActive: true }))).status, 200);
+  assert.match(await readFile(gamePath, "utf8"), /dashboardActive: true/);
+  const secondGame = { ...game, id: "second-game", title: "Second game", dashboardActive: true, gamePlacement: "session" };
+  assert.equal((await entry.POST(request(secondGame))).status, 200);
+  const unpinnedGame = await readFile(gamePath, "utf8");
+  assert.ok(!unpinnedGame.includes("dashboardActive:"), "Pinning another game replaces the previous pin");
+  assert.ok(unpinnedGame.includes(game.body), "Replacing a pin retains the other game's notes");
+  assert.match(unpinnedGame, /gamePlacement: "session"/);
+  assert.match(unpinnedGame, /gameActivity: "inactive"/);
+  const secondPath = path.join(fixture, "content/records/second-game.mdx");
+  assert.match(await readFile(secondPath, "utf8"), /dashboardActive: true/);
+  assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, dashboardActive: false }))).status, 200);
+  assert.ok(!(await readFile(secondPath, "utf8")).includes("dashboardActive:"), "Unpinning saves automatic mode without another pinned game");
+  const pinExport = { window: {} };
+  runInNewContext(await readFile(path.join(fixture, "public/data/records.js"), "utf8"), pinExport);
+  assert.equal(pinExport.window.__GESTALT_RECORDS.some((item) => item.section === "games" && item.dashboardActive), false);
+  assert.equal((await entry.DELETE(request({ id: secondGame.id }, undefined, "DELETE"))).status, 200);
+  assert.equal((await entry.DELETE(request({ id: game.id }, undefined, "DELETE"))).status, 200);
+  console.log("Games: placement/activity, DLC round-trip, pin replacement/reset, static export, validation and older-client preservation passed.");
+
   await git("init", "--initial-branch=main");
   await git("config", "user.name", "Gestalt Workflow Test");
   await git("config", "user.email", "workflow@example.invalid");
@@ -142,6 +233,12 @@ try {
   await git("remote", "add", "origin", origin);
   await git("push", "origin", "main");
   const head = await git("rev-parse", "HEAD");
+  await writeFile(path.join(fixture, "public/note-inline.js"), "// new, uncommitted reader helper\n");
+  const unsafeContentPublish = await runStudioProcess(process.execPath, [fakePublisher, "--skip-steam-sync", "--skip-typecheck"]);
+  assert.notEqual(unsafeContentPublish.code, 0);
+  assert.ok(unsafeContentPublish.stderr.includes("public site code has uncommitted changes"));
+  assert.equal(await git("rev-parse", "HEAD"), head, "Content publishing must not commit HTML ahead of its required runtime");
+  await unlink(path.join(fixture, "public/note-inline.js"));
   await unlink(path.join(fixture, "public/favicon.ico"));
   await writeFile(path.join(fixture, "scratch.txt"), "Unrelated local file, not archive content.\n");
   await writeFile(recordPath, before.replace("Fixture content.", "Edited fixture content."));
