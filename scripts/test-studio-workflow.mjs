@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -52,7 +52,9 @@ try {
   for (const route of [entry, refresh, changes, publish, media]) assert.equal((await route.POST(request({}, "https://untrusted.invalid"))).status, 404);
   const partial = await entry.POST(request(record));
   assert.equal(partial.status, 200);
-  assert.equal((await partial.json()).staticExported, false);
+  const partialData = await partial.json();
+  assert.equal(partialData.staticExported, false);
+  assert.match(partialData.writtenAt, /^\d{4}-\d{2}-\d{2}T/);
   const recordPath = path.join(fixture, "content/records/workflow-note.mdx");
   assert.match(await readFile(recordPath, "utf8"), /Fixture content/);
   assert.equal((await entry.POST(request(record))).status, 409, "A partial export must not permit a duplicate new record");
@@ -62,6 +64,15 @@ try {
   assert.equal(await readFile(recordPath, "utf8"), before, "Export retry must not rewrite the saved record");
   assert.match(await readFile(path.join(fixture, "public/data/records.js"), "utf8"), /workflow-note/);
   assert.equal((await readdir(path.join(fixture, "public/data"))).some((name) => name.endsWith(".tmp")), false);
+
+  const edited = await entry.POST(request({ ...record, originalId: record.id, updated: "2027-01-01", writtenAt: "2099-01-01" }));
+  assert.equal((await edited.json()).writtenAt, partialData.writtenAt, "Editing cannot replace the first-save timestamp, even with a forged payload");
+  await writeFile(path.join(fixture, "content/records/legacy-note.mdx"), '---\ntitle: "Legacy note"\nsection: "logs"\nupdated: "2026-05-01"\nwrittenOrder: 7\npriority: 50\n---\nLegacy body\n');
+  const legacyEdit = await entry.POST(request({ ...record, id: "legacy-note", originalId: "legacy-note", updated: "2027-01-01" }));
+  const legacyData = await legacyEdit.json();
+  assert.equal(legacyData.writtenAt, "2026-05-01", "Legacy records freeze their original date, not the new edit date");
+  assert.equal(legacyData.writtenOrder, 7, "Saving preserves the explicit historical tie-breaker");
+  assert.equal((await entry.POST(request({ ...record, originalId: "missing-original" }))).status, 409, "Missing originals must not be silently recreated");
 
   const release = beginStudioOperation("publish");
   assert.equal((await entry.POST(request({ ...record, originalId: record.id }))).status, 409);
@@ -77,6 +88,7 @@ try {
   release();
   const renamed = { ...record, originalId: record.id, id: "renamed-note" };
   assert.equal((await entry.POST(request(renamed))).status, 200);
+  assert.ok((await readFile(path.join(fixture, "content/records/renamed-note.mdx"), "utf8")).includes(`writtenAt: "${partialData.writtenAt}"`), "Renames preserve writing order");
   assert.equal(existsSync(recordPath), false);
   await writeFile(exporter, "process.exit(7);\n");
   const deleted = await entry.DELETE(request({ id: renamed.id }, undefined, "DELETE"));
@@ -120,7 +132,7 @@ try {
   for (const name of ["validate-content.mjs", "validate-static-shell.mjs"]) await writeFile(path.join(fixture, "scripts", name), "process.exit(0);\n");
   await mkdir(path.join(fixture, "public/media/records"), { recursive: true });
   await writeFile(path.join(fixture, "public/media/records/fixture.txt"), "fixture\n");
-  for (const name of ["favicon.svg", "favicon.ico"]) await writeFile(path.join(fixture, "public", name), "fixture\n");
+  await writeFile(path.join(fixture, "public/favicon.ico"), "fixture\n");
   await writeFile(path.join(fixture, "index.html"), '<link href="app/globals.css?v=1.36.25"><script src="public/data/records.js?v=1.36.25"></script><script src="static-app.js?v=1.36.25"></script>');
   for (const name of ["static-app.js", "sw.js"]) await writeFile(path.join(fixture, name), "// fixture\n");
   await git("add", ".");
@@ -130,19 +142,24 @@ try {
   await git("remote", "add", "origin", origin);
   await git("push", "origin", "main");
   const head = await git("rev-parse", "HEAD");
+  await unlink(path.join(fixture, "public/favicon.ico"));
+  await writeFile(path.join(fixture, "scratch.txt"), "Unrelated local file, not archive content.\n");
   await writeFile(recordPath, before.replace("Fixture content.", "Edited fixture content."));
   await git("remote", "set-url", "origin", path.join(sandbox, "unavailable.git"));
   const failed = await runStudioProcess(process.execPath, [fakePublisher, "--skip-steam-sync", "--skip-typecheck"]);
   assert.notEqual(failed.code, 0);
   const committed = await git("rev-parse", "HEAD");
   assert.notEqual(committed, head);
-  assert.equal(await git("status", "--porcelain"), "");
+  assert.equal((await git("show", "--name-status", "--format=", "HEAD")).includes("D\tpublic/favicon.ico"), true, "Tracked icon deletions must still be staged when optional favicon.svg never existed");
+  assert.equal(failed.stderr.includes("pathspec"), false, "An absent optional icon must not abort staging");
+  assert.equal(await git("status", "--porcelain"), "?? scratch.txt", "Publishing must not sweep unrelated workspace files into the commit");
+  await unlink(path.join(fixture, "scratch.txt"));
   await git("remote", "set-url", "origin", origin);
   const retried = await runStudioProcess(process.execPath, [fakePublisher, "--skip-steam-sync", "--skip-typecheck"]);
   assert.equal(retried.code, 0, retried.stderr);
   assert.equal(await git("rev-parse", "HEAD"), committed, "Retry must not create an unnecessary second commit");
   assert.equal(await git("rev-parse", "origin/main"), committed);
-  console.log("Git recovery: a failed fetch/push was retried against a temporary local bare remote without another commit.");
+  console.log("Git recovery: absent optional icons, tracked icon deletions, and retry against a temporary bare remote without another commit passed.");
 } finally {
   process.chdir(previousCwd);
   if (previousMode === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = previousMode;

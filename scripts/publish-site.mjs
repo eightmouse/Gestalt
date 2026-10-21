@@ -88,6 +88,13 @@ function listPublishableFiles() {
     .filter(Boolean);
 }
 
+function stageArchiveChanges() {
+  const files = listPublishableFiles();
+  // Keep tracked deletions in scope, but omit optional paths Git has never known.
+  const paths = publishPaths.filter((scope) => files.some((file) => file === scope || file.startsWith(`${scope}/`)));
+  if (paths.length > 0) run("git", ["add", "-A", "--", ...paths]);
+}
+
 function ensureNoTrackedEnvFiles() {
   const trackedEnvFiles = capture("git", ["ls-files", "--", ".env", ".env.*"])
     .split(/\r?\n/)
@@ -323,7 +330,7 @@ if (dryRun) {
 }
 
 if (archiveChanged) {
-  run("git", ["add", "-A", "--", ...publishPaths]);
+  stageArchiveChanges();
   ensureNoUnexpectedStagedFiles();
   run("git", ["diff", "--cached", "--check"]);
   scanForPrivateMaterial();

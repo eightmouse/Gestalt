@@ -2,6 +2,8 @@
 
 ## Experience Polish
 
+- Entry-access animation preference implemented in `v1.38.0`: command palette offers `First entry only` (default), `Every entry`, and `Off` through a keyboard-accessible segmented radio group. React and the static Pages shell remember the choice locally, with session-only fallback if storage is blocked. Reduced motion always overrides it; enabling reduced motion or changing mode settles a running animation and cancels its timer without rebuilding the static page or changing navigation/content. Close/minimize cancellation is retained. No Studio editing change or background polling. Automated tests cover policy parity, persistence, blocked storage, first/subsequent opens and cancellation; local Chromium browser checks verified selection, reload persistence and Off/Every-entry behavior. Real Firefox/Edge checks remain in the final pass.
+
 - Improve Field Archive text contrast, weight, and clarity across Firefox, Edge, and Chromium-based browsers while preserving its file-manager layout. Completed in `v1.36.5`.
 - Refine the record-access transition inspired by FFXIV's Portable Archive: let the access surface resolve into the real entry frame, then blend it into the record without an extra full-screen animated layer. Tuned against the supplied clip in `v1.36.10`; review the feel before treating it as final. Keep it cosmetic unless real media preloading is needed, and support reduced motion.
 - Simplify the record-access progress indicator into one continuous straight bar instead of segmented blocks, while keeping it in sync with the entry materialization. Implemented in `v1.36.13`.
@@ -13,6 +15,9 @@
 - Rebalance the entry Contents rail against the adjacent header thumbnail: lower the Contents heading and give the rail a more harmonious height without stretching its metadata/actions awkwardly. Centered the navigation group within a matching-height area for bannered desktop records in `v1.36.20`; verify Games and Projects at smaller desktop widths.
 
 ## Record Content
+
+- Log chronology fixed in `v1.37.0`: original writing order is preserved across edits and renames. New Studio logs receive server-owned first-save timestamps; legacy records freeze their existing date on first edit. Known same-day historical order uses an explicit tie-breaker without inventing times (Peaceful above Modest). Logs, Latest Log, Recent Activity, Field Archive and Studio share the rule; export carries metadata without generating dates. No layout changes. Regression tests cover save, edit, rename, stale drafts, export and React/static ordering.
+- Automatic summary fallbacks fixed in `v1.36.31`: log section cards (including Studio), dashboard and Overview derive a clean note snippet for empty or legacy placeholder summaries. Authored summaries take precedence even when short. React/static regression tests cover notes, heading/list-heavy content, empty bodies, truncation and Update Index exclusion. No content migration or manual summary required.
 
 - Hide the Attachments section in Logs when a record has no attachments; show it only when media or other attachments are present. Implemented in `v1.36.14`.
 - Revisit the `01_Overview` area for Logs, which can feel empty. Added a latest-note title/date preview with the existing note-derived summary in `v1.36.17`, without adding a progress bar. Games can also feel sparse, though their completion/filed indicator helps.
@@ -42,7 +47,7 @@ Planning references: [Steam player data](https://partner.steamgames.com/doc/weba
 
 ## Editing Experience
 
-- Add a compact note-formatting toolbar in Studio: title/headings, bold, italic, links, lists, quotes, and useful common formatting. Preserve the existing note/media format, selection and caret behavior, and local-save workflow rather than introducing a separate rich-text document model. Evaluate underline explicitly: Markdown has no native underline syntax, and raw HTML must not be enabled just to support it. Test formatting round-trips through Studio, React, and the static Pages renderer before enabling controls; only offer formats that actually render correctly.
+- Compact Studio note toolbar started in `v1.39.0`: icon controls for headings/subheadings, bullet lists and quotes, using syntax already supported by both readers. Applies to the current or selected lines, toggles existing prefixes, restores caret/selection and scroll position, and skips standalone media and note delimiters. Uses the existing local draft/save workflow, not a second rich-text model. Tests cover line boundaries, CRLF, toggling, caret mapping, note serialization, media preservation, escaped HTML and React/static rendering. Remaining: safe inline rendering before offering bold, italic or links. Evaluate underline explicitly: Markdown has no native underline syntax, and raw HTML must not be enabled just to support it. Browser typing/selection validation remains part of the editor acceptance pass; do not test by altering the owner's in-progress drafts.
 
 - Replace the wide `Edit locally` entry-header button with a compact Gestalt-style gear icon beside `// ARCHIVE ENTRY`. Implemented in `v1.36.22`; refined the icon to a recognizable gear in `v1.36.23`. The Setup prompt shares it, with tooltip, accessible name, and existing edit action.
 - Redesign the entry-window minimize, maximize, and close controls as a coherent Gestalt-style set. Preserved recognizable actions and accessible names, added a restore-state glyph plus visible keyboard focus, and applied the shared visuals across archive, Setup, and timeline windows in `v1.36.21`.
@@ -57,6 +62,8 @@ Planning references: [Steam player data](https://partner.steamgames.com/doc/weba
 - Firefox profiling remains open: the connected test surface in the `v1.36.25` review was Chromium only. Notes layout was checked at desktop and mobile sizes; Memory State was confirmed paused behind a focused entry.
 
 ## Reliability And Security
+
+- Fixed optional publish-path staging in `v1.39.1`: missing, never-tracked assets such as the retired `public/favicon.svg` no longer abort Git staging. The content-only allowlist remains in place and tracked deletions are still included. Isolated Git workflow tests cover both cases and failed-push recovery.
 
 - Fixed dotted publish-cache tokens and isolated indexed Notes styles from nested accordions in `v1.36.25`.
 - Reviewed dependencies, local write/publish boundaries, public text, and JPEG identity/GPS metadata in `v1.36.25`. Hardened upload signatures/extensions and generalized private-path/environment-file guards. See [the dated review](REVIEW_2026-10-20.md) for evidence and limits.

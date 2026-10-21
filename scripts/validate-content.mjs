@@ -135,6 +135,19 @@ for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".
     fail(filename, "progress must be a number from 0 to 100");
   }
 
+  if (parsed.data.writtenAt !== undefined) {
+    const value = parsed.data.writtenAt;
+    if (typeof value !== "string"
+      || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$/.test(value)
+      || !Number.isFinite(Date.parse(value))
+      || new Date(value).toISOString().slice(0, 10) !== value.slice(0, 10)) {
+      fail(filename, "writtenAt must be a valid YYYY-MM-DD date or UTC ISO timestamp");
+    }
+  }
+  if (parsed.data.writtenOrder !== undefined && (!Number.isSafeInteger(parsed.data.writtenOrder) || parsed.data.writtenOrder < 0)) {
+    fail(filename, "writtenOrder must be a non-negative safe integer");
+  }
+
   if (typeof parsed.data.priority !== "number") {
     fail(filename, "priority must be a number");
   }

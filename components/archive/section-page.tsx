@@ -1,8 +1,8 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
+import { formatReadableDate, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
 import { ArrowUp, FileText, Folder, FolderOpen, HardDrive, Plus, X } from "lucide-react";
-import { isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
+import { compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useState } from "react";
 
 type ArchiveSectionConfig = {
@@ -32,7 +32,7 @@ const sessionGameStatuses = new Set(["active", "in progress", "on hold", "paused
 
 export function SectionPage({ records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord }: SectionPageProps) {
   const visibleRecords = section.id === "logs" ? records.filter((record) => !isLogArchivedByAge(record)) : records;
-  const sortedRecords = [...visibleRecords].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const sortedRecords = [...visibleRecords].sort(compareSectionRecords);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
   const readout = sectionReadout(sortedRecords);
@@ -256,7 +256,7 @@ function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (rec
 }
 
 function sortByArchiveDate(records: RecordEntry[]): RecordEntry[] {
-  return [...records].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || a.priority - b.priority);
+  return [...records].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || compareSectionRecords(a, b));
 }
 
 function CreateRecordButton({ onClick, label = "Create record" }: { onClick: () => void; label?: string }) {
@@ -275,7 +275,7 @@ function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: 
         <small>{recordTraceId(record)}</small>
       </span>
       <strong>{record.title}</strong>
-      <span>{record.summary}</span>
+      <span>{record.section === "logs" ? recordDisplaySummary(record) : record.summary}</span>
       <i>
         {record.status} . {formatReadableDate(record.updated)}
       </i>

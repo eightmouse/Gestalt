@@ -10,6 +10,7 @@ import {
 } from "@/lib/studio";
 import { writeStaticRecords } from "@/lib/static-export";
 import { beginStudioOperation, setStaticExportRequired } from "@/lib/studio-operation";
+import { parseFrontmatter } from "@/lib/content";
 
 type EntryPayload = {
   originalId?: string;
@@ -106,6 +107,16 @@ async function saveEntry(request: NextRequest) {
   const externalUrl = cleanExternalUrl(payload.externalUrl);
   const filePath = path.join(recordsDirectory, `${id}.mdx`);
 
+  // Writing chronology belongs to the saved source, never the editable payload.
+  const existing = originalId ? await readOriginalRecord(originalId) : undefined;
+  if (originalId && !existing) {
+    return NextResponse.json({ error: "The original record no longer exists. Refresh before saving this draft." }, { status: 409 });
+  }
+  const writtenAt = section === "logs"
+    ? clean(existing?.writtenAt) || (existing ? clean(existing.started) || clean(existing.updated) : new Date().toISOString())
+    : clean(existing?.writtenAt);
+  const writtenOrder = typeof existing?.writtenOrder === "number" ? existing.writtenOrder : 0;
+
   if (id !== originalId && await recordExists(filePath)) {
     return NextResponse.json(
       { error: `A record named "${title}" already exists. Open it to edit, or choose a different title.` },
@@ -125,6 +136,8 @@ async function saveEntry(request: NextRequest) {
     `status: "${escapeFrontmatter(clean(payload.status) || defaultStatus(section))}"`,
     ...(started ? [`started: "${started}"`] : []),
     `updated: "${updated}"`,
+    ...(writtenAt ? [`writtenAt: "${escapeFrontmatter(writtenAt)}"`] : []),
+    ...(writtenOrder ? [`writtenOrder: ${writtenOrder}`] : []),
     `summary: "${escapeFrontmatter(clean(payload.summary) || "No summary recorded.")}"`,
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
     ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
@@ -169,6 +182,8 @@ async function saveEntry(request: NextRequest) {
     id,
     path: path.relative(process.cwd(), filePath).replaceAll("\\", "/"),
     saved: true,
+    writtenAt,
+    writtenOrder,
     ...exportResult
   });
 }
@@ -203,6 +218,16 @@ async function deleteEntry(request: NextRequest) {
   const exportResult = await refreshSavedRecords();
 
   return NextResponse.json({ id, deleted: true, ...exportResult });
+}
+
+async function readOriginalRecord(id: string) {
+  try {
+    const source = await readFile(path.join(recordsDirectory, `${id}.mdx`), "utf8");
+    return parseFrontmatter(source).data;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
 }
 
 async function refreshSavedRecords() {

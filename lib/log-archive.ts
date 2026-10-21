@@ -4,7 +4,25 @@ export const LOG_ARCHIVE_AFTER_DAYS = 7;
 const millisecondsPerDay = 24 * 60 * 60 * 1000;
 
 export function logArchiveDate(record: RecordEntry): string {
+  if (record.section === "logs" && record.writtenAt) {
+    return record.writtenAt.slice(0, 10);
+  }
   return record.started || record.updated;
+}
+
+export function compareLogWritingOrder(a: RecordEntry, b: RecordEntry): number {
+  const left = a.writtenAt || logArchiveDate(a);
+  const right = b.writtenAt || logArchiveDate(b);
+  return right.localeCompare(left)
+    || (b.writtenOrder || 0) - (a.writtenOrder || 0)
+    || a.priority - b.priority
+    || a.id.localeCompare(b.id);
+}
+
+export function compareSectionRecords(a: RecordEntry, b: RecordEntry): number {
+  return a.section === "logs" && b.section === "logs"
+    ? compareLogWritingOrder(a, b)
+    : b.updated.localeCompare(a.updated) || a.priority - b.priority;
 }
 
 export function isLogArchivedByAge(record: RecordEntry, now = new Date()): boolean {

@@ -40,7 +40,7 @@ function parseScalar(rawValue: string): string | number | boolean | string[] {
   return value.replace(/^["']|["']$/g, "");
 }
 
-function parseFrontmatter(source: string): { data: Frontmatter; body: string } {
+export function parseFrontmatter(source: string): { data: Frontmatter; body: string } {
   if (!source.startsWith("---")) {
     return { data: {}, body: source.trim() };
   }
@@ -123,6 +123,8 @@ export function getRecords(): RecordEntry[] {
         status: toString(data.status, "Observed"),
         started: toString(data.started),
         updated: toString(data.updated, "2026-05-13"),
+        writtenAt: toString(data.writtenAt),
+        writtenOrder: toNumber(data.writtenOrder, 0),
         summary: toString(data.summary, "No summary recorded."),
         banner: toString(data.banner),
         progress: Math.max(0, Math.min(100, toNumber(data.progress, 0))),

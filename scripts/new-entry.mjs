@@ -40,7 +40,7 @@ type: "${escapeYaml(type)}"
 status: "${escapeYaml(status)}"
 started: "${today}"
 updated: "${today}"
-summary: "${escapeYaml(summary)}"
+${args.section === "logs" ? `writtenAt: "${args.date || new Date().toISOString()}"\n` : ""}summary: "${escapeYaml(summary)}"
 progress: ${Math.max(0, Math.min(100, progress))}
 priority: ${priority}
 milestones: ""

@@ -1,9 +1,11 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { Bell } from "lucide-react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { Bell, Heading2, Heading3, List, Quote } from "lucide-react";
 import "@/app/studio/studio.css";
 import { recordDisplaySummary } from "@/components/archive/record-utils";
+import { compareSectionRecords } from "@/lib/log-archive";
+import { formatNoteSelection, type NoteFormat } from "@/lib/note-formatting";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
 type StudioSection = Exclude<RecordSection, "system">;
@@ -19,6 +21,8 @@ type StudioForm = {
   status: string;
   started: string;
   updated: string;
+  writtenAt?: string;
+  writtenOrder?: number;
   summary: string;
   banner: string;
   headerImage: string;
@@ -222,7 +226,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
   const sortedRecords = useMemo(() => [...studioRecords].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [studioRecords]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
-  const sectionRecords = groupedRecords[activeSection].slice().sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const sectionRecords = groupedRecords[activeSection].slice().sort(compareSectionRecords);
   const contents = useMemo(() => getStudioContents(form.section, form.setupGroup), [form.section, form.setupGroup]);
   const activeRecord = useMemo(() => toRecordPreview(form, bodyDraftRef.current), [form]);
   const activeSectionConfig = studioSections.find((section) => section.id === activeSection) ?? studioSections[0];
@@ -421,7 +425,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       throw new StudioRequestError("Save response was missing record details.", data.output);
     }
 
-    return { id: String(data.id), path: String(data.path), staticExported: data.staticExported !== false, warning: data.warning };
+    return { id: String(data.id), path: String(data.path), writtenAt: data.writtenAt, writtenOrder: data.writtenOrder, staticExported: data.staticExported !== false, warning: data.warning };
   };
 
   const save = async () => {
@@ -449,7 +453,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
       for (const item of writes) {
         const data = await writeRecord(item.draft.form, item.draft.body);
-        const savedForm = { ...item.draft.form, body: item.draft.body, id: data.id, originalId: data.id };
+        const savedForm = { ...item.draft.form, body: item.draft.body, id: data.id, originalId: data.id, writtenAt: data.writtenAt, writtenOrder: data.writtenOrder };
         savedCount += 1;
         exportRequired = !data.staticExported;
         setArchiveRefreshRequired(exportRequired);
@@ -959,6 +963,8 @@ async function readStudioResponse(response: Response): Promise<{
   published?: boolean;
   unpushedCommits?: number;
   warning?: string;
+  writtenAt?: string;
+  writtenOrder?: number;
 }> {
   const text = await response.text();
 
@@ -1699,7 +1705,7 @@ function StudioSectionRecordButton({ onEdit, record }: { onEdit: (id: string) =>
     <button className="section-record" data-state={studioRecordStateKey(record.status)} type="button" onClick={() => onEdit(record.id)}>
       <span className="section-record-kind">{record.type}</span>
       <strong>{record.title}</strong>
-      <span>{record.summary}</span>
+      <span>{record.section === "logs" ? recordDisplaySummary(record) : record.summary}</span>
       <i>{record.status} . {formatStudioDate(record.updated)}</i>
     </button>
   );
@@ -2094,6 +2100,20 @@ function NoteStackEditor({
   const [optimizingIndex, setOptimizingIndex] = useState<number | null>(null);
   const lastSerializedRef = useRef("");
   const noteSelectionsRef = useRef<Record<number, { end: number; start: number }>>({});
+  const noteInputsRef = useRef<Record<number, HTMLTextAreaElement | null>>({});
+  const pendingFormatRef = useRef<{ index: number; start: number; end: number; scrollTop: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const pending = pendingFormatRef.current;
+    if (!pending) return;
+    pendingFormatRef.current = null;
+    const input = noteInputsRef.current[pending.index];
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(pending.start, pending.end);
+    input.scrollTop = pending.scrollTop;
+    noteSelectionsRef.current[pending.index] = { start: pending.start, end: pending.end };
+  }, [notes]);
 
   useEffect(() => {
     if (value === lastSerializedRef.current) {
@@ -2138,6 +2158,15 @@ function NoteStackEditor({
 
     updateNote(index, "body", nextBody.trim());
     setOpenIndex(index);
+  };
+
+  const formatNote = (index: number, format: NoteFormat) => {
+    const input = noteInputsRef.current[index];
+    if (!input) return;
+    const result = formatNoteSelection(notes[index].body, input.selectionStart, input.selectionEnd, format);
+    if (result.body === notes[index].body) return;
+    pendingFormatRef.current = { index, start: result.start, end: result.end, scrollTop: input.scrollTop };
+    updateNote(index, "body", result.body);
   };
 
   const dropMediaIntoNote = async (event: DragEvent<HTMLTextAreaElement>, index: number) => {
@@ -2233,6 +2262,18 @@ function NoteStackEditor({
             {openIndex === index ? (
               <>
                 <p className="studio-note-hint">Drop screenshots inside the note body to insert them at the cursor.</p>
+                <div className="studio-note-format-tools" role="group" aria-label="Note formatting">
+                  {([
+                    { format: "heading", label: "Heading", Icon: Heading2 },
+                    { format: "subheading", label: "Subheading", Icon: Heading3 },
+                    { format: "list", label: "Bullet list", Icon: List },
+                    { format: "quote", label: "Quote", Icon: Quote }
+                  ] as const).map(({ format, label, Icon }) => (
+                    <button type="button" key={format} aria-label={label} title={label} onMouseDown={(event) => event.preventDefault()} onClick={() => formatNote(index, format)}>
+                      <Icon size={17} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
                 <div className="studio-note-media-tools" aria-label="Apply style to the last image in this note">
                   {["wide", "banner", "small", "top", "bottom", "contain", "no-caption"].map((token) => (
                     <button
@@ -2251,6 +2292,7 @@ function NoteStackEditor({
                   ) : null}
                 </div>
                 <textarea
+                  ref={(element) => { noteInputsRef.current[index] = element; }}
                   aria-label={`${note.title} body`}
                   value={note.body}
                   onChange={(event) => updateNote(index, "body", event.target.value)}
@@ -2611,6 +2653,8 @@ function fromRecord(record?: RecordEntry): StudioForm {
     status: record.status,
     started: record.started ?? "",
     updated: record.updated,
+    writtenAt: record.writtenAt,
+    writtenOrder: record.writtenOrder,
     summary: record.summary,
     banner: record.banner ?? "",
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
@@ -2987,6 +3031,8 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     status: form.status,
     started: form.started,
     updated: form.updated,
+    writtenAt: form.writtenAt,
+    writtenOrder: form.writtenOrder,
     summary: form.summary,
     banner: form.banner,
     progress: form.progress,

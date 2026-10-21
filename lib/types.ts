@@ -14,6 +14,8 @@ export type RecordEntry = {
   status: string;
   started?: string;
   updated: string;
+  writtenAt?: string;
+  writtenOrder?: number;
   summary: string;
   banner?: string;
   progress: number;

@@ -41,7 +41,10 @@ export function getTimelineItems(records: RecordEntry[], limit: number): Timelin
 
       return items;
     })
-    .sort((a, b) => b.date.localeCompare(a.date) || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
+    .sort((a, b) => b.date.localeCompare(a.date)
+      || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
+      || (b.record.writtenOrder || 0) - (a.record.writtenOrder || 0)
+      || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
     .slice(0, limit);
 }
 

@@ -86,6 +86,46 @@ let bootPromptTimer = 0;
 let navMotionTimer = 0;
 let recordAccessTimers = [];
 
+function normalizeEntryAccessMode(value) {
+  return value === "always" || value === "off" ? value : "first";
+}
+
+function readEntryAccessMode() {
+  try {
+    return normalizeEntryAccessMode(window.localStorage.getItem("gestalt.entry-animation"));
+  } catch {
+    return "first";
+  }
+}
+
+function saveEntryAccessMode(mode) {
+  try {
+    window.localStorage.setItem("gestalt.entry-animation", normalizeEntryAccessMode(mode));
+  } catch {
+    // Keep the preference in memory for this visit if storage is blocked.
+  }
+}
+
+function shouldPlayEntryAccess(mode, played, reducedMotion) {
+  return !reducedMotion && (mode === "always" || (mode === "first" && !played));
+}
+
+function settleRecordAccessSequence() {
+  stopRecordAccessSequence();
+  state.accessComplete = true;
+  const recordWindow = document.querySelector(".record-window");
+  recordWindow?.classList.remove("is-access-pending");
+  recordWindow?.classList.add("is-access-complete");
+}
+
+function changeEntryAccessMode(value) {
+  const mode = normalizeEntryAccessMode(value);
+  if (mode === state.entryAccessMode) return;
+  state.entryAccessMode = mode;
+  saveEntryAccessMode(mode);
+  settleRecordAccessSequence();
+}
+
 function stopRecordAccessSequence() {
   for (const timer of recordAccessTimers) {
     window.clearTimeout(timer);
@@ -117,6 +157,7 @@ const state = {
   accessPending: false,
   accessComplete: false,
   recordAccessPlayed: false,
+  entryAccessMode: readEntryAccessMode(),
   panelMinimized: false,
   panelMaximized: false,
   memoryStateEnabled: true,
@@ -156,7 +197,7 @@ function openRecord(recordId, contentKey = "overview") {
   }
 
   stopRecordAccessSequence();
-  state.accessPending = !state.recordAccessPlayed && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  state.accessPending = shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   if (state.accessPending) {
     state.recordAccessPlayed = true;
   }
@@ -289,17 +330,21 @@ function recentActivity(limit) {
 
       return {
         content: trace && !setupDetail ? "notes" : undefined,
-        date: trace?.date || record.updated,
+        date: activityDate(record),
         detail: setupDetail || (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
         record,
         title: record.title
       };
     })
-    .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
+    .sort((a, b) => b.date.localeCompare(a.date)
+      || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
+      || (b.record.writtenOrder || 0) - (a.record.writtenOrder || 0)
+      || a.record.priority - b.record.priority || a.record.id.localeCompare(b.record.id))
     .slice(0, limit);
 }
 
 function activityDate(record) {
+  if (record.section === "logs") return logArchiveDate(record);
   return activityTrace(record)?.date || record.updated;
 }
 
@@ -390,14 +435,14 @@ function activityTraceTitle(title) {
 
 function recordDisplaySummary(record) {
   const latestNote = noteEntries(record.body)[0];
-  const fallback = excerptFromBody(latestNote?.body || record.body);
+  const fallback = excerptFromBody(latestNote?.body ?? splitUpdateIndex(record.body).mainBody);
   const summary = cleanSummaryText(record.summary);
 
-  if (summary && wordCount(summary) >= 22) {
+  if (summary) {
     return summary;
   }
 
-  return fallback || summary || "No summary recorded.";
+  return fallback || "No summary recorded.";
 }
 
 function excerptFromBody(body) {
@@ -442,10 +487,6 @@ function cleanExcerptLine(value) {
     .replace(/`([^`]+)`/g, "$1")
     .replace(/[*_~]/g, "")
     .trim();
-}
-
-function wordCount(value) {
-  return value.split(/\s+/).filter(Boolean).length;
 }
 
 function noteTitleDate(title) {
@@ -587,7 +628,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.36.30");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.39.1");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
@@ -614,7 +655,7 @@ async function initializeSteamDisplay() {
 }
 
 function latestLogRecord() {
-  return recordsFor("logs").sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
+  return recordsFor("logs").sort(compareLogWritingOrder)[0];
 }
 
 function archiveMetrics() {
@@ -702,7 +743,10 @@ function getTimelineItems(limit) {
 
       return items;
     })
-    .sort((a, b) => b.date.localeCompare(a.date) || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
+    .sort((a, b) => b.date.localeCompare(a.date)
+      || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
+      || (b.record.writtenOrder || 0) - (a.record.writtenOrder || 0)
+      || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
     .slice(0, limit);
 }
 
@@ -1326,7 +1370,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.36.30</span>
+        <span>v1.39.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1340,7 +1384,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.36.30</span>
+        <span class="version-label">v1.39.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1360,7 +1404,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.36.30</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.39.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1574,7 +1618,7 @@ function sectionPage(sectionId) {
   const sourceRecords = sectionId === "archive"
     ? [...recordsFor("archive"), ...recordsFor("logs").filter((record) => isLogArchivedByAge(record))]
     : recordsFor(sectionId);
-  const sectionRecords = sourceRecords.sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const sectionRecords = sourceRecords.sort(compareSectionRecords);
   const visibleRecords = sectionId === "logs" ? sectionRecords.filter((record) => !isLogArchivedByAge(record)) : sectionRecords;
   const countLabel = `${visibleRecords.length} ${visibleRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(sectionId, visibleRecords);
@@ -1629,7 +1673,25 @@ function sectionPage(sectionId) {
 const logArchiveAfterDays = 7;
 
 function logArchiveDate(record) {
+  if (record.section === "logs" && record.writtenAt) {
+    return record.writtenAt.slice(0, 10);
+  }
   return record.started || record.updated;
+}
+
+function compareLogWritingOrder(a, b) {
+  const left = a.writtenAt || logArchiveDate(a);
+  const right = b.writtenAt || logArchiveDate(b);
+  return right.localeCompare(left)
+    || (b.writtenOrder || 0) - (a.writtenOrder || 0)
+    || a.priority - b.priority
+    || a.id.localeCompare(b.id);
+}
+
+function compareSectionRecords(a, b) {
+  return a.section === "logs" && b.section === "logs"
+    ? compareLogWritingOrder(a, b)
+    : b.updated.localeCompare(a.updated) || a.priority - b.priority;
 }
 
 function isLogArchivedByAge(record, now = new Date()) {
@@ -1717,7 +1779,7 @@ function renderArchiveFolders(section, sectionRecords) {
 }
 
 function sortArchiveRecords(groupRecords) {
-  return [...groupRecords].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || a.priority - b.priority);
+  return [...groupRecords].sort((a, b) => logArchiveDate(b).localeCompare(logArchiveDate(a)) || compareSectionRecords(a, b));
 }
 
 function renderSectionRows(sectionRecords) {
@@ -1727,7 +1789,7 @@ function renderSectionRows(sectionRecords) {
           (record) => `<button class="section-record" type="button" data-open-record="${record.id}" data-state="${recordStateKey(record.status)}">
             <span class="section-record-kind"><span>${escapeHtml(record.type)}</span><small>${escapeHtml(recordTraceId(record))}</small></span>
             <strong>${escapeHtml(record.title)}</strong>
-            <span>${escapeHtml(record.summary)}</span>
+            <span>${escapeHtml(record.section === "logs" ? recordDisplaySummary(record) : record.summary)}</span>
             <i>${escapeHtml(record.status)} . ${readableDate(record.updated)}</i>
           </button>`
         )
@@ -2293,6 +2355,10 @@ function searchPanel() {
       data-search-input
     />
     <div class="search-suggestions">${resultList}</div>
+    <fieldset class="command-preferences">
+      <legend>ENTRY ANIMATION</legend>
+      <div class="command-preference-options">${[["first", "First entry only"], ["always", "Every entry"], ["off", "Off"]].map(([mode, label]) => `<label><input type="radio" name="entry-animation" value="${mode}" data-entry-access-mode${state.entryAccessMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
+    </fieldset>
   </div>`;
 }
 
@@ -2985,6 +3051,17 @@ document.addEventListener("error", (event) => {
     image.src = "public/images/archive-banner.png";
   }
 }, true);
+
+document.addEventListener("change", (event) => {
+  const input = event.target;
+  if (input instanceof HTMLInputElement && input.matches("[data-entry-access-mode]")) {
+    changeEntryAccessMode(input.value);
+  }
+});
+
+window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", (event) => {
+  if (event.matches) settleRecordAccessSequence();
+});
 
 registerMediaCacheWorker();
 render();

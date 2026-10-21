@@ -112,7 +112,7 @@ if (/run\("git",\s*\["add",\s*"-A"\]\)/.test(publishScript)) {
   errors.push("Archive publishing must not stage the entire worktree.");
 }
 
-if (!publishScript.includes('run("git", ["add", "-A", "--", ...publishPaths])')) {
+if (!publishScript.includes("const paths = publishPaths.filter(") || !publishScript.includes('run("git", ["add", "-A", "--", ...paths])')) {
   errors.push("Archive publishing must stage only its explicit content and media paths.");
 }
 
@@ -155,6 +155,27 @@ const steamDisplayCheck = spawnSync(process.execPath, [path.join(root, "scripts"
 
 if (steamDisplayCheck.status !== 0) {
   errors.push(`Steam display regression check failed: ${(steamDisplayCheck.stderr || steamDisplayCheck.stdout || "").trim()}`);
+}
+
+const summaryCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-record-summary.mjs")], { encoding: "utf8" });
+
+if (summaryCheck.status !== 0) {
+  errors.push(`Record summary regression check failed: ${(summaryCheck.stderr || summaryCheck.stdout || "").trim()}`);
+}
+
+const logOrderCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-log-order.mjs")], { encoding: "utf8" });
+if (logOrderCheck.status !== 0) {
+  errors.push(`Log ordering regression check failed: ${(logOrderCheck.stderr || logOrderCheck.stdout || "").trim()}`);
+}
+
+const entryAccessCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-entry-access.mjs")], { encoding: "utf8" });
+if (entryAccessCheck.status !== 0) {
+  errors.push(`Entry animation regression check failed: ${(entryAccessCheck.stderr || entryAccessCheck.stdout || "").trim()}`);
+}
+
+const noteFormattingCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-note-formatting.mjs")], { encoding: "utf8" });
+if (noteFormattingCheck.status !== 0) {
+  errors.push(`Note formatting regression check failed: ${(noteFormattingCheck.stderr || noteFormattingCheck.stdout || "").trim()}`);
 }
 
 if (errors.length > 0) {

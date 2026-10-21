@@ -1348,6 +1348,36 @@ input.studio-title-edit {
   gap: 7px;
 }
 
+.studio-note-format-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.studio-note-format-tools button {
+  inline-size: 34px;
+  block-size: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(217, 213, 193, 0.2);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.studio-note-format-tools button:hover,
+.studio-note-format-tools button:focus-visible {
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+
+.studio-note-format-tools button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .studio-note-media-tools button {
   min-block-size: 28px;
   padding: 5px 8px;

@@ -1,4 +1,5 @@
 import type { RecordEntry } from "@/lib/types";
+import { logArchiveDate } from "@/lib/log-archive";
 
 export type ArchiveMetrics = {
   activeGame?: Pick<RecordEntry, "title">;
@@ -168,26 +169,29 @@ export function recentActivity(records: RecordEntry[], limit: number): ActivityE
 
       return {
         content: trace && !setupDetail ? "notes" as const : undefined,
-        date: trace?.date ?? record.updated,
+        date: activityDate(record),
         detail: setupDetail ?? (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
         record,
         title: record.title
       };
     })
-    .sort((a, b) => b.date.localeCompare(a.date) || b.record.updated.localeCompare(a.record.updated) || a.record.priority - b.record.priority)
+    .sort((a, b) => b.date.localeCompare(a.date)
+      || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
+      || (b.record.writtenOrder || 0) - (a.record.writtenOrder || 0)
+      || a.record.priority - b.record.priority || a.record.id.localeCompare(b.record.id))
     .slice(0, limit);
 }
 
 export function recordDisplaySummary(record: RecordEntry): string {
   const latestNote = noteEntries(record.body)[0];
-  const fallback = excerptFromBody(latestNote?.body ?? record.body);
+  const fallback = excerptFromBody(latestNote?.body ?? splitUpdateIndex(record.body).mainBody);
   const summary = cleanSummaryText(record.summary);
 
-  if (summary && wordCount(summary) >= 22) {
+  if (summary) {
     return summary;
   }
 
-  return fallback || summary || "No summary recorded.";
+  return fallback || "No summary recorded.";
 }
 
 export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEntry): ArchiveMetrics {
@@ -204,6 +208,7 @@ export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEnt
 }
 
 export function activityDate(record: RecordEntry): string {
+  if (record.section === "logs") return logArchiveDate(record);
   return activityTrace(record)?.date ?? record.updated;
 }
 
@@ -334,10 +339,6 @@ function cleanExcerptLine(value: string): string {
     .replace(/`([^`]+)`/g, "$1")
     .replace(/[*_~]/g, "")
     .trim();
-}
-
-function wordCount(value: string): number {
-  return value.split(/\s+/).filter(Boolean).length;
 }
 
 export function noteTitleDate(title: string): string | null {

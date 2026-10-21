@@ -25,7 +25,7 @@ import {
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
 import type { SetupGroupId } from "@/components/archive/setup-utils";
-import { isLogArchivedByAge } from "@/lib/log-archive";
+import { compareLogWritingOrder, isLogArchivedByAge } from "@/lib/log-archive";
 import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
 import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
@@ -33,6 +33,7 @@ import { TimelineWindow } from "@/components/archive/timeline-window";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { loadSteamSnapshot, resolveCurrentGame, type SteamSnapshot } from "@/public/steam-display.mjs";
+import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, shouldPlayEntryAccess, type EntryAccessMode } from "@/lib/entry-access";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -148,6 +149,18 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const searchRef = useRef<HTMLDivElement | null>(null);
   const recordAccessTimerRef = useRef<number | null>(null);
   const recordAccessPlayedRef = useRef(false);
+  const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
+  const entryAccessModeRef = useRef<EntryAccessMode>("first");
+
+  const changeEntryAccessMode = (value: EntryAccessMode) => {
+    const mode = normalizeEntryAccessMode(value);
+    if (mode === entryAccessModeRef.current) return;
+    entryAccessModeRef.current = mode;
+    setEntryAccessMode(mode);
+    saveEntryAccessMode(mode);
+    stopRecordAccess();
+    setRecordAccessComplete(true);
+  };
 
   const stopRecordAccess = () => {
     if (recordAccessTimerRef.current !== null) {
@@ -162,8 +175,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     stopRecordAccess();
 
     if (
-      recordAccessPlayedRef.current ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      !shouldPlayEntryAccess(entryAccessModeRef.current, recordAccessPlayedRef.current,
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches)
     ) {
       return;
     }
@@ -182,6 +195,21 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (recordAccessTimerRef.current !== null) {
       window.clearTimeout(recordAccessTimerRef.current);
     }
+  }, []);
+
+  useEffect(() => {
+    const mode = readEntryAccessMode();
+    entryAccessModeRef.current = mode;
+    setEntryAccessMode(mode);
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onMotionChange = () => {
+      if (motionQuery.matches) {
+        stopRecordAccess();
+        setRecordAccessComplete(true);
+      }
+    };
+    motionQuery.addEventListener("change", onMotionChange);
+    return () => motionQuery.removeEventListener("change", onMotionChange);
   }, []);
 
   const recordsBySection = useMemo(() => {
@@ -209,7 +237,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const currentGameDisplay = useMemo(() => resolveCurrentGame(steamSnapshot, recordsBySection.games), [steamSnapshot, recordsBySection.games]);
   const currentGame = recordsBySection.games.find((record) => record.id === currentGameDisplay?.recordId);
-  const latestLog = [...recordsBySection.logs].sort((a, b) => b.updated.localeCompare(a.updated) || a.priority - b.priority)[0];
+  const latestLog = [...recordsBySection.logs].sort(compareLogWritingOrder)[0];
   const activity = recentActivity(archiveRecords, 6);
   const metrics = { ...getArchiveMetrics(archiveRecords, currentGame), activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
 
@@ -520,7 +548,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </button>
           </div>
           {searchOpen ? (
-            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} />
+            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} entryAccessMode={entryAccessMode} onEntryAccessModeChange={changeEntryAccessMode} />
           ) : null}
         </header>
 

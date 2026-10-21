@@ -101,6 +101,8 @@ for (const filename of filenames) {
     status: data.status || "Observed",
     started: data.started || "",
     updated: data.updated || "2026-05-15",
+    writtenAt: typeof data.writtenAt === "string" ? data.writtenAt : "",
+    writtenOrder: Number(data.writtenOrder) || 0,
     summary: data.summary || "No summary recorded.",
     banner: toStaticPath(data.banner),
     dashboardImage: toStaticPath(data.dashboardImage),
