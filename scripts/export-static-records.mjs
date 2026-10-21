@@ -1,6 +1,7 @@
 import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+import imageFraming from "../public/image-framing.js";
 
 const root = process.cwd();
 const recordsDir = path.join(root, "content", "records");
@@ -105,6 +106,7 @@ for (const filename of filenames) {
     writtenOrder: Number(data.writtenOrder) || 0,
     summary: data.summary || "No summary recorded.",
     banner: toStaticPath(data.banner),
+    ...imageFraming.imageFrameFields(data),
     dashboardImage: toStaticPath(data.dashboardImage),
     headerImage: toStaticPath(data.headerImage),
     iconImage: toStaticPath(data.iconImage),

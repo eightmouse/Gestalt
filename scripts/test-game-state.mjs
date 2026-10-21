@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import imageFraming from "../public/image-framing.js";
 
 const require = createRequire(import.meta.url);
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
@@ -29,7 +30,7 @@ const names = ["gameLogPlacement", "gameActivityValue", "gameActivityLabel"];
 const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "groupStatusLine", "renderSectionRows", "recordStateKey", "recordTraceId", "readableDate", "escapeHtml"]));
 const react = compile(`${functions("components/archive/record-utils.ts", ["formatReadableDate"])}\n${functions("components/archive/section-page.tsx", ["splitSectionRecords", "groupStatusLine", "SectionRecordButton", "recordStateKey", "recordTraceId"])}\nexports.split = splitSectionRecords; exports.Card = SectionRecordButton;`, policy);
 const studio = compile(`${functions("components/studio-client.tsx", ["splitStudioSectionRecords", "toRecordPreview", "readStudioDrafts"])}\nexports.split = splitStudioSectionRecords; exports.preview = toRecordPreview; exports.drafts = readStudioDrafts;`, {
-  ...policy, studioDraftStorageKey: "fixture-drafts", mediaListFromText: () => []
+  ...policy, imageFraming, studioDraftStorageKey: "fixture-drafts", mediaListFromText: () => []
 });
 for (const status of ["Playing", "Active", "In Progress", "Paused", "On Hold", "Planning", "Completed", "Filed", "Draft", "Inactive"]) {
   for (const placement of [undefined, "", "session", "past", "unexpected"]) {

@@ -37,10 +37,12 @@ try {
     const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
       .replace(/from "@\/lib\/([^"/]+)"/g, (_, dependency) => `from "${pathToFileURL(path.join(modules, `${dependency}.mjs`)).href}"`)
       .replace(/from "@\/public\/steam-display\.mjs"/g, `from "${pathToFileURL(path.join(root, "public/steam-display.mjs")).href}"`)
+      .replace(/from "@\/public\/image-framing\.js"/g, `from "${pathToFileURL(path.join(root, "public/image-framing.js")).href}"`)
       .replace(/from "next\/server"/g, `from "${nextServer}"`);
     await writeFile(path.join(modules, `${name}.mjs`), compiled);
   }
   const exporter = path.join(fixture, "scripts/export-static-records.mjs");
+  await copyFile(path.join(root, "public/image-framing.js"), path.join(fixture, "public/image-framing.js"));
   const realExporter = await readFile(path.join(root, "scripts/export-static-records.mjs"), "utf8");
   await writeFile(exporter, "process.exit(7);\n");
   process.chdir(fixture);
@@ -51,6 +53,10 @@ try {
   const { runStudioProcess } = await load("studio-process");
 
   for (const route of [entry, refresh, changes, publish, media, steam]) assert.equal((await route.POST(request({}, "https://untrusted.invalid"))).status, 404);
+  for (const route of [entry, refresh, changes, publish, media, steam]) {
+    assert.equal((await route.POST(request({}, "http://127.0.0.1:8174"))).status, 404, "Another loopback port is not the Studio origin");
+    assert.equal((await route.POST(request({}, "http://localhost:3000"))).status, 404, "A different loopback host is not the Studio origin");
+  }
   const realFetch = globalThis.fetch;
   let publicReads = 0;
   const publicSteam = { schemaVersion: 1, updatedAt: "2026-10-21T10:00:00.000Z", game: { appId: 2, title: "Public game", playtimeMinutes: 120, lastPlayedAt: "2026-10-21T09:00:00.000Z", achievements: null } };
@@ -171,8 +177,8 @@ try {
   assert.equal((await entry.POST(request({ ...returningGame, gameActivity: "" }))).status, 200);
   assert.ok(!(await readFile(gamePath, "utf8")).includes("gameActivity:"), "Activity can be explicitly reset to record status");
   assert.equal((await entry.POST(request({ ...returningGame, dashboardActive: true }))).status, 200);
-  assert.match(await readFile(gamePath, "utf8"), /dashboardActive: true/);
-  const secondGame = { ...game, id: "second-game", title: "Second game", dashboardActive: true, gamePlacement: "session" };
+  assert.ok(!(await readFile(gamePath, "utf8")).includes("dashboardActive:"), "Old clients cannot restore retired pins");
+  const secondGame = { ...game, id: "second-game", title: "Second game", dashboardActive: true, gamePlacement: "session", steamAppId: "39210", banner: "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/39210/library_600x900.jpg" };
   assert.equal((await entry.POST(request(secondGame))).status, 200);
   const unpinnedGame = await readFile(gamePath, "utf8");
   assert.ok(!unpinnedGame.includes("dashboardActive:"), "Pinning another game replaces the previous pin");
@@ -180,15 +186,34 @@ try {
   assert.match(unpinnedGame, /gamePlacement: "session"/);
   assert.match(unpinnedGame, /gameActivity: "inactive"/);
   const secondPath = path.join(fixture, "content/records/second-game.mdx");
-  assert.match(await readFile(secondPath, "utf8"), /dashboardActive: true/);
+  assert.ok(!(await readFile(secondPath, "utf8")).includes("dashboardActive:"));
   assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, dashboardActive: false }))).status, 200);
   assert.ok(!(await readFile(secondPath, "utf8")).includes("dashboardActive:"), "Unpinning saves automatic mode without another pinned game");
   const pinExport = { window: {} };
   runInNewContext(await readFile(path.join(fixture, "public/data/records.js"), "utf8"), pinExport);
   assert.equal(pinExport.window.__GESTALT_RECORDS.some((item) => item.section === "games" && item.dashboardActive), false);
+  const seededExport = pinExport.window.__GESTALT_RECORDS.find((item) => item.id === secondGame.id);
+  assert.equal(Number(seededExport.steamAppId), 39210);
+  assert.equal(seededExport.banner, secondGame.banner, "The official Steam thumbnail survives save/export unchanged");
+  const framedGame = { ...secondGame, originalId: secondGame.id, bannerFit: "cover", bannerZoom: 115, bannerX: 42, bannerY: 65 };
+  assert.equal((await entry.POST(request(framedGame))).status, 200);
+  const framedExport = { window: {} };
+  runInNewContext(await readFile(path.join(fixture, "public/data/records.js"), "utf8"), framedExport);
+  const framed = framedExport.window.__GESTALT_RECORDS.find((item) => item.id === secondGame.id);
+  for (const key of ["bannerFit", "bannerZoom", "bannerX", "bannerY"]) assert.equal(framed[key], framedGame[key], "Framing persists through save/export");
+  assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id }))).status, 200);
+  assert.match(await readFile(secondPath, "utf8"), /bannerZoom: 115/, "Older clients preserve saved framing when fields are omitted");
+  assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, bannerFit: "", bannerZoom: 100, bannerX: 50, bannerY: 50 }))).status, 200);
+  assert.ok(!(await readFile(secondPath, "utf8")).includes("bannerZoom:"), "Reset removes explicit framing without changing the image");
+  assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, steamAppId: "39210" }))).status, 200);
+  const beforeDuplicate = await readFile(secondPath, "utf8");
+  const duplicate = await entry.POST(request({ ...game, id: "another-title", title: "Different title", steamAppId: "39210" }));
+  assert.equal(duplicate.status, 409, "Different titles cannot create duplicate Steam game records");
+  assert.equal(await readFile(secondPath, "utf8"), beforeDuplicate, "Duplicate rejection leaves the existing record untouched");
+  assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, steamAppId: "39210" }))).status, 200, "The existing Steam game can still be edited");
   assert.equal((await entry.DELETE(request({ id: secondGame.id }, undefined, "DELETE"))).status, 200);
   assert.equal((await entry.DELETE(request({ id: game.id }, undefined, "DELETE"))).status, 200);
-  console.log("Games: placement/activity, DLC round-trip, pin replacement/reset, static export, validation and older-client preservation passed.");
+  console.log("Games: placement/activity, DLC round-trip, retired pins, Steam duplicate protection, static export and older-client preservation passed.");
 
   await git("init", "--initial-branch=main");
   await git("config", "user.name", "Gestalt Workflow Test");

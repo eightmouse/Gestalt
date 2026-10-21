@@ -10,33 +10,35 @@ export function isLocalStudioRequest(request: NextRequest): boolean {
   }
 
   const hostHeader = request.headers.get("host")?.toLowerCase() ?? "";
-  const host = hostHeader.split(":")[0];
-
-  if (!isLocalHost(host, hostHeader)) {
-    return false;
-  }
+  let expectedOrigin: string;
+  try {
+    const protocol = new URL(request.url).protocol;
+    const host = new URL(`${protocol}//${hostHeader}`);
+    if (!["http:", "https:"].includes(protocol) || !isLocalHost(host.hostname) || host.username || host.password || host.pathname !== "/" || host.search || host.hash) return false;
+    expectedOrigin = host.origin;
+  } catch { return false; }
 
   const origin = request.headers.get("origin");
 
-  if (!origin || !isLocalHeaderUrl(origin)) {
+  if (!origin || !isLocalHeaderUrl(origin, expectedOrigin)) {
     return false;
   }
 
-  return isLocalHeaderUrl(request.headers.get("referer"));
+  return isLocalHeaderUrl(request.headers.get("referer"), expectedOrigin);
 }
 
-function isLocalHost(host: string, hostHeader: string): boolean {
-  return host === "localhost" || host === "127.0.0.1" || host === "::1" || hostHeader.startsWith("[::1]");
+function isLocalHost(host: string): boolean {
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
 }
 
-function isLocalHeaderUrl(value: string | null): boolean {
+function isLocalHeaderUrl(value: string | null, expectedOrigin: string): boolean {
   if (!value) {
     return true;
   }
 
   try {
     const url = new URL(value);
-    return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1" || url.hostname === "[::1]";
+    return url.origin === expectedOrigin && !url.username && !url.password;
   } catch {
     return false;
   }

@@ -219,6 +219,20 @@ const root = document.querySelector("#root");
 let steamDisplayModule = null;
 let steamDisplaySnapshot = null;
 let steamDisplayStarted = false;
+let xTerminalController = null;
+let xTerminalRoot = null;
+
+function syncXTerminal() {
+  const node = root.querySelector("[data-x-terminal]");
+  if (node === xTerminalRoot) return;
+  xTerminalController?.destroy();
+  xTerminalController = null;
+  xTerminalRoot = node;
+  if (!node || !window.GestaltXTerminal) return;
+  xTerminalController = window.GestaltXTerminal.mount(node, {
+    embedUrl: new URL("public/x-embed.html", document.baseURI).href
+  });
+}
 
 function recordsFor(sectionId) {
   return records.filter((record) => record.section === sectionId);
@@ -643,8 +657,7 @@ function currentGameRecord() {
     return recordsFor("games").find((record) => record.id === display?.recordId);
   }
 
-  return recordsFor("games").find((record) => record.dashboardActive === true)
-    || recordsFor("games").find((record) => record.status === "Playing")
+  return recordsFor("games").find((record) => record.status === "Playing")
     || recordsFor("games")[0];
 }
 
@@ -667,7 +680,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.44.4");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.47.0");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
@@ -1107,8 +1120,10 @@ function noteMediaClassName(media) {
 }
 
 function recordBanner(record) {
+  const steamBanner = record.section === "games" ? steamDisplayModule?.steamBannerImage(record.banner) : null;
+  const framing = window.GestaltImageFraming?.imageFrameCss(record, steamBanner ? "contain" : "cover") || "";
   return record.banner
-    ? `<div class="banner-frame"><img src="${escapeHtml(record.banner)}" alt="" decoding="async" loading="lazy" /></div>`
+    ? `<div class="banner-frame${steamBanner ? " banner-frame--steam" : ""}"><img src="${escapeHtml(steamBanner || record.banner)}"${steamBanner ? ` data-steam-cover="${escapeHtml(record.banner)}"` : ""}${framing ? ` style="${framing}"` : ""} alt="" decoding="async" loading="lazy" /></div>`
     : `<div class="empty-banner"><svg class="empty-banner-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="9" width="14" height="14" rx="1.5"></rect><path d="M12 5v4M16 5v4M20 5v4M12 23v4M16 23v4M20 23v4M5 12h4M5 16h4M5 20h4M23 12h4M23 16h4M23 20h4"></path><path d="M13 13h6v6h-6z"></path></svg></div>`;
 }
 
@@ -1413,7 +1428,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.44.4</span>
+        <span>v1.47.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1427,7 +1442,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.44.4</span>
+        <span class="version-label">v1.47.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1447,7 +1462,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.44.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.47.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1591,7 +1606,7 @@ function currentGamePanel() {
   const image = currentGame ? recordImage(currentGame) : steamDisplayModule?.steamCoverUrl(display?.coverAppId) || "public/images/archive-banner.png";
   const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : "";
   const content = display ? `<div class="current-game" data-state="${recordStateKey(display.status)}" title="${escapeHtml(hint)}">
-    <div class="game-cover"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /></div>
+    <div class="game-cover${steamDisplayModule?.steamBannerImage(image) ? " is-steam-artwork" : ""}"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /></div>
     <div><strong>${escapeHtml(display.title)}</strong>
       ${display.completion ? `<span>${escapeHtml(display.completion)}</span>` : ""}
       ${display.playtime ? `<span>${escapeHtml(display.playtime)} Play Time</span>` : ""}
@@ -1649,7 +1664,7 @@ function dashboard() {
   return `<div class="dashboard-grid${state.panelOpen ? " is-muted" : ""}${state.memoryStateEnabled ? "" : " without-memory"}">
     ${dashboardPanel("PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
-    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel") : ""}
+    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", `<div class="x-terminal" data-x-terminal><div class="x-terminal-ui" data-x-ui></div></div>`, "", "", "memory-panel") : ""}
     ${currentGamePanel()}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "", "latest-log-panel")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
@@ -2540,7 +2555,7 @@ function render() {
 
   const hasFocusWindow = state.panelOpen || state.timelineOpen;
 
-  root.innerHTML = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
+  const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
       <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
@@ -2583,6 +2598,13 @@ function render() {
     </section>
   </main>`;
 
+  if (!window.GestaltXTerminal?.preserveRender(root, markup)) {
+    xTerminalController?.destroy();
+    xTerminalController = null;
+    xTerminalRoot = null;
+    root.innerHTML = markup;
+  }
+  syncXTerminal();
   syncImageLightbox();
   syncTime();
   syncWeather();
@@ -2780,6 +2802,7 @@ document.addEventListener("pointermove", (event) => {
   if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds) {
     return;
   }
+  if (memoryNode.closest("[data-x-terminal]")?.dataset.xState !== "idle") return;
 
   const rect = memoryBounds;
   const x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
@@ -3138,6 +3161,11 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("error", (event) => {
   const image = event.target;
+  if (image instanceof HTMLImageElement && image.matches(".banner-frame--steam img[data-steam-cover]") && !image.dataset.coverFallback) {
+    image.dataset.coverFallback = "true";
+    image.src = image.dataset.steamCover;
+    return;
+  }
   if (image instanceof HTMLImageElement && image.matches(".current-game img") && !image.dataset.coverFallback) {
     image.dataset.coverFallback = "true";
     image.src = "public/images/archive-banner.png";

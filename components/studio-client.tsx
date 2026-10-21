@@ -8,12 +8,15 @@ import { compareSectionRecords } from "@/lib/log-archive";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { formatNoteSelection, insertNoteLink, type NoteFormat } from "@/lib/note-formatting";
 import type { RecordEntry, RecordSection } from "@/lib/types";
+import type { SteamRecordSeed } from "@/public/steam-display.mjs";
+import imageFraming, { type ImageFrame } from "@/public/image-framing.js";
+import { ArtworkFraming } from "@/components/studio/artwork-framing";
 
 type StudioSection = Exclude<RecordSection, "system">;
 type StudioContentKey = "overview" | "technical" | "notes" | "samples" | "recommendation" | "hardware" | "attachments";
 type SetupGroupId = "systems" | "tools" | "peripherals" | "notes";
 
-type StudioForm = {
+type StudioForm = ImageFrame & {
   originalId: string;
   id: string;
   title: string;
@@ -38,10 +41,10 @@ type StudioForm = {
   hardware: string;
   technicalStack: string;
   recommendation: string;
-  dashboardActive: boolean;
   gamePlacement: "session" | "past" | "";
   gameActivity: "active" | "inactive" | "";
   steamAppId: string;
+  steamDraftAppId?: string;
   playtime: string;
   lastPlayed: string;
   achievementCount: string;
@@ -54,6 +57,7 @@ type StudioClientProps = {
   initialRecordId?: string;
   initialSection?: StudioSection;
   initialSetupGroup?: SetupGroupId;
+  initialSteamGame?: SteamRecordSeed;
   onExit?: () => void;
   onRecordsChange?: (records: RecordEntry[], selectedRecordId?: string | null, options?: { keepEditorOpen?: boolean }) => void;
 };
@@ -165,13 +169,16 @@ const setupManagerGroups: Array<{
 ];
 const setupGroupIds = setupManagerGroups.map((group) => group.id);
 
-export function StudioClient({ embedded = false, initialRecordId, initialSection, initialSetupGroup, onExit, onRecordsChange, records }: StudioClientProps) {
+export function StudioClient({ embedded = false, initialRecordId, initialSection, initialSetupGroup, initialSteamGame, onExit, onRecordsChange, records }: StudioClientProps) {
   const firstRecord = initialRecordId
     ? records.find((record) => record.id === initialRecordId)
     : embedded && initialSection
       ? undefined
       : records[0];
   const initialForm = firstRecord ? fromRecord(firstRecord) : emptyForm(initialSection ?? "projects", initialSetupGroup ?? "");
+  if (!firstRecord && initialSection === "games" && initialSteamGame) {
+    Object.assign(initialForm, initialSteamGame, { id: `steam-${initialSteamGame.steamAppId}`, steamDraftAppId: initialSteamGame.steamAppId, summary: "", status: "Playing" });
+  }
   const [studioRecords, setStudioRecords] = useState<RecordEntry[]>(records);
   const [selectedId, setSelectedId] = useState(firstRecord?.id ?? "__new");
   const [activeSection, setActiveSection] = useState<StudioSection>(initialForm.section);
@@ -260,7 +267,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
     embeddedDraftRestoredRef.current = true;
     const draftKey = initialRecordId
       ? studioRecordDraftKey(initialRecordId)
-      : studioNewDraftKey(initialSection ?? "projects");
+      : studioDraftKey(initialForm, "__new", initialSection ?? "projects");
     const draft = drafts[draftKey];
 
     if (draft) {
@@ -414,8 +421,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...recordForm,
-        body: recordBody,
-        dashboardActive: recordForm.section === "games" && recordForm.dashboardActive
+        body: recordBody
       })
     });
     const data = await readStudioResponse(response);
@@ -469,10 +475,6 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
         }
 
         nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(savedForm, item.draft.body), item.draft.form.originalId || item.draft.form.id);
-        if (savedForm.dashboardActive) {
-          nextRecords = nextRecords.map((record) => record.section === "games" && record.id !== data.id
-            ? { ...record, meta: { ...record.meta, dashboardActive: false } } : record);
-        }
         setStudioRecords(nextRecords);
         onRecordsChange?.(nextRecords, selectedIdRef.current);
         setDrafts((current) => {
@@ -1887,6 +1889,12 @@ function StudioContent({
   return (
     <section className="studio-content-terminal">
       <div className="terminal-title">// OVERVIEW</div>
+      {form.section === "games" ? <ArtworkFraming banner={form.banner} frame={imageFraming.normalizeImageFrame(form)} onChange={(frame) => {
+        onUpdate("bannerFit", frame.bannerFit);
+        onUpdate("bannerZoom", frame.bannerZoom);
+        onUpdate("bannerX", frame.bannerX);
+        onUpdate("bannerY", frame.bannerY);
+      }} /> : null}
       {form.section === "logs" ? (
         <>
           <div className="studio-generated-overview">
@@ -2002,9 +2010,6 @@ function Inspector({
               onChange={(event) => {
                 const placement = event.target.value === "past" ? "past" : "session";
                 onUpdate("gamePlacement", placement);
-                if (placement === "past" && form.dashboardActive) {
-                  onUpdate("dashboardActive", false);
-                }
               }}
             >
               <option value="session">Session Logs</option>
@@ -2021,10 +2026,6 @@ function Inspector({
               </select>
             </label>
           ) : null}
-          <label className="studio-check" title="Override automatic Steam selection with this game. Uncheck to follow the latest Steam game.">
-            <input type="checkbox" checked={form.dashboardActive} onChange={(event) => onUpdate("dashboardActive", event.target.checked)} />
-            <span>Pin as Current Game</span>
-          </label>
           <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
         </>
       ) : null}
@@ -2645,6 +2646,7 @@ function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "
     updated: today,
     summary: defaultSummary(section, normalizedSetupGroup),
     banner: "",
+    ...imageFraming.normalizeImageFrame(null),
     headerImage: "",
     iconImage: "",
     externalUrl: "",
@@ -2657,7 +2659,6 @@ function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "
     hardware: "",
     technicalStack: "",
     recommendation: "",
-    dashboardActive: false,
     gamePlacement: section === "games" ? "session" : "",
     gameActivity: section === "games" ? "active" : "",
     steamAppId: "",
@@ -2719,6 +2720,7 @@ function fromRecord(record?: RecordEntry): StudioForm {
     writtenOrder: record.writtenOrder,
     summary: record.summary,
     banner: record.banner ?? "",
+    ...imageFraming.normalizeImageFrame(record.meta),
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
     iconImage: typeof record.meta.iconImage === "string" ? record.meta.iconImage : "",
     externalUrl: typeof record.meta.externalUrl === "string" ? record.meta.externalUrl : "",
@@ -2731,7 +2733,6 @@ function fromRecord(record?: RecordEntry): StudioForm {
     hardware: metaTextBlock(record.meta.hardware) || (record.section === "setup" ? setupHardwareFallback(record.body) : ""),
     technicalStack: metaTextBlock(record.meta.technicalStack),
     recommendation: metaTextBlock(record.meta.recommendation),
-    dashboardActive: record.meta.dashboardActive === true,
     gamePlacement: record.section === "games" ? gameLogPlacement(record) : "",
     gameActivity: gameActivityValue(record),
     steamAppId: typeof record.meta.steamAppId === "number" || typeof record.meta.steamAppId === "string" ? String(record.meta.steamAppId) : "",
@@ -2774,6 +2775,7 @@ function readStudioDrafts(): StudioDraftMap {
       .filter(([, draft]) => draft && draft.form && typeof draft.form.status === "string")
       .map(([key, draft]) => [key, { ...draft, form: {
         ...draft.form,
+        ...imageFraming.normalizeImageFrame(draft.form),
         gamePlacement: draft.form.section === "games" ? gameLogPlacement(draft.form) : "",
         gameActivity: gameActivityValue(draft.form)
       } }]));
@@ -2816,6 +2818,10 @@ function studioDraftKey(form: StudioForm, selectedId: string, fallbackSection: S
 
   if (selectedId && selectedId !== "__new") {
     return studioRecordDraftKey(selectedId);
+  }
+
+  if (form.section === "games" && /^\d+$/.test(form.steamDraftAppId ?? "")) {
+    return `new:games:steam:${form.steamDraftAppId}`;
   }
 
   return studioNewDraftKey(form.section || fallbackSection);
@@ -3109,13 +3115,13 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     progress: form.progress,
     priority: form.priority,
     meta: {
+      ...imageFraming.imageFrameFields(form),
       headerImage: form.headerImage,
       iconImage: form.iconImage,
       externalUrl: form.externalUrl,
       setupGroup: form.section === "setup" ? normalizeSetupGroup(form.setupGroup) : "",
       samples: mediaListFromText(form.samples),
       attachments: mediaListFromText(form.attachments),
-      dashboardActive: form.dashboardActive,
       gamePlacement: form.gamePlacement || (form.section === "games" ? gameLogPlacement(form) : ""),
       gameActivity: form.gameActivity || "",
       hardware: form.hardware,

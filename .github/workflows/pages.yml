@@ -40,6 +40,10 @@ jobs:
           node --check sw.js
           node --check public/data/records.js
           node --check public/note-inline.js
+          node --check public/image-framing.js
+          node --check public/x-terminal.js
+          node --check public/x-embed.js
+          node scripts/test-x-terminal.mjs
           node --check public/steam-display.mjs
           node --check scripts/prepare-pages.mjs
           node scripts/validate-content.mjs

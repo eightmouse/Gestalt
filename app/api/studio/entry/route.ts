@@ -12,6 +12,7 @@ import { writeStaticRecords } from "@/lib/static-export";
 import { beginStudioOperation, setStaticExportRequired } from "@/lib/studio-operation";
 import { parseFrontmatter } from "@/lib/content";
 import { gameActivityValue, gameLogPlacement } from "@/lib/game-state";
+import imageFraming from "@/public/image-framing.js";
 
 type EntryPayload = {
   originalId?: string;
@@ -24,6 +25,10 @@ type EntryPayload = {
   updated?: string;
   summary?: string;
   banner?: string;
+  bannerFit?: string;
+  bannerZoom?: number | string;
+  bannerX?: number | string;
+  bannerY?: number | string;
   headerImage?: string;
   iconImage?: string;
   externalUrl?: string;
@@ -36,7 +41,6 @@ type EntryPayload = {
   hardware?: string;
   technicalStack?: string;
   recommendation?: string;
-  dashboardActive?: boolean | string;
   gamePlacement?: string;
   gameActivity?: string;
   steamAppId?: number | string;
@@ -105,7 +109,6 @@ async function saveEntry(request: NextRequest) {
   const priority = clampNumber(payload.priority, -999, 9999, 50);
   const samples = normalizeMediaList(payload.samples);
   const attachments = normalizeMediaList(payload.attachments);
-  const dashboardActive = section === "games" && toBoolean(payload.dashboardActive);
   const steamAppId = parseOptionalInteger(payload.steamAppId);
   const externalUrl = cleanExternalUrl(payload.externalUrl);
   const filePath = path.join(recordsDirectory, `${id}.mdx`);
@@ -115,6 +118,12 @@ async function saveEntry(request: NextRequest) {
   if (originalId && !existing) {
     return NextResponse.json({ error: "The original record no longer exists. Refresh before saving this draft." }, { status: 409 });
   }
+  const bannerFrame = imageFraming.imageFrameFields({
+    bannerFit: payload.bannerFit ?? existing?.bannerFit,
+    bannerZoom: payload.bannerZoom ?? existing?.bannerZoom,
+    bannerX: payload.bannerX ?? existing?.bannerX,
+    bannerY: payload.bannerY ?? existing?.bannerY
+  });
   const writtenAt = section === "logs"
     ? clean(existing?.writtenAt) || (existing ? clean(existing.started) || clean(existing.updated) : new Date().toISOString())
     : clean(existing?.writtenAt);
@@ -140,8 +149,18 @@ async function saveEntry(request: NextRequest) {
     );
   }
 
-  if (dashboardActive) {
-    await unsetOtherActiveGames(id);
+  if (section === "games" && steamAppId) {
+    const filenames = await readdir(recordsDirectory).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") return [];
+      throw error;
+    });
+    for (const filename of filenames) {
+      if (!filename.endsWith(".mdx") || filename === `${originalId}.mdx`) continue;
+      const { data } = parseFrontmatter(await readFile(path.join(recordsDirectory, filename), "utf8"));
+      if (data.section === "games" && Number(data.steamAppId) === steamAppId) {
+        return NextResponse.json({ error: "This Steam game already has a record. Open the existing game to edit it." }, { status: 409 });
+      }
+    }
   }
 
   const lines = [
@@ -156,6 +175,7 @@ async function saveEntry(request: NextRequest) {
     ...(writtenOrder ? [`writtenOrder: ${writtenOrder}`] : []),
     `summary: "${escapeFrontmatter(clean(payload.summary) || "No summary recorded.")}"`,
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
+    ...Object.entries(bannerFrame).map(([key, value]) => `${key}: ${typeof value === "string" ? `"${value}"` : value}`),
     ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
     ...(clean(payload.iconImage) ? [`iconImage: "${escapeFrontmatter(clean(payload.iconImage))}"`] : []),
     ...(externalUrl ? [`externalUrl: "${escapeFrontmatter(externalUrl)}"`] : []),
@@ -164,7 +184,6 @@ async function saveEntry(request: NextRequest) {
     ...(attachments.length ? [`attachments: [${attachments.map((item) => `"${escapeFrontmatter(item)}"`).join(", ")}]`] : []),
     `progress: ${progress}`,
     `priority: ${priority}`,
-    ...(dashboardActive ? ["dashboardActive: true"] : []),
     ...(gamePlacement ? [`gamePlacement: "${gamePlacement}"`] : []),
     ...(gameActivity ? [`gameActivity: "${gameActivity}"`] : []),
     ...(steamAppId ? [`steamAppId: ${steamAppId}`] : []),
@@ -309,10 +328,6 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
   return Math.max(min, Math.min(max, Math.round(number)));
 }
 
-function toBoolean(value: unknown): boolean {
-  return value === true || value === "true" || value === "on" || value === "1";
-}
-
 function parseOptionalInteger(value: unknown): number | null {
   const raw = typeof value === "number" ? String(value) : clean(value);
 
@@ -326,30 +341,6 @@ function parseOptionalInteger(value: unknown): number | null {
 
 function normalizeSetupGroup(value: string): string {
   return ["systems", "tools", "peripherals", "notes"].includes(value) ? value : "systems";
-}
-
-async function unsetOtherActiveGames(activeId: string): Promise<void> {
-  await mkdir(recordsDirectory, { recursive: true });
-  const filenames = await readdir(recordsDirectory);
-
-  await Promise.all(
-    filenames
-      .filter((filename) => filename.endsWith(".mdx") && filename !== `${activeId}.mdx`)
-      .map(async (filename) => {
-        const filePath = path.join(recordsDirectory, filename);
-        const source = await readFile(filePath, "utf8");
-
-        if (!/section:\s*["']?games["']?/.test(source) || !/dashboardActive:\s*true/.test(source)) {
-          return;
-        }
-
-        const next = source.replace(/\r?\ndashboardActive:\s*true\s*(?=\r?\n)/, "\n");
-
-        if (next !== source) {
-          await writeFile(filePath, next, "utf8");
-        }
-      })
-  );
 }
 
 async function removeRecordFile(id: string): Promise<void> {

@@ -15,6 +15,8 @@ import { setupHardwareSource } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import noteInline, { type NoteInlineToken } from "@/public/note-inline.js";
+import { steamBannerImage } from "@/public/steam-display.mjs";
+import imageFraming from "@/public/image-framing.js";
 export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label: string }> {
   if (record.section === "games") {
     return [
@@ -204,9 +206,14 @@ function RecordOverviewPage({ record }: { record: RecordEntry }) {
 
 function RecordBanner({ record }: { record: RecordEntry }) {
   if (record.banner) {
+    const steamBanner = record.section === "games" ? steamBannerImage(record.banner) : null;
     return (
-      <div className="banner-frame">
-        <img src={record.banner} alt="" decoding="async" loading="lazy" />
+      <div className={steamBanner ? "banner-frame banner-frame--steam" : "banner-frame"}>
+        <img key={steamBanner || record.banner} src={steamBanner || record.banner} style={imageFraming.imageFrameStyle(record.meta, steamBanner ? "contain" : "cover")} alt="" decoding="async" loading="lazy" onError={steamBanner ? (event) => {
+          if (event.currentTarget.dataset.coverFallback) return;
+          event.currentTarget.dataset.coverFallback = "true";
+          event.currentTarget.src = record.banner!;
+        } : undefined} />
       </div>
     );
   }

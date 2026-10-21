@@ -33,5 +33,8 @@ type GameRecord = {
 export function publicSnapshot(value: unknown): SteamSnapshot | null;
 export function resolveCurrentGame(snapshot: unknown, records: GameRecord[]): CurrentGameDisplay | null;
 export function steamCoverUrl(appId?: number): string | null;
+export function steamBannerImage(cover?: string): string | null;
+export type SteamRecordSeed = { title: string; steamAppId: string; banner: string };
+export function steamRecordSeed(display: CurrentGameDisplay | null): SteamRecordSeed | null;
 export function createSteamSnapshotLoader(fetchImpl?: typeof fetch): (url: string) => Promise<SteamSnapshot | null>;
 export const loadSteamSnapshot: ReturnType<typeof createSteamSnapshotLoader>;

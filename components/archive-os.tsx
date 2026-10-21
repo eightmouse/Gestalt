@@ -33,7 +33,7 @@ import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/s
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, type SteamSnapshot } from "@/public/steam-display.mjs";
+import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, steamRecordSeed, type SteamRecordSeed, type SteamSnapshot } from "@/public/steam-display.mjs";
 import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, shouldPlayEntryAccess, type EntryAccessMode } from "@/lib/entry-access";
 
 const LocalStudioEditor = dynamic(
@@ -149,6 +149,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [studioRecordId, setStudioRecordId] = useState<string | null>(null);
   const [studioCreateSection, setStudioCreateSection] = useState<Exclude<RecordSection, "system"> | null>(null);
   const [studioSetupGroup, setStudioSetupGroup] = useState<SetupGroupId | undefined>();
+  const [studioSteamGame, setStudioSteamGame] = useState<SteamRecordSeed | undefined>();
   const searchRef = useRef<HTMLDivElement | null>(null);
   const recordAccessTimerRef = useRef<number | null>(null);
   const recordAccessPlayedRef = useRef(false);
@@ -370,15 +371,29 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
 
   const openLocalEditor = (recordId: string) => {
+    setStudioSteamGame(undefined);
     setStudioCreateSection(null);
     setStudioSetupGroup(undefined);
     setStudioRecordId(recordId);
   };
 
   const createLocalRecord = (section: Exclude<RecordSection, "system">, setupGroup?: SetupGroupId) => {
+    setStudioSteamGame(undefined);
     setStudioCreateSection(section);
     setStudioSetupGroup(setupGroup);
     setStudioRecordId("__new");
+  };
+
+  const createCurrentGameRecord = () => {
+    const seed = steamRecordSeed(currentGameDisplay);
+    if (!seed) return;
+    const existing = recordsBySection.games.find((record) => Number(record.meta.steamAppId) === Number(seed.steamAppId));
+    if (existing) {
+      openLocalEditor(existing.id);
+      return;
+    }
+    createLocalRecord("games");
+    setStudioSteamGame(seed);
   };
 
   const openSection = (section: RecordSection) => {
@@ -562,6 +577,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             activity={activity}
             currentGame={currentGame}
             currentGameDisplay={currentGameDisplay}
+            onCreateCurrentGame={process.env.NODE_ENV === "development" && steamRecordSeed(currentGameDisplay) ? createCurrentGameRecord : undefined}
             latestLog={latestLog}
             panelOpen={panelOpen}
             projectRecords={projectDashboardRecords}
@@ -682,6 +698,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
               initialRecordId={studioRecordId === "__new" ? undefined : studioRecordId}
               initialSection={studioCreateSection ?? undefined}
               initialSetupGroup={studioSetupGroup}
+              initialSteamGame={studioSteamGame}
               records={archiveRecords.filter((record) => record.section !== "system")}
               onExit={() => setStudioRecordId(null)}
               onRecordsChange={(updatedRecords, currentId, options) => {

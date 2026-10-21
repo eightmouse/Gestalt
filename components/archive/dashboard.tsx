@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FilePlus2 } from "lucide-react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { activityFreshness, recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
-import { steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
+import { steamBannerImage, steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
+import { XTerminal } from "@/components/archive/x-terminal";
 
 type DashboardProps = {
   activity: ActivityEntry[];
@@ -16,6 +18,7 @@ type DashboardProps = {
   onOpenRecord: (record: RecordEntry, content?: "notes") => void;
   onOpenSection: (section: RecordSection) => void;
   onOpenTimeline: () => void;
+  onCreateCurrentGame?: () => void;
 };
 
 type DashboardPanelProps = {
@@ -64,7 +67,8 @@ export function ArchiveDashboard({
   projectRecords,
   onOpenRecord,
   onOpenSection,
-  onOpenTimeline
+  onOpenTimeline,
+  onCreateCurrentGame
 }: DashboardProps) {
   const activityRows = activity.map((item) => {
     const freshness = activityFreshness(item.date);
@@ -90,10 +94,10 @@ export function ArchiveDashboard({
       <DashboardPanel
         title="CURRENT GAME"
         className="current-game-panel"
-        footerLabel={currentGame ? "Read note" : undefined}
-        onFooter={() => currentGame && onOpenRecord(currentGame, "notes")}
+        footerLabel={currentGame ? "Read note" : onCreateCurrentGame ? "Create game record" : undefined}
+        onFooter={currentGame ? () => onOpenRecord(currentGame, "notes") : onCreateCurrentGame}
       >
-        {currentGameDisplay ? <CurrentGame display={currentGameDisplay} record={currentGame} /> : <p className="subtle">No session active.</p>}
+        {currentGameDisplay ? <CurrentGame display={currentGameDisplay} record={currentGame} onCreate={onCreateCurrentGame} /> : <p className="subtle">No session active.</p>}
       </DashboardPanel>
 
       <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
@@ -102,7 +106,7 @@ export function ArchiveDashboard({
 
       {MEMORY_STATE_ENABLED ? (
         <DashboardPanel title="MEMORY STATE" className="memory-panel">
-          <MemoryLoop />
+          <XTerminal />
         </DashboardPanel>
       ) : null}
 
@@ -158,12 +162,12 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
   );
 }
 
-function CurrentGame({ display, record }: { display: CurrentGameDisplay; record?: RecordEntry }) {
+function CurrentGame({ display, record, onCreate }: { display: CurrentGameDisplay; record?: RecordEntry; onCreate?: () => void }) {
   const image = record ? recordDashboardImage(record) : steamCoverUrl(display.coverAppId) || "/images/archive-banner.png";
   const hint = display.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : undefined;
   return (
     <div className="current-game" data-state={dashboardRecordStateKey(display.status)} title={hint}>
-      <div className="game-cover">
+      <div className={steamBannerImage(image) ? "game-cover is-steam-artwork" : "game-cover"}>
         <img key={image} src={image} alt="" decoding="async" fetchPriority="low" referrerPolicy="no-referrer" onError={(event) => {
           if (!event.currentTarget.dataset.coverFallback) {
             event.currentTarget.dataset.coverFallback = "true";
@@ -176,6 +180,7 @@ function CurrentGame({ display, record }: { display: CurrentGameDisplay; record?
         {display.completion ? <span>{display.completion}</span> : null}
         {display.playtime ? <span>{display.playtime} Play Time</span> : null}
         {display.lastPlayed ? <span>Last Played: {display.lastPlayed}</span> : null}
+        {onCreate ? <button className="current-game-create" type="button" onClick={onCreate}><FilePlus2 size={14} aria-hidden="true" />Create game record</button> : null}
       </div>
     </div>
   );

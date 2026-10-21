@@ -42,11 +42,10 @@ function text(value) {
 
 export function resolveCurrentGame(value, records) {
   const snapshot = publicSnapshot(value);
-  const pinned = records.find((entry) => field(entry, "dashboardActive") === true);
-  // A pin selects the game, not the age of its stats. Never borrow another game's data.
-  if (snapshot && (!pinned || Number(field(pinned, "steamAppId")) === snapshot.game.appId)) {
+  // Legacy dashboardActive fields no longer override the latest Steam game.
+  if (snapshot) {
     const game = snapshot.game;
-    const record = pinned ?? records.find((entry) => Number(field(entry, "steamAppId")) === game.appId);
+    const record = records.find((entry) => Number(field(entry, "steamAppId")) === game.appId);
     const date = new Date(game.lastPlayedAt);
     return {
       source: "steam",
@@ -61,8 +60,7 @@ export function resolveCurrentGame(value, records) {
     };
   }
 
-  const record = pinned
-    ?? records.find((entry) => entry.status === "Playing") ?? records[0];
+  const record = records.find((entry) => entry.status === "Playing") ?? records[0];
   if (!record) return null;
   return {
     source: "manual",
@@ -79,6 +77,21 @@ export function resolveCurrentGame(value, records) {
 export function steamCoverUrl(appId) {
   return positiveInteger(appId) && appId <= 0xffffffff
     ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/library_600x900.jpg` : null;
+}
+
+export function steamBannerImage(cover) {
+  if (typeof cover !== "string") return null;
+  const match = cover.match(/^https:\/\/shared\.fastly\.steamstatic\.com\/store_item_assets\/steam\/apps\/(\d+)\/library_600x900\.jpg$/);
+  const appId = match ? Number(match[1]) : 0;
+  return steamCoverUrl(appId)
+    ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg` : null;
+}
+
+export function steamRecordSeed(display) {
+  const banner = steamCoverUrl(display?.coverAppId);
+  const title = gameTitle(display?.title);
+  if (display?.source !== "steam" || display.recordId || !banner || !title) return null;
+  return { title, steamAppId: String(display.coverAppId), banner };
 }
 
 export function createSteamSnapshotLoader(fetchImpl = fetch) {

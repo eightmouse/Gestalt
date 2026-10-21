@@ -158,6 +158,15 @@ for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".
   if (typeof parsed.data.priority !== "number") {
     fail(filename, "priority must be a number");
   }
+  if (parsed.data.bannerFit !== undefined && !["contain", "cover"].includes(parsed.data.bannerFit)) {
+    fail(filename, "bannerFit must be contain or cover");
+  }
+  for (const [key, min, max] of [["bannerZoom", 50, 200], ["bannerX", 0, 100], ["bannerY", 0, 100]]) {
+    const value = parsed.data[key];
+    if (value !== undefined && (!Number.isFinite(value) || value < min || value > max)) {
+      fail(filename, `${key} must be a number from ${min} to ${max}`);
+    }
+  }
 
   if (!parsed.body) {
     fail(filename, "body cannot be empty");

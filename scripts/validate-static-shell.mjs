@@ -12,6 +12,7 @@ const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"
 const errors = [];
 
 const cacheTokenCases = [
+  ['src="public/image-framing.js?v=1.46.0"', 'src="public/image-framing.js?v=12345"'],
   ['href="app/globals.css?v=1.36.24"', 'href="app/globals.css?v=12345"'],
   ['src="public/data/records.js?v=1700000000"', 'src="public/data/records.js?v=12345"'],
   ['src="public/note-inline.js?v=1.40.0"', 'src="public/note-inline.js?v=12345"'],
@@ -61,6 +62,18 @@ const archiveNavigationMenu = extractFunction("archiveNavigationMenu");
 const recordsScriptIndex = indexHtml.indexOf("public/data/records.js");
 const appScriptIndex = indexHtml.indexOf("static-app.js");
 const inlineScriptIndex = indexHtml.indexOf("public/note-inline.js");
+const framingScriptIndex = indexHtml.indexOf("public/image-framing.js");
+const xScriptIndex = indexHtml.indexOf("public/x-terminal.js");
+if (xScriptIndex === -1 || xScriptIndex > appScriptIndex) errors.push("X Terminal helper must load before the static runtime.");
+for (const file of ["public/x-terminal.js", "public/x-embed.js"]) {
+  const result = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
+  if (result.status !== 0) errors.push(`${file} is missing or has invalid syntax.`);
+}
+const xCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-x-terminal.mjs")], { encoding: "utf8" });
+if (xCheck.status !== 0) errors.push(`X Terminal regression failed: ${(xCheck.stderr || xCheck.stdout || "").trim()}`);
+if (framingScriptIndex === -1 || framingScriptIndex > appScriptIndex || !existsSync(path.join(root, "public/image-framing.js"))) {
+  errors.push("The image framing helper must load before the static runtime.");
+}
 
 if (inlineScriptIndex === -1 || inlineScriptIndex > appScriptIndex || !existsSync(path.join(root, "public/note-inline.js"))) {
   errors.push("The shared note-inline helper must exist and load before the static runtime.");
@@ -147,6 +160,8 @@ for (const file of collectStaticAssetReferences(`${indexHtml}\n${recordsData}`))
 
 const swCheck = spawnSync(process.execPath, ["--check", path.join(root, "sw.js")], { encoding: "utf8" });
 const inlineCheck = spawnSync(process.execPath, ["--check", path.join(root, "public/note-inline.js")], { encoding: "utf8" });
+const framingCheck = spawnSync(process.execPath, ["--check", path.join(root, "public/image-framing.js")], { encoding: "utf8" });
+if (framingCheck.status !== 0) errors.push("Image framing helper has invalid JavaScript syntax.");
 if (inlineCheck.status !== 0) {
   errors.push(`Note inline helper syntax check failed: ${(inlineCheck.stderr || inlineCheck.stdout || "").trim()}`);
 }
