@@ -6,6 +6,8 @@ Owner priority update: 21 October 2026. Finish the existing Steam work, allowing
 
 Release update: the owner has now authorized review/commit/push of the `v1.44.2` batch, confirmed branch-based Pages hosting and reported adding the two Steam repository secrets. Earlier notes about deferring the push are superseded for this batch only. Switching hosting, enabling the workflow gates and real Steam/deployment acceptance remain explicit next steps.
 
+Baseline update: `v1.44.2` shipped as `0cbc20a1`; the owner subsequently enabled the Pages gate and reported green preparation/deployment for run `39571138497`. Local `v1.44.3` replaces the older Node 20 action revisions that produced annotations with verified Node 24-compatible release pins, including the nested uploader. No permissions or Steam switches change. Publish/rerun this compatibility fix, then verify actual Steam data before treating automatic Current Game updates as complete.
+
 1. Game placement/activity controls are implemented locally in `v1.43.0`; verify the owner's normal workflow before further editor changes. Existing records are preserved and no bulk migration runs.
 2. Finish Current Game Steam automation and the verified Pages delivery path. Manual pin selection and matching-only stat refresh are implemented locally in `v1.43.1`; `v1.44.0` prepares a gated, artifact-only deployment workflow, and `v1.44.2` adds read-only local preview continuity. Activation, real-data/deployed acceptance and old sync retirement remain open.
 3. Investigate the X/Twitter feed soon, then agree on an affordable, lightweight integration before replacing Memory State. Keep credentials private and retain Memory State as a fallback.

@@ -102,6 +102,16 @@ try {
   assert.ok(workflow.includes("persist-credentials: false") && workflow.includes("cancel-in-progress: false"));
   assert.ok(!/contents: write|pull_request|npm install|pnpm install|git push|git commit/.test(workflow));
   assert.equal((workflow.match(/uses: actions\/[\w-]+@[0-9a-f]{40}/g) || []).length, 4, "All official actions are pinned to exact verified revisions");
+  const reviewedActions = {
+    checkout: "3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "configure-pages": "45bfe0192ca1faeb007ade9deae92b16b8254a0d",
+    "upload-pages-artifact": "fc324d3547104276b827a68afc52ff2a11cc49c9",
+    "deploy-pages": "368f82528645a54fb793d4d04e342629a3f51346"
+  };
+  for (const [name, revision] of Object.entries(reviewedActions)) {
+    assert.ok(workflow.includes(`uses: actions/${name}@${revision}`), "Keep the reviewed Node 24-compatible action revisions, including the composite uploader");
+  }
+  assert.ok(!/ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION|FORCE_JAVASCRIPT_ACTIONS_TO_NODE24/.test(workflow), "Do not hide deprecated action metadata with runtime overrides");
   assert.ok(workflow.includes("path: .pages-site"));
   assert.ok(workflow.includes("needs: prepare") && workflow.includes("needs.prepare.outputs.deploy == 'true'"));
   console.log("Pages preparation passed: public-only artifact, unchanged skip, safe fallback, failure preservation, no source writes, gated deployment and pinned actions.");

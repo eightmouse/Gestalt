@@ -1,5 +1,7 @@
 # Gestalt Project Checkpoint
 
+Action runtime follow-up (21 October 2026): `v1.44.2` was committed/pushed as `0cbc20a1`. The owner reported successful prepare/deploy jobs for run `39571138497`, with Node 20 compatibility annotations. Local `v1.44.3` replaces all four top-level action pins with verified official Node 24-compatible release commits; the composite uploader's nested action was checked too. No permissions, dependency installs, source/content behavior or Steam activation changed. Exact reviewed pins and the absence of insecure-runtime overrides are regression-checked. The follow-up is not committed/pushed yet; real annotation acceptance remains pending. See `docs/PAGES_DEPLOYMENT.md` for upstream pin details and the baseline report.
+
 ## Release Checkpoint: v1.44.2
 
 On 21 October 2026 the owner authorized review, commit and push of the accumulated batch, including the saved Kingdom Hearts Melody of Memory classification edit. The earlier follow-up paragraphs below describe the work as it was developed locally; their "uncommitted" status is historical, not the release state. This batch collects note formatting/headings, boot handoff, adaptive archive browsing, contextual tabs, full-viewport media, game placement/activity, Steam pinning and prepared hosted/local snapshot paths, plus README cleanup. Check Git history for the final release commit.

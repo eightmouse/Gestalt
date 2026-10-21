@@ -667,7 +667,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.44.2");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.44.3");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
@@ -1413,7 +1413,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.44.2</span>
+        <span>v1.44.3</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1427,7 +1427,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.44.2</span>
+        <span class="version-label">v1.44.3</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1447,7 +1447,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.44.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.44.3</dd></div>
       </dl>
     </div>
   </aside>`;

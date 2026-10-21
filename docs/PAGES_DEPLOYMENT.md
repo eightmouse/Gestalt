@@ -1,6 +1,21 @@
 # Pages And Steam Activation
 
-Status: prepared in `v1.44.0` and included in the `v1.44.2` release batch; activation is still pending. On 21 October 2026 the owner confirmed the existing source is **Deploy from a branch**, reported adding both Steam repository secrets, and authorized the batch commit/push. Existing hosting is unchanged until the steps below are performed. The GitHub CLI was unavailable during implementation, so remote settings and secret values have not been inspected or modified by the agent.
+Status: the workflow shipped in `v1.44.2` (`0cbc20a1`), and the owner reported a successful baseline Pages deployment on 21 October 2026. Both Steam repository secrets have been added according to the owner; Steam refresh activation and actual data acceptance remain pending. The GitHub CLI was unavailable during implementation, so remote settings and secret values have not been inspected or modified by the agent.
+
+Baseline update: the owner subsequently enabled the Pages gate and reported green preparation/deployment jobs for [run 39571138497](https://github.com/eightmouse/Gestalt/actions/runs/39571138497). The original Node 20 action pins generated compatibility annotations. Local `v1.44.3` updates them to reviewed Node 24 releases; this follow-up still needs publication and a remote run. Steam refresh remains a separate, unverified activation step. The checklist below is retained for setup/recovery, not as a claim that the baseline has never run.
+
+## Action Runtime Pins
+
+Verified from official upstream release tags and the exact revisions' `action.yml` files on 21 October 2026:
+
+| Action | Release | Commit | Runtime |
+| --- | --- | --- | --- |
+| checkout | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` | Node 24 |
+| configure-pages | v6.0.0 | `45bfe0192ca1faeb007ade9deae92b16b8254a0d` | Node 24 |
+| upload-pages-artifact | v5.0.0 | `fc324d3547104276b827a68afc52ff2a11cc49c9` | Composite; pinned upload-artifact v7.0.0 uses Node 24 |
+| deploy-pages | v5.0.1 | `368f82528645a54fb793d4d04e342629a3f51346` | Node 24 |
+
+The composite uploader pins its nested upload action to `bbbca2ddaa5d8feaa63e36b76fdaad77386f024f`. Existing inputs and the `github-pages` artifact name remain compatible. Credential persistence stays disabled, permissions/gates are unchanged, and no insecure-runtime opt-out or warning-suppression variable is added. These runtimes belong to GitHub-hosted actions, not the local Node installation or Gestalt's npm dependency graph. A green local test cannot prove the next hosted run is warning-free; verify its annotations after publication. See [GitHub's migration notice](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/).
 
 ## Before Switching
 
