@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { formatDate, formatReadableDate, type ArchiveMetrics } from "@/components/archive/record-utils";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
@@ -28,6 +28,7 @@ type SidebarProps = {
   onHome: () => void;
   onOpenSection: (section: RecordSection) => void;
   onToggleNav: () => void;
+  localReview?: ReactNode;
 };
 
 export function Sidebar({
@@ -37,7 +38,8 @@ export function Sidebar({
   now,
   onHome,
   onOpenSection,
-  onToggleNav
+  onToggleNav,
+  localReview
 }: SidebarProps) {
   const activeConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const activeSectionIndex = Math.max(0, sections.findIndex((section) => section.id === activeSection));
@@ -53,11 +55,18 @@ export function Sidebar({
     previousActiveIndexRef.current = activeSectionIndex;
   }, [activeSectionIndex]);
 
+  const menuToggle = <button
+    className={navOpen ? "archive-menu-toggle is-active" : "archive-menu-toggle"}
+    type="button" aria-expanded={navOpen} aria-label="Open archive navigation" onClick={onToggleNav}>
+    <span className="archive-menu-glyph" aria-hidden="true"><i /></span>
+    <span className="archive-menu-code">{activeConfig.code}</span>
+  </button>;
+
   return (
     <aside className="sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.47.0</span>
+          <span>v1.52.0</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -67,21 +76,10 @@ export function Sidebar({
           <button className="brand" type="button" onClick={onHome}>
             GESTALT
           </button>
-          <button
-            className={navOpen ? "archive-menu-toggle is-active" : "archive-menu-toggle"}
-            type="button"
-            aria-expanded={navOpen}
-            aria-label="Open archive navigation"
-            onClick={onToggleNav}
-          >
-            <span className="archive-menu-glyph" aria-hidden="true">
-              <i />
-            </span>
-            <span className="archive-menu-code">{activeConfig.code}</span>
-          </button>
+          {localReview ? <div className="brand-local-actions">{localReview}{menuToggle}</div> : menuToggle}
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.47.0</span>
+          <span className="version-label">v1.52.0</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -144,7 +142,7 @@ export function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.47.0</dd>
+            <dd>GESTALT OS v1.52.0</dd>
           </div>
         </dl>
       </div>

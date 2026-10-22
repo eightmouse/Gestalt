@@ -11,6 +11,11 @@ import type { RecordEntry, RecordSection } from "@/lib/types";
 import type { SteamRecordSeed } from "@/public/steam-display.mjs";
 import imageFraming, { type ImageFrame } from "@/public/image-framing.js";
 import { ArtworkFraming } from "@/components/studio/artwork-framing";
+import { InlineRecordLayout } from "@/components/studio/inline-record-layout";
+import { supportsInlineEditing } from "@/lib/inline-editing";
+import { readStudioResponse, StudioRequestError } from "@/lib/studio-client-api";
+import { useStudioPublishing } from "@/components/studio/publishing-store";
+import { PublishNotificationPanel } from "@/components/studio/change-review-panel";
 
 type StudioSection = Exclude<RecordSection, "system">;
 type StudioContentKey = "overview" | "technical" | "notes" | "samples" | "recommendation" | "hardware" | "attachments";
@@ -58,6 +63,10 @@ type StudioClientProps = {
   initialSection?: StudioSection;
   initialSetupGroup?: SetupGroupId;
   initialSteamGame?: SteamRecordSeed;
+  inline?: boolean;
+  initialContent?: StudioContentKey;
+  onContentChange?: (content: StudioContentKey) => void;
+  onBusyChange?: (busy: boolean) => void;
   onExit?: () => void;
   onRecordsChange?: (records: RecordEntry[], selectedRecordId?: string | null, options?: { keepEditorOpen?: boolean }) => void;
 };
@@ -79,40 +88,6 @@ type StudioDraft = {
   updatedAt: number;
 };
 type StudioDraftMap = Record<string, StudioDraft>;
-
-type PublishState = {
-  phase: "running" | "success" | "error";
-  title: string;
-  detail: string;
-  summary?: PublishSummary;
-  output?: string;
-};
-
-type PublishSummary = {
-  branch?: string;
-  cacheToken?: string;
-  changedFiles?: number;
-  commit?: string;
-  mediaAdded?: number;
-  recordsChanged?: string[];
-  staticExported?: boolean;
-};
-
-type StudioPendingRecord = {
-  id: string;
-  title: string;
-  section?: RecordSection;
-  change: "new" | "edited" | "deleted";
-};
-
-type StudioPendingChanges = {
-  records: StudioPendingRecord[];
-  changedFiles: number;
-  mediaFiles: number;
-  staticDataChanged: boolean;
-  staticExportRequired: boolean;
-  unpushedCommits: number;
-};
 
 const studioSections: Array<{
   id: StudioSection;
@@ -169,7 +144,7 @@ const setupManagerGroups: Array<{
 ];
 const setupGroupIds = setupManagerGroups.map((group) => group.id);
 
-export function StudioClient({ embedded = false, initialRecordId, initialSection, initialSetupGroup, initialSteamGame, onExit, onRecordsChange, records }: StudioClientProps) {
+export function StudioClient({ embedded = false, inline = false, initialContent = "overview", onContentChange, onBusyChange, initialRecordId, initialSection, initialSetupGroup, initialSteamGame, onExit, onRecordsChange, records }: StudioClientProps) {
   const firstRecord = initialRecordId
     ? records.find((record) => record.id === initialRecordId)
     : embedded && initialSection
@@ -179,12 +154,17 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   if (!firstRecord && initialSection === "games" && initialSteamGame) {
     Object.assign(initialForm, initialSteamGame, { id: `steam-${initialSteamGame.steamAppId}`, steamDraftAppId: initialSteamGame.steamAppId, summary: "", status: "Playing" });
   }
+  if (inline && !firstRecord) {
+    initialForm.title = initialSteamGame?.title || "";
+    initialForm.summary = "";
+    initialForm.body = initialForm.body.replace("Write the first note here.", "");
+  }
   const [studioRecords, setStudioRecords] = useState<RecordEntry[]>(records);
   const [selectedId, setSelectedId] = useState(firstRecord?.id ?? "__new");
   const [activeSection, setActiveSection] = useState<StudioSection>(initialForm.section);
   const [mode, setMode] = useState<"section" | "edit">(firstRecord || (embedded && initialSection) ? "edit" : "section");
   const [form, setForm] = useState<StudioForm>(() => initialForm);
-  const [activeContent, setActiveContent] = useState<StudioContentKey>("overview");
+  const [activeContent, setActiveContent] = useState<StudioContentKey>(initialContent);
   const [message, setMessage] = useState(
     embedded && firstRecord
       ? `Editing ${firstRecord.title}. Changes stay local until saved.`
@@ -192,13 +172,12 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
         ? `New ${initialSection === "setup" ? initialSetupGroup ?? "systems" : initialSection} record. Changes stay local until saved.`
         : "Studio edit mode. Changes stay local until you save."
   );
-  const [saving, setSaving] = useState(false);
+  const [localSaving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [publishState, setPublishState] = useState<PublishState | null>(null);
+  const { publishState, setPublishState, pendingChanges, pendingChangesError, archiveRefreshRequired, setArchiveRefreshRequired,
+    refreshPendingChanges, publishing, checking, refreshArchive: refreshSavedArchive, publishChanges: publishSavedChanges } = useStudioPublishing();
+  const saving = localSaving || publishing;
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [pendingChanges, setPendingChanges] = useState<StudioPendingChanges | null>(null);
-  const [pendingChangesError, setPendingChangesError] = useState("");
-  const [archiveRefreshRequired, setArchiveRefreshRequired] = useState(false);
   const [drafts, setDrafts] = useState<StudioDraftMap>(() => readStudioDrafts());
   const bodyDraftRef = useRef(form.body);
   const activeSectionRef = useRef(activeSection);
@@ -208,31 +187,8 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   const formRef = useRef(form);
   const selectedIdRef = useRef(selectedId);
   const embeddedDraftRestoredRef = useRef(false);
-  const pendingRequestRef = useRef(0);
 
-  const refreshPendingChanges = useCallback(async () => {
-    if (process.env.NODE_ENV !== "development") return;
-    const requestId = ++pendingRequestRef.current;
-
-    try {
-      const response = await fetch("/api/studio/changes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}"
-      });
-      const data = await readStudioResponse(response);
-
-      if (!response.ok) throw new Error(data.error || "Could not read pending changes.");
-      if (requestId !== pendingRequestRef.current) return;
-
-      setPendingChanges(data as StudioPendingChanges);
-      setArchiveRefreshRequired(data.staticExportRequired === true);
-      setPendingChangesError("");
-    } catch (error) {
-      if (requestId !== pendingRequestRef.current) return;
-      setPendingChangesError(error instanceof Error ? error.message : "Could not read pending changes.");
-    }
-  }, []);
+  useEffect(() => { onBusyChange?.(saving || uploading); }, [onBusyChange, saving, uploading]);
 
   const sortedRecords = useMemo(() => [...studioRecords].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [studioRecords]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
@@ -251,10 +207,11 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       if (document.visibilityState === "visible") void refreshPendingChanges();
     };
 
-    window.addEventListener("focus", refreshPendingChanges);
+    const refreshOnFocus = () => { void refreshPendingChanges(); };
+    window.addEventListener("focus", refreshOnFocus);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
-      window.removeEventListener("focus", refreshPendingChanges);
+      window.removeEventListener("focus", refreshOnFocus);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [refreshPendingChanges]);
@@ -287,14 +244,14 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
     }
 
     const returnToRecord = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !saving && !uploading && !event.defaultPrevented) {
         onExit();
       }
     };
 
     document.addEventListener("keydown", returnToRecord);
     return () => document.removeEventListener("keydown", returnToRecord);
-  }, [embedded, onExit]);
+  }, [embedded, onExit, saving, uploading]);
 
   useEffect(() => {
     if (!contents.some((item) => item.key === activeContent)) {
@@ -438,6 +395,11 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
   };
 
   const save = async () => {
+    if (saving || uploading) return;
+    if (inline && !formRef.current.title.trim()) {
+      setMessage("Give this entry a title before saving.");
+      return;
+    }
     setSaving(true);
     setMessage("Writing record...");
     setPublishState({
@@ -452,7 +414,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       const currentForm = { ...formRef.current };
       const currentBody = bodyDraftRef.current;
       const currentKey = studioDraftKey(currentForm, selectedIdRef.current, activeSectionRef.current);
-      const pendingDrafts = Object.entries(draftsRef.current)
+      const pendingDrafts = (inline ? [] : Object.entries(draftsRef.current))
         .filter(([key, draft]) => key.startsWith("record:") && key !== currentKey && draft.form.originalId)
         .map(([key, draft]) => ({ key, draft }));
       const writes = [{ key: currentKey, draft: { form: currentForm, body: currentBody }, current: true },
@@ -476,7 +438,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
         nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(savedForm, item.draft.body), item.draft.form.originalId || item.draft.form.id);
         setStudioRecords(nextRecords);
-        onRecordsChange?.(nextRecords, selectedIdRef.current);
+        onRecordsChange?.(nextRecords, selectedIdRef.current, { keepEditorOpen: inline });
         setDrafts((current) => {
           const next = { ...current };
           delete next[item.key];
@@ -503,7 +465,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
       });
       setNotificationOpen(true);
     } finally {
-      await refreshPendingChanges();
+      await refreshPendingChanges(true);
       setSaving(false);
     }
   };
@@ -558,7 +520,7 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
         detail: exportRequired ? "The record was removed from disk. Use Refresh archive to update the public preview without deleting again." : "The record file and static archive data were refreshed. Review the pending list before publishing."
       });
       if (exportRequired) setNotificationOpen(true);
-      await refreshPendingChanges();
+      await refreshPendingChanges(true);
     } catch (error) {
       const detail = error instanceof Error ? error.message : "Delete failed.";
       setMessage(detail);
@@ -576,69 +538,18 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
   const refreshArchive = async () => {
     setSaving(true);
-    setPublishState({ phase: "running", title: "Refreshing archive", detail: "Rebuilding the static archive from saved records." });
     try {
-      const response = await fetch("/api/studio/export", { method: "POST" });
-      const data = await readStudioResponse(response);
-      if (!response.ok) throw new Error(data.error || "Archive refresh failed.");
-      setArchiveRefreshRequired(false);
-      setPublishState({ phase: "success", title: "Archive refreshed", detail: data.message || "Saved records are ready to publish." });
-    } catch (error) {
-      setArchiveRefreshRequired(true);
-      setPublishState({ phase: "error", title: "Archive refresh failed", detail: error instanceof Error ? error.message : "Retry the archive refresh." });
-    } finally {
-      await refreshPendingChanges();
-      setSaving(false);
-    }
-  };
-
-  const publishArchive = async (successMessage: string) => {
-    setPublishState({
-      phase: "running",
-      title: "Publishing archive",
-      detail: "Running checks, committing, and pushing to GitHub."
-    });
-
-    const publishResponse = await fetch("/api/studio/publish", { method: "POST" });
-    const publishData = await readStudioResponse(publishResponse);
-    await refreshPendingChanges();
-
-    if (!publishResponse.ok) {
-      setMessage("Saved locally, but publish failed.");
-      setPublishState({
-        phase: "error",
-        title: "Publish blocked",
-        detail: publishData.error || "The record changed locally, but GitHub publish failed.",
-        summary: publishData.summary,
-        output: publishData.output
-      });
-      setNotificationOpen(true);
-      return;
-    }
-
-    setMessage(successMessage);
-    setPublishState({
-      phase: "success",
-      title: publishData.published === false ? "Nothing to publish" : "Archive published",
-      detail: publishData.message || "GitHub received the latest archive update.",
-      summary: publishData.summary,
-      output: publishData.output
-    });
+      await refreshSavedArchive();
+      setMessage(useStudioPublishing.getState().publishState?.detail || "Archive refresh finished.");
+    } finally { setSaving(false); }
   };
 
   const publishChanges = async () => {
     setSaving(true);
 
     try {
-      await publishArchive("Published to GitHub.");
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "Publish failed.";
-      setMessage(detail);
-      setPublishState({
-        phase: "error",
-        title: "Publish failed",
-        detail
-      });
+      await publishSavedChanges();
+      setMessage(useStudioPublishing.getState().publishState?.detail || "Publish finished.");
       setNotificationOpen(true);
     } finally {
       setSaving(false);
@@ -802,6 +713,23 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
 
   const Shell = embedded ? "div" : "main";
 
+  if (inline) {
+    if (!supportsInlineEditing(form.section)) return null;
+    const inlineContents = getStudioContents(form.section) as Array<{ key: "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation"; label: string }>;
+    const inlineContent = inlineContents.find((item) => item.key === activeContent)?.key ?? "overview";
+    return <>
+      <input ref={fileInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+        onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
+      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={message}
+        controls={form.section === "games" ? <GameInspectorControls form={form} onUpdate={update} /> : undefined}
+        exportRequired={archiveRefreshRequired} onUpdate={update} onPickHeader={() => chooseFiles("headerImage")} onPickThumbnail={() => chooseFiles("banner")}
+        onContentChange={(key) => { setActiveContent(key); onContentChange?.(key); }} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive}
+        content={<StudioContent activeContent={inlineContent} form={form} record={activeRecord} uploading={uploading}
+          onBodyCommit={(value) => update("body", value)} onFileDrop={uploadFiles} onFilePick={chooseFiles}
+          onNoteMediaUpload={uploadNoteMedia} onOptimizeNoteMedia={optimizeNoteMedia} onUpdate={update} />} />
+    </>;
+  }
+
   return (
     <Shell className={`archive-shell studio-shell${embedded ? " is-embedded" : ""}`}>
       <input
@@ -931,60 +859,17 @@ export function StudioClient({ embedded = false, initialRecordId, initialSection
           error={pendingChangesError}
           notification={publishState}
           saving={saving || uploading}
+          checking={checking}
           refreshRequired={archiveRefreshRequired}
           onClose={() => setNotificationOpen(false)}
           onPublish={publishChanges}
           onRefresh={refreshArchive}
+          onRetry={() => refreshPendingChanges(true)}
           onReview={reviewPendingRecord}
         />
       ) : null}
     </Shell>
   );
-}
-
-class StudioRequestError extends Error {
-  output?: string;
-
-  constructor(message: string, output?: string) {
-    super(message);
-    this.name = "StudioRequestError";
-    this.output = output;
-  }
-}
-
-async function readStudioResponse(response: Response): Promise<{
-  error?: string;
-  id?: string;
-  message?: string;
-  output?: string;
-  path?: string;
-  summary?: PublishSummary;
-  records?: StudioPendingRecord[];
-  changedFiles?: number;
-  mediaFiles?: number;
-  staticDataChanged?: boolean;
-  staticExportRequired?: boolean;
-  staticExported?: boolean;
-  published?: boolean;
-  unpushedCommits?: number;
-  warning?: string;
-  writtenAt?: string;
-  writtenOrder?: number;
-}> {
-  const text = await response.text();
-
-  if (!text) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(text) as { error?: string; id?: string; message?: string; output?: string; path?: string; summary?: PublishSummary };
-  } catch {
-    return {
-      error: text.slice(0, 220),
-      output: text
-    };
-  }
 }
 
 function noteMediaMarkdown(displayPath: string, fullPath = ""): string {
@@ -1147,99 +1032,6 @@ function normalizeStudioFullSource(source: string): string {
   }
 
   return source;
-}
-
-function PublishNotificationPanel({
-  changes,
-  error,
-  notification,
-  saving,
-  refreshRequired,
-  onClose,
-  onPublish,
-  onRefresh,
-  onReview
-}: {
-  changes: StudioPendingChanges | null;
-  error: string;
-  notification: PublishState | null;
-  saving: boolean;
-  refreshRequired: boolean;
-  onClose: () => void;
-  onPublish: () => void;
-  onRefresh: () => void;
-  onReview: (id: string) => void;
-}) {
-  return (
-    <aside className="studio-notification-panel studio-change-review-panel" aria-label="Pending archive changes">
-      <div className="studio-notification-head">
-        <div>
-          <p>// CHANGE REVIEW</p>
-          <h2>{changes?.records.length ?? 0} pending {changes?.records.length === 1 ? "record" : "records"}</h2>
-          <small>{changes?.changedFiles ?? 0} publishable files</small>
-        </div>
-        <button type="button" onClick={onClose} aria-label="Close change review">Close</button>
-      </div>
-      {error ? <p className="studio-change-review-error">{error}</p> : null}
-      <ol className="studio-pending-records">
-        {changes?.records.map((record) => (
-          <li key={record.id} data-change={record.change}>
-            <span className="studio-pending-kind">{record.change}</span>
-            <div><strong>{record.title}</strong><small>{record.section ?? "archive"} / {record.id}</small></div>
-            {record.change === "deleted" ? <i>REMOVAL</i> : <button type="button" disabled={saving} onClick={() => onReview(record.id)}>Review</button>}
-          </li>
-        ))}
-        {changes && changes.records.length === 0 ? <li className="studio-pending-empty">No record edits are waiting to publish.</li> : null}
-      </ol>
-      {changes && (changes.mediaFiles > 0 || changes.staticDataChanged) ? (
-        <p className="studio-pending-assets">
-          {changes.mediaFiles > 0 ? `${changes.mediaFiles} media file${changes.mediaFiles === 1 ? "" : "s"}` : "No new media"}
-          {changes.staticDataChanged ? " . Static archive index updated" : ""}
-        </p>
-      ) : null}
-      {changes && changes.unpushedCommits > 0 ? <p className="studio-pending-assets">{changes.unpushedCommits} local commit{changes.unpushedCommits === 1 ? " is" : "s are"} waiting to reach GitHub.</p> : null}
-      <p className="studio-pending-guidance">Unsaved editor changes are not included. Save the record first.</p>
-      {refreshRequired ? <button className="studio-publish-all" type="button" disabled={saving} onClick={onRefresh}>Refresh archive</button> : null}
-      <button className="studio-publish-all" type="button" disabled={saving || refreshRequired || !(changes?.changedFiles || changes?.unpushedCommits)} onClick={onPublish}>
-        {saving ? "Working..." : "Publish all pending changes"}
-      </button>
-      {notification ? (
-        <article className={`studio-notification-card is-${notification.phase}`}>
-          <div className="studio-last-publish"><strong>{notification.title}</strong><span>{notification.detail}</span></div>
-          {notification.summary ? <PublishSummaryGrid summary={notification.summary} /> : null}
-          {notification.output ? <pre>{formatPublishOutput(notification.output)}</pre> : null}
-        </article>
-      ) : null}
-    </aside>
-  );
-}
-
-function PublishSummaryGrid({ summary }: { summary: PublishSummary }) {
-  const rows = [
-    ["COMMIT", summary.commit ? summary.commit.slice(0, 7) : "Pending"],
-    ["BRANCH", summary.branch ?? "main"],
-    ["FILES", summary.changedFiles === undefined ? "0" : String(summary.changedFiles)],
-    ["RECORDS", summary.recordsChanged?.length ? summary.recordsChanged.join(", ") : "None"],
-    ["MEDIA", summary.mediaAdded === undefined ? "0" : String(summary.mediaAdded)],
-    ["STATIC", summary.staticExported ? "Exported" : "Not exported"],
-    ["CACHE", summary.cacheToken ? summary.cacheToken.slice(-6) : "None"]
-  ];
-
-  return (
-    <dl className="studio-publish-summary">
-      {rows.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-function formatPublishOutput(output: string): string {
-  const lines = output.trim().split(/\r?\n/).filter(Boolean);
-  return lines.slice(-34).join("\n");
 }
 
 const StudioNav = memo(function StudioNav({
@@ -1979,6 +1771,23 @@ function SetupOverviewEditor({
   );
 }
 
+function GameInspectorControls({ form, onUpdate }: { form: StudioForm; onUpdate: StudioUpdate }) {
+  const placement = gameLogPlacement(form);
+  return <div className="studio-game-controls">
+    <label className="studio-placement-field">Log placement
+      <select aria-label="Log placement" value={placement} onChange={(event) => onUpdate("gamePlacement", event.target.value === "past" ? "past" : "session")}>
+        <option value="session">Session Logs</option><option value="past">Past Logs</option>
+      </select>
+    </label>
+    {placement === "session" ? <label className="studio-placement-field">Session activity
+      <select aria-label="Session activity" value={form.gameActivity || ""} onChange={(event) => onUpdate("gameActivity", event.target.value === "active" ? "active" : event.target.value === "inactive" ? "inactive" : "")}>
+        <option value="">Record status ({form.status})</option><option value="active">Active</option><option value="inactive">Inactive</option>
+      </select>
+    </label> : null}
+    <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
+  </div>;
+}
+
 function Inspector({
   canDelete,
   form,
@@ -1992,8 +1801,6 @@ function Inspector({
   saving: boolean;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
-  const gamePlacement = gameLogPlacement(form);
-
   return (
     <div className="studio-inspector">
       <h3>INSPECTOR</h3>
@@ -2001,34 +1808,7 @@ function Inspector({
         <span>Section</span>
         <strong>{form.section}</strong>
       </div>
-      {form.section === "games" ? (
-        <>
-          <label className="studio-placement-field">
-            Log placement
-            <select
-              value={gamePlacement}
-              onChange={(event) => {
-                const placement = event.target.value === "past" ? "past" : "session";
-                onUpdate("gamePlacement", placement);
-              }}
-            >
-              <option value="session">Session Logs</option>
-              <option value="past">Past Logs</option>
-            </select>
-          </label>
-          {gamePlacement === "session" ? (
-            <label className="studio-placement-field">
-              Session activity
-              <select value={form.gameActivity || ""} onChange={(event) => onUpdate("gameActivity", event.target.value === "active" ? "active" : event.target.value === "inactive" ? "inactive" : "")}>
-                <option value="">Record status ({form.status})</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </label>
-          ) : null}
-          <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
-        </>
-      ) : null}
+      {form.section === "games" ? <GameInspectorControls form={form} onUpdate={onUpdate} /> : null}
       {form.section === "setup" ? (
         <SetupInspectorControls form={form} onUpdate={onUpdate} />
       ) : null}
@@ -2521,6 +2301,8 @@ function EditableText({
           }
 
           if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
             setDraft(value);
             setEditing(false);
           }

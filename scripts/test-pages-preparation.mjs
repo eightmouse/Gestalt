@@ -12,7 +12,7 @@ const previous = {
   schemaVersion: 1, updatedAt: now.toISOString(),
   game: { appId: 2, title: "Game", playtimeMinutes: 120, lastPlayedAt: "2026-10-21T09:00:00.000Z", achievements: { unlocked: 1, total: 2, percent: 50 } }
 };
-const files = ["index.html", "static-app.js", "sw.js", "app/globals.css", "public/favicon.ico", "public/note-inline.js", "public/image-framing.js", "public/x-terminal.js", "public/x-embed.html", "public/x-embed.js", "public/steam-display.mjs", "public/data/records.js", "public/images/banner.png", "public/media/records/note/image.webp"];
+const files = ["index.html", "static-app.js", "sw.js", "app/globals.css", "public/favicon.ico", "public/note-inline.js", "public/image-framing.js", "public/x-terminal.js", "public/x-embed.html", "public/x-embed.js", "public/steam-display.mjs", "public/roadmap.mjs", "public/data/records.js", "public/images/banner.png", "public/media/records/note/image.webp"];
 let sequence = 0;
 const output = () => path.join(temporary, `site-${sequence++}`);
 const config = (extra = {}) => ({ root, destination: output(), baseUrl: "https://fixture.github.io/Gestalt", now, ...extra });
@@ -40,7 +40,7 @@ function mockFetch({ deployed = previous, publicFailure = false, steamFailure = 
 }
 
 try {
-  for (const relative of [...files, ".env.local", "content/records/private.mdx", "app/api/studio/entry/route.ts", "public/data/private.json", "public/note-inline.d.ts"]) {
+  for (const relative of [...files, ".env.local", "content/records/private.mdx", "docs/ROADMAP.md", "app/api/studio/entry/route.ts", "public/data/private.json", "public/note-inline.d.ts"]) {
     const target = path.join(root, relative);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, relative.startsWith("public/data/private") || relative.startsWith(".env") ? secretKey : `fixture:${relative}`);
@@ -53,7 +53,7 @@ try {
   const artifactSnapshot = await readFile(path.join(content.destination, "public/data/steam-current.json"), "utf8");
   assert.deepEqual(JSON.parse(artifactSnapshot), previous, "The last deployed snapshot survives normal content pushes");
   assert.ok(!artifactSnapshot.includes(secretKey) && !artifactSnapshot.includes(secretId), "Private snapshot fields are discarded");
-  for (const relative of [".env.local", "content", "app/api", "public/data/private.json", "public/note-inline.d.ts"]) assert.ok(!existsSync(path.join(content.destination, relative)), `Excluded from deployment: ${relative}`);
+  for (const relative of [".env.local", "content", "docs", "app/api", "public/data/private.json", "public/note-inline.d.ts"]) assert.ok(!existsSync(path.join(content.destination, relative)), `Excluded from deployment: ${relative}`);
   assert.deepEqual((await readdir(content.destination)).sort(), [".nojekyll", "app", "index.html", "public", "static-app.js", "sw.js"]);
   await assert.rejects(preparePages(content), "An existing output is never recursively replaced");
   await assert.rejects(preparePages(config({ destination: root, fetchImpl: mockFetch().fetchImpl })));

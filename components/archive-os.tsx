@@ -31,15 +31,19 @@ import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
 import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
 import { TimelineWindow } from "@/components/archive/timeline-window";
+import { RoadmapWindow } from "@/components/archive/roadmap-window";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, steamRecordSeed, type SteamRecordSeed, type SteamSnapshot } from "@/public/steam-display.mjs";
 import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, shouldPlayEntryAccess, type EntryAccessMode } from "@/lib/entry-access";
+import { newInlineRecord, supportsInlineEditing } from "@/lib/inline-editing";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
-  { ssr: false }
+  { ssr: false, loading: () => <p role="status">Opening local editor...</p> }
 );
+const LocalReviewButton = dynamic(() => import("@/components/studio/local-change-review").then((module) => module.LocalReviewButton), { ssr: false });
+const LocalChangeReview = dynamic(() => import("@/components/studio/local-change-review").then((module) => module.LocalChangeReview), { ssr: false });
 
 const loadLocalSteamPreview = createSteamSnapshotLoader((url, options) => fetch(url, { ...options, method: "POST", credentials: "same-origin" }));
 
@@ -142,6 +146,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [roadmapOpen, setRoadmapOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
   const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
@@ -150,6 +155,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [studioCreateSection, setStudioCreateSection] = useState<Exclude<RecordSection, "system"> | null>(null);
   const [studioSetupGroup, setStudioSetupGroup] = useState<SetupGroupId | undefined>();
   const [studioSteamGame, setStudioSteamGame] = useState<SteamRecordSeed | undefined>();
+  const [inlineRecordId, setInlineRecordId] = useState<string | null>(null);
+  const [inlineBusy, setInlineBusy] = useState(false);
+  const [inlineDraftWindow, setInlineDraftWindow] = useState<RecordEntry | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
   const recordAccessTimerRef = useRef<number | null>(null);
   const recordAccessPlayedRef = useRef(false);
@@ -236,7 +244,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const archivedLogs = recordsBySection.logs.filter((record) => isLogArchivedByAge(record));
   const archivePageRecords = [...recordsBySection.archive, ...archivedLogs];
 
-  const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? archiveRecords[0];
+  const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? inlineDraftWindow ?? archiveRecords[0];
+  const recordWindowKey = inlineDraftWindow?.id ?? selectedRecord?.id;
+  const editingInline = Boolean(inlineRecordId && inlineRecordId === recordWindowKey);
+  const unsavedInline = Boolean(inlineDraftWindow && selectedId === inlineDraftWindow.id);
   const projectDashboardRecords = recordsBySection.projects
     .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
   const currentGameDisplay = useMemo(() => resolveCurrentGame(steamSnapshot, recordsBySection.games), [steamSnapshot, recordsBySection.games]);
@@ -320,9 +331,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   useEffect(() => {
     const togglePalette = (event: KeyboardEvent) => {
       const target = event.target;
-      const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+      const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
 
-      if (event.metaKey || event.ctrlKey || event.altKey || (isInputTarget && event.key !== "`" && event.key !== "~")) {
+      if ((inlineRecordId && panelOpen) || event.metaKey || event.ctrlKey || event.altKey || isInputTarget) {
         return;
       }
 
@@ -334,7 +345,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
     document.addEventListener("keydown", togglePalette);
     return () => document.removeEventListener("keydown", togglePalette);
-  }, []);
+  }, [inlineRecordId, panelOpen]);
 
   useEffect(() => {
     if (!navOpen) {
@@ -352,12 +363,16 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [navOpen]);
 
   useEffect(() => {
+    if (inlineDraftWindow?.id === selectedId) return;
     if (!archiveRecords.some((record) => record.id === selectedId) && archiveRecords[0]) {
       setSelectedId(archiveRecords[0].id);
     }
-  }, [archiveRecords, selectedId, setSelectedId]);
+  }, [archiveRecords, selectedId, setSelectedId, inlineDraftWindow]);
 
   const openRecord = (record: RecordEntry, content: ContentKey = "overview") => {
+    if (inlineBusy) return;
+    setInlineRecordId(null);
+    setInlineDraftWindow(null);
     startRecordAccess();
     setSelectedId(record.id);
     setInitialContent(content);
@@ -367,18 +382,57 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(false);
+    setRoadmapOpen(false);
     setNavOpen(false);
   };
 
-  const openLocalEditor = (recordId: string) => {
+  const openLocalEditor = (recordId: string, content: ContentKey = "overview") => {
+    if (inlineBusy) return;
+    if (panelOpen && recordId === selectedRecord?.id && supportsInlineEditing(selectedRecord.section)) {
+      stopRecordAccess();
+      setRecordAccessComplete(true);
+      setInitialContent(content);
+      if (editingInline) finishInlineEditing();
+      else setInlineRecordId(recordWindowKey!);
+      setSearchOpen(false);
+      return;
+    }
     setStudioSteamGame(undefined);
     setStudioCreateSection(null);
     setStudioSetupGroup(undefined);
     setStudioRecordId(recordId);
   };
 
-  const createLocalRecord = (section: Exclude<RecordSection, "system">, setupGroup?: SetupGroupId) => {
-    setStudioSteamGame(undefined);
+  const finishInlineEditing = () => {
+    if (inlineBusy) return;
+    setInlineRecordId(null);
+    if (unsavedInline) {
+      setPanelOpen(false);
+      setPanelMinimized(false);
+      setInlineDraftWindow(null);
+    }
+  };
+
+  const createLocalRecord = (section: Exclude<RecordSection, "system">, setupGroup?: SetupGroupId, steamGame?: SteamRecordSeed) => {
+    if (inlineBusy) return;
+    setStudioSteamGame(steamGame);
+    if (supportsInlineEditing(section)) {
+      const draft = newInlineRecord(section, steamGame);
+      stopRecordAccess();
+      setRecordAccessComplete(true);
+      setInlineDraftWindow(draft);
+      setSelectedId(draft.id);
+      setInlineRecordId(draft.id);
+      setInitialContent(section === "logs" ? "notes" : "overview");
+      setPanelOpen(true);
+      setPanelMinimized(false);
+      setPanelMaximized(false);
+      setSearchOpen(false);
+      setTimelineOpen(false);
+      setRoadmapOpen(false);
+      setNavOpen(false);
+      return;
+    }
     setStudioCreateSection(section);
     setStudioSetupGroup(setupGroup);
     setStudioRecordId("__new");
@@ -389,14 +443,16 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (!seed) return;
     const existing = recordsBySection.games.find((record) => Number(record.meta.steamAppId) === Number(seed.steamAppId));
     if (existing) {
-      openLocalEditor(existing.id);
+      openRecord(existing);
       return;
     }
-    createLocalRecord("games");
-    setStudioSteamGame(seed);
+    createLocalRecord("games", undefined, seed);
   };
 
   const openSection = (section: RecordSection) => {
+    if (inlineBusy) return;
+    setInlineRecordId(null);
+    setInlineDraftWindow(null);
     const sectionChanged = activeSection !== section;
 
     setActiveSection(section);
@@ -407,20 +463,42 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(false);
+    setRoadmapOpen(false);
     setNavOpen(false);
   };
 
   const openTimeline = () => {
+    if (inlineBusy) return;
+    setInlineRecordId(null);
+    setInlineDraftWindow(null);
     stopRecordAccess();
     setPanelOpen(false);
     setPanelMinimized(false);
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(true);
+    setRoadmapOpen(false);
     setNavOpen(false);
   };
 
+  const openRoadmap = () => {
+    if (inlineBusy) return;
+    setInlineRecordId(null);
+    setInlineDraftWindow(null);
+    stopRecordAccess();
+    setPanelOpen(false);
+    setPanelMinimized(false);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setTimelineOpen(false);
+    setNavOpen(false);
+    setRoadmapOpen(true);
+  };
+
   const openHome = () => {
+    if (inlineBusy) return;
+    setInlineRecordId(null);
+    setInlineDraftWindow(null);
     const sectionChanged = activeSection !== "system";
 
     stopRecordAccess();
@@ -432,6 +510,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSearchOpen(false);
     setSearchQuery("");
     setTimelineOpen(false);
+    setRoadmapOpen(false);
     setNavOpen(false);
   };
 
@@ -456,6 +535,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       return;
     }
 
+    if (result.action === "roadmap") {
+      openRoadmap();
+      return;
+    }
+
     if (result.record) {
       openRecord(result.record, result.content ?? "overview");
       return;
@@ -467,7 +551,24 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
 
   const searchResults = getSearchResults(archiveRecords, searchQuery, currentGame, latestLog);
-  const timelineItems = getTimelineItems(archiveRecords, 32);
+  const applyStudioRecords = (updatedRecords: RecordEntry[], currentId?: string | null, options?: { keepEditorOpen?: boolean }) => {
+    setArchiveRecords((current) => [...current.filter((record) => record.section === "system"), ...updatedRecords]);
+    if (currentId) {
+      setSelectedId(currentId);
+      if (studioRecordId === "__new") {
+        setInitialContent("overview");
+        setPanelOpen(true);
+        setPanelMinimized(false);
+        setPanelMaximized(false);
+      }
+    } else if (currentId === null) {
+      if (!options?.keepEditorOpen) setStudioRecordId(null);
+      setPanelOpen(false);
+      setPanelMinimized(false);
+      stopRecordAccess();
+    }
+  };
+  const timelineItems = useMemo(() => timelineOpen ? getTimelineItems(archiveRecords, 32) : [], [archiveRecords, timelineOpen]);
 
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
@@ -482,7 +583,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       </span>
     </span>
   ) : "Browse the records filed under this archive.";
-  const hasFocusWindow = panelOpen || timelineOpen;
+  const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen;
   const grantLocalMemory = () => {
     try {
       window.localStorage.setItem(localMemoryKey, "granted");
@@ -501,6 +602,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   return (
     <main className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}`} inert={showBoot} aria-busy={showBoot}>
       {showBoot ? <BootScreen /> : null}
+      {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReview={(id) => {
+        const record = archiveRecords.find((entry) => entry.id === id);
+        if (!record || inlineBusy) return false;
+        openRecord(record, record.section === "setup" ? "overview" : "notes");
+        return true;
+      }} /> : null}
+      {roadmapOpen ? <RoadmapWindow onClose={() => setRoadmapOpen(false)} /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />
@@ -512,6 +620,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         onHome={openHome}
         onOpenSection={openSection}
         onToggleNav={() => setNavOpen((current) => !current)}
+        localReview={process.env.NODE_ENV === "development" ? <LocalReviewButton /> : undefined}
       />
 
       <AnimatePresence>
@@ -557,6 +666,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <span>{formatClock(now)}</span>
             <span className="dot">.</span>
             <span>{formatDate(now)}</span>
+            {process.env.NODE_ENV === "development" ? <LocalReviewButton /> : null}
             <button
               className={searchOpen ? "icon-button is-active" : "icon-button"}
               type="button"
@@ -612,25 +722,42 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => {
+                  if (inlineBusy) return;
+                  if (!unsavedInline) setInlineRecordId(null);
                   setPanelOpen(false);
                   setPanelMinimized(true);
                   stopRecordAccess();
                 }}
               />
               <RecordWindow
-                key={selectedRecord.id}
+                key={recordWindowKey}
                 accessPending={recordAccessPending}
                 accessComplete={recordAccessComplete}
                 maximized={panelMaximized}
                 initialContent={initialContent}
                 record={selectedRecord}
-                onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? () => openLocalEditor(selectedRecord.id) : undefined}
+                onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
+                editorBusy={inlineBusy}
+                editor={process.env.NODE_ENV === "development" && editingInline ? (
+                  <LocalStudioEditor embedded inline initialRecordId={unsavedInline ? undefined : selectedRecord.id}
+                    initialSection={supportsInlineEditing(selectedRecord.section) ? selectedRecord.section : undefined}
+                    initialSteamGame={unsavedInline ? studioSteamGame : undefined}
+                    initialContent={initialContent === "changelog" || initialContent === "hardware" ? "overview" : initialContent}
+                    records={archiveRecords.filter((record) => record.section !== "system")}
+                    onBusyChange={setInlineBusy} onContentChange={(content) => setInitialContent(content)}
+                    onExit={finishInlineEditing} onRecordsChange={applyStudioRecords} />
+                ) : undefined}
                 onClose={() => {
+                  if (inlineBusy) return;
+                  setInlineRecordId(null);
+                  setInlineDraftWindow(null);
                   setPanelOpen(false);
                   setPanelMinimized(false);
                   stopRecordAccess();
                 }}
                 onMinimize={() => {
+                  if (inlineBusy) return;
+                  if (!unsavedInline) setInlineRecordId(null);
                   setPanelOpen(false);
                   setPanelMinimized(true);
                   stopRecordAccess();
@@ -701,26 +828,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
               initialSteamGame={studioSteamGame}
               records={archiveRecords.filter((record) => record.section !== "system")}
               onExit={() => setStudioRecordId(null)}
-              onRecordsChange={(updatedRecords, currentId, options) => {
-                setArchiveRecords((current) => [
-                  ...current.filter((record) => record.section === "system"),
-                  ...updatedRecords
-                ]);
-                if (currentId) {
-                  setSelectedId(currentId);
-                  if (studioRecordId === "__new") {
-                    setInitialContent("overview");
-                    setPanelOpen(true);
-                    setPanelMinimized(false);
-                    setPanelMaximized(false);
-                  }
-                } else if (currentId === null) {
-                  if (!options?.keepEditorOpen) setStudioRecordId(null);
-                  setPanelOpen(false);
-                  setPanelMinimized(false);
-                  stopRecordAccess();
-                }
-              }}
+              onRecordsChange={applyStudioRecords}
             />
           </motion.div>
         ) : null}

@@ -1,3 +1,65 @@
+html:has(.studio-review-dialog[open]), body:has(> .studio-review-dialog[open]),
+html:has(.record-layout.is-editing-record), body:has(.record-layout.is-editing-record) { overflow: hidden; }
+.local-review-button { position: relative; inline-size: 40px; block-size: 40px; flex: 0 0 40px; display: inline-grid; place-items: center; padding: 0; background: transparent; color: var(--text); border: 1px solid var(--line); cursor: pointer; }
+.local-review-button > span { position: absolute; inset-block-start: -7px; inset-inline-end: -7px; min-inline-size: 18px; block-size: 18px; display: grid; place-items: center; padding-inline: 3px; background: #171914; color: var(--text-strong); border: 1px solid var(--line-strong); font: 12px var(--mono); }
+.local-review-button.is-error { color: #f0b7a8; border-color: rgba(238, 92, 74, 0.58); }
+.brand-local-actions { display: none; }
+.studio-review-dialog { position: fixed; inset: 0; inline-size: 100%; block-size: 100%; max-inline-size: none; max-block-size: none; margin: 0; padding: 28px; border: 0; background: transparent; color: var(--text); }
+.studio-review-dialog[open] { display: grid; place-items: center; }
+.studio-review-dialog::backdrop { background: rgba(2, 3, 3, 0.82); }
+.studio-review-dialog .studio-notification-panel { position: relative; inset: auto; inline-size: min(620px, 100%); max-block-size: 100%; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--accent-dim) transparent; }
+.studio-review-dialog .studio-notification-card details { min-inline-size: 0; }
+.studio-review-dialog .studio-notification-card summary { color: var(--text); cursor: pointer; }
+.studio-review-dialog :is(.studio-pending-guidance, .studio-pending-assets, .studio-notification-head small) { font-size: 14px; line-height: 1.5; }
+.studio-review-dialog .studio-pending-records strong { font-size: 16px; line-height: 1.4; }
+.studio-review-dialog .studio-pending-records small { font-size: 13px; line-height: 1.4; }
+@media (max-width: 760px) {
+  .brand-local-actions { display: flex; align-items: center; gap: 12px; }
+  .studio-review-dialog { padding: 12px; }
+  .studio-review-dialog .studio-notification-panel { padding: 16px 12px; }
+}
+
+.record-layout.is-editing-record .studio-content-terminal { overflow: visible; }
+.record-layout.is-editing-record .inline-record-title {
+  inline-size: 100%; min-inline-size: 0; padding: 0 0 3px; border: 0; border-block-end: 1px dashed var(--line);
+  background: transparent; color: var(--text-strong); font: inherit; line-height: inherit;
+}
+.record-layout.is-editing-record .inline-record-title:focus { outline: none; border-color: var(--accent); }
+.record-layout.is-editing-record .inline-record-status { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.record-layout.is-editing-record .inline-record-status input {
+  inline-size: 12ch; min-inline-size: 0; padding: 3px; border: 0; border-block-end: 1px dashed var(--line);
+  background: transparent; color: inherit; font: inherit;
+}
+.record-layout.is-editing-record .inline-record-header-action,
+.record-layout.is-editing-record .inline-record-actions button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-block-size: 36px;
+  padding: 8px 10px; border: 1px solid var(--line); background: rgba(217, 213, 193, 0.035); color: var(--text); font-size: 14px; cursor: pointer;
+}
+.record-layout.is-editing-record .inline-record-header-action { position: relative; z-index: 2; justify-self: start; }
+.record-layout.is-editing-record .inline-record-media-actions { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 12px; }
+.record-layout.is-editing-record .inline-record-actions { display: grid; gap: 8px; }
+.record-layout.is-editing-record .inline-record-actions button:first-child { border-color: var(--line-strong); }
+.record-layout.is-editing-record .inline-record-actions button:disabled { opacity: 0.55; cursor: wait; }
+.record-layout.is-editing-record .inline-record-message { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.record-layout.is-editing-record .inline-record-aside { max-block-size: none; }
+.record-layout.is-editing-record .record-meta input { inline-size: 100%; min-inline-size: 0; padding: 6px 0; border: 0; border-block-end: 1px dashed var(--line); background: transparent; color: var(--text); color-scheme: dark; font: inherit; }
+.record-layout.is-editing-record .studio-note-editor { min-inline-size: 0; }
+.record-layout.is-editing-record .studio-note-edit textarea { inline-size: 100%; max-inline-size: 100%; resize: vertical; }
+.record-layout.is-editing-record :is(input, textarea) { font-size: 16px; }
+.record-layout.is-editing-record .inline-record-title { font-size: inherit; }
+.studio-game-controls { display: grid; gap: 12px; }
+.archive-shell > .workspace:has(> .record-window > .is-editing-record) { z-index: 40; }
+@media (max-width: 1100px) {
+  .archive-shell > .workspace > .record-window .record-layout.is-editing-record { grid-template-columns: minmax(0, 1fr); }
+  .record-layout.is-editing-record .inline-record-aside { position: static; order: -1; }
+  .record-layout.is-editing-record .inline-record-aside ol { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+  .record-layout.is-editing-record .inline-record-aside li button { padding-inline: 4px; font-size: 12px; }
+  .record-layout.is-editing-record .inline-record-aside .record-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding-block-start: 12px; }
+  .record-layout.is-editing-record .inline-record-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .record-layout.is-editing-record .studio-note-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .record-layout.is-editing-record .studio-note-row input { grid-column: 1 / -1; grid-row: 1; }
+}
+
 .studio-artwork-framing {
   margin-block-end: 20px;
 }

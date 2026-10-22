@@ -64,13 +64,23 @@ const appScriptIndex = indexHtml.indexOf("static-app.js");
 const inlineScriptIndex = indexHtml.indexOf("public/note-inline.js");
 const framingScriptIndex = indexHtml.indexOf("public/image-framing.js");
 const xScriptIndex = indexHtml.indexOf("public/x-terminal.js");
-if (xScriptIndex === -1 || xScriptIndex > appScriptIndex) errors.push("X Terminal helper must load before the static runtime.");
+if (xScriptIndex !== -1 && xScriptIndex > appScriptIndex) errors.push("When enabled, X Terminal helper must load before the static runtime.");
 for (const file of ["public/x-terminal.js", "public/x-embed.js"]) {
   const result = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
   if (result.status !== 0) errors.push(`${file} is missing or has invalid syntax.`);
 }
 const xCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-x-terminal.mjs")], { encoding: "utf8" });
 if (xCheck.status !== 0) errors.push(`X Terminal regression failed: ${(xCheck.stderr || xCheck.stdout || "").trim()}`);
+const desktopCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-desktop-sizing.mjs")], { encoding: "utf8" });
+if (desktopCheck.status !== 0) errors.push(`Desktop sizing regression failed: ${(desktopCheck.stderr || desktopCheck.stdout || "").trim()}`);
+const timelineCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-timeline.mjs")], { encoding: "utf8" });
+if (timelineCheck.status !== 0) errors.push(`Timeline regression failed: ${(timelineCheck.stderr || timelineCheck.stdout || "").trim()}`);
+const roadmapCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-roadmap.mjs")], { encoding: "utf8" });
+if (roadmapCheck.status !== 0) errors.push(`Public roadmap regression failed: ${(roadmapCheck.stderr || roadmapCheck.stdout || "").trim()}`);
+const inlineEditingCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-inline-editing.mjs")], { encoding: "utf8" });
+if (inlineEditingCheck.status !== 0) errors.push(`Inline editing regression failed: ${(inlineEditingCheck.stderr || inlineEditingCheck.stdout || "").trim()}`);
+const publishingCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-publishing-ui.mjs")], { encoding: "utf8" });
+if (publishingCheck.status !== 0) errors.push(`Publishing UI regression failed: ${(publishingCheck.stderr || publishingCheck.stdout || "").trim()}`);
 if (framingScriptIndex === -1 || framingScriptIndex > appScriptIndex || !existsSync(path.join(root, "public/image-framing.js"))) {
   errors.push("The image framing helper must load before the static runtime.");
 }

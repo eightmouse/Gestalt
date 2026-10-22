@@ -204,6 +204,8 @@ const state = {
   searchOpen: false,
   searchQuery: "",
   timelineOpen: false,
+  roadmapOpen: false,
+  timelineSource: "all",
   archiveFolderWindow: null,
   navOpen: false,
   noteSearchQuery: "",
@@ -216,6 +218,10 @@ const state = {
 };
 
 const root = document.querySelector("#root");
+let roadmapData = null;
+let roadmapLoadPromise = null;
+let roadmapFailed = false;
+let roadmapTrigger = null;
 let steamDisplayModule = null;
 let steamDisplaySnapshot = null;
 let steamDisplayStarted = false;
@@ -264,6 +270,7 @@ function openRecord(recordId, contentKey = "overview") {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.roadmapOpen = false;
   state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
@@ -286,6 +293,7 @@ function openSection(sectionId) {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.roadmapOpen = false;
   state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
@@ -302,6 +310,8 @@ function openTimeline() {
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
   state.timelineOpen = true;
+  state.roadmapOpen = false;
+  state.timelineSource = "all";
   state.archiveFolderWindow = null;
   state.navOpen = false;
   render();
@@ -320,6 +330,7 @@ function openHome() {
   state.searchOpen = false;
   state.searchQuery = "";
   state.timelineOpen = false;
+  state.roadmapOpen = false;
   state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
@@ -680,7 +691,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.47.0");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.52.0");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
@@ -809,6 +820,7 @@ function searchResults() {
   const commands = [
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
     { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
+    { kind: "command", id: "cmd-roadmap", title: "Open roadmap", detail: "Work in progress and filed milestones", action: "roadmap" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
     { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
@@ -1428,7 +1440,7 @@ function sidebar() {
   return `<aside class="sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.47.0</span>
+        <span>v1.52.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1442,7 +1454,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.47.0</span>
+        <span class="version-label">v1.52.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1462,7 +1474,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.47.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.52.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1664,7 +1676,7 @@ function dashboard() {
   return `<div class="dashboard-grid${state.panelOpen ? " is-muted" : ""}${state.memoryStateEnabled ? "" : " without-memory"}">
     ${dashboardPanel("PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
-    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", `<div class="x-terminal" data-x-terminal><div class="x-terminal-ui" data-x-ui></div></div>`, "", "", "memory-panel") : ""}
+    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel") : ""}
     ${currentGamePanel()}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "", "latest-log-panel")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
@@ -2397,7 +2409,9 @@ function searchPanel() {
                 ? `data-open-record="${result.record.id}" ${result.content ? `data-open-content="${result.content}"` : ""}`
                 : result.action === "timeline"
                   ? "data-open-timeline"
-                  : `data-open-section="${result.section}"`;
+                  : result.action === "roadmap"
+                    ? "data-open-roadmap"
+                    : `data-open-section="${result.section}"`;
               const stateAttr = result.record ? ` data-state="${recordStateKey(result.record.status)}"` : "";
 
               return `<button type="button" ${commandAttrs}${stateAttr}>
@@ -2433,27 +2447,153 @@ function searchPanel() {
   </div>`;
 }
 
+function loadPublicRoadmap() {
+  if (roadmapData) return Promise.resolve(roadmapData);
+  if (!roadmapLoadPromise) {
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.52.0")
+      .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
+      .catch(() => null)
+      .finally(() => { roadmapLoadPromise = null; });
+  }
+  return roadmapLoadPromise;
+}
+
+async function refreshPublicRoadmap() {
+  roadmapFailed = false;
+  syncRoadmapDialog();
+  const data = await loadPublicRoadmap();
+  if (!state.roadmapOpen) return;
+  roadmapFailed = !data;
+  syncRoadmapDialog();
+}
+
+function openRoadmap() {
+  stopRecordAccessSequence();
+  state.panelOpen = false;
+  state.panelMinimized = false;
+  state.timelineOpen = false;
+  state.archiveFolderWindow = null;
+  state.searchOpen = false;
+  state.searchQuery = "";
+  state.navOpen = false;
+  state.roadmapOpen = true;
+  render();
+  void refreshPublicRoadmap();
+}
+
+function closeRoadmap() {
+  state.roadmapOpen = false;
+  render();
+}
+
+function renderRoadmapContent(data) {
+  return `<div class="roadmap-heading"><span>GESTALT / ROADMAP</span><h2>${escapeHtml(data.title)}</h2><p>${escapeHtml(data.intro)}</p></div>
+    ${data.groups.map((group) => `<section class="roadmap-group" data-roadmap-state="${escapeHtml(group.id)}">
+      <h3>${escapeHtml(group.title)}<span>${String(group.items.length).padStart(2, "0")}</span></h3>
+      <ul>${group.items.map((item) => `<li><span class="roadmap-mark" aria-hidden="true"></span><div><h4>${group.id === "done" ? `<s>${escapeHtml(item.title)}</s>` : escapeHtml(item.title)}</h4><p>${escapeHtml(item.detail)}</p></div>${item.version ? `<small>${escapeHtml(item.version)}</small>` : ""}</li>`).join("")}</ul>
+    </section>`).join("")}
+    <footer class="roadmap-footnote">Last revised: ${escapeHtml(data.updated)}</footer>`;
+}
+
+function syncRoadmapDialog() {
+  let dialog = document.getElementById("gestalt-roadmap");
+  if (!state.roadmapOpen) {
+    if (dialog) {
+      if (dialog.open) dialog.close();
+      dialog.remove();
+      if (roadmapTrigger instanceof HTMLElement && roadmapTrigger !== document.body && roadmapTrigger.isConnected) roadmapTrigger.focus({ preventScroll: true });
+      else {
+        for (const control of document.querySelectorAll("[data-search-toggle], .archive-menu-toggle")) {
+          if (control.getClientRects().length) { control.focus({ preventScroll: true }); break; }
+        }
+      }
+      roadmapTrigger = null;
+    }
+    return;
+  }
+  if (!dialog) {
+    roadmapTrigger = document.activeElement;
+    dialog = document.createElement("dialog");
+    dialog.id = "gestalt-roadmap";
+    dialog.className = "roadmap-dialog";
+    dialog.setAttribute("aria-label", "Gestalt roadmap");
+    dialog.innerHTML = '<article class="roadmap-note"><header class="window-bar"><span>// WORK NOTE</span><div class="window-actions"><button type="button" data-window-action="close" data-roadmap-close aria-label="Close roadmap">close</button></div></header><div class="roadmap-body"></div></article>';
+    dialog.addEventListener("keydown", (event) => event.stopPropagation());
+    dialog.addEventListener("cancel", (event) => { event.preventDefault(); closeRoadmap(); });
+    dialog.addEventListener("click", (event) => { if (event.target === dialog) { event.stopPropagation(); closeRoadmap(); } });
+    document.body.append(dialog);
+    dialog.showModal();
+  }
+  const status = roadmapData ? "ready" : roadmapFailed ? "failed" : "loading";
+  if (dialog.dataset.roadmapState === status) return;
+  dialog.dataset.roadmapState = status;
+  const body = dialog.querySelector(".roadmap-body");
+  body.setAttribute("aria-busy", String(status === "loading"));
+  body.innerHTML = roadmapData ? renderRoadmapContent(roadmapData)
+    : roadmapFailed ? '<div class="roadmap-message" role="status"><p>Work note unavailable.</p><button type="button" data-roadmap-retry>Try again</button></div>'
+      : '<p class="roadmap-message" role="status">Retrieving work note...</p>';
+}
+
+function timelineSources(items) {
+  const labels = { projects: "Projects", games: "Games", logs: "Logs", setup: "Setup", archive: "Archive" };
+  return Object.entries(labels)
+    .map(([id, label]) => ({ id, label, count: items.filter((item) => item.record.section === id).length }))
+    .filter((source) => source.count > 0);
+}
+
+function groupTimelineItems(items, source = "all") {
+  const groups = new Map();
+  for (const item of items) {
+    if (source !== "all" && item.record.section !== source) continue;
+    const group = groups.get(item.date) ?? { date: item.date, items: [] };
+    group.items.push(item);
+    groups.set(item.date, group);
+  }
+  return [...groups.values()];
+}
+
+function timelineItemTitle(item) {
+  if (item.kind !== "note") return item.title;
+  return item.title.replace(/^\s*\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s*[-:\u2013\u2014|]?\s*/, "").trim() || item.title;
+}
+
+function renderTimelineResults(items, source) {
+  const groups = groupTimelineItems(items, source);
+  const count = groups.reduce((total, group) => total + group.items.length, 0);
+  return `<p class="timeline-scope" role="status">Showing ${count} of ${items.length} recent signals / Newest first</p>
+    ${groups.length ? groups.map((group) => `<section class="timeline-day" aria-label="${escapeHtml(readableDate(group.date))}">
+      <h2><time datetime="${escapeHtml(group.date)}">${escapeHtml(readableDate(group.date))}</time><span>${group.items.length} ${group.items.length === 1 ? "SIGNAL" : "SIGNALS"}</span></h2>
+      <ol class="timeline-list">${group.items.map((item) => `<li data-state="${recordStateKey(item.record.status)}">
+        <button type="button" data-open-record="${escapeHtml(item.record.id)}" data-open-content="${escapeHtml(item.content)}">
+          <span>${escapeHtml(timelineItemTitle(item))}</span>
+          <small>${escapeHtml(item.detail)}</small>
+          <i>${item.kind === "note" ? "NOTE" : "RECORD"}</i>
+        </button>
+      </li>`).join("")}</ol>
+    </section>`).join("") : '<p class="timeline-empty">No signals in this view.</p>'}`;
+}
+
+function changeTimelineSource(source) {
+  if (!state.timelineOpen) return;
+  const items = getTimelineItems(32);
+  if (source !== "all" && !timelineSources(items).some((item) => item.id === source)) return;
+  const results = root.querySelector(".timeline-window #timeline-results");
+  if (!(results instanceof HTMLElement)) return;
+  state.timelineSource = source;
+  results.innerHTML = renderTimelineResults(items, source);
+  const body = results.closest(".timeline-body");
+  if (body instanceof HTMLElement) body.scrollTop = 0;
+}
+
 function timelineWindow() {
   if (!state.timelineOpen) {
     return "";
   }
 
   const items = getTimelineItems(32);
-  const noteCount = items.filter((item) => item.kind === "note").length;
-  const recordCount = items.length - noteCount;
-  const sectionCount = new Set(items.map((item) => item.record.section)).size;
-  const rows = items
-    .map(
-      (item) => `<li data-state="${recordStateKey(item.record.status)}">
-        <time>${readableDate(item.date)}</time>
-        <button type="button" data-open-record="${item.record.id}" data-open-content="${item.content}">
-          <span>${escapeHtml(item.title)}</span>
-          <small>${escapeHtml(item.detail)}</small>
-          <i>${item.kind === "note" ? "NOTE TRACE" : "RECORD TRACE"}</i>
-        </button>
-      </li>`
-    )
-    .join("");
+  const sources = timelineSources(items);
+  const source = state.timelineSource === "all" || sources.some((item) => item.id === state.timelineSource) ? state.timelineSource : "all";
+  const range = items.length ? `${readableDate(items[items.length - 1].date)} to ${readableDate(items[0].date)}` : "No activity recorded";
 
   return `<button class="record-backdrop" type="button" aria-label="Close timeline" data-timeline-close></button>
     <article class="timeline-window" aria-label="Archive timeline">
@@ -2463,18 +2603,17 @@ function timelineWindow() {
           <button type="button" data-window-action="close" data-timeline-close aria-label="Close timeline">close</button>
         </div>
       </header>
+      <div class="timeline-toolbar">
+        <div class="timeline-range"><span>RECENT SIGNALS</span><strong>${escapeHtml(range)}</strong></div>
+        <label class="timeline-source">Source
+          <select data-timeline-source aria-controls="timeline-results">
+            <option value="all"${source === "all" ? " selected" : ""}>All sources (${items.length})</option>
+            ${sources.map((item) => `<option value="${item.id}"${source === item.id ? " selected" : ""}>${item.label} (${item.count})</option>`).join("")}
+          </select>
+        </label>
+      </div>
       <div class="timeline-body">
-        <div class="timeline-summary">
-          <p>RECENT SIGNALS</p>
-          <strong>${items.length}</strong>
-          <span>records and notes sorted by observed date</span>
-          <dl class="timeline-metrics">
-            <div><dt>NOTES</dt><dd>${noteCount}</dd></div>
-            <div><dt>RECORDS</dt><dd>${recordCount}</dd></div>
-            <div><dt>SECTIONS</dt><dd>${sectionCount}</dd></div>
-          </dl>
-        </div>
-        <ol class="timeline-list">${rows}</ol>
+        <div id="timeline-results">${renderTimelineResults(items, source)}</div>
       </div>
     </article>`;
 }
@@ -2553,7 +2692,7 @@ function render() {
   const headlineClass = state.headlineAnimating ? "headline-decode-text is-resolving" : "headline-decode-text";
   const cursorClass = state.headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
-  const hasFocusWindow = state.panelOpen || state.timelineOpen;
+  const hasFocusWindow = state.panelOpen || state.timelineOpen || state.roadmapOpen;
 
   const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
@@ -2606,6 +2745,7 @@ function render() {
   }
   syncXTerminal();
   syncImageLightbox();
+  syncRoadmapDialog();
   syncTime();
   syncWeather();
 
@@ -2799,10 +2939,9 @@ function updateMemoryBounds() {
 }
 
 document.addEventListener("pointermove", (event) => {
-  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds) {
+  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds) {
     return;
   }
-  if (memoryNode.closest("[data-x-terminal]")?.dataset.xState !== "idle") return;
 
   const rect = memoryBounds;
   const x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
@@ -2832,6 +2971,9 @@ document.addEventListener("click", (event) => {
   if (!(clickTarget instanceof Element)) {
     return;
   }
+
+  if (clickTarget.closest("[data-roadmap-close]")) { closeRoadmap(); return; }
+  if (clickTarget.closest("[data-roadmap-retry]")) { void refreshPublicRoadmap(); return; }
 
   const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
 
@@ -2922,6 +3064,8 @@ document.addEventListener("click", (event) => {
     openTimeline();
     return;
   }
+
+  if (target.dataset.openRoadmap !== undefined) { openRoadmap(); return; }
 
   if (target.dataset.timelineClose !== undefined) {
     state.timelineOpen = false;
@@ -3174,6 +3318,10 @@ document.addEventListener("error", (event) => {
 
 document.addEventListener("change", (event) => {
   const input = event.target;
+  if (input instanceof HTMLSelectElement && input.matches("[data-timeline-source]")) {
+    changeTimelineSource(input.value);
+    return;
+  }
   if (input instanceof HTMLInputElement && input.matches("[data-entry-access-mode]")) {
     changeEntryAccessMode(input.value);
   }

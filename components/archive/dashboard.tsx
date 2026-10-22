@@ -6,7 +6,6 @@ import type { RecordEntry, RecordSection } from "@/lib/types";
 import { activityFreshness, recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
 import { steamBannerImage, steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
-import { XTerminal } from "@/components/archive/x-terminal";
 
 type DashboardProps = {
   activity: ActivityEntry[];
@@ -106,7 +105,7 @@ export function ArchiveDashboard({
 
       {MEMORY_STATE_ENABLED ? (
         <DashboardPanel title="MEMORY STATE" className="memory-panel">
-          <XTerminal />
+          <MemoryLoop />
         </DashboardPanel>
       ) : null}
 

@@ -110,6 +110,13 @@ published.controller.destroy();
 const localReader = readFileSync(new URL("../components/archive/x-terminal.tsx", import.meta.url), "utf8");
 assert.match(localReader, /process\.env\.NODE_ENV === "development"\s*\? "https:\/\/eightmouse\.github\.io\/Gestalt\/public\/x-embed\.html"/, "Local editor never hosts third-party scripts on its own origin");
 assert.ok(!readFileSync(new URL("../index.html", import.meta.url), "utf8").includes("platform.twitter.com"), "The public shell never preloads the provider script");
+const shell = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const dashboard = readFileSync(new URL("../components/archive/dashboard.tsx", import.meta.url), "utf8");
+const staticReader = readFileSync(new URL("../static-app.js", import.meta.url), "utf8");
+assert.ok(!shell.includes('src="public/x-terminal.js'), "Paused X prototype adds no controller download to the public page");
+assert.ok(dashboard.includes("<MemoryLoop />") && !dashboard.includes("<XTerminal"), "React mounts the original Memory State, not the paused feed");
+assert.ok(staticReader.includes('dashboardPanel("MEMORY STATE", memoryLoop(),'), "Static dashboard restores the same original animation");
+assert.ok(!staticReader.includes('memoryNode.closest("[data-x-terminal]")?.dataset.xState !== "idle"'), "Standalone Memory State pointer motion is not blocked by the retired feed guard");
 
 // Preserve a connected iframe and all of its ancestors during a static render.
 function tree() {

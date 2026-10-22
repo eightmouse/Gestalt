@@ -45,6 +45,7 @@ jobs:
           node --check public/x-embed.js
           node scripts/test-x-terminal.mjs
           node --check public/steam-display.mjs
+          node --check public/roadmap.mjs
           node --check scripts/prepare-pages.mjs
           node scripts/validate-content.mjs
           node scripts/test-steam-snapshot.mjs

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { Maximize2, Minimize2, Settings, X } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   contentOrdinal,
   getRecordContents,
@@ -24,21 +24,23 @@ type RecordWindowProps = {
   initialContent: ContentKey;
   maximized: boolean;
   record: RecordEntry;
-  onEdit?: () => void;
+  onEdit?: (content?: ContentKey) => void;
+  editor?: ReactNode;
+  editorBusy?: boolean;
   onClose: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
 };
 
-export function RecordWindow({ accessPending = false, accessComplete = false, initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ accessPending = false, accessComplete = false, initialContent, maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
     return <SetupRecordWindow accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
-function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, maximized, record, onEdit, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
@@ -87,22 +89,23 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, ma
       <header className="window-bar">
         <div className="window-title-group">
           <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
-          {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit} aria-label="Edit this record locally" title="Edit locally"><Settings size={15} aria-hidden="true" /></button> : null}
+          {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
         </div>
         <div className="window-actions">
-          <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
+          <button type="button" disabled={editorBusy} data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
             <Minimize2 size={14} />
           </button>
           <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label={maximized ? "Restore record" : "Maximize record"}>
             <Maximize2 size={14} />
           </button>
-          <button type="button" data-window-action="close" onClick={onClose} aria-label="Close record">
+          <button type="button" disabled={editorBusy} data-window-action="close" onClick={onClose} aria-label="Close record">
             <X size={15} />
           </button>
         </div>
       </header>
 
-      <div className="record-layout">
+      <div className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
+        {editor ?? <>
         <div className="record-main">
           <div
             className={`${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}`}
@@ -175,7 +178,7 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, ma
             <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
           )}
         </aside>
-
+        </>}
       </div>
       {updateHistoryOpen && record.section !== "games" ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
     </motion.article>

@@ -53,6 +53,7 @@ export function getSearchResults(records: RecordEntry[], query: string, currentG
   const commands: SearchCommand[] = [
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
     { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
+    { kind: "command", id: "cmd-roadmap", title: "Open roadmap", detail: "Work in progress and filed milestones", action: "roadmap" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
     { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },

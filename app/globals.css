@@ -3737,7 +3737,6 @@ button:focus-visible {
 
 .x-terminal-ui { display: contents; }
 .x-terminal .sr-only { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.memory-panel > div { overflow: visible; }
 .x-terminal [hidden] { display: none !important; }
 /* A retained panel can outlive its controller during a local hot update. */
 .x-terminal [data-x-action="close"] { display: none !important; }
@@ -3973,151 +3972,332 @@ button:focus-visible {
   }
 }
 
-@media (min-width: 1500px) and (min-height: 1120px) {
-  .archive-shell {
-    --dashboard-block-size: min(840px, calc(100vh - 228px));
-    --dashboard-max-inline: 1380px;
-    --record-window-inline: 1080px;
-    --section-split-max-inline: 1380px;
-    --section-split-record-size: 150px;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: minmax(340px, 1.04fr) minmax(260px, 0.84fr) minmax(260px, 0.74fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 1.12fr);
-    gap: clamp(14px, 1.4vh, 22px);
-  }
-
-  .dashboard-panel {
-    padding: clamp(14px, 1.35vh, 18px) 24px clamp(12px, 1.2vh, 16px);
-  }
-
-  .dashboard-panel h2 {
-    font-size: 14px;
-  }
-
-  .current-game-panel {
-    grid-template-rows: auto minmax(132px, 1fr);
-  }
-
-  .current-game {
-    min-block-size: 132px;
-    grid-template-columns: 96px 1fr;
-    gap: 22px;
-  }
-
-  .record-list strong,
-  .current-game strong,
-  .latest-log span {
-    font-size: 17px;
-  }
-
-  .record-list small,
-  .record-list i,
-  .current-game span {
-    font-size: 14.5px;
-  }
-
-  .latest-log p,
-  .activity-feed strong {
-    font-size: 16px;
-  }
-
-  .activity-feed > li > span,
-  .activity-feed small {
-    font-size: 13px;
-  }
-
-  .activity-feed li {
-    min-block-size: 42px;
-    grid-template-columns: 68px minmax(0, 1fr);
-  }
-
-  .active-projects-panel .record-list button {
-    min-block-size: clamp(36px, 3.2vh, 46px);
-  }
-
-  .active-projects-panel .record-list button:nth-child(4),
-  .activity-feed li:nth-child(4) {
-    display: grid;
-  }
+/* Size tiers follow CSS viewport space, not physical pixels or devicePixelRatio. */
+@media (min-width: 2200px) and (min-height: 1100px) {
+  .archive-shell { --desktop-size: 1.25; }
 }
 
-@media (min-width: 2600px) and (min-height: 1500px) {
+@media (min-width: 2500px) and (min-height: 1100px) {
+  .archive-shell { --desktop-size: 1.333333; }
+}
+
+@media (min-width: 3300px) and (min-height: 1700px) {
+  .archive-shell { --desktop-size: 2; }
+}
+
+@media (min-width: 2200px) and (min-height: 1100px) {
   .archive-shell {
-    --sidebar-width: 380px;
-    --dashboard-block-size: min(980px, calc(100vh - 300px));
-    --dashboard-max-inline: 1660px;
-    --record-window-inline: 1260px;
-    --record-window-margin: 84px;
-    --section-split-max-inline: 1660px;
-    --section-split-record-size: 168px;
+    --sidebar-width: calc(340px * var(--desktop-size));
+    --dashboard-max-inline: calc(1180px * var(--desktop-size));
+    --dashboard-block-size: min(calc(730px * var(--desktop-size)), calc(100dvh - 218px * var(--desktop-size)));
+    --record-window-inline: calc(960px * var(--desktop-size));
+    --record-window-margin: calc(56px * var(--desktop-size));
+    --section-split-max-inline: var(--dashboard-max-inline);
+    --section-split-record-size: calc(138px * var(--desktop-size));
   }
 
-  .workspace {
-    --workspace-pad-inline: clamp(60px, 4vw, 128px);
-    --footer-reserve: 94px;
+  .archive-shell > .boot-screen {
+    --boot-width: min(calc(520px * var(--desktop-size)), 78vw);
+    gap: calc(14px * var(--desktop-size));
   }
+  .archive-shell > .boot-screen > span { font-size: calc(64px * var(--desktop-size)); }
+  .archive-shell > .boot-screen .boot-status { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .boot-screen .boot-meter { block-size: calc(12px * var(--desktop-size)); padding: calc(2px * var(--desktop-size)); }
 
-  .workspace-header h1 {
-    font-size: clamp(36px, 2.3vw, 58px);
+  .archive-shell > .sidebar {
+    gap: calc(28px * var(--desktop-size));
+    padding: calc(48px * var(--desktop-size)) calc(28px * var(--desktop-size)) calc(28px * var(--desktop-size));
   }
+  .archive-shell > .sidebar .brand-block { gap: calc(22px * var(--desktop-size)); }
+  .archive-shell > .sidebar .brand { font-size: calc(42px * var(--desktop-size)); }
+  .archive-shell > .sidebar :is(.version-label, .desktop-mode-label) { font-size: calc(10px * var(--desktop-size)); }
+  .archive-shell > .sidebar .sidebar-label { font-size: calc(12px * var(--desktop-size)); margin-block-end: calc(18px * var(--desktop-size)); }
+  .archive-shell > .sidebar .nav-stack { --nav-stack-gap: calc(9px * var(--desktop-size)); }
+  .archive-shell > .sidebar .nav-trigger {
+    grid-template-columns: calc(32px * var(--desktop-size)) minmax(0, 1fr) calc(14px * var(--desktop-size));
+    gap: calc(13px * var(--desktop-size));
+    padding: calc(10px * var(--desktop-size)) calc(14px * var(--desktop-size));
+  }
+  .archive-shell > .sidebar .nav-trigger strong { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .sidebar .nav-trigger small,
+  .archive-shell > .sidebar .nav-cipher { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .sidebar .nav-mark { justify-self: center; transform: scale(var(--desktop-size)); }
+  .archive-shell > .sidebar .system-status { padding-block-start: calc(24px * var(--desktop-size)); }
+  .archive-shell > .sidebar .system-status :is(dt, dd) { font-size: calc(16px * var(--desktop-size)); }
+  .archive-shell > .sidebar .system-status div { grid-template-columns: calc(96px * var(--desktop-size)) minmax(0, 1fr); gap: calc(12px * var(--desktop-size)); }
+  .archive-shell > .sidebar .system-status > p { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .sidebar .system-status dl { gap: calc(10px * var(--desktop-size)); }
 
-  .dashboard-grid {
-    grid-template-columns: minmax(420px, 1.06fr) minmax(330px, 0.84fr) minmax(330px, 0.76fr);
-    gap: clamp(20px, 1.05vw, 28px);
+  .archive-shell > .workspace {
+    --workspace-pad-inline: calc(74px * var(--desktop-size));
+    --workspace-pad-top: calc(43px * var(--desktop-size));
+    --workspace-pad-bottom: calc(54px * var(--desktop-size));
+    --footer-reserve: calc(72px * var(--desktop-size));
   }
+  .archive-shell > .workspace > .workspace-header { min-block-size: calc(133px * var(--desktop-size)); margin-block-end: calc(24px * var(--desktop-size)); gap: calc(24px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header h1 { font-size: calc(44px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .route-label { font-size: calc(13px * var(--desktop-size)); margin-block-end: calc(18px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .subtle { font-size: calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .time-block { font-size: calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .time-block { gap: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .icon-button { inline-size: calc(32px * var(--desktop-size)); block-size: calc(32px * var(--desktop-size)); flex-shrink: 0; }
+  .archive-shell > .workspace > .workspace-header .search-icon { transform: scale(var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-footer { font-size: calc(16px * var(--desktop-size)); inline-size: min(calc(900px * var(--desktop-size)), calc(100% - var(--workspace-pad-inline) * 2)); max-inline-size: calc(900px * var(--desktop-size)); inset-block-end: calc(24px * var(--desktop-size)); gap: calc(6px * var(--desktop-size)) calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-footer p { font-size: calc(13px * var(--desktop-size)); }
 
-  .dashboard-panel {
-    gap: 16px;
-    padding: 20px 30px 18px;
+  .archive-shell > .workspace > .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 0.72fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.92fr);
+    gap: calc(16px * var(--desktop-size));
   }
+  .archive-shell > .workspace > .dashboard-grid .dashboard-panel {
+    gap: calc(13px * var(--desktop-size));
+    padding: calc(14px * var(--desktop-size)) calc(20px * var(--desktop-size)) calc(12px * var(--desktop-size));
+  }
+  .archive-shell > .workspace > .dashboard-grid .dashboard-panel h2 { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .current-game-panel { grid-template-rows: auto minmax(0, 1fr); }
+  .archive-shell > .workspace > .dashboard-grid .current-game {
+    min-block-size: 0;
+    grid-template-columns: calc(88px * var(--desktop-size)) minmax(0, 1fr);
+    gap: calc(22px * var(--desktop-size));
+  }
+  .archive-shell > .workspace > .dashboard-grid .game-cover { inline-size: 100%; }
+  .archive-shell > .workspace > .dashboard-grid .record-list strong { font-size: calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid :is(.current-game strong, .latest-log span) { font-size: calc(17px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid :is(.record-list small, .record-list i, .current-game span) { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .current-game span { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .record-list button { padding-block: calc(6px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .record-list button > span { gap: calc(3px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .current-game strong { margin-block-end: calc(9px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .latest-log { gap: calc(12px * var(--desktop-size)); padding-inline-start: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .latest-log p { font-size: calc(14.5px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .activity-feed {
+    column-gap: calc(32px * var(--desktop-size));
+    row-gap: calc(10px * var(--desktop-size));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+  .archive-shell > .workspace > .dashboard-grid .activity-feed li { grid-template-columns: calc(58px * var(--desktop-size)) minmax(0, 1fr) auto; gap: calc(9px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .activity-feed strong { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .activity-feed :is(small, li > span) { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .activity-badge {
+    font-size: calc(11px * var(--desktop-size));
+    min-inline-size: calc(31px * var(--desktop-size));
+    block-size: calc(17px * var(--desktop-size));
+    padding-inline: calc(5px * var(--desktop-size));
+  }
+  .archive-shell > .workspace > .dashboard-grid .weather-temp { font-size: calc(34px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .weather-readout { gap: calc(6px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .weather-action { inline-size: calc(32px * var(--desktop-size)); block-size: calc(32px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .weather-action-icon { inline-size: calc(22px * var(--desktop-size)); block-size: calc(22px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid :is(.weather-condition, .weather-meta span, .weather-note) { font-size: calc(12px * var(--desktop-size)); }
 
-  .dashboard-panel h2 {
-    font-size: 16px;
+  .archive-shell > .workspace > .section-page--split { --section-split-record-gap: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page:not(.section-page--split):not(.setup-bay):not(.archive-folder-page) { max-inline-size: calc(900px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay { inline-size: min(100%, var(--dashboard-max-inline)); max-inline-size: var(--dashboard-max-inline); }
+  .archive-shell > .workspace > .archive-folder-page { inline-size: min(100%, calc(1320px * var(--desktop-size))); max-inline-size: calc(1320px * var(--desktop-size)); gap: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page :is(.section-page-header, .section-record-column) { padding: calc(14px * var(--desktop-size)); gap: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-page-header h2 { font-size: calc(24px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-page-readout { margin-block-start: calc(9px * var(--desktop-size)); gap: calc(7px * var(--desktop-size)) calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-page-readout dt { font-size: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-page-readout dd { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page :is(.section-page-header p, .section-page-header i, .section-record-kind, .section-record-column h3, .section-record-column > header span) { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-record-column > header small { font-size: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-record {
+    font-size: calc(16px * var(--desktop-size)); min-block-size: calc(94px * var(--desktop-size)); padding: calc(14px * var(--desktop-size)) calc(16px * var(--desktop-size));
+    grid-template-columns: calc(36px * var(--desktop-size)) calc(104px * var(--desktop-size)) minmax(0, 0.72fr) minmax(0, 1fr) minmax(calc(132px * var(--desktop-size)), auto);
   }
+  .archive-shell > .workspace > .section-page .section-record-column .section-record {
+    grid-template-columns: calc(30px * var(--desktop-size)) minmax(0, 1fr) minmax(calc(112px * var(--desktop-size)), auto);
+    column-gap: calc(12px * var(--desktop-size)); row-gap: calc(5px * var(--desktop-size));
+    padding: calc(16px * var(--desktop-size)) calc(14px * var(--desktop-size));
+  }
+  .archive-shell > .workspace > .section-page .section-record i { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-record::before { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .section-record::after { inset-inline-start: calc(52px * var(--desktop-size)); }
 
-  .current-game-panel {
-    grid-template-rows: auto minmax(156px, 1fr);
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) {
+    inset-block-start: calc(82px * var(--desktop-size));
+    inset-block-end: calc(44px * var(--desktop-size));
+    grid-template-rows: calc(48px * var(--desktop-size)) minmax(0, 1fr);
   }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-layout {
+    grid-template-columns: minmax(0, 1fr) calc(230px * var(--desktop-size));
+    gap: calc(28px * var(--desktop-size));
+    padding: calc(30px * var(--desktop-size)) calc(28px * var(--desktop-size)) calc(32px * var(--desktop-size)) calc(32px * var(--desktop-size));
+    font-size: calc(16px * var(--desktop-size));
+  }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading h2 { font-size: calc(48px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-title-text.is-long-title { font-size: calc(38px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window.is-maximized:not(.is-setup-record) .record-layout { grid-template-columns: minmax(0, 1fr) minmax(calc(230px * var(--desktop-size)), calc(260px * var(--desktop-size))); gap: calc(30px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) :is(.record-kind, .record-meta dt, .record-aside h3) { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) :is(.record-section h3, .terminal-title) { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) :is(.record-meta dd, .record-aside li button) { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-body { font-size: calc(15px * var(--desktop-size)); padding: calc(16px * var(--desktop-size)) calc(18px * var(--desktop-size)); gap: calc(6px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-body :is(h3, h4, h5) { font-size: inherit; }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-body h3 { font-size: calc(20px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-body h4 { font-size: calc(17px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry-date { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry-title { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-aside { max-block-size: none; padding: calc(24px * var(--desktop-size)) calc(18px * var(--desktop-size)); gap: calc(22px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .window-bar { block-size: calc(48px * var(--desktop-size)); padding: 0 calc(22px * var(--desktop-size)) 0 calc(28px * var(--desktop-size)); font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window :is(.window-actions, .setup-prompt-actions) { gap: calc(8px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .window-title-group { gap: calc(9px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .window-edit-action { inline-size: calc(28px * var(--desktop-size)); block-size: calc(28px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .window-edit-action svg { inline-size: calc(15px * var(--desktop-size)); block-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .window-actions button { inline-size: calc(26px * var(--desktop-size)); block-size: calc(26px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .window-actions button[data-window-action]::before,
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .window-actions button[data-window-action]::after { scale: var(--desktop-size); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .window-actions button[data-window-action="minimize"]::before { inset-inline-start: calc(7px * var(--desktop-size)); inset-block-end: calc(7px * var(--desktop-size)); }
 
-  .current-game {
-    min-block-size: 156px;
-    grid-template-columns: 120px 1fr;
-    gap: 28px;
-  }
+  .archive-shell > .workspace > .section-page .setup-group { padding: calc(15px * var(--desktop-size)); gap: calc(12px * var(--desktop-size)); min-block-size: calc(218px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-bay-grid { gap: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-group > header { gap: calc(14px * var(--desktop-size)); padding-block-end: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile { grid-template-columns: calc(42px * var(--desktop-size)) minmax(0, 1fr) auto; min-block-size: calc(64px * var(--desktop-size)); padding: calc(10px * var(--desktop-size)) calc(12px * var(--desktop-size)); gap: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile-icon { inline-size: calc(42px * var(--desktop-size)); block-size: calc(42px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-group--tools .setup-tile-grid { grid-auto-columns: calc(96px * var(--desktop-size)); gap: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-group--peripherals .setup-tile-grid { grid-auto-columns: calc(154px * var(--desktop-size)); gap: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-group--notes .setup-tile-grid { grid-template-columns: repeat(auto-fill, minmax(calc(84px * var(--desktop-size)), 1fr)); gap: calc(14px * var(--desktop-size)) calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay :is(.setup-tile--tools, .setup-tile--notes) { grid-template-columns: minmax(0, 1fr); padding: calc(10px * var(--desktop-size)) calc(8px * var(--desktop-size)); gap: calc(8px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals { grid-template-columns: minmax(0, 1fr); padding: calc(8px * var(--desktop-size)); gap: calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--notes { min-block-size: calc(112px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--notes .setup-tile-icon { inline-size: calc(42px * var(--desktop-size)); block-size: calc(42px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .setup-group h3 { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page :is(.setup-group > p, .setup-group > header span, .setup-tile small) { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .setup-tile strong { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .setup-tile--tools { inline-size: calc(96px * var(--desktop-size)); min-block-size: calc(112px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .setup-tile--tools .setup-tile-icon { inline-size: calc(64px * var(--desktop-size)); block-size: calc(64px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .setup-tile--peripherals { inline-size: calc(154px * var(--desktop-size)); min-block-size: calc(132px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals .setup-tile-icon { inline-size: 100%; block-size: calc(78px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals .setup-tile-body { gap: calc(2px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals .setup-tile-body small { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals i { inset-block-start: calc(8px * var(--desktop-size)); inset-inline-end: calc(8px * var(--desktop-size)); padding: calc(3px * var(--desktop-size)) calc(5px * var(--desktop-size)); font-size: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-manager { grid-template-columns: minmax(calc(210px * var(--desktop-size)), 0.25fr) minmax(0, 1fr); }
+  .archive-shell > .workspace > .archive-folder-page .archive-manager-section { padding: calc(18px * var(--desktop-size)) calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-root-files { padding: calc(16px * var(--desktop-size)) calc(20px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-root-files .archive-file-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, max(calc(170px * var(--desktop-size)), calc((100% - 40px * var(--desktop-size)) / 6))), 1fr)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-file { min-block-size: calc(80px * var(--desktop-size)); padding: calc(11px * var(--desktop-size)) calc(9px * var(--desktop-size)); gap: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-file > svg { inline-size: calc(18px * var(--desktop-size)); block-size: calc(18px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-folder-tiles { grid-template-columns: repeat(auto-fill, minmax(calc(190px * var(--desktop-size)), 1fr)); gap: calc(14px * var(--desktop-size)); padding: calc(22px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-folder-tile { min-block-size: calc(110px * var(--desktop-size)); grid-template-columns: calc(38px * var(--desktop-size)) minmax(0, 1fr); gap: calc(4px * var(--desktop-size)) calc(10px * var(--desktop-size)); padding: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-folder-tile > svg { inline-size: calc(30px * var(--desktop-size)); block-size: calc(30px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-folder-tile strong { font-size: calc(18px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page :is(.archive-folder-tile small, .archive-folder-tile i, .archive-manager-toolbar small, .archive-root-group > h3 small) { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page :is(.archive-tree-root, .archive-tree-folder) { min-block-size: calc(38px * var(--desktop-size)); padding: calc(6px * var(--desktop-size)) calc(8px * var(--desktop-size)); gap: calc(9px * var(--desktop-size)); font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-manager-footnote { padding: calc(13px * var(--desktop-size)) calc(20px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-manager-main { grid-template-rows: calc(50px * var(--desktop-size)) minmax(0, 1fr) auto; }
+  .archive-shell > .workspace > .section-page :is(.archive-manager-label, .archive-manager-toolbar) { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page :is(.archive-tree-date, .archive-tree-folder, .archive-root-group > h3) { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-file strong { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page :is(.archive-file small, .archive-manager-footnote, .archive-manager-details dt, .archive-manager-details dd) { font-size: calc(12px * var(--desktop-size)); }
 
-  .record-list strong,
-  .current-game strong,
-  .latest-log span {
-    font-size: 19px;
+  .archive-shell > .workspace > .workspace-header .command-panel {
+    inline-size: min(calc(500px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - var(--workspace-pad-inline) * 2));
+    inset-block-start: calc(42px * var(--desktop-size));
+    max-block-size: calc(100dvh - 160px * var(--desktop-size));
+    padding: calc(16px * var(--desktop-size));
+    gap: calc(12px * var(--desktop-size));
+    font-size: calc(16px * var(--desktop-size));
   }
+  .archive-shell > .workspace > .workspace-header .command-panel :is(label, legend, small) { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .command-panel :is(.search-suggestions button, .command-preference-options span) { min-block-size: calc(44px * var(--desktop-size)); padding: calc(7px * var(--desktop-size)) calc(8px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .command-panel .command-preference-options span { font-size: calc(13px * var(--desktop-size)); }
 
-  .record-list small,
-  .record-list i,
-  .current-game span {
-    font-size: 16px;
+  .archive-shell > .workspace > .record-window.is-setup-record {
+    inline-size: min(calc(860px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - 86px * var(--desktop-size)));
+    max-block-size: min(calc(620px * var(--desktop-size)), calc(100dvh - 116px * var(--desktop-size)));
+    font-size: calc(16px * var(--desktop-size));
   }
+  .archive-shell > .workspace > .record-window.is-setup-record--peripherals {
+    inline-size: min(calc(1040px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - 72px * var(--desktop-size)));
+    max-block-size: min(calc(760px * var(--desktop-size)), calc(100dvh - 92px * var(--desktop-size)));
+  }
+  .archive-shell > .workspace > .is-setup-record .setup-console-prompt { min-block-size: calc(34px * var(--desktop-size)); padding: calc(4px * var(--desktop-size)) calc(11px * var(--desktop-size)) calc(4px * var(--desktop-size)) calc(13px * var(--desktop-size)); gap: calc(14px * var(--desktop-size)); font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .setup-prompt-command { gap: calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .setup-console-body { padding: calc(30px * var(--desktop-size)); gap: calc(28px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .setup-terminal-avatar { min-block-size: calc(190px * var(--desktop-size)); max-inline-size: calc(230px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .setup-fetch h2 { font-size: calc(48px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record :is(.setup-fetch h3, .setup-note-file-copy h2) { font-size: calc(42px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .setup-fetch dl { gap: calc(6px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record :is(.setup-command, .setup-fetch dt) { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .setup-fetch dd { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record--peripherals .setup-console { min-block-size: min(calc(710px * var(--desktop-size)), calc(100dvh - 96px * var(--desktop-size))); }
+  .archive-shell > .workspace > .is-setup-record--peripherals .setup-inspection-photo { max-inline-size: calc(920px * var(--desktop-size)); min-block-size: clamp(calc(220px * var(--desktop-size)), 31dvh, calc(380px * var(--desktop-size))); max-block-size: min(calc(430px * var(--desktop-size)), 55dvh); }
+  .archive-shell > .workspace > .is-setup-record--peripherals .setup-peripheral-copy h2 { font-size: calc(44px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record--peripherals .setup-peripheral-copy p { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record--peripherals .setup-peripheral-copy { gap: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record--peripherals .setup-inspection-photo span { inset-inline-start: calc(10px * var(--desktop-size)); inset-block-end: calc(9px * var(--desktop-size)); padding: calc(4px * var(--desktop-size)) calc(7px * var(--desktop-size)); font-size: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .window-actions button[data-window-action="minimize"]::before { inset-inline-start: calc(7px * var(--desktop-size)); inset-block-end: calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .window-actions button { inline-size: calc(26px * var(--desktop-size)); block-size: calc(26px * var(--desktop-size)); }
+  .archive-shell > .workspace > .is-setup-record .window-actions button[data-window-action]::before,
+  .archive-shell > .workspace > .is-setup-record .window-actions button[data-window-action]::after { scale: var(--desktop-size); }
+  .archive-shell > .workspace > .is-setup-record .record-body { font-size: calc(15px * var(--desktop-size)); }
 
-  .latest-log p,
-  .activity-feed strong {
-    font-size: 17px;
+  .archive-shell > .workspace > .section-page .archive-folder-window {
+    inline-size: min(calc(1360px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - 72px * var(--desktop-size)));
+    block-size: min(calc(880px * var(--desktop-size)), calc(100dvh - 96px * var(--desktop-size)));
+    grid-template-rows: calc(48px * var(--desktop-size)) calc(48px * var(--desktop-size)) minmax(0, 1fr);
+    font-size: calc(16px * var(--desktop-size));
   }
+  .archive-shell > .workspace > .section-page .archive-folder-window :is(.archive-folder-titlebar, .archive-folder-pathbar > small, .archive-window-selection span, .archive-window-selection small, .archive-file small) { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window :is(.archive-folder-pathbar > span, .archive-file strong) { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window :is(.archive-folder-titlebar, .archive-folder-pathbar) { padding-inline: calc(12px * var(--desktop-size)); gap: calc(9px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window .archive-folder-titlebar { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window :is(.archive-folder-titlebar button, .archive-folder-pathbar button) { inline-size: calc(28px * var(--desktop-size)); block-size: calc(28px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window :is(.archive-folder-titlebar svg, .archive-folder-pathbar button svg) { inline-size: calc(16px * var(--desktop-size)); block-size: calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window-body { grid-template-columns: minmax(calc(180px * var(--desktop-size)), 0.23fr) minmax(0, 1fr); }
+  .archive-shell > .workspace > .section-page .archive-window-side { padding: calc(14px * var(--desktop-size)) calc(10px * var(--desktop-size)) 0; }
+  .archive-shell > .workspace > .section-page .archive-window-root { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-window-tree > button { min-block-size: calc(34px * var(--desktop-size)); font-size: calc(13px * var(--desktop-size)); padding-inline: calc(7px * var(--desktop-size)); gap: calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-window-selection { padding: calc(14px * var(--desktop-size)) calc(7px * var(--desktop-size)) calc(17px * var(--desktop-size)); gap: calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-window-selection p { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-window-selection strong { font-size: calc(15px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-files { grid-template-rows: calc(38px * var(--desktop-size)) minmax(0, 1fr) calc(36px * var(--desktop-size)); padding-inline: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-files-toolbar { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-status { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window .archive-file-grid { gap: calc(4px * var(--desktop-size)) calc(8px * var(--desktop-size)); padding-block: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window .archive-file { min-block-size: calc(80px * var(--desktop-size)); padding: calc(11px * var(--desktop-size)) calc(9px * var(--desktop-size)); gap: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-folder-window .archive-file > svg { inline-size: calc(18px * var(--desktop-size)); block-size: calc(18px * var(--desktop-size)); }
 
-  .activity-feed > li > span,
-  .activity-feed small {
-    font-size: 14px;
+  .archive-shell > .workspace > .record-window.is-maximized {
+    inset-block: calc(34px * var(--desktop-size));
+    inset-inline-start: calc(var(--sidebar-width) + 34px * var(--desktop-size));
+    inset-inline-end: calc(34px * var(--desktop-size));
+    inline-size: auto;
+    max-block-size: none;
   }
-
-  .activity-feed li {
-    min-block-size: 48px;
-    grid-template-columns: 74px minmax(0, 1fr);
-  }
-
-  .active-projects-panel .record-list button:nth-child(5),
-  .activity-feed li:nth-child(5) {
-    display: grid;
-  }
+  .archive-shell > .workspace > .record-window.is-setup-record.is-maximized { transform: translateZ(0); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .content-terminal { padding: calc(18px * var(--desktop-size)); margin-block-start: calc(26px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .notes-page { gap: calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .overview-stack { gap: calc(26px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading:not(.has-heading-banner) { margin-block-end: calc(26px * var(--desktop-size)); padding-block-end: calc(18px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading h2 { margin-block-end: calc(20px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading p { gap: calc(8px * var(--desktop-size)) calc(10px * var(--desktop-size)); margin-block-end: calc(28px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-kind { margin-block-end: calc(18px * var(--desktop-size)); padding: calc(3px * var(--desktop-size)) calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading.has-heading-banner { margin-block-end: calc(22px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading.has-heading-banner p { margin-block-end: 0; }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading.has-heading-banner .record-kind { margin-block-end: calc(26px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading.has-heading-banner .record-id { margin-block-end: calc(4px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry--indexed > summary { min-block-size: calc(52px * var(--desktop-size)); grid-template-columns: calc(34px * var(--desktop-size)) minmax(calc(126px * var(--desktop-size)), calc(158px * var(--desktop-size))) minmax(0, 1fr) calc(44px * var(--desktop-size)); gap: calc(12px * var(--desktop-size)); padding: calc(11px * var(--desktop-size)) calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry--indexed > summary :is(.note-entry-index, .note-entry-date) { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry--indexed > summary > i::before { font-size: calc(10px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry--indexed > .note-entry-body { margin: 0 calc(10px * var(--desktop-size)) calc(16px * var(--desktop-size)) calc(46px * var(--desktop-size)); padding: calc(24px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry-body > .record-body { padding: 0; }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview { padding: calc(30px * var(--desktop-size)); gap: calc(22px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview-meta { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview h2 { font-size: calc(24px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview p { font-size: calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .note-media figcaption { font-size: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .note-media { inline-size: min(100%, calc(760px * var(--desktop-size))); gap: calc(7px * var(--desktop-size)); margin-block: calc(6px * var(--desktop-size)) calc(16px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window :is(.note-media--wide, .note-media--banner) { inline-size: min(100%, calc(920px * var(--desktop-size))); }
+  .archive-shell > .workspace > .record-window .note-media--small { inline-size: min(100%, calc(420px * var(--desktop-size))); }
+  .archive-shell > .workspace > .record-window .note-media-button img { max-block-size: min(62vh, calc(520px * var(--desktop-size))); }
+  .archive-shell > .workspace > .record-window .note-media-button { min-block-size: calc(180px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window .note-media--banner .note-media-button { min-block-size: 0; }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-aside ol { gap: calc(7px * var(--desktop-size)); margin-block-start: calc(18px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-aside li button { min-block-size: calc(34px * var(--desktop-size)); padding: calc(7px * var(--desktop-size)) calc(8px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-search-panel { padding: calc(10px * var(--desktop-size)) calc(12px * var(--desktop-size)); gap: calc(7px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-search-panel label { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-heading.has-heading-banner { min-block-size: clamp(calc(230px * var(--desktop-size)), 30vh, calc(310px * var(--desktop-size))); padding: calc(96px * var(--desktop-size)) calc(22px * var(--desktop-size)) calc(26px * var(--desktop-size)); }
 }
 
 @media (min-width: 761px) and (max-height: 850px) {
@@ -4842,7 +5022,7 @@ button:focus-visible {
   inset-inline-end: 0;
   inline-size: min(880px, calc(100vw - var(--sidebar-width) - 64px));
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr);
+  grid-template-rows: 48px auto minmax(0, 1fr);
   margin-inline: auto;
   overflow: hidden;
   border: 1px solid var(--line-strong);
@@ -4883,70 +5063,21 @@ button:focus-visible {
   scrollbar-gutter: stable;
 }
 
-.timeline-summary {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 4px 16px;
-  padding-block-end: 16px;
-  border-bottom: 1px solid var(--line);
-}
-
-.timeline-summary p {
-  grid-column: 1 / -1;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-}
-
-.timeline-summary strong {
-  color: var(--text);
-  font-family: var(--font-display), var(--font-mono), monospace;
-  font-size: clamp(34px, 5vw, 54px);
-  font-weight: 300;
-  line-height: 0.9;
-}
-
-.timeline-summary span {
-  color: var(--muted-2);
-}
-
-.timeline-metrics {
-  grid-column: 3;
-  grid-row: 1 / span 3;
-  align-self: stretch;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(58px, auto));
-  gap: 8px;
-  margin: 0;
-}
-
-.timeline-metrics div {
-  display: grid;
-  align-content: center;
-  gap: 5px;
-  padding: 8px 10px;
-  border: 1px solid rgba(217, 213, 193, 0.1);
-  background:
-    linear-gradient(180deg, rgba(217, 213, 193, 0.045), transparent 56%),
-    rgba(255, 255, 255, 0.018);
-}
-
-.timeline-metrics dt,
-.timeline-metrics dd {
-  margin: 0;
-}
-
-.timeline-metrics dt {
-  color: var(--muted-2);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-}
-
-.timeline-metrics dd {
-  color: var(--text);
-  font-size: 18px;
-  line-height: 1;
-}
+.timeline-window > .window-bar > span { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timeline-window > .window-bar { gap: 14px; }
+.timeline-window .window-actions { flex-shrink: 0; }
+.timeline-toolbar { min-inline-size: 0; display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 18px; padding: 20px 24px; border-block-end: 1px solid var(--line); }
+.timeline-range { min-inline-size: 0; display: grid; gap: 8px; }
+.timeline-range > span { color: var(--muted); font-size: 12px; }
+.timeline-range > strong { color: var(--text); font-size: 17px; font-weight: 400; line-height: 1.4; overflow-wrap: anywhere; }
+.timeline-source { min-inline-size: 0; display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+.timeline-source select { inline-size: 178px; max-inline-size: 100%; min-block-size: 36px; padding: 6px 9px; border: 1px solid var(--line-strong); border-radius: 0; background: #10110f; color: var(--text); font: inherit; font-size: 14px; color-scheme: dark; }
+.timeline-source select:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+.timeline-scope { margin: 0 0 22px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.timeline-empty { margin: 0; padding-block: 24px; color: var(--muted); }
+.timeline-day + .timeline-day { margin-block-start: 26px; }
+.timeline-day > h2 { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin: 0 0 12px; padding-block-end: 10px; border-block-end: 1px solid var(--line); color: var(--text); font-size: 16px; font-weight: 400; }
+.timeline-day > h2 > span { color: var(--muted); font-size: 11px; }
 
 .timeline-list {
   position: relative;
@@ -4962,25 +5093,20 @@ button:focus-visible {
   --command-edge: rgba(217, 213, 193, 0.04);
   --command-signal: rgba(217, 213, 193, 0.2);
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
+  min-inline-size: 0;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 14px;
 }
 
-.timeline-list time {
-  padding-block-start: 13px;
-  color: var(--muted-2);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-}
-
 .timeline-list button {
+  min-inline-size: 0;
   min-block-size: 56px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 5px;
-  padding: 12px 14px;
-  border: 1px solid rgba(217, 213, 193, 0.1);
+  gap: 7px 16px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
   border-left-color: var(--command-signal);
   background:
     linear-gradient(90deg, var(--command-edge), transparent 50%),
@@ -4998,22 +5124,21 @@ button:focus-visible {
     rgba(255, 255, 255, 0.04);
 }
 
-.timeline-list span,
-.timeline-list small,
-.timeline-list i {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+.timeline-list button:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
 
 .timeline-list span,
 .timeline-list small {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
   grid-column: 1;
+  line-height: 1.45;
 }
+
+.timeline-list span { font-size: 16px; }
 
 .timeline-list small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .timeline-list i {
@@ -5022,10 +5147,10 @@ button:focus-visible {
   align-self: center;
   padding: 4px 7px;
   border: 1px solid rgba(217, 213, 193, 0.12);
-  color: var(--muted-2);
+  color: var(--muted);
   font-size: 10px;
   font-style: normal;
-  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 .timeline-list li[data-state="active"] i,
@@ -5034,6 +5159,65 @@ button:focus-visible {
 .timeline-list li[data-state="planning"] i {
   border-color: var(--command-signal);
   color: var(--text);
+}
+
+html:has(body > .roadmap-dialog[open]),
+body:has(> .roadmap-dialog[open]) { overflow: hidden; }
+
+.roadmap-dialog {
+  position: fixed;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+.roadmap-dialog[open] { display: grid; place-items: center; }
+.roadmap-dialog::backdrop { background: rgba(2, 3, 3, 0.82); }
+.roadmap-note {
+  inline-size: min(680px, 100%);
+  max-block-size: min(830px, calc(100dvh - 56px));
+  min-block-size: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: 48px minmax(0, 1fr);
+  border: 1px solid var(--line-strong);
+  border-inline-start: 3px solid var(--accent);
+  background: linear-gradient(120deg, rgba(217, 213, 193, 0.045), transparent 60%), #10110f;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+.roadmap-note .window-bar { font-size: 12px; }
+.roadmap-body { min-block-size: 0; overflow: auto; overscroll-behavior: contain; padding: 26px 30px 30px; scrollbar-width: thin; scrollbar-color: var(--accent-dim) transparent; }
+.roadmap-heading > span { color: var(--muted); font-size: 12px; }
+.roadmap-heading h2 { margin: 12px 0; color: var(--text-strong); font-size: 32px; font-weight: 300; }
+.roadmap-heading p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.roadmap-group { margin-block-start: 28px; }
+.roadmap-group h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 0 8px; padding-block-end: 10px; border-block-end: 1px solid var(--line); color: var(--text); font-size: 15px; font-weight: 400; }
+.roadmap-group h3 > span { color: var(--muted); font-size: 12px; }
+.roadmap-group ul { list-style: none; padding: 0; margin: 0; }
+.roadmap-group li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: baseline; gap: 12px; padding-block: 14px; }
+.roadmap-group li + li { border-block-start: 1px solid rgba(217, 213, 193, 0.065); }
+.roadmap-mark { inline-size: 8px; block-size: 8px; border: 1px solid var(--accent); }
+.roadmap-group[data-roadmap-state="working"] .roadmap-mark { background: var(--accent-dim); }
+.roadmap-group[data-roadmap-state="done"] .roadmap-mark { background: var(--accent); }
+.roadmap-group h4 { margin: 0; color: var(--text-strong); font-size: 16px; font-weight: 400; line-height: 1.4; overflow-wrap: anywhere; }
+.roadmap-group h4 s { color: var(--text); text-decoration-color: var(--muted); text-decoration-thickness: 1px; }
+.roadmap-group p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.roadmap-group small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.roadmap-footnote { margin-block-start: 22px; padding-block-start: 14px; border-block-start: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.roadmap-message { margin: 0; padding-block: 28px; color: var(--text); line-height: 1.6; }
+.roadmap-message button { padding: 8px 12px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; }
+@media (max-width: 760px) {
+  .roadmap-dialog { padding: 12px; }
+  .roadmap-note { max-block-size: calc(100dvh - 24px); }
+  .roadmap-body { padding: 20px 18px; }
+  .roadmap-group li { grid-template-columns: 10px minmax(0, 1fr); gap: 10px; }
+  .roadmap-group small { grid-column: 2; }
 }
 
 .window-bar {
@@ -5390,6 +5574,8 @@ button:focus-visible {
 }
 
 .banner-frame img {
+  position: absolute;
+  inset: 0;
   inline-size: 100%;
   block-size: 100%;
   display: block;
@@ -6398,6 +6584,8 @@ button:focus-visible {
 }
 
 .note-banner img {
+  position: absolute;
+  inset: 0;
   inline-size: 100%;
   block-size: 100%;
   display: block;
@@ -6583,8 +6771,16 @@ button:focus-visible {
 }
 
 .note-media--banner .note-media-button {
+  position: relative;
   aspect-ratio: 2.8 / 1;
   min-block-size: 0;
+}
+
+/* The loaded image must not contribute its natural height to the cropped frame. */
+.note-media--banner .note-media-button img {
+  position: absolute;
+  inset: 0;
+  max-block-size: none;
 }
 
 .note-media--banner .note-media-button img,
@@ -8274,33 +8470,23 @@ button:focus-visible {
     padding: 20px 18px;
   }
 
-  .timeline-summary {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .timeline-metrics {
-    grid-column: 1 / -1;
-    grid-row: auto;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  .workspace:has(> .timeline-window) { z-index: 40; }
+  .timeline-toolbar { padding: 18px; gap: 14px; }
+  .timeline-range > strong { font-size: 15px; }
+  .timeline-source { inline-size: 100%; }
+  .timeline-source select { inline-size: 100%; min-block-size: 40px; }
 
   .timeline-list li {
     grid-template-columns: 1fr;
     gap: 4px;
   }
 
-  .timeline-list time {
-    padding-block-start: 0;
-  }
-
   .timeline-list button {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .timeline-list i {
-    grid-column: 1;
-    grid-row: auto;
-    justify-self: start;
+    align-self: start;
   }
 
   .record-layout {
