@@ -97,6 +97,7 @@ vm.runInContext(component, react);
 const staticContext = vm.createContext({
   window: { GestaltImageFraming: imageFraming },
   steamDisplayModule: { steamBannerImage, steamCoverUrl },
+  steamDisplayReady: true,
   currentGameRecord: () => ({ id: "matched" }),
   currentGameDisplay: () => display,
   recordImage: () => "/cover.webp",
@@ -118,6 +119,19 @@ for (const model of [display, { ...display, completion: null, playtime: null, la
 }
 staticContext.currentGameRecord = () => undefined;
 assert.equal(vm.runInContext("currentGamePanel()", staticContext).includes("data-open-record"), false);
+staticContext.steamDisplayReady = false;
+staticContext.currentGameDisplay = () => null;
+assert.match(vm.runInContext("currentGamePanel()", staticContext), /Reading Steam snapshot/);
+staticContext.steamDisplayReady = true;
+assert.match(vm.runInContext("currentGamePanel()", staticContext), /No session active/);
+const startup = vm.createContext({ steamDisplayReady: false, steamDisplaySnapshot: null, steamDisplayModule: { resolveCurrentGame }, recordsFor: () => staticRecords });
+for (const name of ["currentGameRecord", "currentGameDisplay"]) vm.runInContext(declaration("../static-app.js", name), startup);
+assert.equal(startup.currentGameRecord(), undefined, "No old authored game while the snapshot is pending");
+assert.equal(startup.currentGameDisplay(), null);
+startup.steamDisplayReady = true;
+assert.equal(startup.currentGameRecord().id, "manual", "Offline completion retains the authored fallback");
+startup.steamDisplaySnapshot = snapshot;
+assert.equal(startup.currentGameRecord().id, "matched");
 const unmatchedDisplay = resolveCurrentGame(snapshot, []);
 assert.equal(renderToStaticMarkup(react.exports.CurrentGame({ display: unmatchedDisplay })).includes("Create game record"), false, "Public readers do not offer editing");
 assert.ok(renderToStaticMarkup(react.exports.CurrentGame({ display: unmatchedDisplay, onCreate() {} })).includes("Create game record"), "Local readers can offer deliberate creation");

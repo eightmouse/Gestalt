@@ -1,6 +1,7 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
-import { formatReadableDate, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
+import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
+import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
 import { ArrowUp, FileText, Folder, FolderOpen, HardDrive, Plus, X } from "lucide-react";
 import { archiveUsesFolders, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
@@ -16,7 +17,7 @@ type ArchiveSectionConfig = {
 type SectionPageProps = {
   records: RecordEntry[];
   section: ArchiveSectionConfig;
-  onOpenRecord: (record: RecordEntry) => void;
+  onOpenRecord: (record: RecordEntry, content?: ContentKey, noteQuery?: string) => void;
   onCreateRecord?: () => void;
   onCreateSetupRecord?: (group: SetupGroupId) => void;
 };
@@ -60,27 +61,30 @@ export function SectionPage({ records, section, onOpenRecord, onCreateRecord, on
           </div>
         </header>
 
-        <div className="section-split-grid">
-          {splitSection.map((group) => (
-            <section className="section-record-column" key={group.title} aria-label={group.title}>
-              <header>
-                <div>
-                  <h3>{group.title}</h3>
-                  <small>{groupStatusLine(group.records)}</small>
+        <div className="section-note-layout">
+          <div className="section-split-grid">
+            {splitSection.map((group) => (
+              <section className="section-record-column" key={group.title} aria-label={group.title}>
+                <header>
+                  <div>
+                    <h3>{group.title}</h3>
+                    <small>{groupStatusLine(group.records)}</small>
+                  </div>
+                  <span>{group.records.length}</span>
+                </header>
+                <div className="section-record-grid">
+                  {group.records.length > 0 ? (
+                    group.records.map((record) => (
+                      <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
+                    ))
+                  ) : (
+                    <p className="search-empty">No records filed here yet.</p>
+                  )}
                 </div>
-                <span>{group.records.length}</span>
-              </header>
-              <div className="section-record-grid">
-                {group.records.length > 0 ? (
-                  group.records.map((record) => (
-                    <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
-                  ))
-                ) : (
-                  <p className="search-empty">No records filed here yet.</p>
-                )}
-              </div>
-            </section>
-          ))}
+              </section>
+            ))}
+          </div>
+          <SectionNotePreview records={sortedRecords} kind={section.id === "projects" ? "projects" : "games"} onOpenRecord={onOpenRecord} />
         </div>
       </section>
     );
@@ -101,17 +105,38 @@ export function SectionPage({ records, section, onOpenRecord, onCreateRecord, on
         </div>
       </header>
 
-      <div className="section-record-grid">
-        {sortedRecords.length > 0 ? (
-          sortedRecords.map((record) => (
-            <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
-          ))
-        ) : (
-          <p className="search-empty">No records filed here yet.</p>
-        )}
+      <div className="section-note-layout">
+        <div className="section-record-grid">
+          {sortedRecords.length > 0 ? (
+            sortedRecords.map((record) => (
+              <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
+            ))
+          ) : (
+            <p className="search-empty">No records filed here yet.</p>
+          )}
+        </div>
+        {section.id === "logs" ? <SectionNotePreview records={sortedRecords} kind="logs" onOpenRecord={onOpenRecord} /> : null}
       </div>
     </section>
   );
+}
+
+function SectionNotePreview({ records, kind, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "projects" | "games" | "logs" }) {
+  const update = latestSectionNote(records, kind);
+  if (!update) return null;
+  const label = kind === "projects" ? "LATEST UPDATE" : kind === "games" ? "LATEST SESSION" : "READING DESK";
+  const showTitle = update.title !== update.record.title && !/^(?:current note|new note|untitled note)$/i.test(update.title);
+  return <aside className={`section-note-preview section-note-preview--${kind}`} aria-label={kind === "projects" ? "Latest project update" : kind === "games" ? "Latest written game session" : "Latest field note"}>
+    <h3>// {label}</h3>
+    <button className="section-note-link" type="button" onClick={() => onOpenRecord(update.record, "notes", update.noteQuery)}>
+      <time dateTime={update.date}>{formatReadableDate(update.date)}</time>
+      <strong>{update.record.title}</strong>
+      {showTitle ? <span className="section-note-title">{update.title}</span> : null}
+      {update.image ? <img src={update.image} alt="" loading="lazy" decoding="async" /> : null}
+      <p>{update.excerpt}</p>
+      <span className="section-note-open">{kind === "projects" ? "Read update" : kind === "games" ? "Read session" : "Read full note"} &#8594;</span>
+    </button>
+  </aside>;
 }
 
 function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (record: RecordEntry) => void; records: RecordEntry[]; section: ArchiveSectionConfig }) {

@@ -118,7 +118,7 @@ for (const mode of ["first", "always", "off"]) {
     vm.runInContext("searchPanel()", staticLifecycle.context)
   ];
   for (const html of htmls) {
-    const radios = [...html.matchAll(/<input\b[^>]*type="radio"[^>]*>/g)].map((match) => match[0]);
+    const radios = [...html.matchAll(/<input\b[^>]*type="radio"[^>]*>/g)].map((match) => match[0]).filter((input) => input.includes('name="entry-animation"'));
     assert.equal(radios.length, 3, "Both renderers expose the same three native radio options");
     const checked = radios.filter((input) => /\bchecked(?:[ =]|\/?>)/.test(input));
     assert.equal(checked.length, 1);

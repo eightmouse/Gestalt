@@ -22,6 +22,7 @@ type RecordWindowProps = {
   accessPending?: boolean;
   accessComplete?: boolean;
   initialContent: ContentKey;
+  initialNoteQuery?: string;
   maximized: boolean;
   record: RecordEntry;
   onEdit?: (content?: ContentKey) => void;
@@ -32,28 +33,28 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-export function RecordWindow({ accessPending = false, accessComplete = false, initialContent, maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ accessPending = false, accessComplete = false, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
     return <SetupRecordWindow accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
-function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
-  const [noteSearchQuery, setNoteSearchQuery] = useState("");
+  const [noteSearchQuery, setNoteSearchQuery] = useState(initialNoteQuery);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
   const headerImage = recordHeaderImage(record);
 
   useEffect(() => {
     setActiveContent(initialContent);
-    setNoteSearchQuery("");
+    setNoteSearchQuery(initialNoteQuery);
     setUpdateHistoryOpen(false);
-  }, [initialContent, record.id]);
+  }, [initialContent, initialNoteQuery, record.id]);
 
   useEffect(() => {
     if (!updateHistoryOpen) {

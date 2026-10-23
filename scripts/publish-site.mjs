@@ -220,7 +220,7 @@ function ensureNoUnexpectedStagedFiles() {
 }
 
 function ensurePublicRuntimeCommitted() {
-  const paths = ["static-app.js", "app/globals.css", "public/note-inline.js", "public/image-framing.js", "public/x-terminal.js", "public/x-embed.html", "public/x-embed.js", "public/steam-display.mjs", "public/roadmap.mjs"];
+  const paths = ["static-app.js", "app/globals.css", "app/desktop-navigation.css", "public/desktop-navigation.js", "public/note-inline.js", "public/image-framing.js", "public/seasonal.js", "public/images/seasonal", "public/x-terminal.js", "public/x-embed.html", "public/x-embed.js", "public/steam-display.mjs", "public/roadmap.mjs"];
   const changed = capture("git", ["diff", "--name-only", "HEAD", "--", ...paths]);
   const untracked = capture("git", ["ls-files", "--others", "--exclude-standard", "--", ...paths]);
   const pending = [...new Set(`${changed}\n${untracked}`.split(/\r?\n/).filter(Boolean))];

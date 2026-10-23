@@ -12,6 +12,9 @@ const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"
 const errors = [];
 
 const cacheTokenCases = [
+  ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],
+  ['href="app/desktop-navigation.css?v=1.54.0"', 'href="app/desktop-navigation.css?v=12345"'],
+  ['src="public/seasonal.js?v=1.53.0"', 'src="public/seasonal.js?v=12345"'],
   ['src="public/image-framing.js?v=1.46.0"', 'src="public/image-framing.js?v=12345"'],
   ['href="app/globals.css?v=1.36.24"', 'href="app/globals.css?v=12345"'],
   ['src="public/data/records.js?v=1700000000"', 'src="public/data/records.js?v=12345"'],
@@ -64,6 +67,20 @@ const appScriptIndex = indexHtml.indexOf("static-app.js");
 const inlineScriptIndex = indexHtml.indexOf("public/note-inline.js");
 const framingScriptIndex = indexHtml.indexOf("public/image-framing.js");
 const xScriptIndex = indexHtml.indexOf("public/x-terminal.js");
+const seasonalScriptIndex = indexHtml.indexOf("public/seasonal.js");
+if (seasonalScriptIndex === -1 || seasonalScriptIndex > appScriptIndex) errors.push("The seasonal policy must load before the static runtime.");
+const seasonalSyntax = spawnSync(process.execPath, ["--check", path.join(root, "public/seasonal.js")], { encoding: "utf8" });
+if (seasonalSyntax.status !== 0) errors.push("The seasonal helper is missing or has invalid syntax.");
+const seasonalCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-seasonal.mjs")], { encoding: "utf8" });
+if (seasonalCheck.status !== 0) errors.push(`Seasonal regression failed: ${(seasonalCheck.stderr || seasonalCheck.stdout || "").trim()}`);
+const desktopNavigationSyntax = spawnSync(process.execPath, ["--check", path.join(root, "public/desktop-navigation.js")], { encoding: "utf8" });
+if (desktopNavigationSyntax.status !== 0) errors.push("Desktop navigation helper is missing or has invalid syntax.");
+const desktopNavigationCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-desktop-navigation.mjs")], { encoding: "utf8" });
+if (desktopNavigationCheck.status !== 0) errors.push(`Desktop navigation regression failed: ${(desktopNavigationCheck.stderr || desktopNavigationCheck.stdout || "").trim()}`);
+const paletteCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-search-palette.mjs")], { encoding: "utf8" });
+if (paletteCheck.status !== 0) errors.push(`Palette regression failed: ${(paletteCheck.stderr || paletteCheck.stdout || "").trim()}`);
+const sectionPreviewCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-section-previews.mjs")], { encoding: "utf8" });
+if (sectionPreviewCheck.status !== 0) errors.push(`Section preview regression failed: ${(sectionPreviewCheck.stderr || sectionPreviewCheck.stdout || "").trim()}`);
 if (xScriptIndex !== -1 && xScriptIndex > appScriptIndex) errors.push("When enabled, X Terminal helper must load before the static runtime.");
 for (const file of ["public/x-terminal.js", "public/x-embed.js"]) {
   const result = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 112" fill="none">
+  <defs>
+    <radialGradient id="ember"><stop stop-color="#e9cc8c" stop-opacity=".25"/><stop offset="1" stop-color="#d4b77e" stop-opacity="0"/></radialGradient>
+    <linearGradient id="shell" x2="0" y2="1"><stop stop-color="#cab58a" stop-opacity=".16"/><stop offset="1" stop-color="#cab58a" stop-opacity=".03"/></linearGradient>
+  </defs>
+  <path d="M56 29c-15-13-37 1-37 23-1 25 13 37 37 37s38-12 37-37c0-22-22-36-37-23Z" fill="url(#shell)" stroke="#b8a17a" stroke-width="1.4"/>
+  <path d="M56 29c-14-6-22 12-22 28s6 28 22 32m0-60c14-6 22 12 22 28s-6 28-22 32m0-60c-8 13-8 47 0 60m0-60c8 13 8 47 0 60" stroke="#c5b18b" stroke-opacity=".38"/>
+  <path d="m53 26 1-12 10-4-3 16m-5-3c10-12 19-7 16-1" stroke="#cec3a7" stroke-width="1.5"/>
+  <ellipse cx="56" cy="61" rx="39" ry="31" fill="url(#ember)"/>
+  <path d="m34 48 15 9-17 2Zm44 0 2 11-17-2ZM53 65l3-5 3 5Zm-20 6 12 4 3-4 8 5 8-5 3 4 12-4-8 10H41Z" fill="#c3a976"/>
+</svg>

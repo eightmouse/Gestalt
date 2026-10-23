@@ -6,11 +6,16 @@ import type { RecordEntry, RecordSection } from "@/lib/types";
 import { activityFreshness, recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
 import { steamBannerImage, steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
+import { SeasonalAccent } from "@/components/archive/seasonal-accent";
+import type { SeasonalMode } from "@/public/seasonal.js";
 
 type DashboardProps = {
+  now?: Date | null;
+  seasonalMode?: SeasonalMode;
   activity: ActivityEntry[];
   currentGame?: RecordEntry;
   currentGameDisplay: CurrentGameDisplay | null;
+  currentGameLoading?: boolean;
   latestLog?: RecordEntry;
   panelOpen: boolean;
   projectRecords: RecordEntry[];
@@ -58,9 +63,12 @@ let cachedWeather = defaultWeatherState;
 let weatherLoaded = false;
 
 export function ArchiveDashboard({
+  now = null,
+  seasonalMode = "auto",
   activity,
   currentGame,
   currentGameDisplay,
+  currentGameLoading = false,
   latestLog,
   panelOpen,
   projectRecords,
@@ -96,7 +104,7 @@ export function ArchiveDashboard({
         footerLabel={currentGame ? "Read note" : onCreateCurrentGame ? "Create game record" : undefined}
         onFooter={currentGame ? () => onOpenRecord(currentGame, "notes") : onCreateCurrentGame}
       >
-        {currentGameDisplay ? <CurrentGame display={currentGameDisplay} record={currentGame} onCreate={onCreateCurrentGame} /> : <p className="subtle">No session active.</p>}
+        {currentGameDisplay ? <CurrentGame display={currentGameDisplay} record={currentGame} onCreate={onCreateCurrentGame} /> : <p className="subtle" role="status">{currentGameLoading ? "Reading Steam snapshot..." : "No session active."}</p>}
       </DashboardPanel>
 
       <DashboardPanel title="LOCAL WEATHER" className="weather-panel">
@@ -138,6 +146,7 @@ export function ArchiveDashboard({
           <p className="subtle">No activity filed yet.</p>
         )}
       </DashboardPanel>
+      <SeasonalAccent now={now} mode={seasonalMode} />
     </div>
   );
 }
@@ -216,7 +225,7 @@ function MemoryLoop() {
     const node = memoryRef.current;
     const rect = boundsRef.current;
 
-    if (!node || !rect || document.hidden) {
+    if (!node || !rect || document.hidden || node.closest(".archive-shell")?.matches("[data-nav-open], .has-record")) {
       return;
     }
 
@@ -243,10 +252,12 @@ function MemoryLoop() {
     updateBounds();
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("resize", updateBounds, { passive: true });
+    document.addEventListener("gestalt:navigation-layout", updateBounds);
 
     return () => {
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("resize", updateBounds);
+      document.removeEventListener("gestalt:navigation-layout", updateBounds);
 
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);

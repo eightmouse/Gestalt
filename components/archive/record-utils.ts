@@ -1,5 +1,5 @@
 import type { RecordEntry } from "@/lib/types";
-import { logArchiveDate } from "@/lib/log-archive";
+import { compareLogWritingOrder, logArchiveDate } from "@/lib/log-archive";
 
 export type ArchiveMetrics = {
   activeGame?: Pick<RecordEntry, "title">;
@@ -194,6 +194,28 @@ export function recordDisplaySummary(record: RecordEntry): string {
   return fallback || "No summary recorded.";
 }
 
+export function latestSectionNote(records: RecordEntry[], section: "projects" | "games" | "logs") {
+  const updates = records.filter((record) => record.section === section).flatMap((record) =>
+    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note) => ({
+      record,
+      noteQuery: section === "games" ? note.title : "",
+      date: section === "logs" ? logArchiveDate(record) : noteTitleDate(note.title) ?? record.updated,
+      title: activityTraceTitle(note.title),
+      excerpt: excerptFromBody(note.body, section === "logs" ? 720 : section === "games" ? 240 : 180),
+      body: note.body
+    })).filter((note) => note.excerpt)
+  );
+  const latest = updates.sort((a, b) => section === "logs" ? compareLogWritingOrder(a.record, b.record) : b.date.localeCompare(a.date) || a.record.id.localeCompare(b.record.id))[0];
+  if (!latest) return null;
+  const samples = (latest.record.meta ?? latest.record).samples;
+  const sources = Array.isArray(samples) ? samples : typeof samples === "string" ? samples.split(/\r?\n|,/) : [];
+  const images = section === "projects" ? sources : section === "games" ? Array.from(latest.body.matchAll(/!\[[^\]]*]\(([^)\r\n]+)\)/g), (match) => match[1]) : [];
+  // Preview only local still images; do not start videos/GIFs or remote requests here.
+  const image = images.map((source) => source.trim()).find((source) => /^(?:\/(?:media|images)\/|(?:\.\/)?public\/(?:media|images)\/)[a-zA-Z0-9_./ -]+\.(?:png|jpe?g|webp|avif)$/i.test(source) && !source.split("/").includes("..")) ?? "";
+  const { body, ...preview } = latest;
+  return { ...preview, image };
+}
+
 export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEntry): ArchiveMetrics {
   const publicRecords = records.filter((record) => record.section !== "system");
   const latestActivityDate = recentActivity(records, 1)[0]?.date ?? publicRecords[0]?.updated ?? "";
@@ -297,7 +319,7 @@ function activityTraceTitle(title: string): string {
   return clean || "New note";
 }
 
-function excerptFromBody(body: string): string {
+function excerptFromBody(body: string, limit = 180): string {
   const clean = body
     .split(/\r?\n/)
     .map(cleanExcerptLine)
@@ -310,7 +332,7 @@ function excerptFromBody(body: string): string {
     return "";
   }
 
-  return clean.length > 180 ? `${clean.slice(0, 177).trim()}...` : clean;
+  return clean.length > limit ? `${clean.slice(0, limit - 3).trim()}...` : clean;
 }
 
 function cleanSummaryText(value: string): string {

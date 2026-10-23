@@ -37,6 +37,9 @@ import type { RecordEntry, RecordSection } from "@/lib/types";
 import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, steamRecordSeed, type SteamRecordSeed, type SteamSnapshot } from "@/public/steam-display.mjs";
 import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, shouldPlayEntryAccess, type EntryAccessMode } from "@/lib/entry-access";
 import { newInlineRecord, supportsInlineEditing } from "@/lib/inline-editing";
+import seasonal, { type SeasonalMode } from "@/public/seasonal.js";
+import desktopNavigation, { type DesktopNavigationMode } from "@/public/desktop-navigation.js";
+import { DesktopNavigationChrome, useDesktopNavigation } from "@/components/archive/desktop-navigation";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -136,12 +139,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
   const [archiveRecords, setArchiveRecords] = useState(records);
   const [steamSnapshot, setSteamSnapshot] = useState<SteamSnapshot | null>(null);
+  const [steamReady, setSteamReady] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [recordAccessPending, setRecordAccessPending] = useState(false);
   const [recordAccessComplete, setRecordAccessComplete] = useState(false);
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [panelMaximized, setPanelMaximized] = useState(false);
   const [initialContent, setInitialContent] = useState<ContentKey>("overview");
+  const [initialNoteQuery, setInitialNoteQuery] = useState("");
   const [now, setNow] = useState<Date | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -162,6 +167,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const recordAccessTimerRef = useRef<number | null>(null);
   const recordAccessPlayedRef = useRef(false);
   const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
+  const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
+  const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
+  const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
 
   const changeEntryAccessMode = (value: EntryAccessMode) => {
@@ -211,6 +219,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   useEffect(() => {
     const mode = readEntryAccessMode();
+    setSeasonalMode(seasonal.readMode());
+    setDesktopNavigationMode(desktopNavigation.readMode());
     entryAccessModeRef.current = mode;
     setEntryAccessMode(mode);
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -250,7 +260,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const unsavedInline = Boolean(inlineDraftWindow && selectedId === inlineDraftWindow.id);
   const projectDashboardRecords = recordsBySection.projects
     .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
-  const currentGameDisplay = useMemo(() => resolveCurrentGame(steamSnapshot, recordsBySection.games), [steamSnapshot, recordsBySection.games]);
+  const currentGameDisplay = useMemo(() => steamReady ? resolveCurrentGame(steamSnapshot, recordsBySection.games) : null, [steamReady, steamSnapshot, recordsBySection.games]);
   const currentGame = recordsBySection.games.find((record) => record.id === currentGameDisplay?.recordId);
   const latestLog = [...recordsBySection.logs].sort(compareLogWritingOrder)[0];
   const activity = recentActivity(archiveRecords, 6);
@@ -263,8 +273,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       ? loadLocalSteamPreview("/api/studio/steam").then((snapshot) => snapshot ?? loadSteamSnapshot("/data/steam-current.json"))
       : loadSteamSnapshot("/data/steam-current.json");
     void loading.then((snapshot) => {
-      if (active && snapshot) setSteamSnapshot(snapshot);
-    });
+      if (active) { setSteamSnapshot(snapshot); setSteamReady(true); }
+    }).catch(() => { if (active) setSteamReady(true); });
     return () => { active = false; };
   }, [bootComplete]);
 
@@ -369,13 +379,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   }, [archiveRecords, selectedId, setSelectedId, inlineDraftWindow]);
 
-  const openRecord = (record: RecordEntry, content: ContentKey = "overview") => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteQuery = "") => {
     if (inlineBusy) return;
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     startRecordAccess();
     setSelectedId(record.id);
     setInitialContent(content);
+    setInitialNoteQuery(noteQuery);
     setPanelOpen(true);
     setPanelMinimized(false);
     setPanelMaximized(false);
@@ -392,6 +403,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       stopRecordAccess();
       setRecordAccessComplete(true);
       setInitialContent(content);
+      setInitialNoteQuery("");
       if (editingInline) finishInlineEditing();
       else setInlineRecordId(recordWindowKey!);
       setSearchOpen(false);
@@ -424,6 +436,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       setSelectedId(draft.id);
       setInlineRecordId(draft.id);
       setInitialContent(section === "logs" ? "notes" : "overview");
+      setInitialNoteQuery("");
       setPanelOpen(true);
       setPanelMinimized(false);
       setPanelMaximized(false);
@@ -552,6 +565,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const searchResults = getSearchResults(archiveRecords, searchQuery, currentGame, latestLog);
   const applyStudioRecords = (updatedRecords: RecordEntry[], currentId?: string | null, options?: { keepEditorOpen?: boolean }) => {
+    setInitialNoteQuery("");
     setArchiveRecords((current) => [...current.filter((record) => record.section === "system"), ...updatedRecords]);
     if (currentId) {
       setSelectedId(currentId);
@@ -598,9 +612,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setLocalMemory("session");
   };
   const showBoot = !bootComplete;
+  useDesktopNavigation(shellRef, desktopNavigationMode, bootComplete && (localMemory === "granted" || localMemory === "session"),
+    hasFocusWindow || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen);
 
   return (
-    <main className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}`} inert={showBoot} aria-busy={showBoot}>
+    <main ref={shellRef} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}`} inert={showBoot} aria-busy={showBoot}>
+      <DesktopNavigationChrome />
       {showBoot ? <BootScreen /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
@@ -678,15 +695,20 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </button>
           </div>
           {searchOpen ? (
-            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} entryAccessMode={entryAccessMode} onEntryAccessModeChange={changeEntryAccessMode} />
+            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} entryAccessMode={entryAccessMode} onEntryAccessModeChange={changeEntryAccessMode}
+              seasonalMode={seasonalMode} onSeasonalModeChange={(mode) => { setSeasonalMode(mode); seasonal.saveMode(mode); }}
+              desktopNavigationMode={desktopNavigationMode} onDesktopNavigationModeChange={(mode) => { setDesktopNavigationMode(mode); desktopNavigation.saveMode(mode); }} />
           ) : null}
         </header>
 
         {activeSection === "system" ? (
           <ArchiveDashboard
+            now={now}
+            seasonalMode={seasonalMode}
             activity={activity}
             currentGame={currentGame}
             currentGameDisplay={currentGameDisplay}
+            currentGameLoading={!steamReady}
             onCreateCurrentGame={process.env.NODE_ENV === "development" && steamRecordSeed(currentGameDisplay) ? createCurrentGameRecord : undefined}
             latestLog={latestLog}
             panelOpen={panelOpen}
@@ -735,6 +757,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 accessComplete={recordAccessComplete}
                 maximized={panelMaximized}
                 initialContent={initialContent}
+                initialNoteQuery={initialNoteQuery}
                 record={selectedRecord}
                 onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
                 editorBusy={inlineBusy}

@@ -1315,6 +1315,55 @@ button:focus-visible {
     repeating-linear-gradient(90deg, transparent 0 44px, rgba(217, 213, 193, 0.15) 44px 45px, transparent 45px 90px);
 }
 
+/* Mirror card tracks without measuring or changing their layout/paint containment. */
+.seasonal-accent {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: inherit;
+  grid-template-rows: inherit;
+  gap: inherit;
+  pointer-events: none;
+  user-select: none;
+}
+.seasonal-accent[hidden] { display: none; }
+.seasonal-decoration { position: relative; min-inline-size: 0; min-block-size: 0; }
+.seasonal-decoration img {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  object-position: top right;
+}
+.seasonal-decoration[data-placement="projects-web"] { grid-column: 1 / span 2; grid-row: 1; }
+.seasonal-decoration[data-placement="projects-web"] img { inline-size: calc(84px * var(--desktop-size, 1)); block-size: calc(60px * var(--desktop-size, 1)); opacity: 0.78; }
+.seasonal-decoration[data-placement="game-pumpkin"] { --pumpkin-size: calc(78px * var(--desktop-size, 1)); grid-column: 1; grid-row: 2; }
+.seasonal-decoration[data-placement="game-pumpkin"] img { inset-block-start: auto; inset-block-end: 0; inset-inline-end: calc(12px * var(--desktop-size, 1)); inline-size: var(--pumpkin-size); block-size: var(--pumpkin-size); }
+.seasonal-decoration img.seasonal-glow { opacity: 0.25; animation: seasonal-ember 5.8s ease-in-out infinite; }
+.seasonal-decoration[data-placement="memory-hanging"] { grid-column: 3; grid-row: 2 / span 2; }
+.seasonal-decoration[data-placement="memory-hanging"] img { inset-inline-end: calc(7px * var(--desktop-size, 1)); inline-size: calc(80px * var(--desktop-size, 1)); block-size: calc(132px * var(--desktop-size, 1)); transform-origin: 68.75% 1.63%; animation: seasonal-swing 7.2s ease-in-out infinite; }
+.seasonal-decoration[data-placement="log-web"] { grid-column: 2; grid-row: 2; }
+.seasonal-decoration[data-placement="log-web"] img { inline-size: calc(42px * var(--desktop-size, 1)); block-size: calc(30px * var(--desktop-size, 1)); opacity: 0.53; }
+.dashboard-grid.without-memory .seasonal-decoration[data-placement="memory-hanging"] { display: none; }
+.command-preferences--seasonal .command-preference-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@keyframes seasonal-swing { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes seasonal-ember { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.62; } }
+.seasonal-accent[data-paused] img,
+.archive-shell:is(.has-record, .is-booting) .seasonal-decoration img { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .seasonal-decoration[data-placement="memory-hanging"] img { animation: none; transform: none; }
+  .seasonal-decoration img.seasonal-glow { animation: none; opacity: 0.25; }
+}
+@media (min-width: 1201px) and (max-width: 1600px) {
+  .seasonal-decoration[data-placement="game-pumpkin"] { --pumpkin-size: 32px; }
+  .seasonal-decoration[data-placement="game-pumpkin"] img { inset-inline-end: 0; }
+  .seasonal-decoration[data-placement="memory-hanging"] img { inline-size: 46px; block-size: 80px; inset-inline-end: 5px; }
+}
+@media (max-width: 1200px), (max-height: 850px) { .seasonal-accent { display: none; } }
+
 .workspace-header h1 {
   position: relative;
   margin: 0;
@@ -1511,6 +1560,18 @@ button:focus-visible {
   scrollbar-width: thin;
   scrollbar-color: rgba(217, 213, 193, 0.34) rgba(255, 255, 255, 0.035);
   animation: command-panel-decode 150ms ease-out both;
+}
+
+@media (min-width: 761px) {
+  .workspace-header > .time-block {
+    align-self: center;
+    margin-block-end: calc(16px * var(--desktop-size, 1));
+  }
+
+  .workspace-header > .command-panel {
+    inset-block-start: calc(50% + 24px * var(--desktop-size, 1));
+    max-block-size: calc(100dvh - 240px * var(--desktop-size, 1));
+  }
 }
 
 .search-panel label {
@@ -4092,7 +4153,7 @@ button:focus-visible {
   .archive-shell > .workspace > .dashboard-grid :is(.weather-condition, .weather-meta span, .weather-note) { font-size: calc(12px * var(--desktop-size)); }
 
   .archive-shell > .workspace > .section-page--split { --section-split-record-gap: calc(10px * var(--desktop-size)); }
-  .archive-shell > .workspace > .section-page:not(.section-page--split):not(.setup-bay):not(.archive-folder-page) { max-inline-size: calc(900px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page:not(.section-page--split):not(.setup-bay):not(.archive-folder-page) { max-inline-size: var(--section-index-max-inline, calc(900px * var(--desktop-size))); }
   .archive-shell > .workspace > .setup-bay { inline-size: min(100%, var(--dashboard-max-inline)); max-inline-size: var(--dashboard-max-inline); }
   .archive-shell > .workspace > .archive-folder-page { inline-size: min(100%, calc(1320px * var(--desktop-size))); max-inline-size: calc(1320px * var(--desktop-size)); gap: calc(14px * var(--desktop-size)); }
   .archive-shell > .workspace > .section-page :is(.section-page-header, .section-record-column) { padding: calc(14px * var(--desktop-size)); gap: calc(10px * var(--desktop-size)); }
@@ -4192,8 +4253,8 @@ button:focus-visible {
 
   .archive-shell > .workspace > .workspace-header .command-panel {
     inline-size: min(calc(500px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - var(--workspace-pad-inline) * 2));
-    inset-block-start: calc(42px * var(--desktop-size));
-    max-block-size: calc(100dvh - 160px * var(--desktop-size));
+    inset-block-start: calc(50% + 24px * var(--desktop-size));
+    max-block-size: calc(100dvh - 240px * var(--desktop-size));
     padding: calc(16px * var(--desktop-size));
     gap: calc(12px * var(--desktop-size));
     font-size: calc(16px * var(--desktop-size));

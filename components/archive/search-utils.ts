@@ -62,13 +62,7 @@ export function getSearchResults(records: RecordEntry[], query: string, currentG
   ];
 
   if (!normalized) {
-    const recentRecords = [...records]
-      .filter((record) => record.section !== "system")
-      .sort((a, b) => b.updated.localeCompare(a.updated))
-      .slice(0, 4)
-      .map<SearchResult>((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
-
-    return [...commands.slice(0, 4), ...recentRecords].slice(0, 8);
+    return commands.slice(0, 4);
   }
 
   const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(normalized));

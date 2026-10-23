@@ -4,6 +4,8 @@ import type { RefObject } from "react";
 import { cipherizeText } from "@/components/archive/cipher";
 import type { SearchResult } from "@/components/archive/types";
 import type { EntryAccessMode } from "@/lib/entry-access";
+import type { SeasonalMode } from "@/public/seasonal.js";
+import type { DesktopNavigationMode } from "@/public/desktop-navigation.js";
 
 type SearchPanelProps = {
   panelRef: RefObject<HTMLDivElement | null>;
@@ -13,9 +15,13 @@ type SearchPanelProps = {
   onQueryChange: (query: string) => void;
   entryAccessMode: EntryAccessMode;
   onEntryAccessModeChange: (mode: EntryAccessMode) => void;
+  seasonalMode?: SeasonalMode;
+  onSeasonalModeChange?: (mode: SeasonalMode) => void;
+  desktopNavigationMode?: DesktopNavigationMode;
+  onDesktopNavigationModeChange?: (mode: DesktopNavigationMode) => void;
 };
 
-export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryChange, entryAccessMode, onEntryAccessModeChange }: SearchPanelProps) {
+export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryChange, entryAccessMode, onEntryAccessModeChange, seasonalMode = "auto", onSeasonalModeChange, desktopNavigationMode = "fixed", onDesktopNavigationModeChange }: SearchPanelProps) {
   return (
     <div className="search-panel command-panel" ref={panelRef} role="search">
       <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>~ COMMAND PALETTE</label>
@@ -61,6 +67,24 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
               <span>{label}</span>
             </label>
           ))}
+        </div>
+      </fieldset>
+      <fieldset className="command-preferences command-preferences--seasonal">
+        <legend>SEASONAL DETAILS</legend>
+        <div className="command-preference-options">
+          {([["auto", "By calendar"], ["off", "Off"]] as const).map(([mode, label]) => <label key={mode}>
+            <input type="radio" name="seasonal-details" value={mode} checked={seasonalMode === mode} onChange={() => onSeasonalModeChange?.(mode)} />
+            <span>{label}</span>
+          </label>)}
+        </div>
+      </fieldset>
+      <fieldset className="command-preferences command-preferences--desktop-nav">
+        <legend>DESKTOP NAVIGATION</legend>
+        <div className="command-preference-options">
+          {([["fixed", "Legacy Mode"], ["auto", "Auto-hide"]] as const).map(([mode, label]) => <label key={mode}>
+            <input type="radio" name="desktop-navigation" value={mode} checked={desktopNavigationMode === mode} onChange={() => onDesktopNavigationModeChange?.(mode)} />
+            <span>{label}</span>
+          </label>)}
         </div>
       </fieldset>
     </div>

@@ -165,6 +165,49 @@ function changeEntryAccessMode(value) {
   settleRecordAccessSequence();
 }
 
+function seasonalAccentMarkup(now = new Date()) {
+  const detail = window.GestaltSeasonal?.seasonFor(now, state.seasonalMode);
+  const decorations = detail?.decorations || [];
+  return `<div class="seasonal-accent" data-seasonal-accent aria-hidden="true" data-season="${detail?.id || ""}"${document.hidden ? " data-paused" : ""}${decorations.length ? "" : " hidden"}>${decorations.map((decoration) => `<span class="seasonal-decoration" data-placement="${escapeHtml(decoration.placement)}"><img src="${escapeHtml(decoration.image)}" alt="" decoding="async" draggable="false" />${decoration.glowImage ? `<img class="seasonal-glow" src="${escapeHtml(decoration.glowImage)}" alt="" decoding="async" draggable="false" />` : ""}</span>`).join("")}</div>`;
+}
+
+function syncSeasonalMotion() {
+  document.querySelector("[data-seasonal-accent]")?.toggleAttribute("data-paused", document.hidden);
+}
+
+function syncSeasonalAccent() {
+  const target = document.querySelector("[data-seasonal-accent]");
+  const detail = window.GestaltSeasonal?.seasonFor(new Date(), state.seasonalMode);
+  if (target && target.dataset.season !== (detail?.id || "")) target.outerHTML = seasonalAccentMarkup();
+}
+
+function changeSeasonalMode(value) {
+  const api = window.GestaltSeasonal;
+  if (!api) return;
+  const mode = api.normalizeMode(value);
+  if (mode === state.seasonalMode) return;
+  state.seasonalMode = mode;
+  api.saveMode(mode);
+  syncSeasonalAccent();
+}
+
+function syncDesktopNavigation() {
+  desktopNavigationController?.attach(root.querySelector(".archive-shell"), {
+    mode: state.desktopNavigationMode,
+    ready: state.bootDismissed && state.localMemory !== "prompt",
+    busy: state.panelOpen || state.timelineOpen || state.roadmapOpen || state.navOpen || Boolean(state.archiveFolderWindow) || Boolean(state.expandedImage),
+    palette: state.searchOpen
+  });
+}
+
+function changeDesktopNavigationMode(value) {
+  const api = window.GestaltDesktopNavigation;
+  if (!api) return;
+  state.desktopNavigationMode = api.normalizeMode(value);
+  api.saveMode(state.desktopNavigationMode);
+  syncDesktopNavigation();
+}
+
 function stopRecordAccessSequence() {
   for (const timer of recordAccessTimers) {
     window.clearTimeout(timer);
@@ -197,6 +240,8 @@ const state = {
   accessComplete: false,
   recordAccessPlayed: false,
   entryAccessMode: readEntryAccessMode(),
+  seasonalMode: window.GestaltSeasonal?.readMode() || "auto",
+  desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "fixed",
   panelMinimized: false,
   panelMaximized: false,
   memoryStateEnabled: true,
@@ -218,6 +263,7 @@ const state = {
 };
 
 const root = document.querySelector("#root");
+const desktopNavigationController = window.GestaltDesktopNavigation?.createController();
 let roadmapData = null;
 let roadmapLoadPromise = null;
 let roadmapFailed = false;
@@ -225,6 +271,7 @@ let roadmapTrigger = null;
 let steamDisplayModule = null;
 let steamDisplaySnapshot = null;
 let steamDisplayStarted = false;
+let steamDisplayReady = false;
 let xTerminalController = null;
 let xTerminalRoot = null;
 
@@ -248,7 +295,7 @@ function selectedRecord() {
   return records.find((record) => record.id === state.selectedId) || records[0];
 }
 
-function openRecord(recordId, contentKey = "overview") {
+function openRecord(recordId, contentKey = "overview", noteQuery = "") {
   const record = records.find((entry) => entry.id === recordId);
 
   if (!record) {
@@ -273,7 +320,7 @@ function openRecord(recordId, contentKey = "overview") {
   state.roadmapOpen = false;
   state.archiveFolderWindow = null;
   state.navOpen = false;
-  state.noteSearchQuery = "";
+  state.noteSearchQuery = typeof noteQuery === "string" ? noteQuery : "";
   state.updateHistoryOpen = false;
   render();
   startRecordAccessSequence();
@@ -509,7 +556,7 @@ function recordDisplaySummary(record) {
   return fallback || "No summary recorded.";
 }
 
-function excerptFromBody(body) {
+function excerptFromBody(body, limit = 180) {
   const clean = body
     .split(/\r?\n/)
     .map(cleanExcerptLine)
@@ -522,7 +569,7 @@ function excerptFromBody(body) {
     return "";
   }
 
-  return clean.length > 180 ? `${clean.slice(0, 177).trim()}...` : clean;
+  return clean.length > limit ? `${clean.slice(0, limit - 3).trim()}...` : clean;
 }
 
 function cleanSummaryText(value) {
@@ -663,6 +710,7 @@ function updatedProjectRecords() {
 }
 
 function currentGameRecord() {
+  if (!steamDisplayReady) return undefined;
   if (steamDisplayModule) {
     const display = steamDisplayModule.resolveCurrentGame(steamDisplaySnapshot, recordsFor("games"));
     return recordsFor("games").find((record) => record.id === display?.recordId);
@@ -673,6 +721,7 @@ function currentGameRecord() {
 }
 
 function currentGameDisplay() {
+  if (!steamDisplayReady) return null;
   if (steamDisplayModule) return steamDisplayModule.resolveCurrentGame(steamDisplaySnapshot, recordsFor("games"));
   const record = currentGameRecord();
   if (!record) return null;
@@ -691,8 +740,12 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.52.0");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.56.0");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
+  } catch {
+    // A failed lookup settles to authored content, never an endless loading state.
+  } finally {
+    steamDisplayReady = true;
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
     if (panel) panel.outerHTML = currentGamePanel();
@@ -712,8 +765,6 @@ async function initializeSteamDisplay() {
       const updated = template.content.querySelector(".search-suggestions");
       if (updated) suggestions.replaceChildren(...updated.childNodes);
     }
-  } catch {
-    // A missing optional module/snapshot must leave the authored fallback usable.
   }
 }
 
@@ -829,13 +880,7 @@ function searchResults() {
   ];
 
   if (!query) {
-    const recentRecords = [...records]
-      .filter((record) => record.section !== "system")
-      .sort((a, b) => b.updated.localeCompare(a.updated))
-      .slice(0, 4)
-      .map((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
-
-    return [...commands.slice(0, 4), ...recentRecords].slice(0, 8);
+    return commands.slice(0, 4);
   }
 
   const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(query));
@@ -1437,10 +1482,10 @@ function sidebar() {
     )
     .join("");
 
-  return `<aside class="sidebar">
+  return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.52.0</span>
+        <span>v1.56.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1454,7 +1499,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.52.0</span>
+        <span class="version-label">v1.56.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1474,7 +1519,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.52.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.56.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1624,7 +1669,7 @@ function currentGamePanel() {
       ${display.playtime ? `<span>${escapeHtml(display.playtime)} Play Time</span>` : ""}
       ${display.lastPlayed ? `<span>Last Played: ${escapeHtml(display.lastPlayed)}</span>` : ""}
     </div>
-  </div>` : `<p class="subtle">No session active.</p>`;
+  </div>` : `<p class="subtle" role="status">${steamDisplayReady ? "No session active." : "Reading Steam snapshot..."}</p>`;
   return dashboardPanel("CURRENT GAME", content, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "", "current-game-panel");
 }
 
@@ -1680,7 +1725,48 @@ function dashboard() {
     ${currentGamePanel()}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "", "latest-log-panel")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
+    ${seasonalAccentMarkup()}
   </div>`;
+}
+
+function latestSectionNote(records, section) {
+  const updates = records.filter((record) => record.section === section).flatMap((record) =>
+    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note) => ({
+      record,
+      noteQuery: section === "games" ? note.title : "",
+      date: section === "logs" ? logArchiveDate(record) : noteTitleDate(note.title) ?? record.updated,
+      title: activityTraceTitle(note.title),
+      excerpt: excerptFromBody(note.body, section === "logs" ? 720 : section === "games" ? 240 : 180),
+      body: note.body
+    })).filter((note) => note.excerpt)
+  );
+  const latest = updates.sort((a, b) => section === "logs" ? compareLogWritingOrder(a.record, b.record) : b.date.localeCompare(a.date) || a.record.id.localeCompare(b.record.id))[0];
+  if (!latest) return null;
+  const samples = (latest.record.meta ?? latest.record).samples;
+  const sources = Array.isArray(samples) ? samples : typeof samples === "string" ? samples.split(/\r?\n|,/) : [];
+  const images = section === "projects" ? sources : section === "games" ? Array.from(latest.body.matchAll(/!\[[^\]]*]\(([^)\r\n]+)\)/g), (match) => match[1]) : [];
+  // Preview only local still images; do not start videos/GIFs or remote requests here.
+  const image = images.map((source) => source.trim()).find((source) => /^(?:\/(?:media|images)\/|(?:\.\/)?public\/(?:media|images)\/)[a-zA-Z0-9_./ -]+\.(?:png|jpe?g|webp|avif)$/i.test(source) && !source.split("/").includes("..")) ?? "";
+  const { body, ...preview } = latest;
+  return { ...preview, image };
+}
+
+function renderSectionNotePreview(sectionRecords, section) {
+  const update = latestSectionNote(sectionRecords, section);
+  if (!update) return "";
+  const label = section === "projects" ? "LATEST UPDATE" : section === "games" ? "LATEST SESSION" : "READING DESK";
+  const showTitle = update.title !== update.record.title && !/^(?:current note|new note|untitled note)$/i.test(update.title);
+  return `<aside class="section-note-preview section-note-preview--${section}" aria-label="${section === "projects" ? "Latest project update" : section === "games" ? "Latest written game session" : "Latest field note"}">
+    <h3>// ${label}</h3>
+    <button class="section-note-link" type="button" data-open-record="${escapeHtml(update.record.id)}" data-open-content="notes" data-open-note="${escapeHtml(update.noteQuery)}">
+      <time datetime="${escapeHtml(update.date)}">${escapeHtml(readableDate(update.date))}</time>
+      <strong>${escapeHtml(update.record.title)}</strong>
+      ${showTitle ? `<span class="section-note-title">${escapeHtml(update.title)}</span>` : ""}
+      ${update.image ? `<img src="${escapeHtml(update.image)}" alt="" loading="lazy" decoding="async" />` : ""}
+      <p>${escapeHtml(update.excerpt)}</p>
+      <span class="section-note-open">${section === "projects" ? "Read update" : section === "games" ? "Read session" : "Read full note"} &#8594;</span>
+    </button>
+  </aside>`;
 }
 
 function sectionPage(sectionId) {
@@ -1713,6 +1799,7 @@ function sectionPage(sectionId) {
         </div>
         <i>${countLabel}</i>
       </header>
+      <div class="section-note-layout">
       <div class="section-split-grid">
         ${splitSection
           .map(
@@ -1722,6 +1809,8 @@ function sectionPage(sectionId) {
             </section>`
           )
           .join("")}
+      </div>
+      ${renderSectionNotePreview(visibleRecords, sectionId)}
       </div>
     </section>`;
   }
@@ -1736,7 +1825,10 @@ function sectionPage(sectionId) {
       </div>
       <i>${countLabel}</i>
     </header>
-      <div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>
+      <div class="section-note-layout">
+        <div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>
+        ${sectionId === "logs" ? renderSectionNotePreview(visibleRecords, "logs") : ""}
+      </div>
   </section>`;
 }
 
@@ -2444,13 +2536,21 @@ function searchPanel() {
       <legend>ENTRY ANIMATION</legend>
       <div class="command-preference-options">${[["first", "First entry only"], ["always", "Every entry"], ["off", "Off"]].map(([mode, label]) => `<label><input type="radio" name="entry-animation" value="${mode}" data-entry-access-mode${state.entryAccessMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
     </fieldset>
+    <fieldset class="command-preferences command-preferences--seasonal">
+      <legend>SEASONAL DETAILS</legend>
+      <div class="command-preference-options">${[["auto", "By calendar"], ["off", "Off"]].map(([mode, label]) => `<label><input type="radio" name="seasonal-details" value="${mode}" data-seasonal-mode${(state.seasonalMode || "auto") === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
+    </fieldset>
+    <fieldset class="command-preferences command-preferences--desktop-nav">
+      <legend>DESKTOP NAVIGATION</legend>
+      <div class="command-preference-options">${[["fixed", "Legacy Mode"], ["auto", "Auto-hide"]].map(([mode, label]) => `<label><input type="radio" name="desktop-navigation" value="${mode}" data-desktop-navigation-mode${state.desktopNavigationMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
+    </fieldset>
   </div>`;
 }
 
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.52.0")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.56.0")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2695,6 +2795,9 @@ function render() {
   const hasFocusWindow = state.panelOpen || state.timelineOpen || state.roadmapOpen;
 
   const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
+    <button class="desktop-nav-edge" data-desktop-nav-toggle type="button" aria-label="Open archive navigation" title="Open archive navigation" aria-controls="desktop-archive-sidebar" aria-expanded="false"><span class="archive-menu-glyph" aria-hidden="true"><i></i></span></button>
+    <button class="desktop-nav-backdrop" data-desktop-nav-dismiss type="button" aria-label="Close archive navigation" tabindex="-1"></button>
+    <div class="desktop-nav-shutter" aria-hidden="true"></div>
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
       <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
@@ -2744,6 +2847,7 @@ function render() {
     root.innerHTML = markup;
   }
   syncXTerminal();
+  syncDesktopNavigation();
   syncImageLightbox();
   syncRoadmapDialog();
   syncTime();
@@ -2784,6 +2888,7 @@ function render() {
 }
 
 function syncTime() {
+  syncSeasonalAccent();
   const clockTarget = document.querySelector("[data-time-clock]");
   const dateTarget = document.querySelector("[data-time-date]");
 
@@ -2939,7 +3044,7 @@ function updateMemoryBounds() {
 }
 
 document.addEventListener("pointermove", (event) => {
-  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds) {
+  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds || memoryNode.closest(".archive-shell")?.hasAttribute("data-nav-open")) {
     return;
   }
 
@@ -2964,6 +3069,7 @@ document.addEventListener("pointermove", (event) => {
 });
 
 window.addEventListener("resize", updateMemoryBounds, { passive: true });
+document.addEventListener("gestalt:navigation-layout", updateMemoryBounds);
 
 document.addEventListener("click", (event) => {
   const clickTarget = event.target;
@@ -3147,7 +3253,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (recordId) {
-    openRecord(recordId, openContent || "overview");
+    openRecord(recordId, openContent || "overview", target.dataset.openNote || "");
     return;
   }
 
@@ -3316,8 +3422,18 @@ document.addEventListener("error", (event) => {
   }
 }, true);
 
+document.addEventListener("visibilitychange", syncSeasonalMotion);
+
 document.addEventListener("change", (event) => {
   const input = event.target;
+  if (input instanceof HTMLInputElement && input.matches("[data-desktop-navigation-mode]")) {
+    changeDesktopNavigationMode(input.value);
+    return;
+  }
+  if (input instanceof HTMLInputElement && input.matches("[data-seasonal-mode]")) {
+    changeSeasonalMode(input.value);
+    return;
+  }
   if (input instanceof HTMLSelectElement && input.matches("[data-timeline-source]")) {
     changeTimelineSource(input.value);
     return;
