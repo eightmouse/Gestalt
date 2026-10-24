@@ -196,7 +196,8 @@ function syncDesktopNavigation() {
     mode: state.desktopNavigationMode,
     ready: state.bootDismissed && state.localMemory !== "prompt",
     busy: state.panelOpen || state.timelineOpen || state.roadmapOpen || state.navOpen || Boolean(state.archiveFolderWindow) || Boolean(state.expandedImage),
-    palette: state.searchOpen
+    palette: state.searchOpen,
+    remember: state.localMemory === "granted"
   });
 }
 
@@ -740,7 +741,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted || !state.bootDismissed) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.56.0");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.57.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1485,7 +1486,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.56.0</span>
+        <span>v1.57.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1499,7 +1500,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.56.0</span>
+        <span class="version-label">v1.57.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1519,7 +1520,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.56.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.57.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2409,9 +2410,7 @@ function cleanDisplaySummary(value) {
 
 function recordWindow(record) {
   if (!state.panelOpen) {
-    return state.panelMinimized
-      ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>`
-      : "";
+    return "";
   }
 
   if (record.section === "setup") {
@@ -2542,7 +2541,7 @@ function searchPanel() {
     </fieldset>
     <fieldset class="command-preferences command-preferences--desktop-nav">
       <legend>DESKTOP NAVIGATION</legend>
-      <div class="command-preference-options">${[["fixed", "Legacy Mode"], ["auto", "Auto-hide"]].map(([mode, label]) => `<label><input type="radio" name="desktop-navigation" value="${mode}" data-desktop-navigation-mode${state.desktopNavigationMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
+      <div class="command-preference-options">${[["fixed", "Legacy Mode"], ["terminal", "Terminal"]].map(([mode, label]) => `<label><input type="radio" name="desktop-navigation" value="${mode}" data-desktop-navigation-mode${state.desktopNavigationMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
     </fieldset>
   </div>`;
 }
@@ -2550,7 +2549,7 @@ function searchPanel() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.56.0")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.57.2")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2771,6 +2770,21 @@ function syncImageLightbox() {
   if (!dialog.open) dialog.showModal();
 }
 
+function workspaceWindowTray() {
+  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button>${!state.panelOpen && state.panelMinimized ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>` : ""}</div>`;
+}
+
+function desktopDirectory() {
+  const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
+  return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.57.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
+      <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
+      <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
+    </div>
+  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><span>Press <kbd>T</kbd> to open terminal</span><div class="window-actions"><button type="button" data-window-action="close" data-desktop-terminal-hint-dismiss aria-label="Dismiss terminal hint">close</button></div></aside>`;
+}
+
 function render() {
   if (!recordsLoaded) {
     root.innerHTML = `<main class="archive-shell archive-shell--unavailable">
@@ -2795,9 +2809,8 @@ function render() {
   const hasFocusWindow = state.panelOpen || state.timelineOpen || state.roadmapOpen;
 
   const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
-    <button class="desktop-nav-edge" data-desktop-nav-toggle type="button" aria-label="Open archive navigation" title="Open archive navigation" aria-controls="desktop-archive-sidebar" aria-expanded="false"><span class="archive-menu-glyph" aria-hidden="true"><i></i></span></button>
     <button class="desktop-nav-backdrop" data-desktop-nav-dismiss type="button" aria-label="Close archive navigation" tabindex="-1"></button>
-    <div class="desktop-nav-shutter" aria-hidden="true"></div>
+    ${desktopDirectory()}
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <span>GESTALT</span>
       <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
@@ -2835,6 +2848,7 @@ function render() {
 
       ${recordBackdrop()}
       ${recordWindow(record)}
+      ${workspaceWindowTray()}
       ${timelineWindow()}
       ${mobileDock()}
     </section>
@@ -3124,6 +3138,7 @@ document.addEventListener("click", (event) => {
   if (
     state.searchOpen &&
     !clickTarget.closest(".search-panel") &&
+    !clickTarget.closest("[data-directory-section]") &&
     !clickTarget.closest("[data-search-toggle]") &&
     !clickTarget.closest(".archive-nav-search")
   ) {
@@ -3258,6 +3273,12 @@ document.addEventListener("click", (event) => {
   }
 
   if (sectionId) {
+    if (target.hasAttribute("data-directory-section") && sectionId === state.activeSection && state.searchOpen) {
+      state.searchOpen = false;
+      state.searchQuery = "";
+      render();
+      return;
+    }
     openSection(sectionId);
     return;
   }

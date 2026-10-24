@@ -4,27 +4,49 @@ import vm from "node:vm";
 import navigation from "../public/desktop-navigation.js";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
-assert.equal(navigation.normalizeMode("auto"), "auto");
+assert.equal(navigation.normalizeMode("auto"), "terminal", "Existing Auto-hide preferences migrate");
+assert.equal(navigation.normalizeMode("terminal"), "terminal");
 for (const value of [undefined, null, "dock", "fixed", "__proto__"]) assert.equal(navigation.normalizeMode(value), "fixed");
 const values = new Map();
 const storage = { getItem: (key) => values.get(key), setItem: (key, value) => values.set(key, value) };
-navigation.saveMode("auto", storage);
-assert.equal(navigation.readMode(storage), "auto");
+navigation.saveMode("terminal", storage);
+assert.equal(navigation.readMode(storage), "terminal");
 assert.equal(values.size, 1);
 const blockedStorage = { getItem() { throw Error("blocked"); }, setItem() { throw Error("blocked"); } };
-assert.equal(navigation.readMode(blockedStorage), "fixed");
-assert.doesNotThrow(() => navigation.saveMode("auto", blockedStorage));
+assert.equal(navigation.readMode(blockedStorage), "fixed", "Legacy stays the default");
+assert.doesNotThrow(() => navigation.saveMode("terminal", blockedStorage));
 const browser = vm.createContext({});
 vm.runInContext(read("public/desktop-navigation.js"), browser);
-assert.equal(browser.GestaltDesktopNavigation.normalizeMode("auto"), "auto");
+assert.equal(browser.GestaltDesktopNavigation.normalizeMode("auto"), "terminal");
+
+const entries = [
+  { section: "projects", date: "2026-10-20" }, { section: "projects", date: "2026-10-21" },
+  { section: "games", date: "2026-10-22" }, { section: "logs", date: "2026-10-23", archived: false },
+  { section: "logs", date: "2026-10-01", archived: true }, { section: "setup", date: "2026-02-31" },
+  { section: "games", date: '<img src=x onerror="x">' }, { section: "unknown", date: "2099-01-01" },
+  { section: "archive", date: "2026-09-15" }, { section: "system", date: "2099-01-01" }
+];
+const original = JSON.stringify(entries), rows = navigation.directoryRows(entries);
+assert.equal(rows.length, 6);
+assert.equal(rows[0].name, "01_dashboard");
+assert.equal(rows[0].date, "2026-10-23");
+assert.equal(navigation.directoryRows([{ section: "system", date: "2099-01-01" }])[0].date, "", "The system seed is not authored activity");
+assert.equal(rows[1].date, "2026-10-21");
+assert.equal(rows[3].date, "2026-10-23");
+assert.equal(rows[4].date, "", "Invalid/missing dates stay empty");
+assert.equal(rows[5].date, "2026-10-01", "Archive uses actual writing dates, not an invented archiving time");
+assert.equal(navigation.directoryRows([{ section: "logs", date: "2026-10-01", archived: true }])[3].date, "");
+assert.equal(JSON.stringify(entries), original);
+assert.deepEqual(JSON.parse(JSON.stringify(browser.GestaltDesktopNavigation.directoryRows(entries))), rows);
 
 class Node {
-  attrs = new Map(); listeners = new Map(); children = new Map(); inert = false; dispatched = [];
+  attrs = new Map(); listeners = new Map(); children = new Map(); inert = false; dispatched = []; isConnected = true; tabIndex = 0;
   setAttribute(key, value) { this.attrs.set(key, value); }
   removeAttribute(key) { this.attrs.delete(key); }
   toggleAttribute(key, value) { if (value) this.attrs.set(key, ""); else this.attrs.delete(key); }
   hasAttribute(key) { return this.attrs.has(key); }
   querySelector(selector) { return this.children.get(selector) || null; }
+  querySelectorAll() { return this.buttons || []; }
   contains(node) { return node === this || [...this.children.values()].includes(node); }
   focus() { this.doc.activeElement = this; }
   closest(selector) { return this.selectors?.includes(selector) ? this : null; }
@@ -33,139 +55,195 @@ class Node {
   emit(name, args = {}) { for (const fn of this.listeners.get(name) || []) fn({ target: this, preventDefault() {}, stopPropagation() {}, ...args }); }
   dispatchEvent(event) { this.dispatched.push(event.type); this.emit(event.type); }
 }
-function fixture({ reduced = false, desktop = true } = {}) {
-  const doc = new Node(); doc.hidden = false; doc.activeElement = null;
-  const media = new Node(); media.matches = desktop;
-  const motion = new Node(); motion.matches = reduced;
-  let now = 0, id = 0;
-  const timers = new Map();
-  const host = { document: doc, Event, matchMedia: (q) => q.includes("reduced-motion") ? motion : media,
-    setTimeout(fn, delay) { const key = ++id; timers.set(key, { at: now + delay, fn }); return key; },
-    clearTimeout(key) { timers.delete(key); } };
-  function tick(ms) {
-    const end = now + ms;
-    while (true) {
-      const next = [...timers].filter(([, t]) => t.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
-      if (!next) break;
-      now = next[1].at; timers.delete(next[0]); next[1].fn();
-    }
-    now = end;
-  }
+function fixture(saved = new Map()) {
+  const doc = new Node(); doc.hidden = false;
+  const media = new Node(); media.matches = true;
+  const host = { document: doc, Event, matchMedia: () => media, localStorage: {
+    getItem: (key) => saved.get(key), setItem: (key, value) => saved.set(key, value)
+  } };
   function surface() {
-    const shell = new Node(), sidebar = new Node(), edge = new Node(), backdrop = new Node(), brand = new Node();
-    for (const node of [shell, sidebar, edge, backdrop, brand]) node.doc = doc;
-    edge.selectors = ["[data-desktop-nav-toggle]"];
-    backdrop.selectors = ["[data-desktop-nav-dismiss]"];
-    brand.selectors = [".nav-trigger, .brand"];
-    shell.children = new Map([[":scope > .sidebar", sidebar], ["[data-desktop-nav-toggle]", edge]]);
-    sidebar.children.set(".brand", brand);
-    return { shell, sidebar, edge, backdrop, brand };
+    const names = ["shell", "sidebar", "terminal", "workspace", "backdrop", "row", "close", "minimize", "maximize", "restore", "hint", "dismissHint", "search"];
+    const nodes = Object.fromEntries(names.map((name) => [name, new Node()]));
+    for (const node of Object.values(nodes)) node.doc = doc;
+    const { shell, sidebar, terminal, workspace, backdrop, row, close, minimize, maximize, restore, hint, dismissHint, search } = nodes;
+    backdrop.selectors = close.selectors = ["[data-desktop-nav-dismiss]"];
+    row.selectors = ["[data-directory-section]"];
+    minimize.selectors = ["[data-desktop-terminal-minimize]"];
+    maximize.selectors = ["[data-desktop-terminal-maximize]"];
+    restore.selectors = ["[data-desktop-terminal-restore]"];
+    dismissHint.selectors = ["[data-desktop-terminal-hint-dismiss]"];
+    shell.children = new Map([[":scope > .sidebar", sidebar], [".desktop-nav-terminal", terminal], [":scope > .workspace", workspace], [".desktop-terminal-hint", hint], [".desktop-terminal-restore", restore]]);
+    terminal.children = new Map([['[aria-current="page"]', row], ["[data-directory-section]", row], ["[data-desktop-terminal-maximize]", maximize], ["close", close], ["minimize", minimize]]);
+    terminal.buttons = [minimize, maximize, close, row];
+    workspace.children.set('[aria-label="Search records"]', search);
+    workspace.children.set("restore", restore);
+    return nodes;
   }
-  const nodes = surface();
-  const controller = navigation.createController(host);
-  const settings = { mode: "auto", ready: true, busy: false };
+  const nodes = surface(), controller = navigation.createController(host);
+  doc.activeElement = nodes.search;
+  const settings = { mode: "terminal", ready: true, busy: false, remember: false };
   const attach = (patch = {}, target = nodes.shell) => { Object.assign(settings, patch); controller.attach(target, settings); };
-  const click = (node, detail = 1, target = nodes.shell) => target.emit("click", { target: node, detail });
-  return { doc, media, motion, timers, tick, controller, attach, click, nodes, surface };
+  const click = (node, target = nodes.shell) => target.emit("click", { target: node });
+  const key = (value = "t", args = {}) => doc.emit("keydown", { key: value, ...args });
+  return { doc, media, saved, key, controller, attach, click, nodes, surface };
 }
-
 {
-  const f = fixture(); const { shell, sidebar, edge, backdrop, brand } = f.nodes;
-  f.attach({ ready: false }); f.tick(20000);
-  assert.equal(f.timers.size, 0, "No hiding during boot or consent");
-  f.attach({ ready: true }); f.tick(4500);
-  f.attach(); f.tick(999);
-  assert.ok(!shell.hasAttribute("data-nav-wide"), "Ordinary updates must not shorten or restart the introduction");
-  f.tick(1); assert.ok(shell.hasAttribute("data-nav-shifting"));
-  f.tick(150); assert.ok(shell.hasAttribute("data-nav-wide"));
-  assert.equal(sidebar.inert, true);
-  f.tick(270); assert.ok(!shell.hasAttribute("data-nav-shifting"));
-  assert.equal(f.timers.size, 0, "No running timer after the one-time transition");
-  edge.emit("pointerenter"); assert.ok(shell.hasAttribute("data-nav-open"));
-  assert.equal(sidebar.inert, false);
-  sidebar.emit("pointerenter"); sidebar.emit("pointerleave"); f.tick(500);
-  assert.ok(!shell.hasAttribute("data-nav-open"));
-  f.click(edge, 0); assert.equal(f.doc.activeElement, brand, "Keyboard reveal enters the navigation");
-  f.doc.activeElement = null;
-  f.attach({ palette: true });
-  assert.ok(!shell.hasAttribute("data-nav-blocked"), "The palette must not hide the edge handle");
-  assert.ok(shell.hasAttribute("data-nav-open"), "The drawer remains usable alongside the palette");
-  f.click(backdrop); assert.ok(!shell.hasAttribute("data-nav-open"));
-  assert.equal(f.doc.activeElement, edge);
-  f.click(edge, 0);
-  shell.emit("keydown", { key: "Escape" });
-  assert.equal(f.doc.activeElement, edge);
-  assert.equal(sidebar.inert, true);
-  assert.ok(shell.hasAttribute("data-nav-wide"), "Hover, close and Escape never undo the wide layout");
-  assert.equal(shell.dispatched.filter((type) => type === "gestalt:navigation-layout").length, 1, "Overlay cycles never trigger another layout notification");
-  f.attach({ busy: true }); f.click(edge);
-  assert.ok(!shell.hasAttribute("data-nav-open"), "Entries/editors block the drawer");
-  f.attach({ busy: false, palette: false });
+  const f = fixture(); const { shell, sidebar, terminal, workspace, backdrop, row, close, minimize, restore, maximize, search } = f.nodes;
+  f.attach({ ready: false });
+  assert.ok(shell.hasAttribute("data-nav-wide"), "Starts wide behind boot without reflow");
+  assert.ok(!shell.hasAttribute("data-terminal-hint"), "Hint waits for boot and consent");
+  f.key(); assert.ok(!shell.hasAttribute("data-nav-open"));
+  f.attach({ ready: true }); assert.ok(shell.hasAttribute("data-terminal-hint"));
+  f.key(); assert.ok(shell.hasAttribute("data-nav-open")); assert.equal(f.doc.activeElement, row);
+  assert.equal(terminal.inert, false); assert.equal(sidebar.inert, true); assert.equal(workspace.inert, true);
+  assert.ok(!shell.hasAttribute("data-terminal-hint"));
+  assert.equal(f.saved.size, 0, "Continue once must not persist the hint acknowledgement");
+  let shortcutStopped = false;
+  f.key("~", { stopPropagation() { shortcutStopped = true; } }); assert.ok(shortcutStopped);
+  f.key("Tab"); assert.equal(f.doc.activeElement, minimize);
+  f.key("Tab", { shiftKey: true }); assert.equal(f.doc.activeElement, row);
+  f.click(maximize); assert.ok(shell.hasAttribute("data-nav-maximized"));
+  assert.equal(maximize.attrs.get("aria-label"), "Restore terminal size");
+  f.click(maximize); assert.ok(!shell.hasAttribute("data-nav-maximized"));
+  f.click(minimize);
+  assert.ok(shell.hasAttribute("data-nav-minimized")); assert.ok(!shell.hasAttribute("data-nav-open"));
+  assert.equal(workspace.inert, false); assert.equal(terminal.inert, true);
+  assert.equal(terminal.attrs.get("aria-hidden"), "true"); assert.ok(!terminal.hasAttribute("aria-modal"));
+  assert.equal(restore.inert, false, "Only the minimized icon remains interactive");
+  assert.equal(f.doc.activeElement, search);
+  f.click(restore); assert.ok(shell.hasAttribute("data-nav-open"));
+  f.click(close); assert.ok(!shell.hasAttribute("data-nav-open")); assert.ok(!shell.hasAttribute("data-nav-minimized"));
+  assert.equal(terminal.inert, true); assert.equal(restore.inert, true); assert.equal(f.doc.activeElement, search);
+  f.key("T"); assert.ok(shell.hasAttribute("data-nav-open"));
+  f.key("Escape"); assert.ok(!shell.hasAttribute("data-nav-open"));
+  f.key(); f.click(backdrop); assert.equal(f.doc.activeElement, search);
+  f.key(); f.click(row); assert.ok(shell.hasAttribute("data-nav-minimized"), "Selection leaves a restorable terminal icon");
   const replacement = f.surface(); f.attach({}, replacement.shell);
-  assert.ok(replacement.shell.hasAttribute("data-nav-wide"), "Static root rebuilds retain the settled layout");
-  assert.equal([...shell.listeners.values()].reduce((n, set) => n + set.size, 0), 0, "Old static surfaces release listeners");
+  assert.ok(replacement.shell.hasAttribute("data-nav-wide")); assert.ok(replacement.shell.hasAttribute("data-nav-minimized"));
+  assert.equal(f.doc.activeElement, replacement.search, "Static root replacement restores keyboard focus");
+  assert.equal(workspace.inert, false);
+  assert.equal([...shell.listeners.values()].reduce((n, set) => n + set.size, 0), 0);
   f.attach({ mode: "fixed" }, replacement.shell);
-  assert.ok(!replacement.shell.hasAttribute("data-nav-wide"));
-  assert.equal(replacement.sidebar.inert, false);
+  assert.ok(!replacement.shell.hasAttribute("data-nav-wide")); assert.equal(replacement.sidebar.inert, false);
   f.controller.destroy();
-  assert.equal(f.timers.size, 0);
   assert.equal([...f.doc.listeners.values()].reduce((n, set) => n + set.size, 0), 0);
 }
-for (const action of ["hover", "focus", "hidden", "busy", "dialog", "palette"]) {
-  const f = fixture(); const { shell, sidebar, brand } = f.nodes;
-  f.attach(); f.tick(5499);
-  if (action === "hover") sidebar.emit("pointerenter");
-  if (action === "focus") { f.doc.activeElement = brand; shell.emit("focusin"); }
+for (const args of [
+  { target: { closest: () => ({}) } }, { ctrlKey: true }, { altKey: true }, { metaKey: true }, { repeat: true }, { isComposing: true }
+]) {
+  const f = fixture(); f.attach(); let consumed = false;
+  f.key("t", { ...args, preventDefault() { consumed = true; } });
+  assert.ok(!f.nodes.shell.hasAttribute("data-nav-open"));
+  assert.equal(consumed, false, "Typing, IME, repeat and browser shortcuts remain untouched");
+  f.controller.destroy();
+}
+for (const action of ["hidden", "busy", "dialog", "palette"]) {
+  const f = fixture(); f.attach(); f.key();
   if (action === "hidden") { f.doc.hidden = true; f.doc.emit("visibilitychange"); }
   if (action === "busy") f.attach({ busy: true });
   if (action === "palette") f.attach({ palette: true });
-  if (action === "dialog") f.doc.children.set("dialog[open]", new Node());
-  f.tick(10000);
-  assert.ok(!shell.hasAttribute("data-nav-wide"), `${action} must prevent the initial layout change`);
-  f.controller.destroy();
+  if (action === "dialog") { f.doc.children.set("dialog[open]", new Node()); f.attach(); }
+  f.key(); assert.ok(!f.nodes.shell.hasAttribute("data-nav-open"), action + " blocks opening");
+  assert.equal(f.nodes.workspace.inert, false); f.controller.destroy();
 }
 {
-  const f = fixture({ reduced: true }); f.attach(); f.tick(5500);
-  assert.ok(f.nodes.shell.hasAttribute("data-nav-wide"));
-  assert.ok(!f.nodes.shell.hasAttribute("data-nav-shifting"));
+  const f = fixture(); f.attach(); f.key();
   f.media.matches = false; f.media.emit("change");
-  assert.ok(!f.nodes.shell.hasAttribute("data-nav-wide"), "Mobile/compact media returns to the original shell");
-  assert.equal(f.nodes.sidebar.inert, false);
+  assert.ok(!f.nodes.shell.hasAttribute("data-nav-wide")); assert.equal(f.nodes.sidebar.inert, false);
+  assert.equal(f.nodes.terminal.inert, true); assert.equal(f.nodes.workspace.inert, false);
   f.media.matches = true; f.media.emit("change");
-  assert.ok(f.nodes.shell.hasAttribute("data-nav-wide"));
+  assert.ok(f.nodes.shell.hasAttribute("data-nav-wide")); assert.ok(!f.nodes.shell.hasAttribute("data-nav-open"));
   f.controller.destroy();
 }
 {
-  const f = fixture(); f.attach(); f.tick(5500);
-  f.attach({ mode: "fixed" }); f.tick(1000);
-  assert.ok(!f.nodes.shell.hasAttribute("data-nav-wide"), "A preference change cancels the shutter safely");
+  const f = fixture(); f.nodes.workspace.inert = true; f.attach(); f.key(); f.click(f.nodes.close);
+  assert.equal(f.nodes.workspace.inert, true); f.controller.destroy(); assert.equal(f.nodes.workspace.inert, true);
+}
+{
+  const f = fixture(); f.attach({ remember: true }); f.click(f.nodes.dismissHint);
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.get("gestalt.terminal-hint"), "seen");
+  const returning = fixture(f.saved); returning.attach({ remember: true });
+  assert.ok(!returning.nodes.shell.hasAttribute("data-terminal-hint"), "Remembered visitors are not shown the hint again");
+  f.controller.destroy(); returning.controller.destroy();
+}
+{
+  const f = fixture({ get() { throw Error("blocked"); }, set() { throw Error("blocked"); } });
+  assert.doesNotThrow(() => { f.attach({ remember: true }); f.key(); f.click(f.nodes.close); });
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"), "Blocked storage keeps dismissal for the visit");
   f.controller.destroy();
 }
-
+{
+  const f = fixture(); f.attach(); const body = new Node(); body.tabIndex = -1; body.doc = f.doc;
+  f.doc.activeElement = body; f.key(); f.click(f.nodes.close);
+  assert.equal(f.doc.activeElement, f.nodes.search, "Restore to a useful control when the previous focus was the unfocusable body");
+  f.controller.destroy();
+}
+{
+  const f = fixture(); f.attach(); f.key(); f.click(f.nodes.minimize);
+  f.doc.activeElement = f.nodes.restore; f.click(f.nodes.restore); f.click(f.nodes.close);
+  assert.equal(f.doc.activeElement, f.nodes.search, "Do not restore focus to a now-hidden minimized icon");
+  f.controller.destroy();
+}
 const index = read("index.html");
 assert.ok(index.indexOf("public/desktop-navigation.js") < index.indexOf("static-app.js"));
 for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) {
-  assert.ok(read(file).includes('"public/desktop-navigation.js"'));
-  assert.ok(read(file).includes('"app/desktop-navigation.css"'));
+  assert.ok(read(file).includes('"public/desktop-navigation.js"')); assert.ok(read(file).includes('"app/desktop-navigation.css"'));
 }
 assert.ok(read("app/layout.tsx").includes('"./desktop-navigation.css"'));
 assert.ok(read("components/archive/desktop-navigation.tsx").includes("controller.current?.destroy()"));
-const source = read("public/desktop-navigation.js");
-assert.ok(!/fetch\(|setInterval|requestAnimationFrame/.test(source), "No network, polling or animation frame loop");
-const css = read("app/desktop-navigation.css");
-assert.ok(!/backdrop-filter|\bfilter:|transition:.*(?:width|grid)/.test(css), "No live blur or per-frame layout interpolation");
+const source = read("public/desktop-navigation.js"), css = read("app/desktop-navigation.css");
+assert.ok(!/fetch\(|setInterval|requestAnimationFrame/.test(source));
+assert.ok(!/setTimeout|pointerenter|pointerleave/.test(source), "A real window needs no hover/timer machinery");
+assert.ok(!/reclaim|shifting|5500/.test(source), "No obsolete handoff code");
+assert.ok(!/backdrop-filter|\bfilter:|transition:.*(?:width|grid)/.test(css));
 assert.match(css, /prefers-reduced-motion/);
 assert.match(css, /max-width: 1180px/);
-assert.match(css, /data-nav-wide\] > \.workspace[^}]+--sidebar-width: 0px/, "Wide-mode records must not reserve the hidden sidebar's width");
-assert.match(css, /workspace > \.section-page\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/, "All sections share the dashboard's outer frame");
-assert.ok(!css.includes("workspace:has(> .section-page)"), "Section navigation must not change the header's workspace padding");
-assert.match(css, /section-split-grid\s*\{[^}]+1180px/, "Projects and Games retain comfortable matching lane widths");
-assert.match(css, /section-page--logs \.section-record-grid\s*\{[^}]+900px/, "Log rows retain their original reading width alongside the reading desk");
-assert.match(css, /archive-manager\s*\{[^}]+240px/, "Archive's details column stays bounded while files gain room");
-assert.match(css, /workspace > \.workspace-footer\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/, "The footer terminal mark follows the shared wide frame");
-assert.match(css, /transition: transform 560ms/, "Drawer pacing is independent of layout handoff timing");
-assert.ok(!source.includes("pinned") && !css.includes("desktop-nav-pin"), "No redundant keep-open mode remains");
-assert.match(css, /desktop-nav-interference/);
+assert.match(css, /data-nav-wide\] > \.workspace[^}]+--sidebar-width: 0px/);
+assert.match(css, /workspace > \.section-page\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/);
+assert.ok(!css.includes("workspace:has(> .section-page)"));
+assert.match(css, /section-split-grid\s*\{[^}]+1180px/);
+assert.match(css, /section-page--logs \.section-record-grid\s*\{[^}]+900px/);
+assert.match(css, /archive-manager\s*\{[^}]+240px/);
+assert.match(css, /workspace > \.workspace-footer\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/);
+assert.ok(!css.includes("desktop-nav-shutter"));
+assert.match(css, /\.workspace-window-tray\s*\{ display: contents; \}/, "Legacy/mobile retain original restore positioning");
+assert.match(css, /workspace-window-tray\s*\{[^}]+display: flex;/, "Minimized controls share one row instead of overlapping fixed coordinates");
+assert.match(css, /desktop-terminal-bar\s*\{[^}]+38px/, "Keep the terminal titlebar compact");
+assert.ok(!css.includes("data-nav-minimized] > .desktop-nav-terminal"), "No minimized window floats over the page");
+for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
+  const render = read(file);
+  assert.ok(render.includes("directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))"));
+  assert.ok(render.includes('aria-label="Directory sections"'));
+  assert.ok(render.includes("Eightmouse@Gestalt"));
+  assert.ok(!render.includes("desktop-nav-edge") && !render.includes("data-desktop-nav-toggle"), "No side handle remains");
+  assert.ok(render.includes("desktop-terminal-cursor"));
+  assert.ok(render.includes(file === "static-app.js" ? "row.date ? readableDate(row.date)" : "row.date ? formatReadableDate(row.date)"));
+}
+const staticSource = read("static-app.js");
+function staticFunction(name) {
+  const start = staticSource.indexOf(`function ${name}(`);
+  assert.ok(start >= 0);
+  return staticSource.slice(start, staticSource.indexOf("\n}\n", start) + 2);
+}
+const renderContext = vm.createContext({ window: { GestaltDesktopNavigation: navigation }, records: entries,
+  activityDate: (record) => record.date, isLogArchivedByAge: (record) => record.archived, state: { activeSection: "games" } });
+vm.runInContext(`${staticFunction("readableDate")}\n${staticFunction("desktopDirectory")}\nvar markup = desktopDirectory();`, renderContext);
+assert.equal((renderContext.markup.match(/data-directory-section/g) || []).length, 6);
+assert.ok(renderContext.markup.includes('datetime="2026-10-22">22 / 10 / 2026'));
+assert.ok(renderContext.markup.includes('data-open-section="games" aria-current="page"'));
+assert.ok(renderContext.markup.includes('<time>--</time>'));
+assert.ok(!renderContext.markup.includes("onerror"));
+vm.runInContext(`${staticFunction("workspaceWindowTray")}\nvar tray = workspaceWindowTray();`, renderContext);
+assert.ok(!renderContext.tray.includes("Restore active record"));
+renderContext.state.panelMinimized = true;
+vm.runInContext("tray = workspaceWindowTray();", renderContext);
+assert.ok(renderContext.tray.indexOf("Restore terminal") < renderContext.tray.indexOf("Restore active record"), "Terminal restore is on the left");
+renderContext.state.panelOpen = true;
+vm.runInContext("tray = workspaceWindowTray();", renderContext);
+assert.ok(!renderContext.tray.includes("Restore active record"));
+const reactTray = read("components/archive-os.tsx").split('className="workspace-window-tray"')[1]?.split("</div>")[0];
+assert.ok(reactTray?.indexOf("<DesktopTerminalRestore") < reactTray?.indexOf("Restore active record"), "Both readers use the same minimized-control order");
 assert.ok(read("static-app.js").includes("syncDesktopNavigation();"));
+assert.ok(read("static-app.js").includes('!clickTarget.closest("[data-directory-section]")'), "The palette outside-click guard must not swallow directory navigation");
 assert.ok(read("components/archive-os.tsx").includes("useDesktopNavigation(shellRef"));
-console.log("Desktop navigation passed: opt-in policy, shorter guarded handoff, stable overlays, palette access, Escape, static reattach, shared section frame, mobile fallback, cleanup and packaging.");
+console.log("Desktop navigation passed: T shortcut, input guards, consent-aware hint, window controls, Legacy default, real dates, static reattach, mobile fallback and packaging.");

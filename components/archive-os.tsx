@@ -39,7 +39,7 @@ import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, sho
 import { newInlineRecord, supportsInlineEditing } from "@/lib/inline-editing";
 import seasonal, { type SeasonalMode } from "@/public/seasonal.js";
 import desktopNavigation, { type DesktopNavigationMode } from "@/public/desktop-navigation.js";
-import { DesktopNavigationChrome, useDesktopNavigation } from "@/components/archive/desktop-navigation";
+import { DesktopNavigationChrome, DesktopTerminalRestore, useDesktopNavigation } from "@/components/archive/desktop-navigation";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -613,11 +613,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
   const showBoot = !bootComplete;
   useDesktopNavigation(shellRef, desktopNavigationMode, bootComplete && (localMemory === "granted" || localMemory === "session"),
-    hasFocusWindow || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen);
+    hasFocusWindow || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen, localMemory === "granted");
 
   return (
     <main ref={shellRef} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}`} inert={showBoot} aria-busy={showBoot}>
-      <DesktopNavigationChrome />
+      <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
@@ -788,23 +788,30 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 onMaximize={() => setPanelMaximized((current) => !current)}
               />
             </>
-          ) : panelMinimized ? (
-            <motion.button
-              className="reopen-control"
-              type="button"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              onClick={() => {
-                setPanelOpen(true);
-                setPanelMinimized(false);
-              }}
-            >
-              <Square size={13} />
-              Restore active record
-            </motion.button>
           ) : null}
         </AnimatePresence>
+
+        <div className="workspace-window-tray">
+          <DesktopTerminalRestore />
+          <AnimatePresence>
+            {!panelOpen && panelMinimized ? (
+              <motion.button
+                className="reopen-control"
+                type="button"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                onClick={() => {
+                  setPanelOpen(true);
+                  setPanelMinimized(false);
+                }}
+              >
+                <Square size={13} />
+                Restore active record
+              </motion.button>
+            ) : null}
+          </AnimatePresence>
+        </div>
 
         <AnimatePresence>
           {timelineOpen ? (

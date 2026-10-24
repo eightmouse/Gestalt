@@ -2,7 +2,15 @@
 
 ## Current Priorities
 
-Publication checkpoint (23 October): owner accepted Projects, Games and Logs previews and authorized the `v1.56.0` accumulated batch for commit/push after final validation. Keep the accepted layouts intact. Next is a reviewed terminal-directory navigation prototype; do not implement the post-boot session idea or change navigation defaults in the release-only step. Local-only notes below record pre-publication development stages; verify deployment separately through Actions.
+Verified release (23 October): `v1.56.0` shipped as `3bebd76a42e692bfa629e182f31453e6dbe95a1b`. Pages run `39949244771` succeeded; read-only HTTP checks confirmed the live version and new helpers, without local editing scripts. The accepted Dashboard/Projects/Games/Logs/Setup/Archive layouts are the baseline. Earlier local-only paragraphs below are historical development notes, not current deployment status.
+
+Accepted release batch (24 October, `v1.57.2`): owner approved Terminal navigation and authorized commit/push with the new Deadlock game record. The note's privacy review found no redaction needed; authored wording is preserved. Terminal opens with T, uses a slim 38px titlebar, six clickable sections with authored dates, and a minimized restore icon immediately left of Restore active record. Close, maximize, keyboard/input guards and consent-aware first-use guidance are complete for this accepted pass. Legacy stays the default; the accepted content layouts, mobile and Studio remain unchanged. The public Roadmap moves Terminal navigation to Filed. Verify commit/push and Pages separately; acceptance is not a claim of universal browser performance.
+
+Release checks: type/content/static-shell regressions, dependency-free navigation tests, public-only Pages packaging, privacy and runtime checks passed during development and are rerun for publication. The isolated Studio save/export/publish-recovery suite covers the initial navigation batch. Chromium checked both readers, independent record/terminal restoration, footer clearance and 1080p/2K/4K/compact/mobile behavior. No new dependencies or editor migration. Actual Firefox/Edge smoothness, physical scaling and the deeper final performance/security pass remain open.
+
+Next: discuss the short post-boot session-ready sequence before implementing it. Local Roadmap editing, the OS Behaviour preferences window, remaining Setup/Archive in-place management, December/January decorations and incremental month/year archive folders remain separate follow-ups. Keep the deep resolution/Firefox/Chromium/accessibility/security review toward the end, with targeted checks throughout. X is paused and Memory State remains active; the bottom dock is cancelled. A different navigation default still needs an explicit decision.
+
+## Earlier Development Notes
 
 Verified release (22 October 2026): `v1.52.0` shipped as `b37de518`; Pages run `39759683163` completed successfully. The live shell reports the new version, contains no local editing scripts, and serves both the owner's new log and Gestalt project update. Timeline refresh, public Roadmap viewing, new/existing Log/Game/Project editing in place, restored Memory State and the global local-only review/publish bell are shipped. Resolution changes are shipped improvements, not completed cross-browser/zoom acceptance.
 

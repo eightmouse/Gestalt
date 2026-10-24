@@ -81,7 +81,7 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
       <fieldset className="command-preferences command-preferences--desktop-nav">
         <legend>DESKTOP NAVIGATION</legend>
         <div className="command-preference-options">
-          {([["fixed", "Legacy Mode"], ["auto", "Auto-hide"]] as const).map(([mode, label]) => <label key={mode}>
+          {([["fixed", "Legacy Mode"], ["terminal", "Terminal"]] as const).map(([mode, label]) => <label key={mode}>
             <input type="radio" name="desktop-navigation" value={mode} checked={desktopNavigationMode === mode} onChange={() => onDesktopNavigationModeChange?.(mode)} />
             <span>{label}</span>
           </label>)}
