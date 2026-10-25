@@ -36,8 +36,24 @@
     let workspaceWasInert = false, detach = () => {}, returnFocus = null;
     let settings = { mode: "fixed", ready: false, busy: false, palette: false, remember: false };
     let open = false, minimized = false, maximized = false, destroyed = false, hintSeen = false, hintRead = false;
+    let hintTimer = null, hintReady = false;
     const enabled = () => settings.mode === "terminal" && desktop.matches && Boolean(shell) && Boolean(terminal);
     const blocked = () => !settings.ready || settings.busy || doc.hidden || Boolean(doc.querySelector("dialog[open]"));
+    const canHint = () => enabled() && !blocked() && !settings.palette && !open && !minimized && !hintSeen;
+    function updateHintDelay() {
+      if (!canHint()) {
+        if (hintTimer !== null) host.clearTimeout(hintTimer);
+        hintTimer = null;
+        hintReady = false;
+      } else if (!hintReady && hintTimer === null) {
+        hintTimer = host.setTimeout(() => {
+          hintTimer = null;
+          if (destroyed || !canHint()) return;
+          hintReady = true;
+          paint();
+        }, 3000);
+      }
+    }
     function acknowledgeHint() {
       hintSeen = true;
       if (settings.remember) {
@@ -48,7 +64,7 @@
     function paint() {
       if (!shell) return;
       const wide = enabled(), shown = wide && open && !blocked(), compact = wide && minimized && !blocked();
-      const visible = shown || compact;
+      updateHintDelay();
       const layoutChanged = shell.hasAttribute("data-nav-wide") !== wide;
       shell.toggleAttribute("data-desktop-nav", wide);
       shell.toggleAttribute("data-nav-wide", wide);
@@ -56,7 +72,7 @@
       shell.toggleAttribute("data-nav-minimized", compact);
       shell.toggleAttribute("data-nav-maximized", shown && maximized);
       shell.toggleAttribute("data-nav-blocked", blocked());
-      shell.toggleAttribute("data-terminal-hint", wide && !blocked() && !settings.palette && !visible && !hintSeen);
+      shell.toggleAttribute("data-terminal-hint", canHint() && hintReady);
       if (sidebar) {
         sidebar.inert = wide;
         if (wide) sidebar.setAttribute("aria-hidden", "true");
@@ -164,6 +180,8 @@
       },
       destroy() {
         destroyed = true; detach();
+        if (hintTimer !== null) host.clearTimeout(hintTimer);
+        hintTimer = null;
         desktop.removeEventListener("change", refresh);
         doc.removeEventListener("visibilitychange", refresh);
         doc.removeEventListener("keydown", keydown, true);

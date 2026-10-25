@@ -12,6 +12,7 @@ const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"
 const errors = [];
 
 const cacheTokenCases = [
+  ['src="public/os-behaviour.js?v=1.59.0"', 'src="public/os-behaviour.js?v=12345"'],
   ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],
   ['href="app/desktop-navigation.css?v=1.54.0"', 'href="app/desktop-navigation.css?v=12345"'],
   ['src="public/seasonal.js?v=1.53.0"', 'src="public/seasonal.js?v=12345"'],
@@ -234,6 +235,9 @@ const bootCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-
 if (bootCheck.status !== 0) {
   errors.push(`Boot regression check failed: ${(bootCheck.stderr || bootCheck.stdout || "").trim()}`);
 }
+
+const behaviourCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-os-behaviour.mjs")], { encoding: "utf8" });
+if (behaviourCheck.status !== 0) errors.push(`OS Behaviour regression check failed: ${(behaviourCheck.stderr || behaviourCheck.stdout || "").trim()}`);
 
 const archiveCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-field-archive.mjs")], { encoding: "utf8" });
 if (archiveCheck.status !== 0) {

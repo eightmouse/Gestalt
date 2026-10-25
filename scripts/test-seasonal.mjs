@@ -47,7 +47,7 @@ let now = new Date(2026, 9, 22);
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now.getTime()])); } }
 let writes = 0;
 const target = { dataset: { season: "october" }, toggleAttribute(name, enabled) { this[name] = enabled; }, set outerHTML(value) { writes++; this.markup = value; this.dataset.season = value.match(/data-season="([^"]*)"/)[1]; } };
-const context = vm.createContext({ Date: Clock, window: { GestaltSeasonal: { ...seasonal, saveMode: (mode) => seasonal.saveMode(mode, storage) } }, state: { seasonalMode: "auto" }, document: { hidden: false, querySelector: () => target }, render() { throw new Error("Seasonal preferences must not rebuild the reader"); } });
+const context = vm.createContext({ Date: Clock, window: { GestaltSeasonal: { ...seasonal, saveMode: (mode) => seasonal.saveMode(mode, storage) } }, state: { seasonalMode: "auto", localMemory: "granted" }, document: { hidden: false, querySelector: () => target }, render() { throw new Error("Seasonal preferences must not rebuild the reader"); } });
 vm.runInContext(names.map((name) => ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name).getText(ast)).join("\n"), context);
 context.syncSeasonalAccent();
 assert.equal(writes, 0, "The existing clock tick must not replace unchanged decorations");
@@ -121,7 +121,8 @@ assert.ok(index.indexOf("public/seasonal.js") < index.indexOf("static-app.js"));
 for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) assert.ok(read(file).includes('"public/seasonal.js"'));
 for (const file of ["public/seasonal.js", "components/archive/seasonal-accent.tsx"]) assert.ok(!/fetch\(|setInterval|setTimeout|requestAnimationFrame/.test(read(file)), "No network service or extra animation loop");
 const css = read("app/globals.css");
-const seasonalCss = css.slice(css.indexOf(".seasonal-accent {"), css.indexOf(".workspace-header h1"));
+const seasonalStart = css.indexOf(".seasonal-accent {");
+const seasonalCss = css.slice(seasonalStart, css.indexOf(".workspace-header h1", seasonalStart));
 assert.ok(!/transition\s*:|filter\s*:/.test(seasonalCss), "No animated filters or unnecessary transitions");
 assert.equal((seasonalCss.match(/@keyframes /g) || []).length, 2, "Only the requested swing and ember animate");
 assert.match(seasonalCss, /transform-origin: 68\.75% 1\.63%/, "The ornament swings from its pin");

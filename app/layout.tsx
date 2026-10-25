@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Gestalt Archive",
   description: "A personal operating-system style archive for projects, games, setup notes, and field logs.",
   icons: {
-    icon: "/favicon.ico?v=1.57.2"
+    icon: "/favicon.ico?v=1.59.1"
   }
 };
 
@@ -19,6 +19,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="preload" as="image" href="/images/archive-banner.png" />
+        <link rel="preload" as="image" href="/images/eightmouse-avatar.png" />
       </head>
       <body>{children}</body>
     </html>

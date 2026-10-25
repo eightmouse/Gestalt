@@ -16,6 +16,8 @@ const files = ["index.html", "static-app.js", "sw.js", "app/globals.css", "publi
 let sequence = 0;
 files.push(...["october", "october-glow", "halloween-web", "halloween-hanging"].map((asset) => `public/images/seasonal/${asset}.svg`));
 files.push("app/desktop-navigation.css", "public/desktop-navigation.js");
+files.push("public/images/eightmouse-avatar.png");
+files.push("public/os-behaviour.js");
 const output = () => path.join(temporary, `site-${sequence++}`);
 const config = (extra = {}) => ({ root, destination: output(), baseUrl: "https://fixture.github.io/Gestalt", now, ...extra });
 const secretKey = "fixture-secret-not-a-real-key";

@@ -102,15 +102,19 @@ function readLocalMemoryState() {
 const initialLocalMemory = readLocalMemoryState();
 const bootStartedAt = performance.now();
 let bootCleanup = null;
+let osBehaviourController = null;
 
-function scheduleBootCompletion(onComplete, elapsed = 0) {
+function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let timer = 0;
+  let active = true;
   const stop = () => {
+    active = false;
     window.clearTimeout(timer);
     motion.removeEventListener("change", onMotionChange);
   };
   const finish = () => {
+    if (!active) return;
     stop();
     onComplete();
   };
@@ -119,7 +123,8 @@ function scheduleBootCompletion(onComplete, elapsed = 0) {
   };
   motion.addEventListener("change", onMotionChange);
   if (motion.matches) finish();
-  else timer = window.setTimeout(finish, Math.max(0, 2800 - elapsed));
+  // Matches the complete boot/session/workspace timeline in globals.css.
+  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 5200) - elapsed));
   return stop;
 }
 let navMotionTimer = 0;
@@ -161,7 +166,7 @@ function changeEntryAccessMode(value) {
   const mode = normalizeEntryAccessMode(value);
   if (mode === state.entryAccessMode) return;
   state.entryAccessMode = mode;
-  saveEntryAccessMode(mode);
+  if (state.localMemory === "granted") saveEntryAccessMode(mode);
   settleRecordAccessSequence();
 }
 
@@ -187,7 +192,7 @@ function changeSeasonalMode(value) {
   const mode = api.normalizeMode(value);
   if (mode === state.seasonalMode) return;
   state.seasonalMode = mode;
-  api.saveMode(mode);
+  if (state.localMemory === "granted") api.saveMode(mode);
   syncSeasonalAccent();
 }
 
@@ -195,7 +200,7 @@ function syncDesktopNavigation() {
   desktopNavigationController?.attach(root.querySelector(".archive-shell"), {
     mode: state.desktopNavigationMode,
     ready: state.bootDismissed && state.localMemory !== "prompt",
-    busy: state.panelOpen || state.timelineOpen || state.roadmapOpen || state.navOpen || Boolean(state.archiveFolderWindow) || Boolean(state.expandedImage),
+    busy: state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || state.navOpen || Boolean(state.archiveFolderWindow) || Boolean(state.expandedImage),
     palette: state.searchOpen,
     remember: state.localMemory === "granted"
   });
@@ -205,7 +210,7 @@ function changeDesktopNavigationMode(value) {
   const api = window.GestaltDesktopNavigation;
   if (!api) return;
   state.desktopNavigationMode = api.normalizeMode(value);
-  api.saveMode(state.desktopNavigationMode);
+  if (state.localMemory === "granted") api.saveMode(state.desktopNavigationMode);
   syncDesktopNavigation();
 }
 
@@ -243,6 +248,7 @@ const state = {
   entryAccessMode: readEntryAccessMode(),
   seasonalMode: window.GestaltSeasonal?.readMode() || "auto",
   desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "fixed",
+  startupMode: window.GestaltOsBehaviour?.readStartupMode() || "full",
   panelMinimized: false,
   panelMaximized: false,
   memoryStateEnabled: true,
@@ -251,6 +257,7 @@ const state = {
   searchQuery: "",
   timelineOpen: false,
   roadmapOpen: false,
+  osBehaviourOpen: false,
   timelineSource: "all",
   archiveFolderWindow: null,
   navOpen: false,
@@ -738,10 +745,10 @@ function currentGameDisplay() {
 }
 
 async function initializeSteamDisplay() {
-  if (steamDisplayStarted || !state.bootDismissed) return;
+  if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.57.2");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.59.1");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -873,6 +880,7 @@ function searchResults() {
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
     { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
     { kind: "command", id: "cmd-roadmap", title: "Open roadmap", detail: "Work in progress and filed milestones", action: "roadmap" },
+    { kind: "command", id: "cmd-os-behaviour", title: "Settings", detail: "Startup, navigation and display settings", action: "behaviour" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
     { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
@@ -1486,7 +1494,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.57.2</span>
+        <span>v1.59.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1500,7 +1508,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.57.2</span>
+        <span class="version-label">v1.59.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1520,7 +1528,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.57.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.59.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2496,6 +2504,9 @@ function searchPanel() {
         .map(
           (result) => {
             if (result.kind === "command") {
+              if (result.action === "behaviour") {
+                return `<button type="button" class="palette-settings-button" data-open-os-behaviour aria-haspopup="dialog"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><strong>Settings</strong></button>`;
+              }
               const commandAttrs = result.record
                 ? `data-open-record="${result.record.id}" ${result.content ? `data-open-content="${result.content}"` : ""}`
                 : result.action === "timeline"
@@ -2531,25 +2542,45 @@ function searchPanel() {
       data-search-input
     />
     <div class="search-suggestions">${resultList}</div>
-    <fieldset class="command-preferences">
-      <legend>ENTRY ANIMATION</legend>
-      <div class="command-preference-options">${[["first", "First entry only"], ["always", "Every entry"], ["off", "Off"]].map(([mode, label]) => `<label><input type="radio" name="entry-animation" value="${mode}" data-entry-access-mode${state.entryAccessMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
-    </fieldset>
-    <fieldset class="command-preferences command-preferences--seasonal">
-      <legend>SEASONAL DETAILS</legend>
-      <div class="command-preference-options">${[["auto", "By calendar"], ["off", "Off"]].map(([mode, label]) => `<label><input type="radio" name="seasonal-details" value="${mode}" data-seasonal-mode${(state.seasonalMode || "auto") === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
-    </fieldset>
-    <fieldset class="command-preferences command-preferences--desktop-nav">
-      <legend>DESKTOP NAVIGATION</legend>
-      <div class="command-preference-options">${[["fixed", "Legacy Mode"], ["terminal", "Terminal"]].map(([mode, label]) => `<label><input type="radio" name="desktop-navigation" value="${mode}" data-desktop-navigation-mode${state.desktopNavigationMode === mode ? " checked" : ""} /><span>${label}</span></label>`).join("")}</div>
-    </fieldset>
   </div>`;
+}
+
+function openOsBehaviour() {
+  state.searchOpen = false;
+  state.searchQuery = "";
+  state.navOpen = false;
+  state.osBehaviourOpen = true;
+  state.windowSteady = true;
+  render();
+}
+
+function syncOsBehaviourDialog() {
+  const api = window.GestaltOsBehaviour;
+  if (!state.osBehaviourOpen || !api) {
+    osBehaviourController?.destroy();
+    osBehaviourController = null;
+    return;
+  }
+  osBehaviourController ??= api.createController();
+  osBehaviourController.open({ entry: state.entryAccessMode, startup: state.startupMode, seasonal: state.seasonalMode, navigation: state.desktopNavigationMode }, {
+    onClose() { state.osBehaviourOpen = false; state.windowSteady = true; render(); },
+    onChange(key, value) {
+      if (key === "entry") changeEntryAccessMode(value);
+      if (key === "seasonal") changeSeasonalMode(value);
+      if (key === "navigation") changeDesktopNavigationMode(value);
+      if (key === "startup") {
+        if (!api.saveStartupMode(value)) return false;
+        state.startupMode = api.normalizeStartupMode(value);
+      }
+      syncOsBehaviourDialog();
+    }
+  }, state.localMemory === "granted");
 }
 
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.57.2")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.59.1")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2777,7 +2808,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.57.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.59.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -2803,18 +2834,26 @@ function render() {
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
   const routeTitle = state.activeSection === "system" ? "DASHBOARD" : section.code;
   const headline = state.activeSection === "system" ? greeting() : section.label;
-  const headlineClass = state.headlineAnimating ? "headline-decode-text is-resolving" : "headline-decode-text";
-  const cursorClass = state.headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
+  const headlineClass = state.headlineAnimating || !state.bootDismissed ? "headline-decode-text is-resolving" : "headline-decode-text";
+  const cursorClass = state.headlineAnimating || !state.bootDismissed ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
-  const hasFocusWindow = state.panelOpen || state.timelineOpen || state.roadmapOpen;
+  const hasFocusWindow = state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen;
 
-  const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
+  const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}${!state.bootDismissed && state.startupMode === "quick" ? " is-quick-boot" : ""}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
     <button class="desktop-nav-backdrop" data-desktop-nav-dismiss type="button" aria-label="Close archive navigation" tabindex="-1"></button>
     ${desktopDirectory()}
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
-      <span>GESTALT</span>
-      <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
-      <b class="boot-meter"><b></b></b>
+      <div class="boot-loader">
+        <span>GESTALT</span>
+        <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
+        <b class="boot-meter"><b></b></b>
+      </div>
+      <div class="boot-session">
+        <span class="boot-session-label">// SESSION READY</span>
+        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="112" height="112" alt="" decoding="async">
+        <span class="boot-session-user">Eightmouse</span>
+        <span class="boot-session-detail">Opening the archive</span>
+      </div>
     </div>`}
     ${localMemoryPrompt()}
     <div class="grain-layer"></div>
@@ -2861,9 +2900,10 @@ function render() {
     root.innerHTML = markup;
   }
   syncXTerminal();
-  syncDesktopNavigation();
   syncImageLightbox();
   syncRoadmapDialog();
+  syncOsBehaviourDialog();
+  syncDesktopNavigation();
   syncTime();
   syncWeather();
 
@@ -2880,7 +2920,7 @@ function render() {
       state.bootDismissed = true;
       bootCleanup = null;
       render();
-    }, performance.now() - bootStartedAt);
+    }, performance.now() - bootStartedAt, state.startupMode);
   }
 
   if (state.windowSteady) {
@@ -3058,7 +3098,7 @@ function updateMemoryBounds() {
 }
 
 document.addEventListener("pointermove", (event) => {
-  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds || memoryNode.closest(".archive-shell")?.hasAttribute("data-nav-open")) {
+  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds || memoryNode.closest(".archive-shell")?.hasAttribute("data-nav-open")) {
     return;
   }
 
@@ -3094,6 +3134,7 @@ document.addEventListener("click", (event) => {
 
   if (clickTarget.closest("[data-roadmap-close]")) { closeRoadmap(); return; }
   if (clickTarget.closest("[data-roadmap-retry]")) { void refreshPublicRoadmap(); return; }
+  if (clickTarget.closest("[data-open-os-behaviour]")) { openOsBehaviour(); return; }
 
   const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
 
@@ -3340,6 +3381,7 @@ document.addEventListener("input", (event) => {
   if (target.dataset.mobileNavSearchInput !== undefined) {
     state.searchQuery = target.value;
     state.searchOpen = target.value.trim().length > 0;
+    if (state.searchOpen) state.navOpen = false;
     render();
   }
 
@@ -3354,6 +3396,7 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (!state.bootDismissed || state.localMemory === "prompt") return;
   const target = event.target;
   const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 
@@ -3447,20 +3490,9 @@ document.addEventListener("visibilitychange", syncSeasonalMotion);
 
 document.addEventListener("change", (event) => {
   const input = event.target;
-  if (input instanceof HTMLInputElement && input.matches("[data-desktop-navigation-mode]")) {
-    changeDesktopNavigationMode(input.value);
-    return;
-  }
-  if (input instanceof HTMLInputElement && input.matches("[data-seasonal-mode]")) {
-    changeSeasonalMode(input.value);
-    return;
-  }
   if (input instanceof HTMLSelectElement && input.matches("[data-timeline-source]")) {
     changeTimelineSource(input.value);
     return;
-  }
-  if (input instanceof HTMLInputElement && input.matches("[data-entry-access-mode]")) {
-    changeEntryAccessMode(input.value);
   }
 });
 

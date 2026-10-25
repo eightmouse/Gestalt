@@ -7,7 +7,7 @@ import { fetchSteamSnapshot, safeSteamFailure, writeSteamSnapshot } from "./stea
 class SteamPreparationError extends Error {}
 
 const publicFiles = [
-  "index.html", "static-app.js", "sw.js", "app/globals.css", "app/desktop-navigation.css", "public/desktop-navigation.js",
+  "index.html", "static-app.js", "sw.js", "app/globals.css", "app/desktop-navigation.css", "public/desktop-navigation.js", "public/os-behaviour.js",
   "public/favicon.ico", "public/note-inline.js", "public/image-framing.js", "public/seasonal.js", "public/x-terminal.js", "public/x-embed.html", "public/x-embed.js", "public/steam-display.mjs", "public/roadmap.mjs", "public/data/records.js"
 ];
 const mediaExtensions = new Set([".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif", ".svg", ".ico", ".mp4", ".webm", ".mov", ".mp3", ".wav", ".ogg", ".m4a", ".pdf", ".woff", ".woff2", ".ttf", ".otf"]);

@@ -187,28 +187,128 @@ button:focus-visible {
 
 .boot-screen {
   --boot-width: min(520px, 78vw);
+  --boot-size: var(--desktop-size, 1);
   position: fixed;
   inset: 0;
   z-index: 60;
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 14px;
   background:
     radial-gradient(ellipse at 50% 45%, rgba(217, 213, 193, 0.055), transparent 34%),
     #050605;
   color: var(--text);
   pointer-events: none;
-  animation: boot-exit 2800ms linear var(--boot-elapsed, 0ms) both;
+  animation: boot-exit 5200ms ease-in-out var(--boot-elapsed, 0ms) both;
 }
 
-/* Two broad surfaces come online during the existing loader's final half-second. */
+.boot-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(5, 6, 5, 0.52), rgba(5, 6, 5, 0.8)), var(--archive-image) center / cover no-repeat;
+  opacity: 0;
+  animation: boot-artwork 5200ms ease-in-out var(--boot-elapsed, 0ms) both;
+}
+
+.boot-loader,
+.boot-session {
+  position: relative;
+  grid-area: 1 / 1;
+  display: grid;
+  justify-items: center;
+  align-self: center;
+  inline-size: var(--boot-width);
+  gap: calc(14px * var(--boot-size));
+}
+
+.boot-loader {
+  animation: boot-loader-exit 420ms ease-in-out calc(2220ms + var(--boot-elapsed, 0ms)) both;
+}
+
+.boot-session {
+  position: absolute;
+  grid-area: auto;
+  align-self: start;
+  inset-block-start: 38%;
+  inset-inline: 0;
+  margin-inline: auto;
+  transform: translateY(-50%);
+  opacity: 0;
+  animation: boot-session 5200ms ease-in-out var(--boot-elapsed, 0ms) both;
+}
+
+.boot-session-label {
+  color: var(--muted);
+  font-size: calc(12px * var(--boot-size));
+}
+
+.boot-session-mark {
+  display: block;
+  inline-size: calc(112px * var(--boot-size));
+  block-size: calc(112px * var(--boot-size));
+  margin-block: calc(8px * var(--boot-size));
+  object-fit: cover;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+}
+
+.boot-session-user {
+  color: var(--text-strong);
+  font-size: calc(30px * var(--boot-size));
+  line-height: 1.2;
+}
+
+.boot-session-detail {
+  color: var(--text);
+  font-size: calc(14px * var(--boot-size));
+}
+
+/* Four broad surfaces arrive without moving the layout or cascading every card. */
 .archive-shell.is-booting > .sidebar {
-  animation: boot-surface 420ms ease-out calc(2240ms + var(--boot-elapsed, 0ms)) both;
+  animation: boot-surface 1200ms ease-in-out calc(3660ms + var(--boot-elapsed, 0ms)) both;
 }
 
-.archive-shell.is-booting > .workspace {
-  animation: boot-surface 450ms ease-out calc(2350ms + var(--boot-elapsed, 0ms)) both;
+.archive-shell.is-booting > .workspace > .workspace-header {
+  animation: boot-surface 1200ms ease-in-out calc(3740ms + var(--boot-elapsed, 0ms)) both;
+}
+
+.archive-shell.is-booting > .workspace > :is(.dashboard-grid, .section-page) {
+  animation: boot-surface 1200ms ease-in-out calc(3880ms + var(--boot-elapsed, 0ms)) both;
+}
+
+.archive-shell.is-booting > .workspace > .workspace-footer {
+  animation: boot-surface 970ms ease-in-out calc(4110ms + var(--boot-elapsed, 0ms)) both;
+}
+
+.archive-shell.is-booting .workspace-header h1 {
+  --headline-start-delay: calc(3760ms + var(--boot-elapsed, 0ms));
+}
+
+.archive-shell.is-quick-boot > .boot-screen {
+  animation-name: quick-boot-exit;
+  animation-duration: 2800ms;
+}
+.archive-shell.is-quick-boot > .boot-screen::before,
+.archive-shell.is-quick-boot .boot-session { display: none; }
+.archive-shell.is-quick-boot > .sidebar {
+  animation-duration: 420ms;
+  animation-delay: calc(2240ms + var(--boot-elapsed, 0ms));
+}
+.archive-shell.is-quick-boot > .workspace > .workspace-header {
+  animation-duration: 450ms;
+  animation-delay: calc(2280ms + var(--boot-elapsed, 0ms));
+}
+.archive-shell.is-quick-boot > .workspace > :is(.dashboard-grid, .section-page) {
+  animation-duration: 450ms;
+  animation-delay: calc(2320ms + var(--boot-elapsed, 0ms));
+}
+.archive-shell.is-quick-boot > .workspace > .workspace-footer {
+  animation-duration: 400ms;
+  animation-delay: calc(2380ms + var(--boot-elapsed, 0ms));
+}
+.archive-shell.is-quick-boot .workspace-header h1 {
+  --headline-start-delay: calc(1650ms + var(--boot-elapsed, 0ms));
 }
 
 @keyframes boot-surface {
@@ -216,7 +316,7 @@ button:focus-visible {
   to { opacity: 1; visibility: visible; }
 }
 
-.boot-screen > span {
+.boot-loader > span {
   inline-size: var(--boot-width);
   clip-path: inset(0 100% 0 0);
   overflow: hidden;
@@ -1348,7 +1448,6 @@ button:focus-visible {
 .seasonal-decoration[data-placement="log-web"] { grid-column: 2; grid-row: 2; }
 .seasonal-decoration[data-placement="log-web"] img { inline-size: calc(42px * var(--desktop-size, 1)); block-size: calc(30px * var(--desktop-size, 1)); opacity: 0.53; }
 .dashboard-grid.without-memory .seasonal-decoration[data-placement="memory-hanging"] { display: none; }
-.command-preferences--seasonal .command-preference-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @keyframes seasonal-swing { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes seasonal-ember { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.62; } }
 .seasonal-accent[data-paused] img,
@@ -1553,7 +1652,7 @@ button:focus-visible {
 }
 
 .command-panel {
-  inline-size: min(500px, calc(100vw - var(--sidebar-width) - 96px));
+  inline-size: min(420px, calc(100vw - var(--sidebar-width) - 96px));
   max-block-size: calc(100dvh - 160px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1602,32 +1701,34 @@ button:focus-visible {
   gap: 6px;
 }
 
-.command-preferences {
+.os-preference {
   min-inline-size: 0;
   margin: 0;
-  padding: 10px 0 0;
+  padding: calc(10px * var(--os-size, 1)) 0 0;
   border: 0;
   border-block-start: 1px solid var(--line);
 }
 
-.command-preferences legend {
+.os-preference legend {
   padding: 0 8px 0 0;
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--text);
+  font-size: calc(12px * var(--os-size, 1));
 }
 
-.command-preference-options {
+.os-preference-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.command-preference-options label {
+.os-preference-options[data-options="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.os-preference-options label {
   min-inline-size: 0;
   letter-spacing: 0;
   cursor: pointer;
 }
 
-.command-preference-options input[type="radio"] {
+.os-preference-options input[type="radio"] {
   position: absolute;
   inline-size: 1px;
   block-size: 1px;
@@ -1636,28 +1737,32 @@ button:focus-visible {
   opacity: 0;
 }
 
-.command-preference-options span {
-  min-block-size: 44px;
+.os-preference-options span {
+  min-block-size: calc(44px * var(--os-size, 1));
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: calc(8px * var(--os-size, 1));
   border: 1px solid var(--line);
   color: var(--muted);
   text-align: center;
-  font-size: 13px;
+  font-size: calc(14px * var(--os-size, 1));
+  line-height: 1.35;
 }
 
-.command-preference-options input:checked + span {
+.os-preference-options input:checked + span {
   background: rgba(217, 213, 193, 0.09);
   color: var(--text-strong);
   border-color: var(--line-strong);
 }
 
-.command-preference-options input:focus-visible + span {
+.os-preference-options input:focus-visible + span {
   outline: 1px solid var(--accent);
   outline-offset: -3px;
 }
+
+.os-preference-options input:disabled + span { color: var(--muted-2); cursor: not-allowed; }
+.os-preference-options input:disabled:checked + span { background: rgba(217, 213, 193, 0.035); border-color: var(--line); }
 
 .search-suggestions button {
   --command-edge: rgba(217, 213, 193, 0.04);
@@ -1734,7 +1839,33 @@ button:focus-visible {
 }
 
 .command-panel .search-suggestions button {
+  grid-template-columns: minmax(0, 1fr) auto;
   animation: command-result-enter 360ms steps(4, end) both;
+}
+
+.command-panel .search-suggestions button > span { min-inline-size: 0; }
+.command-panel .search-suggestions strong { overflow-wrap: anywhere; }
+
+.command-panel .search-suggestions .palette-settings-button {
+  display: flex;
+  justify-content: center;
+  gap: calc(10px * var(--desktop-size, 1));
+  margin-block-start: calc(10px * var(--desktop-size, 1));
+  border: 1px solid var(--line-strong);
+  background: rgba(217, 213, 193, 0.06);
+  box-shadow: none;
+}
+
+.palette-settings-button svg {
+  flex: none;
+  inline-size: calc(18px * var(--desktop-size, 1));
+  block-size: calc(18px * var(--desktop-size, 1));
+}
+
+.command-panel .palette-settings-button:hover,
+.command-panel .palette-settings-button:focus-visible {
+  border-color: var(--accent);
+  background: rgba(217, 213, 193, 0.11);
 }
 
 .command-panel .search-suggestions small {
@@ -4061,7 +4192,7 @@ button:focus-visible {
     --boot-width: min(calc(520px * var(--desktop-size)), 78vw);
     gap: calc(14px * var(--desktop-size));
   }
-  .archive-shell > .boot-screen > span { font-size: calc(64px * var(--desktop-size)); }
+  .archive-shell > .boot-screen .boot-loader > span { font-size: calc(64px * var(--desktop-size)); }
   .archive-shell > .boot-screen .boot-status { font-size: calc(14px * var(--desktop-size)); }
   .archive-shell > .boot-screen .boot-meter { block-size: calc(12px * var(--desktop-size)); padding: calc(2px * var(--desktop-size)); }
 
@@ -4252,16 +4383,15 @@ button:focus-visible {
   .archive-shell > .workspace > .section-page :is(.archive-file small, .archive-manager-footnote, .archive-manager-details dt, .archive-manager-details dd) { font-size: calc(12px * var(--desktop-size)); }
 
   .archive-shell > .workspace > .workspace-header .command-panel {
-    inline-size: min(calc(500px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - var(--workspace-pad-inline) * 2));
+    inline-size: min(calc(420px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - var(--workspace-pad-inline) * 2));
     inset-block-start: calc(50% + 24px * var(--desktop-size));
     max-block-size: calc(100dvh - 240px * var(--desktop-size));
     padding: calc(16px * var(--desktop-size));
     gap: calc(12px * var(--desktop-size));
     font-size: calc(16px * var(--desktop-size));
   }
-  .archive-shell > .workspace > .workspace-header .command-panel :is(label, legend, small) { font-size: calc(11px * var(--desktop-size)); }
-  .archive-shell > .workspace > .workspace-header .command-panel :is(.search-suggestions button, .command-preference-options span) { min-block-size: calc(44px * var(--desktop-size)); padding: calc(7px * var(--desktop-size)) calc(8px * var(--desktop-size)); }
-  .archive-shell > .workspace > .workspace-header .command-panel .command-preference-options span { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .command-panel :is(label, small) { font-size: calc(11px * var(--desktop-size)); }
+  .archive-shell > .workspace > .workspace-header .command-panel .search-suggestions button { min-block-size: calc(44px * var(--desktop-size)); padding: calc(7px * var(--desktop-size)) calc(8px * var(--desktop-size)); }
 
   .archive-shell > .workspace > .record-window.is-setup-record {
     inline-size: min(calc(860px * var(--desktop-size)), calc(100vw - var(--sidebar-width) - 86px * var(--desktop-size)));
@@ -5224,6 +5354,64 @@ button:focus-visible {
 
 html:has(body > .roadmap-dialog[open]),
 body:has(> .roadmap-dialog[open]) { overflow: hidden; }
+
+html:has(body > .os-behaviour-dialog[open]),
+body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
+
+.os-behaviour-dialog {
+  --os-size: 1;
+  position: fixed;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+.os-behaviour-dialog[open] { display: grid; place-items: center; }
+.os-behaviour-dialog::backdrop { background: rgba(2, 3, 3, 0.76); }
+.os-behaviour-frame {
+  inline-size: min(calc(620px * var(--os-size)), 100%);
+  max-block-size: min(calc(720px * var(--os-size)), calc(100dvh - 48px));
+  min-block-size: 0;
+  display: grid;
+  grid-template-rows: calc(48px * var(--os-size)) minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(120deg, rgba(217, 213, 193, 0.035), transparent 60%), #10110f;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  animation: boot-surface 240ms ease-out both;
+}
+.os-behaviour-frame .window-bar { block-size: calc(48px * var(--os-size)); font-size: calc(12px * var(--os-size)); }
+.os-behaviour-frame .window-actions button { inline-size: calc(34px * var(--os-size)); block-size: calc(34px * var(--os-size)); }
+.os-behaviour-body {
+  min-block-size: 0;
+  display: grid;
+  gap: calc(24px * var(--os-size));
+  padding: calc(24px * var(--os-size));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-dim) transparent;
+}
+.os-preference small { display: block; margin-block-start: 8px; color: var(--muted); font-size: calc(12px * var(--os-size)); }
+.os-preference small:empty { display: none; }
+.os-behaviour-footnote { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; border-block-start: 1px solid var(--line); padding-block-start: 12px; color: var(--muted); font-size: calc(12px * var(--os-size)); }
+.os-behaviour-footnote span { color: var(--text); }
+@media (min-width: 2200px) and (min-height: 1100px) { .os-behaviour-dialog { --os-size: 1.25; } }
+@media (min-width: 2500px) and (min-height: 1100px) { .os-behaviour-dialog { --os-size: 1.333333; } }
+@media (min-width: 3300px) and (min-height: 1700px) { .os-behaviour-dialog { --os-size: 2; } }
+@media (max-width: 760px) {
+  .os-behaviour-dialog { padding: 12px; }
+  .os-behaviour-frame { max-block-size: calc(100dvh - 24px); }
+  .os-behaviour-body { padding: 20px 16px; }
+  .os-preference[data-os-group="navigation"] { display: none; }
+}
 
 .roadmap-dialog {
   position: fixed;
@@ -7609,7 +7797,7 @@ body:has(> .roadmap-dialog[open]) { overflow: hidden; }
 
 @keyframes boot-exit {
   0%,
-  80% {
+  72% {
     opacity: 1;
   }
 
@@ -7617,6 +7805,27 @@ body:has(> .roadmap-dialog[open]) { overflow: hidden; }
     opacity: 0;
     visibility: hidden;
   }
+}
+
+@keyframes quick-boot-exit {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes boot-loader-exit {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes boot-session {
+  0%, 44% { opacity: 0; }
+  54%, 72% { opacity: 1; }
+  90%, 100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes boot-artwork {
+  0%, 44% { opacity: 0; }
+  60%, 100% { opacity: 0.22; }
 }
 
 @keyframes boot-type {
@@ -9064,7 +9273,7 @@ body:has(> .roadmap-dialog[open]) { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .archive-shell.is-booting > .sidebar,
-  .archive-shell.is-booting > .workspace {
+  .archive-shell.is-booting > .workspace > :is(.workspace-header, .dashboard-grid, .section-page, .workspace-footer) {
     animation: none;
     opacity: 1;
     visibility: visible;

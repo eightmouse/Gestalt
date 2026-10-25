@@ -65,7 +65,7 @@ Object.assign(reactLifecycle.context, {
   pending: false, complete: false,
   setRecordAccessPending: (value) => { reactLifecycle.context.pending = value; },
   setRecordAccessComplete: (value) => { reactLifecycle.context.complete = value; },
-  setEntryAccessMode: () => {}
+  setEntryAccessMode: () => {}, localMemory: "granted"
 });
 vm.runInContext(ts.transpileModule(`${declarations.join("\n")}\nexports.start = startRecordAccess; exports.stop = stopRecordAccess; exports.change = changeEntryAccessMode;`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, reactLifecycle.context);
 const api = reactLifecycle.context.exports;
@@ -118,11 +118,7 @@ for (const mode of ["first", "always", "off"]) {
     vm.runInContext("searchPanel()", staticLifecycle.context)
   ];
   for (const html of htmls) {
-    const radios = [...html.matchAll(/<input\b[^>]*type="radio"[^>]*>/g)].map((match) => match[0]).filter((input) => input.includes('name="entry-animation"'));
-    assert.equal(radios.length, 3, "Both renderers expose the same three native radio options");
-    const checked = radios.filter((input) => /\bchecked(?:[ =]|\/?>)/.test(input));
-    assert.equal(checked.length, 1);
-    assert.ok(checked[0].includes(`value="${mode}"`));
+    assert.ok(!html.includes('type="radio"'), "The palette no longer duplicates OS preference controls");
   }
 }
 console.log("Entry access tests passed: mode policy parity, persistence, blocked storage, first/subsequent opens, cancellation and stable navigation.");

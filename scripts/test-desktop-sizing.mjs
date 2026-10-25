@@ -25,7 +25,7 @@ assert.match(policy, /grid-template-rows: minmax\(0, 1fr\) minmax\(0, 0\.9fr\) m
 assert.ok(!/nth-child/.test(policy), "Large tiers do not silently change the number of visible records");
 assert.match(policy, /\.record-title-text\.is-long-title.*font-size: calc\(38px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.weather-action \{ inline-size: calc\(32px \* var\(--desktop-size\)\); block-size: calc\(32px \* var\(--desktop-size\)\)/);
-assert.match(policy, /\.command-panel \{\s*inline-size: min\(calc\(500px \* var\(--desktop-size\)\)/);
+assert.match(policy, /\.command-panel \{\s*inline-size: min\(calc\(420px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.record-window\.is-setup-record \{\s*inline-size: min\(calc\(860px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.setup-inspection-photo \{ max-inline-size: calc\(920px \* var\(--desktop-size\)\)/);
 const maximize = policy.indexOf(".record-window.is-maximized {");
@@ -44,7 +44,7 @@ assert.match(policy, /\.note-entry--indexed > summary \{ min-block-size: calc\(5
 assert.match(policy, /\.note-entry--indexed > summary > i::before \{ font-size: calc\(10px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.note-entry-body > \.record-body \{ padding: 0; \}/, "Tier body padding must not add a nested reading inset");
 assert.match(policy, /\.note-media \{ inline-size: min\(100%, calc\(760px \* var\(--desktop-size\)\)\)/);
-assert.match(policy, /\.archive-shell > \.boot-screen > span \{ font-size: calc\(64px \* var\(--desktop-size\)\)/);
+assert.match(policy, /\.archive-shell > \.boot-screen \.boot-loader > span \{ font-size: calc\(64px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.boot-meter \{ block-size: calc\(12px \* var\(--desktop-size\)\); padding: calc\(2px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.setup-bay \.setup-tile--peripherals \.setup-tile-icon \{ inline-size: 100%; block-size: calc\(78px \* var\(--desktop-size\)\)/, "Peripheral photo width must override the generic square icon");
 assert.match(policy, /\.record-heading:not\(\.has-heading-banner\) \{ margin-block-end: calc\(26px \* var\(--desktop-size\)\); padding-block-end: calc\(18px \* var\(--desktop-size\)\)/);

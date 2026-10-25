@@ -32,6 +32,8 @@ import { getSearchResults, getTimelineItems } from "@/components/archive/search-
 import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import { RoadmapWindow } from "@/components/archive/roadmap-window";
+import { OsBehaviourWindow } from "@/components/archive/os-behaviour-window";
+import behaviour, { type StartupMode, type PreferenceKey } from "@/public/os-behaviour.js";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, steamRecordSeed, type SteamRecordSeed, type SteamSnapshot } from "@/public/steam-display.mjs";
@@ -152,6 +154,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [roadmapOpen, setRoadmapOpen] = useState(false);
+  const [osBehaviourOpen, setOsBehaviourOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
   const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
@@ -169,6 +172,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
   const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
+  const [startupMode, setStartupMode] = useState<StartupMode>("full");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
 
@@ -177,7 +181,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (mode === entryAccessModeRef.current) return;
     entryAccessModeRef.current = mode;
     setEntryAccessMode(mode);
-    saveEntryAccessMode(mode);
+    if (localMemory === "granted") saveEntryAccessMode(mode);
     stopRecordAccess();
     setRecordAccessComplete(true);
   };
@@ -221,6 +225,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     const mode = readEntryAccessMode();
     setSeasonalMode(seasonal.readMode());
     setDesktopNavigationMode(desktopNavigation.readMode());
+    setStartupMode(behaviour.readStartupMode());
     entryAccessModeRef.current = mode;
     setEntryAccessMode(mode);
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -267,7 +272,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const metrics = { ...getArchiveMetrics(archiveRecords, currentGame), activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
 
   useEffect(() => {
-    if (!bootComplete) return;
     let active = true;
     const loading = process.env.NODE_ENV === "development"
       ? loadLocalSteamPreview("/api/studio/steam").then((snapshot) => snapshot ?? loadSteamSnapshot("/data/steam-current.json"))
@@ -276,7 +280,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       if (active) { setSteamSnapshot(snapshot); setSteamReady(true); }
     }).catch(() => { if (active) setSteamReady(true); });
     return () => { active = false; };
-  }, [bootComplete]);
+  }, []);
 
   useEffect(() => {
     setArchiveRecords(records);
@@ -311,8 +315,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       return;
     }
 
-    return scheduleBootCompletion(() => setBootComplete(true));
-  }, [bootComplete, localMemory]);
+    return scheduleBootCompletion(() => setBootComplete(true), 0, startupMode);
+  }, [bootComplete, localMemory, startupMode]);
 
   useEffect(() => {
     if (!searchOpen) {
@@ -343,7 +347,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       const target = event.target;
       const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
 
-      if ((inlineRecordId && panelOpen) || event.metaKey || event.ctrlKey || event.altKey || isInputTarget) {
+      if (!bootComplete || localMemory === "prompt" || localMemory === "checking" || (inlineRecordId && panelOpen) || event.metaKey || event.ctrlKey || event.altKey || isInputTarget) {
         return;
       }
 
@@ -355,7 +359,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
     document.addEventListener("keydown", togglePalette);
     return () => document.removeEventListener("keydown", togglePalette);
-  }, [inlineRecordId, panelOpen]);
+  }, [bootComplete, localMemory, inlineRecordId, panelOpen]);
 
   useEffect(() => {
     if (!navOpen) {
@@ -534,7 +538,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const updateSearchFromNavigation = (query: string) => {
     setSearchQuery(query);
-    setSearchOpen(query.trim().length > 0);
+    const hasQuery = query.trim().length > 0;
+    setSearchOpen(hasQuery);
+    if (hasQuery) setNavOpen(false);
   };
 
   const openSearchResult = (result: SearchResult) => {
@@ -550,6 +556,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
     if (result.action === "roadmap") {
       openRoadmap();
+      return;
+    }
+
+    if (result.action === "behaviour") {
+      if (inlineBusy) return;
+      setSearchOpen(false);
+      setSearchQuery("");
+      setNavOpen(false);
+      setOsBehaviourOpen(true);
       return;
     }
 
@@ -597,7 +612,25 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       </span>
     </span>
   ) : "Browse the records filed under this archive.";
-  const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen;
+  const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen || osBehaviourOpen;
+  const changeOsPreference = (key: PreferenceKey, value: string) => {
+    if (key === "entry") changeEntryAccessMode(normalizeEntryAccessMode(value));
+    if (key === "startup") {
+      const mode = behaviour.normalizeStartupMode(value);
+      if (!behaviour.saveStartupMode(mode)) return false;
+      setStartupMode(mode);
+    }
+    if (key === "seasonal") {
+      const mode = value === "off" ? "off" : "auto";
+      setSeasonalMode(mode);
+      if (localMemory === "granted") seasonal.saveMode(mode);
+    }
+    if (key === "navigation") {
+      const mode = desktopNavigation.normalizeMode(value);
+      setDesktopNavigationMode(mode);
+      if (localMemory === "granted") desktopNavigation.saveMode(mode);
+    }
+  };
   const grantLocalMemory = () => {
     try {
       window.localStorage.setItem(localMemoryKey, "granted");
@@ -616,7 +649,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     hasFocusWindow || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen, localMemory === "granted");
 
   return (
-    <main ref={shellRef} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}`} inert={showBoot} aria-busy={showBoot}>
+    <main ref={shellRef} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReview={(id) => {
@@ -626,6 +659,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         return true;
       }} /> : null}
       {roadmapOpen ? <RoadmapWindow onClose={() => setRoadmapOpen(false)} /> : null}
+      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />
@@ -695,9 +729,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </button>
           </div>
           {searchOpen ? (
-            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} entryAccessMode={entryAccessMode} onEntryAccessModeChange={changeEntryAccessMode}
-              seasonalMode={seasonalMode} onSeasonalModeChange={(mode) => { setSeasonalMode(mode); seasonal.saveMode(mode); }}
-              desktopNavigationMode={desktopNavigationMode} onDesktopNavigationModeChange={(mode) => { setDesktopNavigationMode(mode); desktopNavigation.saveMode(mode); }} />
+            <SearchPanel panelRef={searchRef} query={searchQuery} results={searchResults} onOpenResult={openSearchResult} onQueryChange={setSearchQuery} />
           ) : null}
         </header>
 
