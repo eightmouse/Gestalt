@@ -59,4 +59,50 @@ for (const query of ["", "  ", "settings", "A field log"]) {
   assert.deepEqual(local, { query, searchOpen: expectedOpen, navOpen: !expectedOpen });
   assert.deepEqual(state, { searchQuery: query, searchOpen: expectedOpen, navOpen: !expectedOpen }, "Search results must not remain behind the mobile menu");
 }
-console.log("Palette checks passed: commands-only defaults, note/title search, mobile menu handoff, React/Pages parity and unchanged records.");
+
+// Exercise palette-only DOM updates: dashboard/seasonal nodes must never be replaced.
+let activePanel = null, generated = 0, focused = null, navUpdates = 0;
+const searchState = { searchOpen: false, searchQuery: "" };
+function panelFixture() {
+  const input = { value: searchState.searchQuery, focus() { focused = this; document.activeElement = this; } };
+  const suggestions = { childNodes: [++generated], replaceChildren(...children) { this.childNodes = children; } };
+  const panel = {
+    querySelector(selector) { return selector === "[data-search-input]" ? input : suggestions; },
+    contains(node) { return node === input; }, remove() { activePanel = null; }
+  };
+  return panel;
+}
+const toggle = { active: false, getClientRects() { return [{}]; }, closest() { return null; }, focus() { focused = this; document.activeElement = this; } };
+toggle.classList = { toggle(_, value) { toggle.active = value; } };
+const header = { querySelector() { return activePanel; }, append(panel) { activePanel = panel; } };
+const document = {
+  activeElement: toggle,
+  querySelector(selector) { assert.equal(selector, ".workspace-header", "Palette updates never traverse/rebuild the dashboard"); return header; },
+  querySelectorAll() { return [toggle]; },
+  createElement(tag) {
+    assert.equal(tag, "template");
+    return { set innerHTML(value) { assert.equal(value, "palette markup"); this.content = { querySelector: () => panelFixture() }; } };
+  }
+};
+const paletteContext = vm.createContext({ document, state: searchState, searchPanel: () => "palette markup", syncDesktopNavigation() { navUpdates++; }, render() { assert.fail("Palette changes must not render the archive"); } });
+vm.runInContext(declaration("static-app.js", "syncSearchPanel"), paletteContext);
+searchState.searchOpen = true;
+paletteContext.syncSearchPanel();
+const retainedPanel = activePanel, retainedInput = activePanel.querySelector("[data-search-input]");
+assert.equal(focused, retainedInput); assert.equal(toggle.active, true);
+searchState.searchQuery = "game";
+paletteContext.syncSearchPanel();
+assert.equal(activePanel, retainedPanel); assert.equal(focused, retainedInput);
+assert.equal(retainedInput.value, "game");
+assert.deepEqual(activePanel.querySelector(".search-suggestions").childNodes, [2]);
+searchState.searchOpen = false;
+paletteContext.syncSearchPanel();
+assert.equal(activePanel, null); assert.equal(focused, toggle); assert.equal(toggle.active, false);
+assert.equal(navUpdates, 3, "The existing navigation controller observes palette state without losing its DOM");
+
+const inputHandler = findNode("static-app.js", (node) => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText() === "document.addEventListener" && node.expression.arguments[0]?.text === "input");
+class SearchInput { dataset = { searchInput: "" }; value = "quiet"; }
+Object.assign(paletteContext, { HTMLInputElement: SearchInput });
+vm.runInContext(`const inputHandler = ${inputHandler.node.expression.arguments[1].getText(inputHandler.ast)}; inputHandler({ target: new HTMLInputElement() });`, paletteContext);
+assert.equal(searchState.searchQuery, "quiet");
+console.log("Palette checks passed: command/search parity, mobile handoff, in-place updates, retained input focus and unchanged records.");

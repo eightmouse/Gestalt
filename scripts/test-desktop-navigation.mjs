@@ -171,9 +171,12 @@ for (const action of ["hidden", "busy", "dialog", "palette"]) {
 }
 {
   const f = fixture(); f.attach({ remember: true }); f.advance(3000); f.click(f.nodes.dismissHint);
-  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.get("gestalt.terminal-hint"), "seen");
-  const returning = fixture(f.saved); returning.attach({ remember: true });
-  assert.ok(!returning.nodes.shell.hasAttribute("data-terminal-hint"), "Remembered visitors are not shown the hint again");
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.size, 0, "Hint dismissal needs no persistent storage");
+  f.attach({}, f.surface().shell); f.advance(5000);
+  assert.equal(f.timers.size, 0, "Root replacement cannot replay a dismissed notification during this visit");
+  const returning = fixture(new Map([["gestalt.terminal-hint", "seen"]])); returning.attach({ remember: true });
+  assert.ok(!returning.nodes.shell.hasAttribute("data-terminal-hint")); returning.advance(3000);
+  assert.ok(returning.nodes.shell.hasAttribute("data-terminal-hint"), "A new visit ignores the obsolete permanent dismissal flag");
   f.controller.destroy(); returning.controller.destroy();
 }
 for (const reason of ["busy", "palette", "hidden", "mobile", "fixed"]) {
@@ -241,6 +244,7 @@ assert.ok(!css.includes("desktop-nav-shutter"));
 assert.match(css, /\.workspace-window-tray\s*\{ display: contents; \}/, "Legacy/mobile retain original restore positioning");
 assert.match(css, /workspace-window-tray\s*\{[^}]+display: flex;/, "Minimized controls share one row instead of overlapping fixed coordinates");
 assert.match(css, /desktop-terminal-bar\s*\{[^}]+38px/, "Keep the terminal titlebar compact");
+assert.match(css, /desktop-nav-terminal\s*\{[^}]+block-size: min\(calc\(600px/, "The normal terminal has room below its directory, with a viewport height cap");
 assert.ok(!css.includes("data-nav-minimized] > .desktop-nav-terminal"), "No minimized window floats over the page");
 for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
   const render = read(file);

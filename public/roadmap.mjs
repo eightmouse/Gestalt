@@ -12,6 +12,7 @@ export const publicRoadmap = {
     },
     {
       id: "ideas", title: "On the desk", items: [
+        { title: "Web search", detail: "Explore a separate homepage search with Google, Yandex or DuckDuckGo. Agree on its placement and an editing-safe shortcut before building it." },
         { title: "Roadmap controls", detail: "Add or revise work notes and mark steps complete from the local workspace." },
         { title: "Month-by-month folders", detail: "Let older field notes settle into folders while newer ones stay within reach." }
       ]

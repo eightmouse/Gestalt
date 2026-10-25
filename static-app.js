@@ -748,7 +748,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.59.1");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.59.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1494,7 +1494,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.59.1</span>
+        <span>v1.59.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1508,7 +1508,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.59.1</span>
+        <span class="version-label">v1.59.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1528,7 +1528,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.59.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.59.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2545,6 +2545,35 @@ function searchPanel() {
   </div>`;
 }
 
+function syncSearchPanel() {
+  const header = document.querySelector(".workspace-header");
+  if (!header) return;
+  const panel = header.querySelector(".command-panel");
+  const restoreFocus = panel?.contains(document.activeElement);
+  if (state.searchOpen) {
+    const template = document.createElement("template");
+    template.innerHTML = searchPanel();
+    const next = template.content.querySelector(".command-panel");
+    if (panel) {
+      panel.querySelector(".search-suggestions").replaceChildren(...next.querySelector(".search-suggestions").childNodes);
+      const input = panel.querySelector("[data-search-input]");
+      if (input.value !== state.searchQuery) input.value = state.searchQuery;
+    } else {
+      header.append(next);
+      next.querySelector("[data-search-input]")?.focus();
+    }
+  } else {
+    panel?.remove();
+    if (restoreFocus) {
+      for (const control of document.querySelectorAll("[data-search-toggle], .archive-menu-toggle")) {
+        if (control.getClientRects().length && !control.closest("[inert]")) { control.focus({ preventScroll: true }); break; }
+      }
+    }
+  }
+  document.querySelectorAll("[data-search-toggle]").forEach((button) => button.classList.toggle("is-active", state.searchOpen));
+  syncDesktopNavigation();
+}
+
 function openOsBehaviour() {
   state.searchOpen = false;
   state.searchQuery = "";
@@ -2580,7 +2609,7 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.59.1")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.59.2")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2808,7 +2837,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.59.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.59.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3185,7 +3214,7 @@ document.addEventListener("click", (event) => {
   ) {
     state.searchOpen = false;
     state.searchQuery = "";
-    render();
+    syncSearchPanel();
     return;
   }
 
@@ -3286,9 +3315,11 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.dataset.searchToggle !== undefined) {
+    const hadNavigation = state.navOpen;
     state.searchOpen = !state.searchOpen;
     state.navOpen = false;
-    render();
+    if (hadNavigation) render();
+    else syncSearchPanel();
     return;
   }
 
@@ -3375,7 +3406,7 @@ document.addEventListener("input", (event) => {
 
   if (target.dataset.searchInput !== undefined) {
     state.searchQuery = target.value;
-    render();
+    syncSearchPanel();
   }
 
   if (target.dataset.mobileNavSearchInput !== undefined) {
@@ -3397,26 +3428,40 @@ document.addEventListener("input", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (!state.bootDismissed || state.localMemory === "prompt") return;
+  if (event.repeat || event.isComposing) return;
   const target = event.target;
-  const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+  const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('select, [role="textbox"]'))));
+  const isPaletteInput = target instanceof HTMLInputElement && target.id === "archive-search";
 
   if (
     (event.key === "~" || event.key === "`") &&
-    (!isInputTarget || event.key === "`" || event.key === "~") &&
+    (!isInputTarget || isPaletteInput) &&
     !event.metaKey &&
     !event.ctrlKey &&
     !event.altKey
   ) {
     event.preventDefault();
+    const hadNavigation = state.navOpen;
+    state.navOpen = false;
     state.searchOpen = !state.searchOpen;
     if (!state.searchOpen) {
       state.searchQuery = "";
     }
-    render();
+    if (hadNavigation) render();
+    else syncSearchPanel();
     return;
   }
 
-  if (event.key !== "Escape") {
+  if (event.key !== "Escape" || event.metaKey || event.ctrlKey || event.altKey) {
+    return;
+  }
+
+  if (state.searchOpen) {
+    event.preventDefault();
+    event.stopPropagation();
+    state.searchOpen = false;
+    state.searchQuery = "";
+    syncSearchPanel();
     return;
   }
 
@@ -3466,11 +3511,6 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.searchOpen) {
-    state.searchOpen = false;
-    state.searchQuery = "";
-    render();
-  }
 });
 
 document.addEventListener("error", (event) => {

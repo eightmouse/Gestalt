@@ -31,11 +31,10 @@
   function createController(host = globalThis.window) {
     const doc = host.document;
     const desktop = host.matchMedia("(min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine)");
-    const hintKey = "gestalt.terminal-hint";
     let shell = null, sidebar = null, terminal = null, workspace = null;
     let workspaceWasInert = false, detach = () => {}, returnFocus = null;
     let settings = { mode: "fixed", ready: false, busy: false, palette: false, remember: false };
-    let open = false, minimized = false, maximized = false, destroyed = false, hintSeen = false, hintRead = false;
+    let open = false, minimized = false, maximized = false, destroyed = false, hintSeen = false;
     let hintTimer = null, hintReady = false;
     const enabled = () => settings.mode === "terminal" && desktop.matches && Boolean(shell) && Boolean(terminal);
     const blocked = () => !settings.ready || settings.busy || doc.hidden || Boolean(doc.querySelector("dialog[open]"));
@@ -56,10 +55,6 @@
     }
     function acknowledgeHint() {
       hintSeen = true;
-      if (settings.remember) {
-        try { host.localStorage.setItem(hintKey, "seen"); }
-        catch { /* Session-only dismissal still works. */ }
-      }
     }
     function paint() {
       if (!shell) return;
@@ -94,11 +89,6 @@
     }
     function refresh() {
       if (destroyed) return;
-      if (settings.remember && !hintRead) {
-        hintRead = true;
-        try { hintSeen ||= host.localStorage.getItem(hintKey) === "seen"; }
-        catch { /* An unavailable store must not block navigation. */ }
-      }
       if (!enabled()) { open = false; minimized = false; maximized = false; }
       else if (blocked() || settings.palette) open = false;
       paint();

@@ -48,6 +48,7 @@ jobs:
           node --check public/roadmap.mjs
           node --check public/seasonal.js
           node --check public/desktop-navigation.js
+          node --check public/os-behaviour.js
           node scripts/test-desktop-navigation.mjs
           node --check scripts/prepare-pages.mjs
           node scripts/validate-content.mjs
@@ -61,6 +62,9 @@ jobs:
           STEAM_API_KEY: ${{ secrets.STEAM_API_KEY }}
           STEAM_ID: ${{ secrets.STEAM_ID }}
         run: node scripts/prepare-pages.mjs
+      - name: Verify prepared public image paths
+        if: steps.prepare.outputs.deploy == 'true'
+        run: node scripts/validate-pages-assets.mjs .pages-site
       - name: Upload only the public artifact
         if: steps.prepare.outputs.deploy == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0, nested upload uses Node 24

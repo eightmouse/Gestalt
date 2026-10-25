@@ -11,6 +11,14 @@ const recordsData = readFileSync(path.join(root, "public", "data", "records.js")
 const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"), "utf8");
 const errors = [];
 
+const assetCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-pages-assets.mjs")], { encoding: "utf8" });
+if (assetCheck.status !== 0) errors.push(`Prepared Pages asset regression failed: ${(assetCheck.stderr || assetCheck.stdout || "").trim()}`);
+
+const archiveImage = indexHtml.match(/--archive-image:\s*url\("([^"]+)"\)/)?.[1];
+if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-banner.png") {
+  errors.push("The public background URL must resolve relative to its consuming app/globals.css stylesheet.");
+}
+
 const cacheTokenCases = [
   ['src="public/os-behaviour.js?v=1.59.0"', 'src="public/os-behaviour.js?v=12345"'],
   ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],

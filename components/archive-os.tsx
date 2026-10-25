@@ -345,21 +345,29 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   useEffect(() => {
     const togglePalette = (event: KeyboardEvent) => {
       const target = event.target;
-      const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && target.isContentEditable);
+      const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('select, [role="textbox"]'))));
+      const isPaletteInput = target instanceof HTMLInputElement && target.id === "archive-search";
 
-      if (!bootComplete || localMemory === "prompt" || localMemory === "checking" || (inlineRecordId && panelOpen) || event.metaKey || event.ctrlKey || event.altKey || isInputTarget) {
+      if (!bootComplete || localMemory === "prompt" || localMemory === "checking" || (inlineRecordId && panelOpen) || event.repeat || event.isComposing || event.metaKey || event.ctrlKey || event.altKey || (isInputTarget && !isPaletteInput)) {
         return;
       }
 
-      if (event.key === "~" || event.key === "`") {
+      if (event.key === "~" || event.key === "`" || (event.key === "Escape" && searchOpen)) {
         event.preventDefault();
-        setSearchOpen((current) => !current);
+        event.stopPropagation();
+        setSearchOpen(!searchOpen);
+        if (searchOpen) {
+          setSearchQuery("");
+          for (const control of shellRef.current?.querySelectorAll<HTMLButtonElement>("[data-search-toggle], .archive-menu-toggle") || []) {
+            if (control.getClientRects().length && !control.closest("[inert]")) { control.focus({ preventScroll: true }); break; }
+          }
+        }
       }
     };
 
     document.addEventListener("keydown", togglePalette);
     return () => document.removeEventListener("keydown", togglePalette);
-  }, [bootComplete, localMemory, inlineRecordId, panelOpen]);
+  }, [bootComplete, localMemory, inlineRecordId, panelOpen, searchOpen]);
 
   useEffect(() => {
     if (!navOpen) {

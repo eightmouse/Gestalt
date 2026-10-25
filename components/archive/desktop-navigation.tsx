@@ -23,7 +23,7 @@ export function DesktopNavigationChrome({ records, activeSection, onOpenSection 
     <aside className="desktop-terminal-hint" role="status" aria-hidden="true" inert><span>Press <kbd>T</kbd> to open terminal</span><div className="window-actions"><button type="button" data-window-action="close" data-desktop-terminal-hint-dismiss aria-label="Dismiss terminal hint">close</button></div></aside>
     <section className="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
       <header className="desktop-terminal-bar">
-        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.59.1</small></span>
+        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.59.2</small></span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button>
           <button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button>

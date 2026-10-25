@@ -139,11 +139,24 @@ ts.forEachChild(reactAst, function visit(node) {
 const staticShortcut = ast.statements.find((node) => ts.isExpressionStatement(node) && node.expression.expression?.getText(ast) === 'document.addEventListener' && node.expression.arguments[0]?.text === "keydown").expression.arguments[1].getText(ast);
 for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) {
   assert.ok(source);
-  const context = vm.createContext({ bootComplete: false, localMemory: "granted", inlineRecordId: null, panelOpen: false, state: { bootDismissed: false, localMemory: "granted", searchOpen: false }, HTMLInputElement: class {}, HTMLTextAreaElement: class {}, HTMLElement: class {}, render() {}, setSearchOpen(update) { context.state.searchOpen = update(context.state.searchOpen); } });
+  let restoredFocus = false;
+  const control = { getClientRects: () => [{}], closest: () => null, focus() { restoredFocus = true; } };
+  const context = vm.createContext({
+    bootComplete: false, localMemory: "granted", inlineRecordId: null, panelOpen: false, searchOpen: false,
+    shellRef: { current: { querySelectorAll: () => [control] } },
+    state: { bootDismissed: false, localMemory: "granted", searchOpen: false, searchQuery: "" },
+    HTMLInputElement: class {}, HTMLTextAreaElement: class {}, HTMLElement: class { closest() { return null; } },
+    render() {}, syncSearchPanel() {},
+    setSearchOpen(update) { context.state.searchOpen = typeof update === "function" ? update(context.state.searchOpen) : update; },
+    setSearchQuery(value) { context.state.searchQuery = value; }
+  });
   const code = react ? ts.transpileModule(`const handler = ${source};`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText : `const handler = ${source};`;
   vm.runInContext(code, context);
   const handler = vm.runInContext("handler", context);
-  const press = () => handler({ key: "~", target: null, preventDefault() {} });
+  const press = (args = {}) => {
+    context.searchOpen = context.state.searchOpen;
+    handler({ key: "~", target: null, preventDefault() {}, stopPropagation() {}, ...args });
+  };
   press();
   assert.equal(context.state.searchOpen, false, "Boot ignores palette shortcuts");
   context.bootComplete = context.state.bootDismissed = true;
@@ -153,6 +166,38 @@ for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) 
   context.localMemory = context.state.localMemory = "session";
   press();
   assert.equal(context.state.searchOpen, true, "The palette works after the handoff and consent");
+  const paletteInput = new context.HTMLInputElement(); paletteInput.id = "archive-search";
+  press({ target: paletteInput });
+  assert.equal(context.state.searchOpen, false, "The focused palette search field permits its own toggle-close shortcut");
+  if (react) assert.ok(restoredFocus, "The local reader restores focus to its visible search/menu control");
+  for (const key of ["~", "`", "Escape"]) {
+    context.searchOpen = context.state.searchOpen = true;
+    context.state.searchQuery = "query";
+    press({ key, target: paletteInput });
+    assert.equal(context.state.searchOpen, false, `${key} closes the focused palette in both readers`);
+    assert.equal(context.state.searchQuery, "");
+  }
+  for (const args of [{ repeat: true }, { isComposing: true }]) {
+    context.state.searchOpen = true;
+    press({ key: "Escape", target: paletteInput, ...args });
+    assert.equal(context.state.searchOpen, true, "Composition cancellation and held Escape cannot dismiss the palette");
+  }
+  context.state.searchOpen = false;
+  const editable = new context.HTMLElement(); editable.isContentEditable = true;
+  const select = new context.HTMLElement(); select.closest = () => ({});
+  for (const target of [new context.HTMLInputElement(), new context.HTMLTextAreaElement(), editable, select]) {
+    press({ target });
+    assert.equal(context.state.searchOpen, false, "Typing in another field/editor does not open the palette");
+  }
+  for (const args of [{ repeat: true }, { isComposing: true }, { ctrlKey: true }, { altKey: true }, { metaKey: true }]) {
+    press(args);
+    assert.equal(context.state.searchOpen, false, "Held keys, composition and browser shortcuts are untouched");
+  }
+  if (react) {
+    context.inlineRecordId = "editing-note"; context.panelOpen = true;
+    press();
+    assert.equal(context.state.searchOpen, false, "Inline editing blocks the global palette shortcut even outside its text fields");
+  }
 }
 const steamInit = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "initializeSteamDisplay").getText(ast);
 assert.match(steamInit, /if \(steamDisplayStarted\) return;/);
