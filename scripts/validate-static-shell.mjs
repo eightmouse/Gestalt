@@ -75,7 +75,6 @@ const recordsScriptIndex = indexHtml.indexOf("public/data/records.js");
 const appScriptIndex = indexHtml.indexOf("static-app.js");
 const inlineScriptIndex = indexHtml.indexOf("public/note-inline.js");
 const framingScriptIndex = indexHtml.indexOf("public/image-framing.js");
-const xScriptIndex = indexHtml.indexOf("public/x-terminal.js");
 const seasonalScriptIndex = indexHtml.indexOf("public/seasonal.js");
 if (seasonalScriptIndex === -1 || seasonalScriptIndex > appScriptIndex) errors.push("The seasonal policy must load before the static runtime.");
 const seasonalSyntax = spawnSync(process.execPath, ["--check", path.join(root, "public/seasonal.js")], { encoding: "utf8" });
@@ -90,13 +89,8 @@ const paletteCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-
 if (paletteCheck.status !== 0) errors.push(`Palette regression failed: ${(paletteCheck.stderr || paletteCheck.stdout || "").trim()}`);
 const sectionPreviewCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-section-previews.mjs")], { encoding: "utf8" });
 if (sectionPreviewCheck.status !== 0) errors.push(`Section preview regression failed: ${(sectionPreviewCheck.stderr || sectionPreviewCheck.stdout || "").trim()}`);
-if (xScriptIndex !== -1 && xScriptIndex > appScriptIndex) errors.push("When enabled, X Terminal helper must load before the static runtime.");
-for (const file of ["public/x-terminal.js", "public/x-embed.js"]) {
-  const result = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
-  if (result.status !== 0) errors.push(`${file} is missing or has invalid syntax.`);
-}
-const xCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-x-terminal.mjs")], { encoding: "utf8" });
-if (xCheck.status !== 0) errors.push(`X Terminal regression failed: ${(xCheck.stderr || xCheck.stdout || "").trim()}`);
+const retiredIntegrationCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-no-x-integration.mjs")], { encoding: "utf8" });
+if (retiredIntegrationCheck.status !== 0) errors.push(`Retired integration regression failed: ${(retiredIntegrationCheck.stderr || retiredIntegrationCheck.stdout || "").trim()}`);
 const desktopCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-desktop-sizing.mjs")], { encoding: "utf8" });
 if (desktopCheck.status !== 0) errors.push(`Desktop sizing regression failed: ${(desktopCheck.stderr || desktopCheck.stdout || "").trim()}`);
 const timelineCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-timeline.mjs")], { encoding: "utf8" });

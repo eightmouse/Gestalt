@@ -116,7 +116,7 @@ assert.ok(index.includes("public/os-behaviour.js"));
 for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) assert.ok(read(file).includes('"public/os-behaviour.js"'));
 assert.ok(read("components/archive/os-behaviour-window.tsx").includes("behaviour.createController()"));
 assert.ok(read("static-app.js").includes("api.createController()"));
-const renderPass = read("static-app.js").slice(read("static-app.js").indexOf("  syncXTerminal();\n"));
+const renderPass = read("static-app.js").slice(read("static-app.js").indexOf("  root.innerHTML = markup;\n"));
 assert.ok(renderPass.indexOf("syncOsBehaviourDialog();") < renderPass.indexOf("syncDesktopNavigation();"), "Navigation observes the settled native-dialog state before scheduling a hint");
 assert.ok(!read("components/archive/search-panel.tsx").includes("<fieldset"));
 for (const file of ["components/archive/search-panel.tsx", "static-app.js"]) {

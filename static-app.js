@@ -280,21 +280,6 @@ let steamDisplayModule = null;
 let steamDisplaySnapshot = null;
 let steamDisplayStarted = false;
 let steamDisplayReady = false;
-let xTerminalController = null;
-let xTerminalRoot = null;
-
-function syncXTerminal() {
-  const node = root.querySelector("[data-x-terminal]");
-  if (node === xTerminalRoot) return;
-  xTerminalController?.destroy();
-  xTerminalController = null;
-  xTerminalRoot = node;
-  if (!node || !window.GestaltXTerminal) return;
-  xTerminalController = window.GestaltXTerminal.mount(node, {
-    embedUrl: new URL("public/x-embed.html", document.baseURI).href
-  });
-}
-
 function recordsFor(sectionId) {
   return records.filter((record) => record.section === sectionId);
 }
@@ -748,7 +733,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.59.2");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.60.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1494,7 +1479,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.59.2</span>
+        <span>v1.60.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1508,7 +1493,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.59.2</span>
+        <span class="version-label">v1.60.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1528,7 +1513,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.59.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.60.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2609,7 +2594,7 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.59.2")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.60.2")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2831,18 +2816,18 @@ function syncImageLightbox() {
 }
 
 function workspaceWindowTray() {
-  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button>${!state.panelOpen && state.panelMinimized ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>` : ""}</div>`;
+  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button>${!state.panelOpen && state.panelMinimized ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>` : ""}<button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Notices" aria-controls="system-notices" aria-expanded="false" title="System Notices" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button></div>`;
 }
 
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.59.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.60.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
     </div>
-  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><span>Press <kbd>T</kbd> to open terminal</span><div class="window-actions"><button type="button" data-window-action="close" data-desktop-terminal-hint-dismiss aria-label="Dismiss terminal hint">close</button></div></aside>`;
+  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Notices"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Notices" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM NOTICES</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Notices">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
 }
 
 function render() {
@@ -2922,13 +2907,7 @@ function render() {
     </section>
   </main>`;
 
-  if (!window.GestaltXTerminal?.preserveRender(root, markup)) {
-    xTerminalController?.destroy();
-    xTerminalController = null;
-    xTerminalRoot = null;
-    root.innerHTML = markup;
-  }
-  syncXTerminal();
+  root.innerHTML = markup;
   syncImageLightbox();
   syncRoadmapDialog();
   syncOsBehaviourDialog();

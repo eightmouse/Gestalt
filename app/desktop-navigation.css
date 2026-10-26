@@ -1,4 +1,6 @@
 .desktop-terminal-restore,
+.system-notices-toggle,
+.system-notices-panel,
 .desktop-terminal-hint,
 .desktop-nav-backdrop,
 .desktop-nav-terminal { display: none; }
@@ -18,6 +20,12 @@
 }
 
 @media (min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine) {
+  .archive-shell {
+    --window-tray-inline: calc(48px * var(--desktop-size, 1));
+    --window-tray-bottom: calc(48px * var(--desktop-size, 1));
+    --window-tray-control: calc(44px * var(--desktop-size, 1));
+    --window-tray-popup-gap: calc(18px * var(--desktop-size, 1));
+  }
   .archive-shell[data-desktop-nav][data-nav-wide] {
     --dashboard-max-inline: calc(1480px * var(--desktop-size, 1));
     --section-split-max-inline: var(--dashboard-max-inline);
@@ -105,16 +113,16 @@
   .desktop-terminal-body nav button:focus-visible { outline: 1px solid var(--text); outline-offset: 3px; }
   .desktop-directory-marker { color: var(--muted); }
   .desktop-terminal-body nav time { color: var(--muted); font-size: calc(13px * var(--desktop-size, 1)); white-space: nowrap; }
-  .archive-shell[data-nav-wide] .workspace-window-tray {
+  .archive-shell .workspace-window-tray {
     position: fixed;
-    inset-inline-end: calc(48px * var(--desktop-size, 1));
-    inset-block-end: calc(48px * var(--desktop-size, 1));
+    inset-inline-end: var(--window-tray-inline);
+    inset-block-end: var(--window-tray-bottom);
     z-index: 9;
     display: flex;
     align-items: center;
     gap: calc(8px * var(--desktop-size, 1));
   }
-  .archive-shell[data-nav-wide] .workspace-window-tray > .reopen-control {
+  .archive-shell .workspace-window-tray > .reopen-control {
     position: static;
     inset: auto;
     min-block-size: calc(44px * var(--desktop-size, 1));
@@ -135,26 +143,74 @@
   }
   .desktop-terminal-restore svg { inline-size: calc(18px * var(--desktop-size, 1)); block-size: calc(18px * var(--desktop-size, 1)); }
   .desktop-terminal-restore:hover { border-color: var(--line-strong); color: var(--text-strong); }
+  .archive-shell[data-notices-visible] .system-notices-toggle {
+    display: grid;
+    place-items: center;
+    inline-size: var(--window-tray-control);
+    block-size: var(--window-tray-control);
+    padding: 0;
+    border: 1px solid var(--line);
+    background: rgba(8, 9, 8, 0.88);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .system-notices-toggle svg { inline-size: calc(18px * var(--desktop-size, 1)); block-size: calc(18px * var(--desktop-size, 1)); }
+  .system-notices-toggle:hover, .system-notices-toggle[aria-expanded="true"] { color: var(--text-strong); border-color: var(--line-strong); }
+  .system-notices-toggle:disabled { cursor: default; }
+  .system-notices-panel {
+    position: fixed;
+    inset-inline-end: var(--window-tray-inline);
+    inset-block-end: calc(var(--window-tray-bottom) + var(--window-tray-control) + var(--window-tray-popup-gap));
+    inline-size: min(calc(340px * var(--desktop-size, 1)), calc(100vw - 64px));
+    max-block-size: calc(100dvh - 160px * var(--desktop-size, 1));
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+    z-index: 32;
+    padding: calc(18px * var(--desktop-size, 1));
+    border: 1px solid var(--line-strong);
+    background: rgba(8, 9, 8, 0.97);
+    color: var(--text);
+    font-size: calc(16px * var(--desktop-size, 1));
+  }
+  .archive-shell[data-notices-open] > .system-notices-panel { display: block; animation: desktop-hint-arrive 260ms ease-out both; }
+  .system-notices-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: calc(13px * var(--desktop-size, 1)); color: var(--muted); }
+  .system-notices-panel .window-actions { position: static; }
+  .system-notices-panel dl { margin: calc(18px * var(--desktop-size, 1)) 0 0; }
+  .system-notices-panel dl > div { display: grid; grid-template-columns: calc(44px * var(--desktop-size, 1)) 1fr; gap: calc(12px * var(--desktop-size, 1)); padding-block: calc(9px * var(--desktop-size, 1)); align-items: baseline; }
+  .system-notices-panel dd { margin: 0; }
+  .system-notices-panel kbd { font: inherit; color: var(--text-strong); }
+  .desktop-terminal-hint-action { display: grid; gap: calc(8px * var(--desktop-size, 1)); padding: calc(10px * var(--desktop-size, 1)) calc(16px * var(--desktop-size, 1)); border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+  .desktop-terminal-hint-action:hover { background: rgba(217, 213, 193, 0.04); }
+  .desktop-terminal-hint-action:focus-visible { outline: 1px solid var(--text); outline-offset: -4px; }
+  .archive-shell:not([data-nav-wide]) .terminal-shortcut-line { display: none; }
+  .archive-shell > .workspace:focus { outline: none; }
   .archive-shell[data-nav-maximized] > .desktop-nav-terminal {
     inline-size: calc(100vw - 96px * var(--desktop-size, 1));
     block-size: calc(100dvh - 112px * var(--desktop-size, 1));
   }
   .archive-shell[data-nav-maximized] .desktop-terminal-bar [data-desktop-terminal-maximize]::before { transform: translate(2px, -2px); }
   .desktop-terminal-hint {
+    display: flex;
     position: fixed;
-    inset-inline-end: calc(32px * var(--desktop-size, 1));
-    inset-block-end: calc(92px * var(--desktop-size, 1));
+    inset-inline-end: var(--window-tray-inline);
+    inset-block-end: calc(var(--window-tray-bottom) + var(--window-tray-control) + var(--window-tray-popup-gap));
     max-inline-size: calc(100vw - 64px * var(--desktop-size, 1));
     z-index: 32;
     gap: calc(20px * var(--desktop-size, 1));
     align-items: center;
-    padding: calc(10px * var(--desktop-size, 1)) calc(16px * var(--desktop-size, 1));
     border: 1px solid var(--line-strong);
     background: rgba(8, 9, 8, 0.96);
     color: var(--text);
     font-size: calc(15px * var(--desktop-size, 1));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(6px);
+    transition: opacity 240ms ease-out, transform 240ms ease-out, visibility 240ms;
   }
-  .archive-shell[data-terminal-hint] > .desktop-terminal-hint { display: flex; animation: desktop-hint-arrive 260ms ease-out both; }
+  .archive-shell[data-terminal-hint] > .desktop-terminal-hint { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
   .desktop-terminal-hint kbd { padding: 0 3px; border-block-end: 1px solid var(--muted); font: inherit; color: var(--text-strong); }
   .desktop-terminal-prompt .desktop-terminal-cursor { margin-inline-start: 3px; color: var(--text-strong); }
   .archive-shell[data-nav-open] .desktop-terminal-cursor { animation: desktop-terminal-blink 1s steps(1, end) infinite; }
@@ -233,12 +289,14 @@
   50%, 100% { opacity: 0; }
 }
 @keyframes desktop-hint-arrive {
-  from { opacity: 0; transform: translateX(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateX(0); }
 }
 @media (prefers-reduced-motion: reduce) {
+  .desktop-terminal-hint { transition: none; }
   .archive-shell[data-nav-wide] > .desktop-nav-terminal,
   .archive-shell[data-nav-wide] > .desktop-nav-backdrop { transition: none; }
   .archive-shell[data-nav-open] .desktop-terminal-cursor { animation: none; }
-  .archive-shell[data-terminal-hint] > .desktop-terminal-hint { animation: none; }
+  .archive-shell[data-terminal-hint] > .desktop-terminal-hint,
+  .archive-shell[data-notices-open] > .system-notices-panel { animation: none; }
 }

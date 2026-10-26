@@ -41,7 +41,7 @@ import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, sho
 import { newInlineRecord, supportsInlineEditing } from "@/lib/inline-editing";
 import seasonal, { type SeasonalMode } from "@/public/seasonal.js";
 import desktopNavigation, { type DesktopNavigationMode } from "@/public/desktop-navigation.js";
-import { DesktopNavigationChrome, DesktopTerminalRestore, useDesktopNavigation } from "@/components/archive/desktop-navigation";
+import { DesktopNavigationChrome, DesktopTerminalRestore, SystemNoticesButton, useDesktopNavigation } from "@/components/archive/desktop-navigation";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -851,6 +851,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
               </motion.button>
             ) : null}
           </AnimatePresence>
+          <SystemNoticesButton />
         </div>
 
         <AnimatePresence>

@@ -68,17 +68,23 @@ function fixture(saved = new Map()) {
     for (const [id, timer] of [...timers]) if (timer.due <= now) { timers.delete(id); timer.fn(); }
   };
   function surface() {
-    const names = ["shell", "sidebar", "terminal", "workspace", "backdrop", "row", "close", "minimize", "maximize", "restore", "hint", "dismissHint", "search"];
+    const names = ["shell", "sidebar", "terminal", "workspace", "backdrop", "row", "close", "minimize", "maximize", "restore", "hint", "hintAction", "search", "notices", "noticeButton", "noticeClose"];
     const nodes = Object.fromEntries(names.map((name) => [name, new Node()]));
     for (const node of Object.values(nodes)) node.doc = doc;
-    const { shell, sidebar, terminal, workspace, backdrop, row, close, minimize, maximize, restore, hint, dismissHint, search } = nodes;
+    const { shell, sidebar, terminal, workspace, backdrop, row, close, minimize, maximize, restore, hint, hintAction, search } = nodes;
     backdrop.selectors = close.selectors = ["[data-desktop-nav-dismiss]"];
     row.selectors = ["[data-directory-section]"];
     minimize.selectors = ["[data-desktop-terminal-minimize]"];
     maximize.selectors = ["[data-desktop-terminal-maximize]"];
     restore.selectors = ["[data-desktop-terminal-restore]"];
-    dismissHint.selectors = ["[data-desktop-terminal-hint-dismiss]"];
+    hintAction.selectors = ["[data-system-notices-open]"];
+    hint.children.set("button", hintAction);
     shell.children = new Map([[":scope > .sidebar", sidebar], [".desktop-nav-terminal", terminal], [":scope > .workspace", workspace], [".desktop-terminal-hint", hint], [".desktop-terminal-restore", restore]]);
+    shell.children.set(".system-notices-panel", nodes.notices);
+    shell.children.set("[data-system-notices-toggle]", nodes.noticeButton);
+    nodes.noticeButton.selectors = ["[data-system-notices-toggle]", ".system-notices-panel, [data-system-notices-toggle]"];
+    nodes.noticeClose.selectors = ["[data-system-notices-close]", ".system-notices-panel, [data-system-notices-toggle]"];
+    nodes.notices.selectors = [".system-notices-panel, [data-system-notices-toggle]"];
     terminal.children = new Map([['[aria-current="page"]', row], ["[data-directory-section]", row], ["[data-desktop-terminal-maximize]", maximize], ["close", close], ["minimize", minimize]]);
     terminal.buttons = [minimize, maximize, close, row];
     workspace.children.set('[aria-label="Search records"]', search);
@@ -101,7 +107,7 @@ function fixture(saved = new Map()) {
   f.key(); assert.ok(!shell.hasAttribute("data-nav-open"));
   f.advance(10000); assert.equal(f.timers.size, 0, "No notification timer runs during boot or consent");
   f.attach({ ready: true }); assert.ok(!shell.hasAttribute("data-terminal-hint"));
-  f.advance(2999); assert.ok(!shell.hasAttribute("data-terminal-hint"));
+  f.advance(1199); assert.ok(!shell.hasAttribute("data-terminal-hint"));
   f.attach(); assert.equal(f.timers.size, 1, "Renders do not duplicate or restart the delay");
   f.advance(1); assert.ok(shell.hasAttribute("data-terminal-hint"));
   f.key(); assert.ok(shell.hasAttribute("data-nav-open")); assert.equal(f.doc.activeElement, row);
@@ -120,17 +126,17 @@ function fixture(saved = new Map()) {
   assert.equal(workspace.inert, false); assert.equal(terminal.inert, true);
   assert.equal(terminal.attrs.get("aria-hidden"), "true"); assert.ok(!terminal.hasAttribute("aria-modal"));
   assert.equal(restore.inert, false, "Only the minimized icon remains interactive");
-  assert.equal(f.doc.activeElement, search);
+  assert.equal(f.doc.activeElement, workspace);
   f.click(restore); assert.ok(shell.hasAttribute("data-nav-open"));
   f.click(close); assert.ok(!shell.hasAttribute("data-nav-open")); assert.ok(!shell.hasAttribute("data-nav-minimized"));
-  assert.equal(terminal.inert, true); assert.equal(restore.inert, true); assert.equal(f.doc.activeElement, search);
+  assert.equal(terminal.inert, true); assert.equal(restore.inert, true); assert.equal(f.doc.activeElement, workspace);
   f.key("T"); assert.ok(shell.hasAttribute("data-nav-open"));
   f.key("Escape"); assert.ok(!shell.hasAttribute("data-nav-open"));
-  f.key(); f.click(backdrop); assert.equal(f.doc.activeElement, search);
+  f.key(); f.click(backdrop); assert.equal(f.doc.activeElement, workspace);
   f.key(); f.click(row); assert.ok(shell.hasAttribute("data-nav-minimized"), "Selection leaves a restorable terminal icon");
   const replacement = f.surface(); f.attach({}, replacement.shell);
   assert.ok(replacement.shell.hasAttribute("data-nav-wide")); assert.ok(replacement.shell.hasAttribute("data-nav-minimized"));
-  assert.equal(f.doc.activeElement, replacement.search, "Static root replacement restores keyboard focus");
+  assert.equal(f.doc.activeElement, replacement.workspace, "Static root replacement restores keyboard focus");
   assert.equal(workspace.inert, false);
   assert.equal([...shell.listeners.values()].reduce((n, set) => n + set.size, 0), 0);
   f.attach({ mode: "fixed" }, replacement.shell);
@@ -170,8 +176,11 @@ for (const action of ["hidden", "busy", "dialog", "palette"]) {
   assert.equal(f.nodes.workspace.inert, true); f.controller.destroy(); assert.equal(f.nodes.workspace.inert, true);
 }
 {
-  const f = fixture(); f.attach({ remember: true }); f.advance(3000); f.click(f.nodes.dismissHint);
-  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.size, 0, "Hint dismissal needs no persistent storage");
+  const f = fixture(); f.attach({ remember: true }); f.advance(1200); f.click(f.nodes.hintAction);
+  assert.ok(f.nodes.shell.hasAttribute("data-notices-open"), "Clicking the landing notification opens System Notices");
+  assert.equal(f.doc.activeElement, f.nodes.notices);
+  f.click(f.nodes.noticeClose);
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.get("gestalt.shortcut-notices"), "seen", "Acknowledgement persists only with consent");
   f.attach({}, f.surface().shell); f.advance(5000);
   assert.equal(f.timers.size, 0, "Root replacement cannot replay a dismissed notification during this visit");
   const returning = fixture(new Map([["gestalt.terminal-hint", "seen"]])); returning.attach({ remember: true });
@@ -179,8 +188,8 @@ for (const action of ["hidden", "busy", "dialog", "palette"]) {
   assert.ok(returning.nodes.shell.hasAttribute("data-terminal-hint"), "A new visit ignores the obsolete permanent dismissal flag");
   f.controller.destroy(); returning.controller.destroy();
 }
-for (const reason of ["busy", "palette", "hidden", "mobile", "fixed"]) {
-  const f = fixture(); f.attach(); f.advance(2000);
+for (const reason of ["busy", "palette", "hidden", "mobile"]) {
+  const f = fixture(); f.attach(); f.advance(800);
   if (reason === "busy") f.attach({ busy: true });
   if (reason === "palette") f.attach({ palette: true });
   if (reason === "hidden") { f.doc.hidden = true; f.doc.emit("visibilitychange"); }
@@ -190,7 +199,7 @@ for (const reason of ["busy", "palette", "hidden", "mobile", "fixed"]) {
   assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"), `${reason} cancels the pending notification`);
   f.doc.hidden = false; f.media.matches = true;
   f.attach({ busy: false, palette: false, mode: "terminal" });
-  f.advance(2999); assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"));
+  f.advance(1199); assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"));
   f.advance(1); assert.ok(f.nodes.shell.hasAttribute("data-terminal-hint"));
   f.controller.destroy(); assert.equal(f.timers.size, 0);
 }
@@ -208,16 +217,95 @@ for (const reason of ["busy", "palette", "hidden", "mobile", "fixed"]) {
 {
   const f = fixture(); f.attach(); const body = new Node(); body.tabIndex = -1; body.doc = f.doc;
   f.doc.activeElement = body; f.key(); f.click(f.nodes.close);
-  assert.equal(f.doc.activeElement, f.nodes.search, "Restore to a useful control when the previous focus was the unfocusable body");
+  assert.equal(f.doc.activeElement, f.nodes.workspace, "Body focus returns to the workspace, without falsely highlighting the palette");
   f.controller.destroy();
 }
 {
   const f = fixture(); f.attach(); f.key(); f.click(f.nodes.minimize);
   f.doc.activeElement = f.nodes.restore; f.click(f.nodes.restore); f.click(f.nodes.close);
-  assert.equal(f.doc.activeElement, f.nodes.search, "Do not restore focus to a now-hidden minimized icon");
+  assert.equal(f.doc.activeElement, f.nodes.workspace, "Do not restore focus to a now-hidden minimized icon");
   f.controller.destroy();
 }
 const index = read("index.html");
+{
+  const f = fixture(); f.attach(); f.advance(1200);
+  assert.ok(f.nodes.shell.hasAttribute("data-terminal-hint"));
+  assert.equal(f.timers.size, 1, "A single dismissal deadline replaces the arrival deadline");
+  f.advance(4999); assert.ok(f.nodes.shell.hasAttribute("data-terminal-hint"));
+  f.attach(); f.advance(1);
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"), "An untouched notification leaves after five seconds, not on every render");
+  assert.equal(f.timers.size, 0);
+  f.attach(); f.advance(20000);
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"), "Expired hints do not replay within the visit");
+  f.click(f.nodes.noticeButton);
+  assert.ok(f.nodes.shell.hasAttribute("data-notices-open"), "The permanent shortcut reference remains available");
+  f.controller.destroy();
+}
+for (const [enter, leave] of [["mouseenter", "mouseleave"], ["focusin", "focusout"]]) {
+  const f = fixture(); f.attach(); f.advance(1200);
+  f.nodes.hint.emit(enter); f.advance(10000);
+  assert.ok(f.nodes.shell.hasAttribute("data-terminal-hint"), "Reading or focusing the notification pauses auto-dismissal");
+  assert.equal(f.timers.size, 0);
+  f.nodes.hint.emit(leave); f.advance(4999);
+  assert.ok(f.nodes.shell.hasAttribute("data-terminal-hint"));
+  f.advance(1); assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint"));
+  f.controller.destroy();
+  assert.equal([...f.nodes.hint.listeners.values()].reduce((n, set) => n + set.size, 0), 0, "Hint interaction handlers are cleaned up");
+}
+{
+  const f = fixture(); f.attach({ remember: true }); f.advance(3000);
+  const returning = fixture(f.saved); returning.attach({ remember: true }); returning.advance(5000);
+  assert.ok(!returning.nodes.shell.hasAttribute("data-terminal-hint"), "Introduced shortcuts are not repeated on later visits with permission");
+  assert.equal(returning.timers.size, 0);
+  const noConsent = fixture(f.saved); noConsent.attach(); noConsent.advance(3000);
+  assert.ok(noConsent.nodes.shell.hasAttribute("data-terminal-hint"), "Stored history is ignored without memory permission");
+  f.controller.destroy(); returning.controller.destroy(); noConsent.controller.destroy();
+}
+{
+  const f = fixture(); f.attach({ mode: "fixed" }); f.advance(3000);
+  assert.ok(f.nodes.shell.hasAttribute("data-terminal-hint"), "Legacy visitors can discover the palette too");
+  f.click(f.nodes.noticeButton);
+  assert.ok(f.nodes.shell.hasAttribute("data-notices-open"));
+  assert.equal(f.doc.activeElement, f.nodes.notices);
+  assert.equal(f.nodes.noticeButton.attrs.get("aria-expanded"), "true");
+  assert.equal(f.nodes.notices.inert, false);
+  assert.equal(f.nodes.workspace.inert, false, "The small reference panel is not a full-screen modal");
+  let consumed = false;
+  f.doc.emit("click", { target: f.nodes.row, preventDefault() { consumed = true; } });
+  assert.ok(consumed, "Outside dismissal consumes the underlying click");
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-open"));
+  assert.equal(f.doc.activeElement, f.nodes.noticeButton);
+  f.click(f.nodes.noticeButton); f.key("Escape");
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-open"));
+  f.click(f.nodes.noticeButton); f.attach({ busy: true });
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-open"));
+  assert.equal(f.nodes.noticeButton.inert, true);
+  f.attach({ busy: false }); f.click(f.nodes.noticeButton);
+  f.media.matches = false; f.media.emit("change");
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-open"));
+  f.controller.destroy();
+}
+{
+  const f = fixture(); f.attach(); f.click(f.nodes.noticeButton); f.key("t");
+  assert.ok(f.nodes.shell.hasAttribute("data-nav-open"));
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-open"));
+  f.controller.destroy();
+}
+{
+  const f = fixture(); f.attach({ ready: false });
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-visible"), "The tray still waits until startup is complete");
+  f.attach({ ready: true, palette: true });
+  assert.ok(f.nodes.shell.hasAttribute("data-notices-visible"), "Palette opening must not remove the icon or shift minimized controls");
+  assert.equal(f.nodes.noticeButton.disabled, true, "Visibility does not bypass overlay interaction guards");
+  f.attach({ palette: false }); f.key("t");
+  assert.ok(f.nodes.shell.hasAttribute("data-notices-visible"), "Terminal opening keeps the icon visible behind its modal backdrop");
+  assert.equal(f.nodes.noticeButton.disabled, true);
+  f.key("Escape");
+  assert.equal(f.nodes.noticeButton.disabled, false);
+  f.media.matches = false; f.media.emit("change");
+  assert.ok(!f.nodes.shell.hasAttribute("data-notices-visible"), "Desktop tray remains absent on mobile");
+  f.controller.destroy();
+}
 assert.ok(index.indexOf("public/desktop-navigation.js") < index.indexOf("static-app.js"));
 for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) {
   assert.ok(read(file).includes('"public/desktop-navigation.js"')); assert.ok(read(file).includes('"app/desktop-navigation.css"'));
@@ -227,8 +315,18 @@ assert.ok(read("components/archive/desktop-navigation.tsx").includes("controller
 const source = read("public/desktop-navigation.js"), css = read("app/desktop-navigation.css");
 assert.ok(!/fetch\(|setInterval|requestAnimationFrame/.test(source));
 assert.ok(!/pointerenter|pointerleave/.test(source), "A real window needs no hover machinery");
-assert.equal((source.match(/host\.setTimeout\(/g) || []).length, 1, "Only the one-shot notification uses a timer");
+assert.equal((source.match(/host\.setTimeout\(/g) || []).length, 1, "One cancellable timer handles introduction and dismissal without polling");
+for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
+  assert.ok(read(file).includes("data-system-notices-open"), "Both readers expose the clickable notification");
+  assert.ok(!read(file).includes("data-desktop-terminal-hint-dismiss"), "No redundant close button remains on the landing notification");
+}
 assert.match(css, /desktop-terminal-hint\s*\{[^}]+inset-inline-end:/, "Hint sits at the right edge, not the middle");
+for (const selector of ["workspace-window-tray", "system-notices-panel", "desktop-terminal-hint"]) {
+  assert.match(css, new RegExp(`${selector}\\s*\\{[^}]+inset-inline-end: var\\(--window-tray-inline\\)`), "Tray and both notification surfaces share one right edge");
+}
+for (const selector of ["system-notices-panel", "desktop-terminal-hint"]) {
+  assert.match(css, new RegExp(`${selector}\\s*\\{[^}]+inset-block-end: calc\\(var\\(--window-tray-bottom\\) \\+ var\\(--window-tray-control\\) \\+ var\\(--window-tray-popup-gap\\)\\)`), "Both notifications clear the button using the same scaled gap");
+}
 assert.ok(!/reclaim|shifting|5500/.test(source), "No obsolete handoff code");
 assert.ok(!/backdrop-filter|\bfilter:|transition:.*(?:width|grid)/.test(css));
 assert.match(css, /prefers-reduced-motion/);

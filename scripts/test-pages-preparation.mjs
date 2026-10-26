@@ -12,7 +12,7 @@ const previous = {
   schemaVersion: 1, updatedAt: now.toISOString(),
   game: { appId: 2, title: "Game", playtimeMinutes: 120, lastPlayedAt: "2026-10-21T09:00:00.000Z", achievements: { unlocked: 1, total: 2, percent: 50 } }
 };
-const files = ["index.html", "static-app.js", "sw.js", "app/globals.css", "public/favicon.ico", "public/note-inline.js", "public/image-framing.js", "public/seasonal.js", "public/x-terminal.js", "public/x-embed.html", "public/x-embed.js", "public/steam-display.mjs", "public/roadmap.mjs", "public/data/records.js", "public/images/banner.png", "public/media/records/note/image.webp"];
+const files = ["index.html", "static-app.js", "sw.js", "app/globals.css", "public/favicon.ico", "public/note-inline.js", "public/image-framing.js", "public/seasonal.js", "public/steam-display.mjs", "public/roadmap.mjs", "public/data/records.js", "public/images/banner.png", "public/media/records/note/image.webp"];
 let sequence = 0;
 files.push(...["october", "october-glow", "halloween-web", "halloween-hanging"].map((asset) => `public/images/seasonal/${asset}.svg`));
 files.push("app/desktop-navigation.css", "public/desktop-navigation.js");

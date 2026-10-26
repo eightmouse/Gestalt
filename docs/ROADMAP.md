@@ -2,6 +2,27 @@
 
 ## Current Priorities
 
+Backlog addition (26 October, owner request): suggested record titles for Logs and similar single-note records. If no manual title has been supplied, derive a proposed title from that note's heading/content rather than requiring a second title entry. Preserve explicit titles and do not rename an existing record on every edit. Games and Projects keep their parent titles when session/update notes are added. Agree on the exact eligible record types and acceptance behavior before implementing; do not turn this into automatic rewriting or an external AI service.
+
+Release preparation (26 October, `v1.60.2`): owner accepted System Notices and authorized review/commit/push of the X-removal/shortcut-notification batch together with the new A Packed Signal log. The new note was reviewed for privacy; it contains ordinary game commentary, no credentials, private identifiers or medical details requiring redaction. Preserve the owner's wording and authored Draft status. Export source content, run regressions/privacy checks, stage intentional files only, and verify Git and Pages separately. This supersedes the earlier no-push notes for this batch only.
+
+Local `v1.60.2`: landing shortcut notification is now one accessible click target opening System Notices, without its old close control. It appears 1.2 seconds after boot/consent and other windows settle, then fades out after five unattended seconds. Hover/focus pauses dismissal; leaving grants another five seconds. One cancellable timeout handles arrival/expiry, with no polling. The tray remains the permanent reference, and consent-aware first-visit rules are unchanged.
+
+Local patch `v1.60.1`: keep the System Notices icon visible when the palette or Terminal opens, while retaining disabled/inert interaction guards. Landing hints and the notices panel now use the tray's shared right inset and an 18px scaled clearance above its button; a vertical arrival keeps their right edges aligned throughout the transition. No layout/content or publishing-workflow changes.
+
+Local `v1.60.0` (26 October): System Notices is implemented in both readers. Desktop visitors get a delayed first-use shortcut card (T in Terminal mode, ~ in both modes), with consent-gated acknowledgement and a permanent quiet reference tray beside minimized windows. Escape and outside click dismiss the tray without activating content behind it. Terminal fallback focus returns to the workspace instead of highlighting the palette. No polling, external requests, editor changes or mobile UI additions. X removal from `v1.59.3` remains part of the uncommitted batch. Owner visual acceptance and explicit publication are next; local Roadmap editing is the next smaller feature after that.
+
+Owner direction (26 October 2026, supersedes X references below): cancel the X feed entirely, not just pause it. Remove the prototype, embed assets, styling, runtime hooks and packaging references; retain Memory State. Historical prototype notes remain only as history, not future work. Local patch `v1.59.3` performs this cleanup without changing content or layout.
+
+Next sequence, easy work first:
+1. System Notices: fix the distracting Escape focus presentation without losing accessible focus. Introduce T and ~ after first-visit startup, then retain the hints in a small footer notification tray beside the minimized windows. Keep owner publishing notifications separate; respect storage consent. This is planned, not implemented.
+2. Small, separately reviewed usability fixes, then local Roadmap editing using the existing save/review workflow. Public Pages stays read-only.
+3. Remaining seasonal decorations, starting with a bounded design review for winter/January.
+4. Larger work later: Setup/Archive inline management, agreed web-search design, and gradual month/year archive folders.
+5. Resolution/zoom composition and the deeper Firefox/Chromium performance, accessibility and security pass. Continue targeted regression checks throughout.
+
+Published baseline: `v1.59.2`, commit `74a5f928`, Pages run `40176374034` succeeded. The earlier local-only release notes below are historical.
+
 Publication approved (25 October, `v1.59.2`): release the background/terminal/palette fixes and asset/keyboard regression checks. Web search remains an unbuilt idea in the public command-palette Roadmap; no S binding or search-provider requests are added. Verify commit, push and deployment separately.
 
 Backlog addition (owner direction, 25 October): homepage web search, separate from archive/record search, with selectable Google/Yandex/DuckDuckGo and a possible S shortcut alongside T for Terminal. Design/placement are undecided; do not implement the feature yet. Never intercept typing, note editing, contenteditable, form controls, IME composition, held-key repeats or browser modifier shortcuts. Submit a query only to the chosen provider on an explicit search action; no keystroke queries, automatic external suggestions or automatic navigation from archive search. Provider preference should respect local-memory consent. Agree on same-tab/new-tab behavior and mobile access before implementation.

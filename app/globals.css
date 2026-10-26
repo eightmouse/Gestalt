@@ -3915,63 +3915,6 @@ button:focus-visible {
   object-position: center;
 }
 
-.x-terminal {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  block-size: 100%;
-  min-block-size: 0;
-  min-inline-size: 0;
-  justify-content: center;
-  align-items: center;
-}
-
-.x-terminal-ui { display: contents; }
-.x-terminal .sr-only { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.x-terminal [hidden] { display: none !important; }
-/* A retained panel can outlive its controller during a local hot update. */
-.x-terminal [data-x-action="close"] { display: none !important; }
-.x-terminal-notice { order: 1; margin: 0; max-inline-size: 32ch; text-align: center; font-size: 12px; line-height: 1.55; color: var(--text); opacity: 0.85; }
-.x-terminal-notice a, .x-terminal-profile { color: var(--text); text-underline-offset: 3px; }
-.x-terminal-access, .x-terminal-error button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line);
-  background: rgba(217, 213, 193, 0.035);
-  color: var(--text);
-  padding: 8px;
-  font: inherit;
-  font-size: 11px;
-  cursor: pointer;
-}
-.x-terminal-access:hover, .x-terminal-error button:hover { background: rgba(217, 213, 193, 0.1); }
-.x-terminal-memory, .x-terminal-stage, .x-terminal-error { order: 2; flex: 1 1 0; min-block-size: 0; min-inline-size: 0; inline-size: 100%; }
-.x-terminal-memory .memory-loop { block-size: 100%; min-block-size: 0; }
-.x-terminal:not([data-x-state="idle"]) .x-terminal-memory { display: none; }
-.x-terminal:not([data-x-state="idle"]) .memory-loop,
-.x-terminal:not([data-x-state="idle"]) .memory-loop *,
-.x-terminal:not([data-x-state="idle"]) .memory-loop::before,
-.x-terminal:not([data-x-state="idle"]) .memory-loop::after { animation-play-state: paused !important; }
-.x-terminal-stage { position: relative; overflow: hidden; border: 1px solid var(--line); background: #080908; }
-.x-terminal-viewport, .x-terminal-accessing { position: absolute; inset: 0; }
-.x-terminal-viewport iframe { display: block; inline-size: 100%; block-size: 100%; border: 0; opacity: 0; }
-.x-terminal[data-x-state="ready"] .x-terminal-viewport iframe { opacity: 1; animation: x-terminal-reveal 320ms linear both; }
-.x-terminal-accessing { display: grid; align-content: center; gap: 12px; padding: 20px; pointer-events: none; color: var(--text); font-size: 11px; }
-.x-terminal-accessing i { display: block; position: relative; block-size: 1px; background: var(--line); overflow: hidden; }
-.x-terminal-accessing i::after { content: ""; position: absolute; inset: 0; background: var(--text); transform: translateX(-100%); animation: x-terminal-access 1.4s linear infinite; }
-.x-terminal[data-x-state="ready"] .x-terminal-accessing { display: none; }
-.x-terminal-stage::after { content: ""; position: absolute; inset: 0; opacity: 0.035; pointer-events: none; background: repeating-linear-gradient(180deg, transparent 0 3px, #eee 3px 4px); }
-.x-terminal-error { display: grid; align-content: center; justify-items: center; text-align: center; font-size: 12px; gap: 12px; }
-.x-terminal-error p { margin: 0; }
-.x-terminal-profile { font-size: 12px; }
-@keyframes x-terminal-reveal { from { opacity: 0; } to { opacity: 1; } }
-@keyframes x-terminal-access { to { transform: translateX(100%); } }
-@media (prefers-reduced-motion: reduce) {
-  .x-terminal-accessing i::after, .x-terminal[data-x-state="ready"] .x-terminal-viewport iframe { animation: none; }
-}
-
 .current-game strong {
   display: block;
   margin-block-end: 9px;

@@ -41,9 +41,7 @@ jobs:
           node --check public/data/records.js
           node --check public/note-inline.js
           node --check public/image-framing.js
-          node --check public/x-terminal.js
-          node --check public/x-embed.js
-          node scripts/test-x-terminal.mjs
+          node scripts/test-no-x-integration.mjs
           node --check public/steam-display.mjs
           node --check public/roadmap.mjs
           node --check public/seasonal.js
