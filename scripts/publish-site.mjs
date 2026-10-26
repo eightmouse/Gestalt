@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { updateStaticCacheTokens } from "./static-cache.mjs";
+import { publicRuntimePaths } from "../lib/publish-paths.mjs";
 
 const root = process.cwd();
 const publishPaths = [
@@ -220,7 +221,7 @@ function ensureNoUnexpectedStagedFiles() {
 }
 
 function ensurePublicRuntimeCommitted() {
-  const paths = ["static-app.js", "app/globals.css", "app/desktop-navigation.css", "public/desktop-navigation.js", "public/os-behaviour.js", "public/note-inline.js", "public/image-framing.js", "public/seasonal.js", "public/images/seasonal", "public/images/eightmouse-avatar.png", "public/steam-display.mjs", "public/roadmap.mjs"];
+  const paths = publicRuntimePaths;
   const changed = capture("git", ["diff", "--name-only", "HEAD", "--", ...paths]);
   const untracked = capture("git", ["ls-files", "--others", "--exclude-standard", "--", ...paths]);
   const pending = [...new Set(`${changed}\n${untracked}`.split(/\r?\n/).filter(Boolean))];

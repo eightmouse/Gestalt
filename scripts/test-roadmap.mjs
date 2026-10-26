@@ -154,7 +154,7 @@ assert.match(source, /result\.action === "roadmap"\s*\? "data-open-roadmap"/);
 assert.match(source, /state\.panelOpen \|\| state\.timelineOpen \|\| state\.roadmapOpen/);
 assert.match(read("components/archive-os.tsx"), /panelOpen \|\| timelineOpen \|\| roadmapOpen/);
 assert.ok(!read("index.html").includes('src="public/roadmap.mjs'), "Static roadmap data is not a landing-page script");
-assert.ok(read("scripts/publish-site.mjs").includes('"public/roadmap.mjs"'));
+assert.ok(read("lib/publish-paths.mjs").includes('"public/roadmap.mjs"'));
 assert.ok(read("scripts/prepare-pages.mjs").includes('"public/roadmap.mjs"'));
 assert.ok(read("components/archive/roadmap-window.tsx").includes('[data-search-toggle], .archive-menu-toggle'));
 assert.match(read("app/globals.css"), /html:has\(body > \.roadmap-dialog\[open\]\),\s*body:has\(> \.roadmap-dialog\[open\]\)\s*\{ overflow: hidden; \}/);

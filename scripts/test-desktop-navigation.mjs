@@ -308,7 +308,7 @@ for (const [enter, leave] of [["mouseenter", "mouseleave"], ["focusin", "focusou
 }
 assert.ok(index.indexOf("public/desktop-navigation.js") < index.indexOf("static-app.js"));
 for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) {
-  assert.ok(read(file).includes('"public/desktop-navigation.js"')); assert.ok(read(file).includes('"app/desktop-navigation.css"'));
+  assert.ok((read(file) + read("lib/publish-paths.mjs")).includes('"public/desktop-navigation.js"')); assert.ok((read(file) + read("lib/publish-paths.mjs")).includes('"app/desktop-navigation.css"'));
 }
 assert.ok(read("app/layout.tsx").includes('"./desktop-navigation.css"'));
 assert.ok(read("components/archive/desktop-navigation.tsx").includes("controller.current?.destroy()"));

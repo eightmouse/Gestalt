@@ -113,7 +113,7 @@ assert.ok(!/fetch\(|setTimeout|setInterval|requestAnimationFrame|eval\(/.test(he
 const index = read("index.html");
 assert.ok(index.indexOf("public/os-behaviour.js") < index.indexOf("static-app.js"));
 assert.ok(index.includes("public/os-behaviour.js"));
-for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) assert.ok(read(file).includes('"public/os-behaviour.js"'));
+for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) assert.ok((read(file) + read("lib/publish-paths.mjs")).includes('"public/os-behaviour.js"'));
 assert.ok(read("components/archive/os-behaviour-window.tsx").includes("behaviour.createController()"));
 assert.ok(read("static-app.js").includes("api.createController()"));
 const renderPass = read("static-app.js").slice(read("static-app.js").indexOf("  root.innerHTML = markup;\n"));

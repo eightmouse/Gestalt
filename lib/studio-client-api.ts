@@ -12,6 +12,7 @@ export type StudioPendingRecord = { id: string; title: string; section?: RecordS
 export type StudioPendingChanges = {
   records: StudioPendingRecord[]; changedFiles: number; mediaFiles: number;
   staticDataChanged: boolean; staticExportRequired: boolean; unpushedCommits: number;
+  siteCodeFiles?: string[];
 };
 export type StudioResponse = Partial<StudioPendingChanges> & {
   error?: string; id?: string; message?: string; output?: string; path?: string;

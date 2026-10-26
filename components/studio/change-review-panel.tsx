@@ -22,6 +22,7 @@ export function PublishNotificationPanel({ changes, error, notification, saving,
     </div>
     {checking ? <p className="studio-pending-guidance" role="status">Checking saved changes...</p> : null}
     {error ? <p className="studio-change-review-error" role="alert">{error}</p> : null}
+    {changes?.siteCodeFiles?.length ? <div className="studio-pending-guidance" role="status"><strong>Site update pending</strong><p>Saved notes are safe. These site files need a reviewed code commit before this batch can be published.</p><details><summary>View site files ({changes.siteCodeFiles.length})</summary><ul>{changes.siteCodeFiles.map((file) => <li key={file}>{file}</li>)}</ul></details></div> : null}
     <ol className="studio-pending-records">
       {changes?.records.map((record) => <li key={record.id} data-change={record.change}>
         <span className="studio-pending-kind">{record.change}</span><div><strong>{record.title}</strong><small>{record.section ?? "archive"} / {record.id}</small></div>
@@ -34,7 +35,7 @@ export function PublishNotificationPanel({ changes, error, notification, saving,
     <p className="studio-pending-guidance">Unsaved drafts are not included. Save each record first. A successful push still needs a Pages deployment.</p>
     {refreshRequired ? <button className="studio-publish-all" type="button" disabled={saving} onClick={onRefresh}>Refresh archive</button> : null}
     {error ? <button className="studio-publish-all" type="button" disabled={saving || checking} onClick={onRetry}>Retry change review</button> : null}
-    <button className="studio-publish-all" type="button" disabled={saving || checking || Boolean(error) || refreshRequired || !(changes?.changedFiles || changes?.unpushedCommits)} onClick={onPublish}>{saving ? "Working..." : "Publish all pending changes"}</button>
+    <button className="studio-publish-all" type="button" disabled={saving || checking || Boolean(error) || Boolean(changes?.siteCodeFiles?.length) || refreshRequired || !(changes?.changedFiles || changes?.unpushedCommits)} onClick={onPublish}>{saving ? "Working..." : changes?.siteCodeFiles?.length ? "Waiting for site update" : "Publish all pending changes"}</button>
     {notification ? <article className={`studio-notification-card is-${notification.phase}`} role="status">
       <div className="studio-last-publish"><strong>{notification.title}</strong><span>{notification.detail}</span></div>
       {notification.summary ? <PublishSummaryGrid summary={notification.summary} /> : null}

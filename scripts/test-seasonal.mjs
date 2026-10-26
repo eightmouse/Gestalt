@@ -118,7 +118,7 @@ assert.deepEqual(seasonal.seasonFor(new Date(2026, 9, 23)).decorations.map((item
 assert.ok(!renderToStaticMarkup(createElement(reactContext.exports.SeasonalAccent, { now, mode: "off" })).includes("<img"));
 const index = read("index.html");
 assert.ok(index.indexOf("public/seasonal.js") < index.indexOf("static-app.js"));
-for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) assert.ok(read(file).includes('"public/seasonal.js"'));
+for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) assert.ok((read(file) + read("lib/publish-paths.mjs")).includes('"public/seasonal.js"'));
 for (const file of ["public/seasonal.js", "components/archive/seasonal-accent.tsx"]) assert.ok(!/fetch\(|setInterval|setTimeout|requestAnimationFrame/.test(read(file)), "No network service or extra animation loop");
 const css = read("app/globals.css");
 const seasonalStart = css.indexOf(".seasonal-accent {");

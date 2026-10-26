@@ -35,12 +35,13 @@ try {
   for (const [name, sourceFile] of Object.entries(moduleFiles)) {
     const source = await readFile(path.join(root, sourceFile), "utf8");
     const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-      .replace(/from "@\/lib\/([^"/]+)"/g, (_, dependency) => `from "${pathToFileURL(path.join(modules, `${dependency}.mjs`)).href}"`)
+      .replace(/from "@\/lib\/([^"/]+)"/g, (_, dependency) => `from "${pathToFileURL(path.join(modules, dependency.endsWith(".mjs") ? dependency : `${dependency}.mjs`)).href}"`)
       .replace(/from "@\/public\/steam-display\.mjs"/g, `from "${pathToFileURL(path.join(root, "public/steam-display.mjs")).href}"`)
       .replace(/from "@\/public\/image-framing\.js"/g, `from "${pathToFileURL(path.join(root, "public/image-framing.js")).href}"`)
       .replace(/from "next\/server"/g, `from "${nextServer}"`);
     await writeFile(path.join(modules, `${name}.mjs`), compiled);
   }
+  await copyFile(path.join(root, "lib/publish-paths.mjs"), path.join(modules, "publish-paths.mjs"));
   const exporter = path.join(fixture, "scripts/export-static-records.mjs");
   await copyFile(path.join(root, "public/image-framing.js"), path.join(fixture, "public/image-framing.js"));
   const realExporter = await readFile(path.join(root, "scripts/export-static-records.mjs"), "utf8");
@@ -245,6 +246,8 @@ try {
   console.log("Process timeout: publisher-style child tree was stopped.");
 
   for (const name of ["publish-site.mjs", "static-cache.mjs"]) await copyFile(path.join(root, "scripts", name), path.join(fixture, "scripts", name));
+  await mkdir(path.join(fixture, "lib"));
+  await copyFile(path.join(root, "lib/publish-paths.mjs"), path.join(fixture, "lib/publish-paths.mjs"));
   for (const name of ["validate-content.mjs", "validate-static-shell.mjs"]) await writeFile(path.join(fixture, "scripts", name), "process.exit(0);\n");
   await mkdir(path.join(fixture, "public/media/records"), { recursive: true });
   await writeFile(path.join(fixture, "public/media/records/fixture.txt"), "fixture\n");
@@ -259,11 +262,14 @@ try {
   await git("push", "origin", "main");
   const head = await git("rev-parse", "HEAD");
   await writeFile(path.join(fixture, "public/note-inline.js"), "// new, uncommitted reader helper\n");
+  const blockedReview = await (await changes.POST(request())).json();
+  assert.ok(blockedReview.siteCodeFiles.includes("public/note-inline.js"), "The bell identifies code pending before the publisher is started");
   const unsafeContentPublish = await runStudioProcess(process.execPath, [fakePublisher, "--skip-steam-sync", "--skip-typecheck"]);
   assert.notEqual(unsafeContentPublish.code, 0);
   assert.ok(unsafeContentPublish.stderr.includes("public site code has uncommitted changes"));
   assert.equal(await git("rev-parse", "HEAD"), head, "Content publishing must not commit HTML ahead of its required runtime");
   await unlink(path.join(fixture, "public/note-inline.js"));
+  assert.deepEqual((await (await changes.POST(request())).json()).siteCodeFiles, [], "A clean code baseline unblocks normal note publishing");
   await unlink(path.join(fixture, "public/favicon.ico"));
   await writeFile(path.join(fixture, "scratch.txt"), "Unrelated local file, not archive content.\n");
   await writeFile(recordPath, before.replace("Fixture content.", "Edited fixture content."));

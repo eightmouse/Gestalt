@@ -3,6 +3,7 @@ import { getRecords } from "@/lib/content";
 import { isLocalStudioRequest } from "@/lib/studio";
 import { staticExportNeedsRefresh } from "@/lib/static-export";
 import { runStudioProcess } from "@/lib/studio-process";
+import { publicRuntimePaths } from "@/lib/publish-paths.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,9 @@ export async function POST(request: NextRequest) {
   if (status.error || status.code !== 0) {
     return NextResponse.json({ error: "Could not read the local archive change list." }, { status: 500 });
   }
+  const codeStatus = await runStudioProcess("git", ["status", "--porcelain=v1", "--untracked-files=all", "--", ...publicRuntimePaths]);
+  if (codeStatus.error || codeStatus.code !== 0) return NextResponse.json({ error: "Could not check pending site updates." }, { status: 500 });
+  const siteCodeFiles = codeStatus.stdout.split(/\r?\n/).filter(Boolean).map((entry) => entry.slice(3).replaceAll("\\", "/"));
 
   const branch = await runStudioProcess("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
   const ahead = branch.code === 0 && !branch.error
@@ -59,6 +63,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     records: changedRecords,
+    siteCodeFiles,
     changedFiles: changedPaths.length,
     mediaFiles: changedPaths.filter((path) => path.startsWith("public/media/records/")).length,
     staticDataChanged: changedPaths.includes("public/data/records.js"),

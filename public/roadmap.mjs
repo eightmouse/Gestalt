@@ -2,7 +2,7 @@
 export const publicRoadmap = {
   title: "On the desk",
   intro: "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  updated: "26 / 10 / 2026",
+  updated: "27 / 10 / 2026",
   groups: [
     {
       id: "working", title: "In progress", items: [
@@ -14,7 +14,7 @@ export const publicRoadmap = {
       id: "ideas", title: "On the desk", items: [
         { title: "Suggested log titles", detail: "Use a field note's own words to suggest its title when one hasn't been written manually. Game and project titles stay independent of new notes." },
         { title: "Web search", detail: "Explore a separate homepage search with Google, Yandex or DuckDuckGo. Agree on its placement and an editing-safe shortcut before building it." },
-        { title: "Roadmap controls", detail: "Add or revise work notes and mark steps complete from the local workspace." },
+        { title: "Field notebook", detail: "Reimagine the roadmap as a Gestalt field journal: current work first, older dated pages to turn through, a distinct opening sequence and editing where the words sit. Design it before building it." },
         { title: "Month-by-month folders", detail: "Let older field notes settle into folders while newer ones stay within reach." }
       ]
     },
