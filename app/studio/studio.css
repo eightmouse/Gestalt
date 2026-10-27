@@ -49,9 +49,12 @@ html:has(.record-layout.is-editing-record), body:has(.record-layout.is-editing-r
 .record-layout.is-editing-record .inline-record-header-action { position: relative; z-index: 2; justify-self: start; }
 .record-layout.is-editing-record .inline-record-media-actions { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 12px; }
 .record-layout.is-editing-record .inline-record-actions { display: grid; gap: 8px; }
-.record-layout.is-editing-record .inline-record-actions button:first-child { border-color: var(--line-strong); }
+.record-layout.is-editing-record .inline-record-actions button:first-of-type { border-color: var(--line-strong); }
+.record-layout.is-editing-record .inline-record-actions > .studio-save-state { grid-column: 1 / -1; }
 .record-layout.is-editing-record .inline-record-actions button:disabled { opacity: 0.55; cursor: wait; }
 .record-layout.is-editing-record .inline-record-message { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.studio-save-state { display: block; padding: 4px 0 4px 9px; border-inline-start: 2px solid var(--line-strong); color: var(--muted); font: 14px/1.5 var(--mono); letter-spacing: 0; }
+.studio-save-state[data-save-state="unsaved"], .studio-save-state[data-save-state="new"] { color: var(--text-strong); border-color: var(--accent); }
 .record-layout.is-editing-record .inline-record-aside { max-block-size: none; }
 .record-layout.is-editing-record .record-meta input { inline-size: 100%; min-inline-size: 0; padding: 6px 0; border: 0; border-block-end: 1px dashed var(--line); background: transparent; color: var(--text); color-scheme: dark; font: inherit; }
 .record-layout.is-editing-record .studio-note-editor { min-inline-size: 0; }

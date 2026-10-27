@@ -30,15 +30,15 @@ async function fixture({ fail = false, exported = true, inline = true, section =
   let stateIndex = 0, refIndex = 0;
   const states = [], refs = [], calls = [], changes = [];
   const other = { body: "Unrelated draft", form: { ...record, id: "other-record", originalId: "other-record", body: "Unrelated draft" }, updatedAt: 10 };
-  const storage = JSON.stringify({ "record:other-record": other });
+  let storage = JSON.stringify({ "record:other-record": other });
   const context = vm.createContext({ exports: {}, require, console, Error, process: { env: { NODE_ENV: "development" } },
     useState(initial) { const index = stateIndex++; if (!(index in states)) states[index] = typeof initial === "function" ? initial() : initial; return [states[index], (next) => { states[index] = typeof next === "function" ? next(states[index]) : next; }]; },
     useRef(initial) { const index = refIndex++; if (!(index in refs)) refs[index] = { current: initial }; return refs[index]; },
     memo: (component) => component, useMemo: (callback) => callback(), useCallback: (callback) => callback, useEffect() {}, useLayoutEffect() {},
-    window: { localStorage: { getItem: () => storage } },
+    window: { localStorage: { getItem: () => storage, setItem: (_key, value) => { storage = value; }, removeItem: () => { storage = null; } } },
     imageFraming: require("../public/image-framing.js"),
     gameLogPlacement: (form) => form.gamePlacement || form.meta?.gamePlacement || "session", gameActivityValue: (form) => form.gameActivity || form.meta?.gameActivity || "", compareSectionRecords: () => 0,
-    supportsInlineEditing, InlineRecordLayout() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ChevronDown: require("lucide-react").ChevronDown,
+    supportsInlineEditing, InlineRecordLayout() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ChevronDown: require("lucide-react").ChevronDown,
     readStudioResponse: api.exports.readStudioResponse, StudioRequestError: api.exports.StudioRequestError,
     fetch: async (url, options) => {
       calls.push({ url, payload: JSON.parse(options.body || "{}") });
@@ -65,8 +65,9 @@ async function fixture({ fail = false, exported = true, inline = true, section =
   if (!inline) return { calls, changes, states,
     heading: () => find(render(), (node) => node.type === context.EditableHeading),
     content: () => find(render(), (node) => node.type === context.StudioContent),
+    saveState: () => find(render(), (node) => node.type === context.StudioSaveState).props.state,
     save: () => find(render(), (node) => node.type === "button" && node.props.children === "Save Record").props.onClick() };
-  if (manual) return { calls, changes, states, layout, suggest: context.suggestedLogTitle };
+  if (manual) return { calls, changes, states, layout, storedDrafts: () => JSON.parse(storage || "{}"), suggest: context.suggestedLogTitle, isDirty: context.studioHasUnsavedChanges };
   assert.equal(layout().props.activeContent, "notes", "Entry content is retained when editing starts");
   layout().props.onUpdate("title", "Edited in place");
   layout().props.content.props.onBodyCommit(":::note First note\nUpdated body with **formatting** and a ~ character.\n:::");
@@ -85,15 +86,18 @@ assert.equal(saved.changes[0][0][0].title, "Edited in place", "Saved data is sen
 assert.equal(saved.changes[0][0][0].writtenOrder, record.writtenOrder);
 assert.ok(saved.states.some((value) => value?.["record:other-record"] && !value["record:inline-fixture"]), "Unrelated drafts survive a successful inline save");
 assert.match(saved.layout.props.message, /saved.*locally/i);
+assert.equal(saved.layout.props.saveState, "saved");
 
 const failed = await fixture({ fail: true });
 assert.equal(failed.changes.length, 0, "Failed writes cannot replace the reader's saved content");
 assert.match(failed.layout.props.message, /Fixture save refused/);
+assert.equal(failed.layout.props.saveState, "unsaved", "Failed writes never move the saved baseline");
 assert.ok(failed.states.some((value) => value?.["record:inline-fixture"]?.body.includes("Updated body")), "Failure keeps the edited body in the same draft model");
 const pendingExport = await fixture({ exported: false });
 assert.equal(pendingExport.changes.length, 1, "A saved source with failed export is still reconciled");
 assert.equal(pendingExport.layout.props.exportRequired, true);
 assert.match(pendingExport.layout.props.message, /Refresh the archive/);
+assert.equal(pendingExport.layout.props.saveState, "saved", "A successful source write is saved locally even if export needs a retry");
 const legacy = await fixture({ inline: false });
 await legacy.save();
 assert.equal(legacy.calls.filter((call) => call.url === "/api/studio/entry").length, 2, "The existing full-Studio batch-save behavior is unchanged");
@@ -135,6 +139,137 @@ const steam = await fixture({ section: "games", create: true, manual: true, seed
 assert.equal(steam.layout().props.record.title, "Seed game");
 assert.equal(steam.layout().props.record.meta.steamAppId, "42");
 assert.equal(steam.calls.length, 0, "The deliberate Steam offer is still an unsaved draft");
+
+for (const section of ["logs", "games", "projects"]) {
+  const editor = await fixture({ section, manual: true });
+  assert.equal(editor.layout().props.saveState, "saved", "Opening an unchanged saved record is clean");
+  editor.layout().props.onUpdate("title", "An unsaved rename");
+  assert.equal(editor.layout().props.saveState, "unsaved");
+  editor.layout().props.onUpdate("title", record.title);
+  assert.equal(editor.layout().props.saveState, "saved", "Reverting an edit restores the clean state without a request");
+  editor.layout().props.content.props.onBodyCommit(":::note First note\nChanged text and ![capture](/media/fixture.png).\n:::");
+  assert.equal(editor.layout().props.saveState, "unsaved");
+  await editor.layout().props.onSave();
+  assert.equal(editor.layout().props.saveState, "saved");
+  editor.layout().props.onUpdate("headerImage", "/media/new-header.png");
+  assert.equal(editor.layout().props.saveState, "unsaved", "Media assignments are edits too");
+  assert.match(editor.layout().props.message, /Unsaved changes since the last local save/);
+  editor.layout().props.onUpdate("headerImage", "");
+  assert.equal(editor.layout().props.saveState, "saved");
+  editor.layout().props.content.props.onDraftChange(true);
+  assert.equal(editor.layout().props.saveState, "unsaved", "Buffered field typing is visible before blur commits its value");
+  editor.layout().props.content.props.onDraftChange(false);
+  assert.equal(editor.layout().props.saveState, "saved", "Cancelling a buffered edit is not a persisted modification");
+  const fresh = await fixture({ section, create: true, manual: true });
+  assert.equal(fresh.layout().props.saveState, "new");
+}
+const legacyDirty = await fixture({ inline: false, manual: true });
+assert.equal(legacyDirty.saveState(), "saved");
+legacyDirty.heading().props.onDraftChange(true);
+assert.equal(legacyDirty.saveState(), "unsaved", "The full Studio header reports buffered title edits");
+legacyDirty.heading().props.onDraftChange(false);
+assert.equal(legacyDirty.saveState(), "saved");
+const compare = (await fixture({ manual: true })).isDirty;
+const baseline = { title: "Saved title", originalId: "fixture", id: "fixture", body: "Saved note", headerImage: "", banner: "", bannerZoom: 100 };
+assert.equal(compare({ ...baseline }, baseline), false);
+assert.equal(compare({ ...baseline }, null), true);
+assert.equal(compare({ ...baseline, writtenAt: "later", writtenOrder: 99, steamDraftAppId: "42" }, baseline), false, "Server-owned ordering/draft seed bookkeeping is not an authored edit");
+assert.equal(compare({ ...baseline, body: "Restored unsaved note" }, baseline), true, "Restored drafts are compared with saved content, never adopted as the baseline");
+const { headerImage: omittedHeader, ...olderDraft } = { ...baseline, headerImage: "/media/saved-header.png" };
+assert.equal(compare(olderDraft, { ...baseline, headerImage: "/media/saved-header.png" }), true, "An older draft omitting a saved editable field cannot appear clean");
+console.log("Save-state checks passed: edit/revert, notes/media, buffered edits, local-only success, failures/export retry and old/new editor parity.");
+
+function bufferedFixture(name, props, dependencies = []) {
+  let index = 0, refIndex = 0;
+  const values = [], refs = [], effects = [];
+  const scope = vm.createContext({ exports: {}, require,
+    useState(initial) { const key = index++; if (!(key in values)) values[key] = typeof initial === "function" ? initial() : initial; return [values[key], (value) => { values[key] = value; }]; },
+    useRef(initial) { const key = refIndex++; return refs[key] ??= { current: initial }; },
+    useLayoutEffect(callback) { callback(); }, useEffect(callback) { effects.push(callback); } });
+  const declarations = [name, ...dependencies].map((id) => ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === id).getText(ast)).join("\n");
+  vm.runInContext(ts.transpileModule(declarations, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, scope);
+  return { render() { index = 0; refIndex = 0; return scope[name](props); }, effects };
+}
+const pendingFlags = [], committedText = [], retainedText = [];
+const buffered = bufferedFixture("BufferedBodyEditor", { label: "Recommendation", value: "Saved recommendation", onCommit: (value) => committedText.push(value), onRetainDraft: (value) => retainedText.push(value), onDraftChange: (value) => pendingFlags.push(value) });
+buffered.render().props.children[1].props.onChange({ target: { value: "Typing without blur" } });
+assert.equal(pendingFlags.at(-1), true);
+assert.equal(committedText.length, 0, "Buffered text still commits on blur, not every keystroke");
+buffered.render().props.children[1].props.onChange({ target: { value: "Saved recommendation" } });
+assert.equal(pendingFlags.at(-1), false);
+buffered.render().props.children[1].props.onChange({ target: { value: "An actual recommendation edit" } });
+buffered.render().props.children[1].props.onBlur();
+assert.equal(committedText.at(-1), "An actual recommendation edit");
+assert.equal(pendingFlags.at(-1), false);
+buffered.effects[1]()();
+assert.equal(pendingFlags.at(-1), false, "Unmounting a buffered field clears its transient flag");
+assert.equal(retainedText.length, 0, "Blurred/committed buffers do not recreate a cached draft on cleanup");
+buffered.render().props.children[1].props.onChange({ target: { value: "Keep this when closing without blur" } });
+buffered.effects[1]()();
+assert.equal(retainedText.at(-1), "Keep this when closing without blur");
+assert.equal(committedText.length, 1, "Closing retains a local draft, not another form commit or file write");
+
+const retainedGame = await fixture({ section: "games", manual: true });
+retainedGame.layout().props.content.props.onRetainDraft("recommendation", "Unblurred recommendation");
+const retainedDraft = retainedGame.storedDrafts()[`record:${record.id}`];
+assert.equal(retainedDraft.form.recommendation, "Unblurred recommendation");
+assert.equal(retainedDraft.form.originalId, record.id);
+assert.equal(retainedDraft.body, record.body);
+assert.ok(retainedGame.storedDrafts()["record:other-record"], "Retaining a buffer preserves unrelated drafts");
+assert.equal(retainedGame.calls.length, 0, "Draft retention never invokes save/export/publish APIs");
+assert.equal(retainedGame.layout().props.record.meta.recommendation, "", "Closing retention does not rewrite the saved reader");
+
+const progressProps = { value: "Core|70|In Progress;Polish|40|Pending", onChange: (value) => { progressProps.value = value; } };
+const milestones = bufferedFixture("MilestoneEditor", progressProps, ["parseMilestoneDraft", "serializeMilestones", "emptyMilestoneDraft"]);
+const progressRows = () => milestones.render().props.children[1];
+const firstKey = progressRows()[0].key;
+for (const character of " structure") {
+  const input = progressRows()[0].props.children[0];
+  input.props.onChange({ target: { value: input.props.value + character } });
+  milestones.render();
+  milestones.effects.at(-1)();
+  assert.equal(progressRows()[0].key, firstKey, "Renaming a progress row cannot change its React identity");
+}
+assert.equal(progressRows()[0].props.children[0].props.value, "Core structure", "Parent value echoes must not strip spaces while typing");
+assert.match(progressProps.value, /^Core structure\|70\|In Progress;/);
+assert.equal(progressRows()[1].props.children[0].props.value, "Polish");
+progressRows()[0].props.children[2].props.onChange({ target: { value: "Active" } });
+assert.match(progressProps.value, /Core structure\|70\|Active/);
+milestones.render().props.children[0].props.children[1].props.onClick();
+assert.equal(progressRows().length, 3);
+progressRows()[0].props.children[3].props.onClick();
+assert.equal(progressRows()[0].props.children[0].props.value, "Polish");
+assert.equal(progressRows()[0].props.children[1].props.value, 40);
+progressProps.value = "External update|25|Planning";
+milestones.render();
+milestones.effects.at(-1)();
+assert.equal(progressRows()[0].props.children[0].props.value, "External update", "Real external updates still replace the editing rows");
+console.log("Progress-row checks passed: stable keys, typing/space preservation, unchanged serialization, add/remove and external updates.");
+
+const titleFlags = [], titleCommits = [];
+const editable = bufferedFixture("EditableText", { label: "Title", value: "Saved title", onChange: (value) => titleCommits.push(value), onDraftChange: (value) => titleFlags.push(value) });
+editable.render().props.onClick();
+editable.render().props.onChange({ target: { value: "A cancelled edit" } });
+assert.equal(titleFlags.at(-1), true);
+editable.render().props.onKeyDown({ key: "Escape", preventDefault() {}, stopPropagation() {} });
+assert.equal(titleFlags.at(-1), false);
+assert.equal(titleCommits.length, 0, "Escape must not commit a buffered title");
+editable.render().props.onClick();
+editable.render().props.onChange({ target: { value: "A committed edit" } });
+editable.render().props.onBlur();
+assert.equal(titleCommits.at(-1), "A committed edit");
+assert.equal(titleFlags.at(-1), false);
+
+const saveStateModule = vm.createContext({ exports: {}, require });
+vm.runInContext(ts.transpileModule(read("components/studio/save-state.tsx"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, saveStateModule);
+for (const [state, label] of [["new", "New draft"], ["unsaved", "Unsaved changes"], ["saved", "Saved locally"], ["saving", "Saving locally..."]]) {
+  const html = renderToStaticMarkup(saveStateModule.exports.StudioSaveState({ state }));
+  assert.ok(html.includes(label) && html.includes('role="status"'));
+  assert.ok(!html.toLowerCase().includes("published"), "The indicator never claims a Git push or hosted deployment");
+}
+assert.match(read("app/studio/studio.css"), /\.inline-record-actions > \.studio-save-state\s*\{ grid-column: 1 \/ -1;/);
+assert.match(read("components/studio/inline-record-layout.tsx"), /title="Background behind the entry title; separate from overview artwork and samples"/);
+console.log("Buffered controls and status markup passed: typing, revert, cancel, blur, cleanup, local-save wording and compact action rows.");
 
 const untitled = await fixture({ create: true, manual: true });
 const commitNote = (body) => untitled.layout().props.content.props.onBodyCommit(body);

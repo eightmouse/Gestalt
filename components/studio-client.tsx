@@ -12,6 +12,7 @@ import type { SteamRecordSeed } from "@/public/steam-display.mjs";
 import imageFraming, { type ImageFrame } from "@/public/image-framing.js";
 import { ArtworkFraming } from "@/components/studio/artwork-framing";
 import { InlineRecordLayout } from "@/components/studio/inline-record-layout";
+import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
 import { supportsInlineEditing } from "@/lib/inline-editing";
 import { readStudioResponse, StudioRequestError } from "@/lib/studio-client-api";
 import { useStudioPublishing } from "@/components/studio/publishing-store";
@@ -82,6 +83,7 @@ type MediaImportOptions = {
   noteDisplayThumbnails?: boolean;
 };
 type StudioUpdate = <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
+type RetainBufferedDraft = (field: "hardware" | "recommendation", value: string) => void;
 type StudioDraft = {
   body: string;
   form: StudioForm;
@@ -164,6 +166,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   const [activeSection, setActiveSection] = useState<StudioSection>(initialForm.section);
   const [mode, setMode] = useState<"section" | "edit">(firstRecord || (embedded && initialSection) ? "edit" : "section");
   const [form, setForm] = useState<StudioForm>(() => initialForm);
+  const [savedSnapshot, setSavedSnapshot] = useState<StudioForm | null>(() => firstRecord ? { ...initialForm } : null);
+  const [bufferedDirty, setBufferedDirty] = useState(false);
   const [activeContent, setActiveContent] = useState<StudioContentKey>(initialContent);
   const [message, setMessage] = useState(
     embedded && firstRecord
@@ -196,6 +200,9 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   const contents = useMemo(() => getStudioContents(form.section, form.setupGroup), [form.section, form.setupGroup]);
   const activeRecord = useMemo(() => toRecordPreview(form, bodyDraftRef.current), [form]);
   const suggestedTitle = useMemo(() => suggestedLogTitle(form), [form.section, form.originalId, form.title, form.body]);
+  const hasUnsavedChanges = bufferedDirty || studioHasUnsavedChanges(form, savedSnapshot);
+  const saveState: SaveState = localSaving ? "saving" : !form.originalId ? "new" : hasUnsavedChanges ? "unsaved" : "saved";
+  const editorMessage = hasUnsavedChanges && /^Saved \d+ records? locally\./.test(message) ? "Unsaved changes since the last local save." : message;
   const activeSectionConfig = studioSections.find((section) => section.id === activeSection) ?? studioSections[0];
 
   useEffect(() => {
@@ -265,11 +272,6 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   }, [activeSection]);
 
   useEffect(() => {
-    draftsRef.current = drafts;
-    writeStudioDrafts(drafts);
-  }, [drafts]);
-
-  useEffect(() => {
     formRef.current = form;
   }, [form]);
 
@@ -277,10 +279,18 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     selectedIdRef.current = selectedId;
   }, [selectedId]);
 
+  const storeDrafts = useCallback((change: (current: StudioDraftMap) => StudioDraftMap) => {
+    const next = change(draftsRef.current);
+    // Closing can unmount the editor before its next effect: retain the draft now.
+    draftsRef.current = next;
+    writeStudioDrafts(next);
+    setDrafts(next);
+  }, []);
+
   const cacheDraft = useCallback((nextForm: StudioForm, nextBody = bodyDraftRef.current, id = selectedIdRef.current) => {
     const key = studioDraftKey(nextForm, id, activeSectionRef.current);
 
-    setDrafts((current) => ({
+    storeDrafts((current) => ({
       ...current,
       [key]: {
         body: nextBody,
@@ -288,7 +298,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
         updatedAt: Date.now()
       }
     }));
-  }, []);
+  }, [storeDrafts]);
 
   const update = useCallback(<Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => {
     let next = { ...formRef.current, [key]: value };
@@ -330,6 +340,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
       const next = draft?.form ?? emptyForm(activeSection);
       bodyDraftRef.current = draft?.body ?? next.body;
       formRef.current = next;
+      setSavedSnapshot(null);
+      setBufferedDirty(false);
       setForm(next);
       setMessage(draft ? `Restored unsaved ${activeSection} draft.` : `New ${activeSection} record draft ready.`);
       return;
@@ -343,6 +355,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
       setActiveSection(next.section);
       bodyDraftRef.current = draft?.body ?? next.body;
       formRef.current = next;
+      setSavedSnapshot(fromRecord(record));
+      setBufferedDirty(false);
       setForm(next);
       setMessage(draft ? `Loaded unsaved draft for ${next.title}.` : `Loaded ${record.title}.`);
     }
@@ -357,6 +371,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     const next = draft?.form ?? emptyForm(section);
     bodyDraftRef.current = draft?.body ?? next.body;
     formRef.current = next;
+    setSavedSnapshot(null);
+    setBufferedDirty(false);
     setForm(next);
     setMessage(draft ? `Restored unsaved ${section} draft.` : `New ${section} record draft ready.`);
   }, []);
@@ -369,6 +385,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     const next = emptyForm("setup", setupGroup);
     bodyDraftRef.current = next.body;
     formRef.current = next;
+    setSavedSnapshot(null);
+    setBufferedDirty(false);
     setForm(next);
     setMessage(`New ${setupGroupLabel(setupGroup).toLowerCase()} setup record ready.`);
   }, []);
@@ -435,12 +453,14 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
           selectedIdRef.current = data.id;
           setSelectedId(data.id);
           setForm(savedForm);
+          setSavedSnapshot(savedForm);
+          setBufferedDirty(false);
         }
 
         nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(savedForm, item.draft.body), item.draft.form.originalId || item.draft.form.id);
         setStudioRecords(nextRecords);
         onRecordsChange?.(nextRecords, selectedIdRef.current, { keepEditorOpen: inline });
-        setDrafts((current) => {
+        storeDrafts((current) => {
           const next = { ...current };
           delete next[item.key];
           delete next[studioRecordDraftKey(data.id)];
@@ -504,11 +524,13 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
       setSelectedId("__new");
       setMode("section");
       setForm(next);
+      setSavedSnapshot(null);
+      setBufferedDirty(false);
       setStudioRecords((current) => current.filter((record) => record.id !== form.originalId));
       const nextRecords = studioRecords.filter((record) => record.id !== form.originalId);
       const exportRequired = data.staticExported === false;
       onRecordsChange?.(nextRecords, null, { keepEditorOpen: exportRequired });
-      setDrafts((current) => {
+      storeDrafts((current) => {
         const updated = { ...current };
         delete updated[studioRecordDraftKey(form.originalId)];
         return updated;
@@ -713,6 +735,9 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   };
 
   const Shell = embedded ? "div" : "main";
+  const retainBufferedDraft: RetainBufferedDraft = (field, value) => {
+    cacheDraft({ ...form, [field]: value }, form.body, selectedId);
+  };
   const titleAction = suggestedTitle ? (
     <button className="studio-use-note-title" type="button" disabled={saving || uploading} onClick={(event) => {
       const title = suggestedLogTitle({ ...formRef.current, body: bodyDraftRef.current });
@@ -732,13 +757,13 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     return <>
       <input ref={fileInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
         onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
-      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={message} titleAction={titleAction}
+      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={editorMessage} titleAction={titleAction} saveState={saveState}
         controls={form.section === "games" ? <GameInspectorControls form={form} onUpdate={update} /> : undefined}
         exportRequired={archiveRefreshRequired} onUpdate={update} onPickHeader={() => chooseFiles("headerImage")} onPickThumbnail={() => chooseFiles("banner")}
         onContentChange={(key) => { setActiveContent(key); onContentChange?.(key); }} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive}
         content={<StudioContent activeContent={inlineContent} form={form} record={activeRecord} uploading={uploading}
           onBodyCommit={(value) => update("body", value)} onFileDrop={uploadFiles} onFilePick={chooseFiles}
-          onNoteMediaUpload={uploadNoteMedia} onOptimizeNoteMedia={optimizeNoteMedia} onUpdate={update} />} />
+          onNoteMediaUpload={uploadNoteMedia} onOptimizeNoteMedia={optimizeNoteMedia} onDraftChange={setBufferedDirty} onRetainDraft={retainBufferedDraft} onUpdate={update} />} />
     </>;
   }
 
@@ -763,6 +788,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
             <p className="subtle">{embedded ? "Changes stay local until saved. The public archive remains underneath." : "A quiet copy of the archive for editing records before saving them to MDX."}</p>
           </div>
           <div className="studio-actions">
+            {mode === "edit" ? <StudioSaveState state={saveState} /> : null}
             {embedded && onExit ? <button type="button" disabled={saving} onClick={onExit}>Return to Entry</button> : null}
             <button type="button" disabled={saving || uploading} onClick={save}>{saving ? "Working..." : "Save Record"}</button>
             <button
@@ -797,7 +823,9 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
             <StudioSetupEditor
               canDelete={mode === "edit" && selectedId !== "__new"}
               form={form}
-              message={message}
+              message={editorMessage}
+              onDraftChange={setBufferedDirty}
+              onRetainDraft={retainBufferedDraft}
               saving={saving}
               uploading={uploading}
               onBodyCommit={(value) => {
@@ -815,12 +843,12 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
           <section className="studio-record-copy" aria-label="Editable archive preview">
             <div className="studio-copy-bar">
               <span>// EDITABLE ARCHIVE ENTRY</span>
-              <i>{message}</i>
+              <i>{editorMessage}</i>
             </div>
 
             <div className="studio-copy-layout">
               <div className="studio-copy-main">
-                <EditableHeading form={form} titleAction={titleAction} onFilePick={chooseFiles} onUpdate={update} />
+                <EditableHeading form={form} titleAction={titleAction} onDraftChange={setBufferedDirty} onFilePick={chooseFiles} onUpdate={update} />
                 <StudioContent
                   activeContent={activeContent}
                   form={form}
@@ -834,6 +862,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
                   onFilePick={chooseFiles}
                   onNoteMediaUpload={uploadNoteMedia}
                   onOptimizeNoteMedia={optimizeNoteMedia}
+                  onDraftChange={setBufferedDirty}
+                  onRetainDraft={retainBufferedDraft}
                   onUpdate={update}
                 />
               </div>
@@ -1163,6 +1193,8 @@ function StudioSetupEditor({
   form,
   message,
   onBodyCommit,
+  onDraftChange,
+  onRetainDraft,
   onDelete,
   onFileDrop,
   onFilePick,
@@ -1176,6 +1208,8 @@ function StudioSetupEditor({
   form: StudioForm;
   message: string;
   onBodyCommit: (value: string) => void;
+  onDraftChange: (dirty: boolean) => void;
+  onRetainDraft: RetainBufferedDraft;
   onDelete: () => void;
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
@@ -1209,7 +1243,7 @@ function StudioSetupEditor({
             <div>
               <p>{setupGroupLabel(setupGroup).toUpperCase()}</p>
               <h2>
-                <EditableText className="studio-title-edit" label="Title" value={form.title} onChange={(value) => onUpdate("title", value)} />
+                <EditableText className="studio-title-edit" label="Title" value={form.title} onDraftChange={onDraftChange} onChange={(value) => onUpdate("title", value)} />
               </h2>
               <small>{setupGroupHelp(setupGroup)}</small>
             </div>
@@ -1224,7 +1258,7 @@ function StudioSetupEditor({
           ) : setupGroup === "notes" ? (
             <StudioSetupNoteEditor form={form} onBodyCommit={onBodyCommit} onNoteMediaUpload={onNoteMediaUpload} onOptimizeNoteMedia={onOptimizeNoteMedia} onUpdate={onUpdate} />
           ) : (
-            <StudioSetupSystemEditor form={form} uploading={uploading} onBodyCommit={onBodyCommit} onFileDrop={onFileDrop} onFilePick={onFilePick} onNoteMediaUpload={onNoteMediaUpload} onOptimizeNoteMedia={onOptimizeNoteMedia} onUpdate={onUpdate} />
+            <StudioSetupSystemEditor form={form} uploading={uploading} onBodyCommit={onBodyCommit} onDraftChange={onDraftChange} onRetainDraft={onRetainDraft} onFileDrop={onFileDrop} onFilePick={onFilePick} onNoteMediaUpload={onNoteMediaUpload} onOptimizeNoteMedia={onOptimizeNoteMedia} onUpdate={onUpdate} />
           )}
         </div>
 
@@ -1366,6 +1400,8 @@ function StudioSetupNoteEditor({
 function StudioSetupSystemEditor({
   form,
   onBodyCommit,
+  onDraftChange,
+  onRetainDraft,
   onFileDrop,
   onFilePick,
   onNoteMediaUpload,
@@ -1375,6 +1411,8 @@ function StudioSetupSystemEditor({
 }: {
   form: StudioForm;
   onBodyCommit: (value: string) => void;
+  onDraftChange: (dirty: boolean) => void;
+  onRetainDraft: RetainBufferedDraft;
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
@@ -1401,7 +1439,7 @@ function StudioSetupSystemEditor({
         Summary
         <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
       </label>
-      <BufferedBodyEditor label="Specs / Hardware" value={form.hardware} onCommit={(value) => onUpdate("hardware", value)} />
+      <BufferedBodyEditor key={`${form.originalId || form.section}:hardware`} label="Specs / Hardware" value={form.hardware} onDraftChange={onDraftChange} onRetainDraft={(value) => onRetainDraft("hardware", value)} onCommit={(value) => onUpdate("hardware", value)} />
       <div className="studio-setup-note-stack">
         <div className="terminal-title">// SETUP NOTES</div>
         <NoteStackEditor value={form.body} onCommit={onBodyCommit} onMediaUpload={onNoteMediaUpload} onOptimizeMedia={onOptimizeNoteMedia} />
@@ -1547,11 +1585,13 @@ function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[
 function EditableHeading({
   form,
   titleAction,
+  onDraftChange,
   onFilePick,
   onUpdate
 }: {
   form: StudioForm;
   titleAction?: ReactNode;
+  onDraftChange: (dirty: boolean) => void;
   onFilePick: (target: MediaTarget) => void;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
@@ -1560,32 +1600,32 @@ function EditableHeading({
       {form.headerImage ? <img src={form.headerImage} alt="" decoding="async" /> : null}
       <div className="studio-heading-content">
         <div className="studio-heading-topline">
-          <EditableText className="studio-kind-edit" label="Type" value={form.type} onChange={(value) => onUpdate("type", value)} />
-          <EditableText className="studio-id-edit" label="ID" value={form.id} onChange={(value) => onUpdate("id", value)} placeholder="auto-from-title" />
+          <EditableText className="studio-kind-edit" label="Type" value={form.type} onDraftChange={onDraftChange} onChange={(value) => onUpdate("type", value)} />
+          <EditableText className="studio-id-edit" label="ID" value={form.id} onDraftChange={onDraftChange} onChange={(value) => onUpdate("id", value)} placeholder="auto-from-title" />
         </div>
         <h2>
-          <EditableText className="studio-title-edit" label="Title" value={form.title} placeholder={form.section === "logs" ? "New Note" : ""} onChange={(value) => onUpdate("title", value)} />
+          <EditableText className="studio-title-edit" label="Title" value={form.title} placeholder={form.section === "logs" ? "New Note" : ""} onDraftChange={onDraftChange} onChange={(value) => onUpdate("title", value)} />
         </h2>
         {titleAction}
         <div className="studio-heading-meta">
           <span>
-            Status: <EditableText label="Status" value={form.status} onChange={(value) => onUpdate("status", value)} />
+            Status: <EditableText label="Status" value={form.status} onDraftChange={onDraftChange} onChange={(value) => onUpdate("status", value)} />
           </span>
           <span>
-            Started: <EditableText label="Started" value={form.started} onChange={(value) => onUpdate("started", value)} placeholder="YYYY-MM-DD" />
+            Started: <EditableText label="Started" value={form.started} onDraftChange={onDraftChange} onChange={(value) => onUpdate("started", value)} placeholder="YYYY-MM-DD" />
           </span>
           <span>
-            Updated: <EditableText label="Updated" value={form.updated} onChange={(value) => onUpdate("updated", value)} placeholder="YYYY-MM-DD" />
+            Updated: <EditableText label="Updated" value={form.updated} onDraftChange={onDraftChange} onChange={(value) => onUpdate("updated", value)} placeholder="YYYY-MM-DD" />
           </span>
       </div>
         {form.section === "games" ? (
-          <button className="studio-thumbnail-button" type="button" onClick={() => onFilePick("banner")}>
+          <button className="studio-thumbnail-button" type="button" title="Game cover used for the dashboard and overview artwork; separate from the title background" onClick={() => onFilePick("banner")}>
             {form.banner ? "Change thumbnail" : "Set thumbnail"}
           </button>
         ) : null}
       </div>
-      <button className="studio-header-button" type="button" onClick={() => onFilePick("headerImage")}>
-        {form.headerImage ? "Change Header" : "Add Header"}
+      <button className="studio-header-button" type="button" title="Background behind the entry title; separate from overview artwork and samples" onClick={() => onFilePick("headerImage")}>
+        {form.headerImage ? "Change header" : "Add header"}
       </button>
     </div>
   );
@@ -1595,6 +1635,8 @@ function StudioContent({
   activeContent,
   form,
   onBodyCommit,
+  onDraftChange,
+  onRetainDraft,
   onFileDrop,
   onFilePick,
   onNoteMediaUpload,
@@ -1606,6 +1648,8 @@ function StudioContent({
   activeContent: StudioContentKey;
   form: StudioForm;
   onBodyCommit: (value: string) => void;
+  onDraftChange: (dirty: boolean) => void;
+  onRetainDraft: RetainBufferedDraft;
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
@@ -1650,7 +1694,7 @@ function StudioContent({
     return (
       <section className="studio-content-terminal">
         <div className="terminal-title">// {detailLabel.toUpperCase()}</div>
-        <BufferedBodyEditor label={detailLabel} value={form.hardware} onCommit={(value) => onUpdate("hardware", value)} />
+        <BufferedBodyEditor key={`${form.originalId || form.section}:hardware`} label={detailLabel} value={form.hardware} onDraftChange={onDraftChange} onRetainDraft={(value) => onRetainDraft("hardware", value)} onCommit={(value) => onUpdate("hardware", value)} />
       </section>
     );
   }
@@ -1667,7 +1711,7 @@ function StudioContent({
           <div className="status-cell"><span>STATUS</span><strong>{form.status}</strong></div>
           <div className="status-cell"><span>PROGRESS</span><strong>{form.progress}%</strong></div>
         </div>
-        <BufferedBodyEditor label="Recommendation Text" value={form.recommendation} onCommit={(value) => onUpdate("recommendation", value)} />
+        <BufferedBodyEditor key={`${form.originalId || form.section}:recommendation`} label="Recommendation Text" value={form.recommendation} onDraftChange={onDraftChange} onRetainDraft={(value) => onRetainDraft("recommendation", value)} onCommit={(value) => onUpdate("recommendation", value)} />
       </section>
     );
   }
@@ -1728,7 +1772,7 @@ function StudioContent({
             <input type="range" min="0" max="100" value={form.progress} onChange={(event) => onUpdate("progress", Number(event.target.value))} />
             <strong>{record.progress}%</strong>
           </div>
-          <MilestoneEditor value={form.milestones} onChange={(value) => onUpdate("milestones", value)} />
+          <MilestoneEditor key={`${form.originalId || form.section}:milestones`} value={form.milestones} onChange={(value) => onUpdate("milestones", value)} />
         </>
       )}
     </section>
@@ -2213,19 +2257,23 @@ function mediaPartsWithToken(parts: string[], token: string): string[] {
 }
 
 function MilestoneEditor({ onChange, value }: { onChange: (value: string) => void; value: string }) {
+  const lastSerializedRef = useRef<string | null>(null);
   const [rows, setRows] = useState<MilestoneDraft[]>(() => {
     const parsed = parseMilestoneDraft(value);
     return parsed.length > 0 ? parsed : [emptyMilestoneDraft()];
   });
 
   useEffect(() => {
+    if (value === lastSerializedRef.current) return;
     const parsed = parseMilestoneDraft(value);
     setRows(parsed.length > 0 ? parsed : [emptyMilestoneDraft()]);
   }, [value]);
 
   const commitRows = (nextRows: MilestoneDraft[]) => {
+    const serialized = serializeMilestones(nextRows);
+    lastSerializedRef.current = serialized;
     setRows(nextRows);
-    onChange(serializeMilestones(nextRows));
+    onChange(serialized);
   };
 
   const updateRow = (index: number, key: keyof MilestoneDraft, nextValue: string | number) => {
@@ -2250,7 +2298,7 @@ function MilestoneEditor({ onChange, value }: { onChange: (value: string) => voi
         <button type="button" onClick={addRow}>+ Row</button>
       </div>
       {rows.map((row, index) => (
-        <div className="studio-milestone-row" key={`${index}-${row.label}`}>
+        <div className="studio-milestone-row" key={index}>
           <input aria-label="Progress label" value={row.label} placeholder="Label" onChange={(event) => updateRow(index, "label", event.target.value)} />
           <input aria-label="Progress value" type="number" min="0" max="100" value={row.progress} onChange={(event) => updateRow(index, "progress", Number(event.target.value))} />
           <input aria-label="Progress status" value={row.status} placeholder="Status" onChange={(event) => updateRow(index, "status", event.target.value)} />
@@ -2288,12 +2336,14 @@ function EditableText({
   className = "",
   label,
   onChange,
+  onDraftChange,
   placeholder = "",
   value
 }: {
   className?: string;
   label: string;
   onChange: (value: string) => void;
+  onDraftChange: (dirty: boolean) => void;
   placeholder?: string;
   value: string;
 }) {
@@ -2302,10 +2352,13 @@ function EditableText({
 
   useEffect(() => {
     setDraft(value);
-  }, [value]);
+    onDraftChange(false);
+  }, [value, onDraftChange]);
+  useEffect(() => () => onDraftChange(false), [onDraftChange]);
 
   const commit = () => {
     onChange(draft.trim());
+    onDraftChange(false);
     setEditing(false);
   };
 
@@ -2318,7 +2371,7 @@ function EditableText({
         placeholder={placeholder}
         value={draft}
         onBlur={commit}
-        onChange={(event) => setDraft(event.target.value)}
+        onChange={(event) => { setDraft(event.target.value); onDraftChange(event.target.value.trim() !== value); }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             commit();
@@ -2328,6 +2381,7 @@ function EditableText({
             event.preventDefault();
             event.stopPropagation();
             setDraft(value);
+            onDraftChange(false);
             setEditing(false);
           }
         }}
@@ -2342,20 +2396,31 @@ function EditableText({
   );
 }
 
-function BufferedBodyEditor({ label, onCommit, value }: { label: string; onCommit: (value: string) => void; value: string }) {
+function BufferedBodyEditor({ label, onCommit, onDraftChange, onRetainDraft, value }: { label: string; onCommit: (value: string) => void; onDraftChange: (dirty: boolean) => void; onRetainDraft: (value: string) => void; value: string }) {
   const [draft, setDraft] = useState(value);
+  const pendingRef = useRef({ draft: value, committed: value, onRetainDraft });
+
+  useLayoutEffect(() => { pendingRef.current.onRetainDraft = onRetainDraft; }, [onRetainDraft]);
 
   useEffect(() => {
     setDraft(value);
-  }, [value]);
+    pendingRef.current.draft = value;
+    pendingRef.current.committed = value;
+    onDraftChange(false);
+  }, [value, onDraftChange]);
+  useEffect(() => () => {
+    const pending = pendingRef.current;
+    if (pending.draft !== pending.committed) pending.onRetainDraft(pending.draft);
+    onDraftChange(false);
+  }, [onDraftChange]);
 
   return (
     <label className="studio-textarea-field">
       {label}
       <textarea
         value={draft}
-        onBlur={() => onCommit(draft)}
-        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => { pendingRef.current.committed = draft; onCommit(draft); onDraftChange(false); }}
+        onChange={(event) => { pendingRef.current.draft = event.target.value; setDraft(event.target.value); onDraftChange(event.target.value !== value); }}
       />
     </label>
   );
@@ -2750,6 +2815,12 @@ function suggestedLogTitle(form: Pick<StudioForm, "section" | "originalId" | "ti
     .trim();
   if (!title || /^(?:new note|untitled note|current note|untitled record)$/i.test(title)) return null;
   return title;
+}
+
+function studioHasUnsavedChanges(form: StudioForm, saved: StudioForm | null): boolean {
+  if (!saved) return true;
+  return ([...new Set([...Object.keys(saved), ...Object.keys(form)])] as Array<keyof StudioForm>).some((key) =>
+    key !== "originalId" && key !== "writtenAt" && key !== "writtenOrder" && key !== "steamDraftAppId" && form[key] !== saved[key]);
 }
 
 function parseStudioNotes(value: string): StudioNote[] {

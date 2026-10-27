@@ -4,10 +4,11 @@ import { BookOpen, ImagePlus, Save } from "lucide-react";
 import type { ReactNode } from "react";
 import { recordHeaderImage } from "@/components/archive/record-utils";
 import type { RecordEntry } from "@/lib/types";
+import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
 
 type InlineContent = "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation";
 
-export function InlineRecordLayout({ record, content, controls, contents, activeContent, isNew, busy, message, exportRequired, titleAction, onContentChange, onUpdate, onPickHeader, onPickThumbnail, onSave, onRead, onRefresh }: {
+export function InlineRecordLayout({ record, content, controls, contents, activeContent, isNew, busy, message, exportRequired, titleAction, saveState, onContentChange, onUpdate, onPickHeader, onPickThumbnail, onSave, onRead, onRefresh }: {
   record: RecordEntry;
   content: ReactNode;
   controls?: ReactNode;
@@ -18,6 +19,7 @@ export function InlineRecordLayout({ record, content, controls, contents, active
   message: string;
   exportRequired: boolean;
   titleAction?: ReactNode;
+  saveState: SaveState;
   onContentChange: (key: InlineContent) => void;
   onUpdate: (key: "title" | "status" | "started" | "updated", value: string) => void;
   onPickHeader: () => void;
@@ -36,9 +38,9 @@ export function InlineRecordLayout({ record, content, controls, contents, active
         <h2><input className="inline-record-title" aria-label="Record title" placeholder={record.section === "logs" ? "New Note" : record.section === "games" ? "New Game" : "New Project"} value={record.title} onChange={(event) => onUpdate("title", event.target.value)} /></h2>
         {titleAction}
         <p className="inline-record-status">Status: <input aria-label="Record status" value={record.status} onChange={(event) => onUpdate("status", event.target.value)} /><span>.</span>Type: {record.type}</p>
-        <div className="inline-record-media-actions">
-          <button className="inline-record-header-action" type="button" onClick={onPickHeader}><ImagePlus size={15} aria-hidden="true" />{header ? "Change header" : "Add header"}</button>
-          {record.section === "games" ? <button className="inline-record-header-action" type="button" onClick={onPickThumbnail}><ImagePlus size={15} aria-hidden="true" />{record.banner ? "Change thumbnail" : "Set thumbnail"}</button> : null}
+        <div className="inline-record-media-actions" role="group" aria-label="Entry images">
+          <button className="inline-record-header-action" type="button" title="Background behind the entry title; separate from overview artwork and samples" onClick={onPickHeader}><ImagePlus size={15} aria-hidden="true" />{header ? "Change header" : "Add header"}</button>
+          {record.section === "games" ? <button className="inline-record-header-action" type="button" title="Game cover used for the dashboard and overview artwork; separate from the title background" onClick={onPickThumbnail}><ImagePlus size={15} aria-hidden="true" />{record.banner ? "Change thumbnail" : "Set thumbnail"}</button> : null}
         </div>
       </div>
       {content}
@@ -50,6 +52,7 @@ export function InlineRecordLayout({ record, content, controls, contents, active
       {controls ? <div inert={busy}>{controls}</div> : null}
       <dl className="record-meta"><div><dt>Created:</dt><dd><input type="date" aria-label="Created date" disabled={busy} value={record.started || ""} onChange={(event) => onUpdate("started", event.target.value)} /></dd></div><div><dt>Last Updated:</dt><dd><input type="date" aria-label="Updated date" disabled={busy} value={record.updated} onChange={(event) => onUpdate("updated", event.target.value)} /></dd></div></dl>
       <div className="inline-record-actions">
+        <StudioSaveState state={saveState} />
         <button type="button" disabled={busy} onClick={onSave}><Save size={16} aria-hidden="true" />{busy ? "Working..." : "Save Record"}</button>
         <button type="button" disabled={busy} onClick={onRead} title={isNew ? "Close this entry; the draft is kept locally" : "Return to the saved entry; unsaved changes stay in your local draft"}><BookOpen size={16} aria-hidden="true" />{isNew ? "Close draft" : "Read Entry"}</button>
         {exportRequired ? <button type="button" disabled={busy} onClick={onRefresh}>Refresh archive</button> : null}

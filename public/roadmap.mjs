@@ -15,12 +15,13 @@ export const publicRoadmap = {
         { title: "Project editing comforts", detail: "Bring the useful header and status editing conveniences across from Games, while keeping project progress, stacks, notes and samples intact." },
         { title: "Web search", detail: "Explore a separate homepage search with Google, Yandex or DuckDuckGo. Agree on its placement and an editing-safe shortcut before building it." },
         { title: "Field notebook", detail: "Reimagine the roadmap as a Gestalt field journal: current work first, older dated pages to turn through, a distinct opening sequence and editing where the words sit. Design it before building it." },
+        { title: "Living archive", detail: "Explore responsive light, layered depth and distinct reactions for each section. Evolve Memory State without a 3D rebuild, keeping reading quiet and motion optional. Finish the editing comforts first." },
         { title: "Month-by-month folders", detail: "Let older field notes settle into folders while newer ones stay within reach." }
       ]
     },
     {
       id: "done", title: "Filed", items: [
-        { title: "Editing comforts", detail: "Use a new field note's heading as its title with one click, without automatic renaming. Game and Setup selectors share the archive's styling while keeping native keyboard and touch controls.", version: "v1.61.0" },
+        { title: "Editing comforts", detail: "Optional note-heading titles, styled native selectors and clear local save states. Progress labels keep focus while typing; unfinished recommendation and hardware text stays in a local draft when the editor closes. Saving and publishing remain separate.", version: "v1.61.1" },
         { title: "System Notices", detail: "First-visit shortcuts open a quiet reference tray beside minimized windows, then fade away when left alone. Remembered visits respect local-memory permission.", version: "v1.60.2" },
         { title: "Settings", detail: "A dedicated palette button for entry animation, full or quick startup, seasonal details and Terminal or Legacy navigation. Remembered choices respect local-memory permission.", version: "v1.59.1" },
         { title: "Session ready", detail: "A square profile welcome with a local portrait and a composed workspace arrival.", version: "v1.59.1" },

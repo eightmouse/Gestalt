@@ -13,7 +13,7 @@ export function ArtworkFraming({ banner, frame, onChange }: {
   const steamBanner = steamBannerImage(banner);
   return (
     <details className="studio-artwork-framing">
-      <summary>Frame overview artwork</summary>
+      <summary title="Adjusts the overview image, not the background behind the entry title">Frame overview artwork</summary>
       <div className={steamBanner ? "banner-frame banner-frame--steam" : "banner-frame"}>
         <img key={steamBanner || banner} src={steamBanner || banner} alt="Artwork framing preview" style={imageFraming.imageFrameStyle(frame, steamBanner ? "contain" : "cover")} onError={(event) => {
           if (!steamBanner || event.currentTarget.dataset.coverFallback) return;
