@@ -7,7 +7,7 @@ import type { RecordEntry } from "@/lib/types";
 
 type InlineContent = "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation";
 
-export function InlineRecordLayout({ record, content, controls, contents, activeContent, isNew, busy, message, exportRequired, onContentChange, onUpdate, onPickHeader, onPickThumbnail, onSave, onRead, onRefresh }: {
+export function InlineRecordLayout({ record, content, controls, contents, activeContent, isNew, busy, message, exportRequired, titleAction, onContentChange, onUpdate, onPickHeader, onPickThumbnail, onSave, onRead, onRefresh }: {
   record: RecordEntry;
   content: ReactNode;
   controls?: ReactNode;
@@ -17,6 +17,7 @@ export function InlineRecordLayout({ record, content, controls, contents, active
   busy: boolean;
   message: string;
   exportRequired: boolean;
+  titleAction?: ReactNode;
   onContentChange: (key: InlineContent) => void;
   onUpdate: (key: "title" | "status" | "started" | "updated", value: string) => void;
   onPickHeader: () => void;
@@ -33,6 +34,7 @@ export function InlineRecordLayout({ record, content, controls, contents, active
         <span className="record-kind">{record.type.toUpperCase()}</span>
         <span className="record-id">{isNew ? "UNSAVED" : `#${record.section.slice(0, 3).toUpperCase()}-${record.priority.toString().padStart(3, "0")}`}</span>
         <h2><input className="inline-record-title" aria-label="Record title" placeholder={record.section === "logs" ? "New Note" : record.section === "games" ? "New Game" : "New Project"} value={record.title} onChange={(event) => onUpdate("title", event.target.value)} /></h2>
+        {titleAction}
         <p className="inline-record-status">Status: <input aria-label="Record status" value={record.status} onChange={(event) => onUpdate("status", event.target.value)} /><span>.</span>Type: {record.type}</p>
         <div className="inline-record-media-actions">
           <button className="inline-record-header-action" type="button" onClick={onPickHeader}><ImagePlus size={15} aria-hidden="true" />{header ? "Change header" : "Add header"}</button>

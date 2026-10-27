@@ -25,6 +25,17 @@ html:has(.record-layout.is-editing-record), body:has(.record-layout.is-editing-r
   background: transparent; color: var(--text-strong); font: inherit; line-height: inherit;
 }
 .record-layout.is-editing-record .inline-record-title:focus { outline: none; border-color: var(--accent); }
+.studio-use-note-title {
+  position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 8px;
+  max-inline-size: 100%; min-block-size: 36px; margin-block: 0 12px; padding: 6px 10px;
+  border: 1px solid var(--line); background: rgba(217, 213, 193, 0.035); color: var(--text);
+  font: 14px/1.5 var(--mono); text-align: start; cursor: pointer;
+}
+.studio-use-note-title > svg { flex: 0 0 16px; }
+.studio-use-note-title > span { min-inline-size: 0; overflow-wrap: anywhere; }
+.studio-use-note-title strong { color: var(--text-strong); font-weight: 500; }
+.studio-use-note-title:is(:hover, :focus-visible) { border-color: var(--accent); }
+.studio-use-note-title:disabled { opacity: 0.55; cursor: wait; }
 .record-layout.is-editing-record .inline-record-status { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .record-layout.is-editing-record .inline-record-status input {
   inline-size: 12ch; min-inline-size: 0; padding: 3px; border: 0; border-block-end: 1px dashed var(--line);
@@ -48,6 +59,23 @@ html:has(.record-layout.is-editing-record), body:has(.record-layout.is-editing-r
 .record-layout.is-editing-record :is(input, textarea) { font-size: 16px; }
 .record-layout.is-editing-record .inline-record-title { font-size: inherit; }
 .studio-game-controls { display: grid; gap: 12px; }
+.studio-placement-field,
+.studio-inspector .studio-placement-field,
+.studio-setup-controls > label,
+.studio-inspector .studio-setup-controls > label { display: grid; gap: 8px; min-inline-size: 0; color: var(--muted); font: 14px/1.5 var(--mono); letter-spacing: 0; }
+.studio-select-control { position: relative; display: block; align-self: start; block-size: fit-content; min-inline-size: 0; }
+.studio-select-control > select:not([multiple]) {
+  display: block; appearance: none; -webkit-appearance: none; box-sizing: border-box;
+  inline-size: 100%; max-inline-size: 100%; min-inline-size: 0; min-block-size: 40px;
+  padding: 8px 36px 8px 10px; border: 1px solid var(--line-strong); border-radius: 0;
+  background: #10110f; color: var(--text-strong); color-scheme: dark;
+  font: 16px/1.4 var(--mono); letter-spacing: 0; text-transform: none; cursor: pointer;
+}
+.studio-select-control > select:is(:hover, :focus-visible) { border-color: var(--accent); }
+.studio-select-control > select:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
+.studio-select-control > select:disabled { opacity: 0.55; cursor: not-allowed; }
+.studio-select-control > select > option { background: #10110f; color: var(--text-strong); }
+.studio-select-control > svg { position: absolute; inset-inline-end: 10px; inset-block-start: 50%; inline-size: 16px; block-size: 16px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .archive-shell > .workspace:has(> .record-window > .is-editing-record) { z-index: 40; }
 @media (max-width: 1100px) {
   .archive-shell > .workspace > .record-window .record-layout.is-editing-record { grid-template-columns: minmax(0, 1fr); }

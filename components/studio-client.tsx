@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
-import { Bell, Bold, Check, Code, Heading1, Heading2, Heading3, Italic, Link, List, Quote, X } from "lucide-react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { Bell, Bold, Check, ChevronDown, Code, Heading1, Heading2, Heading3, Italic, Link, List, Quote, Type, X } from "lucide-react";
 import "@/app/studio/studio.css";
 import { recordDisplaySummary } from "@/components/archive/record-utils";
 import { compareSectionRecords } from "@/lib/log-archive";
@@ -195,6 +195,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   const sectionRecords = groupedRecords[activeSection].slice().sort(compareSectionRecords);
   const contents = useMemo(() => getStudioContents(form.section, form.setupGroup), [form.section, form.setupGroup]);
   const activeRecord = useMemo(() => toRecordPreview(form, bodyDraftRef.current), [form]);
+  const suggestedTitle = useMemo(() => suggestedLogTitle(form), [form.section, form.originalId, form.title, form.body]);
   const activeSectionConfig = studioSections.find((section) => section.id === activeSection) ?? studioSections[0];
 
   useEffect(() => {
@@ -234,7 +235,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
       setForm(draft.form);
       setActiveSection(draft.form.section);
       setMode("edit");
-      setMessage(`Restored unsaved draft for ${draft.form.title}.`);
+      setMessage(draft.form.title.trim() ? `Restored unsaved draft for ${draft.form.title}.` : "Restored unsaved draft.");
     }
   }, [drafts, embedded, initialRecordId, initialSection]);
 
@@ -396,7 +397,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
 
   const save = async () => {
     if (saving || uploading) return;
-    if (inline && !formRef.current.title.trim()) {
+    if ((inline || (formRef.current.section === "logs" && !formRef.current.originalId)) && !formRef.current.title.trim()) {
       setMessage("Give this entry a title before saving.");
       return;
     }
@@ -712,6 +713,17 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   };
 
   const Shell = embedded ? "div" : "main";
+  const titleAction = suggestedTitle ? (
+    <button className="studio-use-note-title" type="button" disabled={saving || uploading} onClick={(event) => {
+      const title = suggestedLogTitle({ ...formRef.current, body: bodyDraftRef.current });
+      if (!title) return;
+      const titleControl = event.currentTarget.closest(".record-heading, .studio-heading-content")?.querySelector<HTMLElement>(".inline-record-title, .studio-title-edit");
+      update("title", title);
+      titleControl?.focus({ preventScroll: true });
+    }}>
+      <Type size={16} aria-hidden="true" /><span>Use note title: <strong>{suggestedTitle}</strong></span>
+    </button>
+  ) : null;
 
   if (inline) {
     if (!supportsInlineEditing(form.section)) return null;
@@ -720,7 +732,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     return <>
       <input ref={fileInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
         onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
-      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={message}
+      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={message} titleAction={titleAction}
         controls={form.section === "games" ? <GameInspectorControls form={form} onUpdate={update} /> : undefined}
         exportRequired={archiveRefreshRequired} onUpdate={update} onPickHeader={() => chooseFiles("headerImage")} onPickThumbnail={() => chooseFiles("banner")}
         onContentChange={(key) => { setActiveContent(key); onContentChange?.(key); }} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive}
@@ -808,7 +820,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
 
             <div className="studio-copy-layout">
               <div className="studio-copy-main">
-                <EditableHeading form={form} onFilePick={chooseFiles} onUpdate={update} />
+                <EditableHeading form={form} titleAction={titleAction} onFilePick={chooseFiles} onUpdate={update} />
                 <StudioContent
                   activeContent={activeContent}
                   form={form}
@@ -1534,10 +1546,12 @@ function splitStudioSectionRecords(section: StudioSection, records: RecordEntry[
 
 function EditableHeading({
   form,
+  titleAction,
   onFilePick,
   onUpdate
 }: {
   form: StudioForm;
+  titleAction?: ReactNode;
   onFilePick: (target: MediaTarget) => void;
   onUpdate: <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
 }) {
@@ -1550,8 +1564,9 @@ function EditableHeading({
           <EditableText className="studio-id-edit" label="ID" value={form.id} onChange={(value) => onUpdate("id", value)} placeholder="auto-from-title" />
         </div>
         <h2>
-          <EditableText className="studio-title-edit" label="Title" value={form.title} onChange={(value) => onUpdate("title", value)} />
+          <EditableText className="studio-title-edit" label="Title" value={form.title} placeholder={form.section === "logs" ? "New Note" : ""} onChange={(value) => onUpdate("title", value)} />
         </h2>
+        {titleAction}
         <div className="studio-heading-meta">
           <span>
             Status: <EditableText label="Status" value={form.status} onChange={(value) => onUpdate("status", value)} />
@@ -1775,14 +1790,20 @@ function GameInspectorControls({ form, onUpdate }: { form: StudioForm; onUpdate:
   const placement = gameLogPlacement(form);
   return <div className="studio-game-controls">
     <label className="studio-placement-field">Log placement
-      <select aria-label="Log placement" value={placement} onChange={(event) => onUpdate("gamePlacement", event.target.value === "past" ? "past" : "session")}>
-        <option value="session">Session Logs</option><option value="past">Past Logs</option>
-      </select>
+      <span className="studio-select-control">
+        <select aria-label="Log placement" value={placement} onChange={(event) => onUpdate("gamePlacement", event.target.value === "past" ? "past" : "session")}>
+          <option value="session">Session Logs</option><option value="past">Past Logs</option>
+        </select>
+        <ChevronDown size={16} aria-hidden="true" />
+      </span>
     </label>
     {placement === "session" ? <label className="studio-placement-field">Session activity
-      <select aria-label="Session activity" value={form.gameActivity || ""} onChange={(event) => onUpdate("gameActivity", event.target.value === "active" ? "active" : event.target.value === "inactive" ? "inactive" : "")}>
-        <option value="">Record status ({form.status})</option><option value="active">Active</option><option value="inactive">Inactive</option>
-      </select>
+      <span className="studio-select-control">
+        <select aria-label="Session activity" value={form.gameActivity || ""} onChange={(event) => onUpdate("gameActivity", event.target.value === "active" ? "active" : event.target.value === "inactive" ? "inactive" : "")}>
+          <option value="">Record status ({form.status})</option><option value="active">Active</option><option value="inactive">Inactive</option>
+        </select>
+        <ChevronDown size={16} aria-hidden="true" />
+      </span>
     </label> : null}
     <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
   </div>;
@@ -1839,12 +1860,15 @@ function SetupInspectorControls({
     <div className="studio-setup-controls">
       <label>
         Setup folder
-        <select value={setupGroup} onChange={(event) => onUpdate("setupGroup", event.target.value)}>
-          <option value="systems">Systems</option>
-          <option value="tools">Tools</option>
-          <option value="peripherals">Peripherals</option>
-          <option value="notes">Notes</option>
-        </select>
+        <span className="studio-select-control">
+          <select value={setupGroup} onChange={(event) => onUpdate("setupGroup", event.target.value)}>
+            <option value="systems">Systems</option>
+            <option value="tools">Tools</option>
+            <option value="peripherals">Peripherals</option>
+            <option value="notes">Notes</option>
+          </select>
+          <ChevronDown size={16} aria-hidden="true" />
+        </span>
       </label>
       <p>{setupGroupHelp(setupGroup)}</p>
     </div>
@@ -2420,7 +2444,7 @@ function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "
   return {
     originalId: "",
     id: "",
-    title: "Untitled Record",
+    title: section === "logs" ? "" : "Untitled Record",
     section,
     type: section === "setup" ? defaultSetupType(normalizedSetupGroup) : defaultType(section),
     status: "Draft",
@@ -2715,6 +2739,18 @@ type StudioNote = {
   title: string;
   body: string;
 };
+
+function suggestedLogTitle(form: Pick<StudioForm, "section" | "originalId" | "title" | "body">): string | null {
+  if (form.section !== "logs" || form.originalId || form.title.trim()) return null;
+  const notes = parseStudioNotes(form.body);
+  if (notes.length !== 1) return null;
+  const title = notes[0].title
+    .replace(/^\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}(?:\s*[-:\u2013\u2014]\s*|\s*$)/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!title || /^(?:new note|untitled note|current note|untitled record)$/i.test(title)) return null;
+  return title;
+}
 
 function parseStudioNotes(value: string): StudioNote[] {
   const { mainBody } = splitStudioUpdateIndex(value);

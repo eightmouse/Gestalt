@@ -446,6 +446,8 @@ window.__GESTALT_RECORDS = [
     "writtenOrder": 0,
     "summary": "The mushroom game from the early 2000s, how is this game still alive?",
     "banner": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/216150/library_600x900.jpg",
+    "bannerZoom": 129,
+    "bannerY": 0,
     "dashboardImage": "",
     "headerImage": "",
     "iconImage": "",
@@ -493,7 +495,7 @@ window.__GESTALT_RECORDS = [
     "technicalStack": "",
     "recommendation": "",
     "milestones": [],
-    "body": ":::note 26 / 10 / 2026 - PRISM\nThis is my own theme for Codex. I've been working on this for a while, stopped here and there, then I saw other people and projects doing changes  to their client and got inspired, plus I've studied their changes a bit to understand what was going on.\n\nI haven't published it yet, plan to.. just not ready.\nMost of it works and I'm happy with it so far, but there might be bugs here and there.\nI'll keep improving it as I use it.\n:::"
+    "body": ":::note 26 / 10 / 2026 - PRISM\nThis is my own theme for Codex. I've been working on this for a while, stopped here and there, then I saw other people and projects doing changes  to their client and got inspired, plus I've studied their changes a bit to understand what was going on.\n\n![full=public/media/records/prism/1793069522387-screenshot-2026-10-27-105144.png](public/media/records/prism/1793069522613-screenshot-2026-10-27-105144-display.webp)\n\nI haven't published it yet, plan to.. just not ready.\nMost of it works and I'm happy with it so far, but there might be bugs here and there.\nI'll keep improving it as I use it.\n:::"
   },
   {
     "id": "steam-1422450",

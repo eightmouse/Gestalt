@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const require = createRequire(import.meta.url);
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
@@ -37,7 +38,7 @@ async function fixture({ fail = false, exported = true, inline = true, section =
     window: { localStorage: { getItem: () => storage } },
     imageFraming: require("../public/image-framing.js"),
     gameLogPlacement: (form) => form.gamePlacement || form.meta?.gamePlacement || "session", gameActivityValue: (form) => form.gameActivity || form.meta?.gameActivity || "", compareSectionRecords: () => 0,
-    supportsInlineEditing, InlineRecordLayout() {}, PublishNotificationPanel() {}, Bell: "svg",
+    supportsInlineEditing, InlineRecordLayout() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ChevronDown: require("lucide-react").ChevronDown,
     readStudioResponse: api.exports.readStudioResponse, StudioRequestError: api.exports.StudioRequestError,
     fetch: async (url, options) => {
       calls.push({ url, payload: JSON.parse(options.body || "{}") });
@@ -61,8 +62,11 @@ async function fixture({ fail = false, exported = true, inline = true, section =
   const render = () => { stateIndex = 0; refIndex = 0; return context.exports.StudioClient(props); };
   const find = (node, predicate) => !node || typeof node !== "object" ? null : predicate(node) ? node : [node.props?.children].flat(Infinity).map((child) => find(child, predicate)).find(Boolean);
   const layout = () => find(render(), (node) => node.type === context.InlineRecordLayout);
-  if (!inline) return { calls, changes, states, save: () => find(render(), (node) => node.type === "button" && node.props.children === "Save Record").props.onClick() };
-  if (manual) return { calls, changes, states, layout };
+  if (!inline) return { calls, changes, states,
+    heading: () => find(render(), (node) => node.type === context.EditableHeading),
+    content: () => find(render(), (node) => node.type === context.StudioContent),
+    save: () => find(render(), (node) => node.type === "button" && node.props.children === "Save Record").props.onClick() };
+  if (manual) return { calls, changes, states, layout, suggest: context.suggestedLogTitle };
   assert.equal(layout().props.activeContent, "notes", "Entry content is retained when editing starts");
   layout().props.onUpdate("title", "Edited in place");
   layout().props.content.props.onBodyCommit(":::note First note\nUpdated body with **formatting** and a ~ character.\n:::");
@@ -131,6 +135,85 @@ const steam = await fixture({ section: "games", create: true, manual: true, seed
 assert.equal(steam.layout().props.record.title, "Seed game");
 assert.equal(steam.layout().props.record.meta.steamAppId, "42");
 assert.equal(steam.calls.length, 0, "The deliberate Steam offer is still an unsaved draft");
+
+const untitled = await fixture({ create: true, manual: true });
+const commitNote = (body) => untitled.layout().props.content.props.onBodyCommit(body);
+assert.equal(untitled.layout().props.titleAction, null, "Generated New Note headings are not suggestions");
+commitNote(":::note 27 / 10 / 2026 - A quieter morning\nWritten content with ![capture](/media/fixture.png).\n:::");
+assert.equal(untitled.layout().props.record.title, "", "A heading offers a title, never silently assigns it");
+assert.equal(untitled.calls.length, 0, "Writing or suggesting a title never saves or publishes");
+let titleAction = untitled.layout().props.titleAction;
+assert.equal(titleAction.props.children[1].props.children[1].props.children, "A quieter morning", "A date prefix is not repeated in the record title");
+let titleFocused = false;
+titleAction.props.onClick({ currentTarget: { closest: () => ({ querySelector: () => ({ focus: () => { titleFocused = true; } }) }) } });
+assert.equal(titleFocused, true, "Accepting a suggestion moves focus to the title, not the document body");
+assert.equal(untitled.layout().props.record.title, "A quieter morning");
+assert.equal(untitled.layout().props.titleAction, null);
+commitNote(":::note A changed heading\nUpdated note body.\n:::");
+assert.equal(untitled.layout().props.record.title, "A quieter morning", "Accepted titles remain independent of later note edits");
+await untitled.layout().props.onSave();
+const titledWrite = untitled.calls.find((call) => call.url === "/api/studio/entry").payload;
+assert.equal(titledWrite.title, "A quieter morning");
+assert.equal(titledWrite.body, ":::note A changed heading\nUpdated note body.\n:::");
+commitNote(":::note Another heading\nAnother edit.\n:::");
+untitled.layout().props.onUpdate("title", "");
+assert.equal(untitled.layout().props.titleAction, null, "Saved logs are never automatically retitled, even if their title is cleared");
+
+const manualTitle = await fixture({ create: true, manual: true });
+manualTitle.layout().props.content.props.onBodyCommit(":::note A possible title\nBody.\n:::");
+titleAction = manualTitle.layout().props.titleAction;
+manualTitle.layout().props.onUpdate("title", "My explicit title");
+assert.equal(manualTitle.layout().props.titleAction, null);
+titleAction.props.onClick();
+assert.equal(manualTitle.layout().props.record.title, "My explicit title", "An old suggestion callback cannot overwrite a newer manual title");
+assert.ok(manualTitle.states.some((value) => value?.["new:logs"]?.form.title === "My explicit title"), "Title acceptance/manual edits use the existing recoverable draft cache");
+
+const draft = { section: "logs", originalId: "", title: "", body: ":::note A heading\nBody.\n:::" };
+for (const section of ["games", "projects", "setup", "archive"]) assert.equal(untitled.suggest({ ...draft, section }), null);
+assert.equal(untitled.suggest({ ...draft, originalId: "saved-log" }), null);
+assert.equal(untitled.suggest({ ...draft, title: "Written by me" }), null);
+for (const heading of ["New Note", "27 / 10 / 2026 - New Note", "27 / 10 / 2026", "Untitled note", "Current note", ""]) {
+  assert.equal(untitled.suggest({ ...draft, body: `:::note ${heading}\nBody.\n:::` }), null);
+}
+assert.equal(untitled.suggest({ ...draft, body: "# An arbitrary body heading\nBody text." }), null, "No guessing from prose or unrelated body text");
+assert.equal(untitled.suggest({ ...draft, body: `${draft.body}\n\n:::note Second heading\nBody.\n:::` }), null, "Multi-note logs have no ambiguous suggestion");
+assert.equal(untitled.suggest({ ...draft, body: ":::note 27 / 10 / 2026 - A  spaced   title\r\nBody.\r\n:::\r\n\r\n## Update Index\r\n- Old activity" }), "A spaced title");
+
+const fullStudio = await fixture({ create: true, inline: false, manual: true });
+assert.equal(fullStudio.heading().props.form.title, "", "New Logs also have an empty title in the legacy editor");
+await fullStudio.save();
+assert.equal(fullStudio.calls.length, 0, "Legacy new Logs also require a deliberate title before any write");
+fullStudio.content().props.onBodyCommit(":::note 27 / 10 / 2026 - The same shortcut\nFixture body.\n:::");
+fullStudio.heading().props.titleAction.props.onClick({ currentTarget: { closest: () => null } });
+assert.equal(fullStudio.heading().props.form.title, "The same shortcut", "Both local editing views share the same explicit action");
+console.log("Log title suggestions: explicit acceptance, date/placeholder handling, single-note scope, draft retention, stale callbacks, saved/manual title protection and editor parity passed.");
+
+const gameControls = await fixture({ section: "games", manual: true });
+const controls = () => gameControls.layout().props.controls.type(gameControls.layout().props.controls.props);
+const descendants = (node) => !node || typeof node !== "object" ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(descendants)];
+const selects = () => descendants(controls()).filter((node) => node.type === "select");
+const html = renderToStaticMarkup(gameControls.layout().props.controls);
+assert.equal((html.match(/class="studio-select-control"/g) || []).length, 2);
+assert.equal((html.match(/<select /g) || []).length, 2, "Native selects retain keyboard, type-ahead and touch picker behavior");
+assert.equal((html.match(/aria-hidden="true"/g) || []).length, 2, "Decorative chevrons do not change the control's accessible name");
+selects().find((node) => node.props["aria-label"] === "Session activity").props.onChange({ target: { value: "active" } });
+assert.equal(gameControls.layout().props.record.meta.gameActivity, "active");
+selects().find((node) => node.props["aria-label"] === "Log placement").props.onChange({ target: { value: "past" } });
+assert.equal(selects().length, 1, "Changing placement still conditionally hides session activity");
+assert.equal(gameControls.layout().props.record.meta.gamePlacement, "past");
+await gameControls.layout().props.onSave();
+const placementWrite = gameControls.calls.find((call) => call.url === "/api/studio/entry").payload;
+assert.equal(placementWrite.gamePlacement, "past");
+assert.equal(placementWrite.gameActivity, "active");
+assert.equal(placementWrite.steamAppId, "123");
+assert.match(source, /Setup folder\s*<span className="studio-select-control">\s*<select/);
+const editorCss = read("app/studio/studio.css");
+assert.match(editorCss, /\.studio-select-control > select:not\(\[multiple\]\)\s*\{/);
+assert.match(editorCss, /appearance: none; -webkit-appearance: none/);
+assert.match(editorCss, /\.studio-select-control\s*\{[^}]*align-self: start; block-size: fit-content/);
+assert.match(editorCss, /\.studio-select-control > svg\s*\{[^}]*pointer-events: none/);
+assert.match(read("app/globals.css"), /\.timeline-source select\s*\{[^}]*color-scheme: dark/);
+console.log("Editor selectors: shared native styling, labelled controls, decorative arrows, unchanged placement/activity behavior and save payload passed.");
 
 const reader = read("components/archive/record-window.tsx");
 assert.match(reader, /editor \? "record-layout is-editing-record" : "record-layout"/);

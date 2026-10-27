@@ -12,7 +12,7 @@ export const publicRoadmap = {
     },
     {
       id: "ideas", title: "On the desk", items: [
-        { title: "Suggested log titles", detail: "Use a field note's own words to suggest its title when one hasn't been written manually. Game and project titles stay independent of new notes." },
+        { title: "Project editing comforts", detail: "Bring the useful header and status editing conveniences across from Games, while keeping project progress, stacks, notes and samples intact." },
         { title: "Web search", detail: "Explore a separate homepage search with Google, Yandex or DuckDuckGo. Agree on its placement and an editing-safe shortcut before building it." },
         { title: "Field notebook", detail: "Reimagine the roadmap as a Gestalt field journal: current work first, older dated pages to turn through, a distinct opening sequence and editing where the words sit. Design it before building it." },
         { title: "Month-by-month folders", detail: "Let older field notes settle into folders while newer ones stay within reach." }
@@ -20,14 +20,14 @@ export const publicRoadmap = {
     },
     {
       id: "done", title: "Filed", items: [
+        { title: "Editing comforts", detail: "Use a new field note's heading as its title with one click, without automatic renaming. Game and Setup selectors share the archive's styling while keeping native keyboard and touch controls.", version: "v1.61.0" },
         { title: "System Notices", detail: "First-visit shortcuts open a quiet reference tray beside minimized windows, then fade away when left alone. Remembered visits respect local-memory permission.", version: "v1.60.2" },
         { title: "Settings", detail: "A dedicated palette button for entry animation, full or quick startup, seasonal details and Terminal or Legacy navigation. Remembered choices respect local-memory permission.", version: "v1.59.1" },
         { title: "Session ready", detail: "A square profile welcome with a local portrait and a composed workspace arrival.", version: "v1.59.1" },
         { title: "Terminal navigation", detail: "Press T for a clickable directory with real section dates, window controls and a compact restore icon. A delayed side hint introduces the shortcut; Legacy Mode stays available.", version: "v1.57.2" },
         { title: "Section reading space", detail: "Written project updates, game sessions and a field-note reading desk beside the existing lists.", version: "v1.56.0" },
         { title: "A clearer timeline", detail: "Recent signals grouped by date, with source selection and a more readable trail.", version: "v1.52.0" },
-        { title: "Editing in place", detail: "Create, format and edit field notes, games and projects in their own record windows, keeping saves local.", version: "v1.52.0" },
-        { title: "Global change review", detail: "Review saved records from the local bell and publish the batch together, separately from unsaved drafts.", version: "v1.52.0" },
+        { title: "Editing in place", detail: "Create, format and edit field notes, games and projects in their own windows. Saves stay local; the publishing bell reviews saved changes and publishes the batch separately from drafts.", version: "v1.52.0" },
         { title: "Steam and artwork", detail: "Automatic Current Game with playtime and achievements when available; adjustable game headers without changing original images.", version: "v1.47.0" },
         { title: "Session and Past Logs", detail: "Keep games to return to separate from completed or retired play logs.", version: "v1.43.0" },
         { title: "Full-size media", detail: "Open samples and screenshots outside the record window.", version: "v1.42.2" },
