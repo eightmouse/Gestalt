@@ -244,6 +244,8 @@ const behaviourCheck = spawnSync(process.execPath, [path.join(root, "scripts", "
 const toolsCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-workspace-tools.mjs")], { encoding: "utf8" });
 const recordMotionCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-record-motion.mjs")], { encoding: "utf8" });
 if (recordMotionCheck.status !== 0) errors.push(`Record motion regression failed: ${(recordMotionCheck.stderr || recordMotionCheck.stdout || "").trim()}`);
+const greetingCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-greeting.mjs")], { encoding: "utf8" });
+if (greetingCheck.status !== 0) errors.push(`Greeting regression failed: ${(greetingCheck.stderr || greetingCheck.stdout || "").trim()}`);
 if (toolsCheck.status !== 0) errors.push(`Workspace tools regression failed: ${(toolsCheck.stderr || toolsCheck.stdout || "").trim()}`);
 if (behaviourCheck.status !== 0) errors.push(`OS Behaviour regression check failed: ${(behaviourCheck.stderr || behaviourCheck.stdout || "").trim()}`);
 

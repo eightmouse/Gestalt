@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, type RefObject } from "react";
 import { Terminal, Bell } from "lucide-react";
 import navigation, { type DesktopNavigationController, type DesktopNavigationMode } from "@/public/desktop-navigation.js";
+import recordMotion from "@/public/record-motion.js";
 import { activityDate, formatReadableDate } from "@/components/archive/record-utils";
 import { isLogArchivedByAge } from "@/lib/log-archive";
 import type { RecordEntry, RecordSection } from "@/lib/types";
@@ -10,7 +11,7 @@ import type { RecordEntry, RecordSection } from "@/lib/types";
 export function useDesktopNavigation(shellRef: RefObject<HTMLElement | null>, mode: DesktopNavigationMode, ready: boolean, busy: boolean, palette: boolean, remember: boolean) {
   const controller = useRef<DesktopNavigationController | null>(null);
   useEffect(() => {
-    controller.current = navigation.createController();
+    controller.current = navigation.createController(window, recordMotion);
     return () => { controller.current?.destroy(); controller.current = null; };
   }, []);
   useEffect(() => { controller.current?.attach(shellRef.current, { mode, ready, busy, palette, remember }); }, [shellRef, mode, ready, busy, palette, remember]);
@@ -27,7 +28,7 @@ export function DesktopNavigationChrome({ records, activeSection, onOpenSection 
     </section>
     <section className="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
       <header className="desktop-terminal-bar">
-        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.64.2</small></span>
+        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.64.6</small></span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button>
           <button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button>

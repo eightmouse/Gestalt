@@ -2,6 +2,24 @@
 
 ## Current Priorities
 
+Previous verified published checkpoint: `v1.64.2`, commit `a25300864f9acd060b40e7f71bd96caf096d542c`; Pages run `40649368998` and live artifact checks succeeded. Next.js is pinned to 16.4.1. The `v1.64.6` release audit found no known vulnerabilities. Original media, publishing boundaries and supply-chain guards remain intact.
+
+Release batch: `v1.64.6`, includes greeting refresh/documentation housekeeping, the corrected frame-first web-search reveal and the approved terminal/motion follow-up. Fresh terminal opens construct their frame, bar, prompt and six rows within 830ms; restores bypass construction, and keyboard/pointer interaction settles it. Record and explicit terminal minimizing now use a 480ms narrowing/contraction toward the restore control, without DOM clones, media snapshots, new timers or dependencies. Reading state, click-through guards, interruption cleanup and reduced-motion/off fallbacks remain. Greeting reuses the existing clock cadence. Owner approved the result and authorized commit/push with saved notes; the new log's personal paragraph is softened and its title is A Little Journey. Greeting and window construction/minimizing are filed on the public roadmap. TypeScript, content/static-shell, isolated Studio workflow, privacy and dependency checks passed; verify Pages deployment after push.
+
+Next, one reviewed step at a time:
+1. Explore a distinct dematerializing close. Preserve reading-state and click-through safeguards; real Firefox/Edge smoothness still needs acceptance.
+2. December/January dressing using the existing seasonal framework; scope any falling snow separately.
+3. Discuss the field notebook's page/history/editing design before building it. Remaining Setup/Archive in-place management and month/year archive folders remain later work.
+4. Continue resolution/zoom composition, mobile long-record control reachability, and measured Firefox/Chromium performance/accessibility/security checks. Targeted regressions continue with each batch.
+
+## Recent Development History
+
+The notes below retain the earlier decisions and checks. Their local-only, pending and release-preparation labels are historical; Current Priorities above is authoritative.
+
+Published baseline: `v1.64.2`, commit `a25300864f9acd060b40e7f71bd96caf096d542c`. Pages run `40649368998` succeeded; live version/helpers/social link/roadmap/note and public read-only shell were verified. Post-push publisher preflight was clear. Earlier unshipped/preparation labels below are historical. Greeting behavior is a newly requested post-release polish item, not an outstanding part of that published batch.
+
+Backlog addition (owner, 28 October after the release): keep the dashboard greeting matched to the visitor's local time. Both readers already choose morning before 12:00, afternoon before 18:00 and evening afterward when rendering. React refreshes its clock state, but the static `syncTime()` currently updates only clock/date DOM, so the greeting can go stale if Gestalt stays open across a boundary. Verify on-load/long-open/tab-resume parity and reuse existing clock/visibility handling; do not add another polling timer or replay the title animation on every clock tick. No implementation requested during the owner's break.
+
 Release checks passed on the approved Next 16.4.1 update: zero known audit findings, production build, TypeScript, 54-record validation, full static-shell/Pages regression suite, isolated Studio save/export/publish recovery and publisher privacy scan. The lockfile changes only Next and its matching packages; original media and supply-chain settings are unchanged. Commit/push and live deployment verification remain distinct final release steps.
 
 Release target updated to `v1.64.2`: the final registry audit found three version-based Next.js advisories (GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr, GHSA-p3m5-59mp-jv5r) against 16.3.8. Official advisories identify 16.4.1 as patched; npm metadata dates that release to 14 October, beyond the seven-day age guard. Owner explicitly approved the pinned update after saving/closing Studio. Install uses `--ignore-scripts`; keep the existing package-manager pin, overrides and supply-chain settings unchanged. Pages is a public-only static artifact, not a hosted Next runtime; no compromise is inferred from an audit finding. Rerun checks/audit after installation and verify Git/Pages before claiming release success. This security patch supersedes the earlier no-dependency-change release assumption below.

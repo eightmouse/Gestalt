@@ -59,10 +59,11 @@
       dialog = doc.createElement("dialog");
       dialog.className = isConnections ? "connections-dialog" : "web-search-dialog";
       dialog.setAttribute("aria-label", isConnections ? "Connections" : "Web search");
-      dialog.innerHTML = isConnections ? renderConnections() : `<form class="web-search-form"><div class="web-search-heading"><label for="gestalt-web-query">// WEB SEARCH</label></div><div class="web-search-row"><select aria-label="Search engine">${engines.map((item) => `<option value="${item.id}"${item.id === engine ? " selected" : ""}>${item.label}</option>`).join("")}</select><input id="gestalt-web-query" type="search" aria-label="Search the web" placeholder="Search the web" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="1000" required></div><p class="web-search-error" role="status" hidden>Search could not open. Try again.</p></form>`;
+      dialog.innerHTML = isConnections ? renderConnections() : `<div class="web-search-shell"><div class="web-search-access" aria-hidden="true"></div><form class="web-search-form"><div class="web-search-heading"><label for="gestalt-web-query">// WEB SEARCH</label></div><div class="web-search-row"><select aria-label="Search engine">${engines.map((item) => `<option value="${item.id}"${item.id === engine ? " selected" : ""}>${item.label}</option>`).join("")}</select><input id="gestalt-web-query" type="search" aria-label="Search the web" placeholder="Search the web" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="1000" required></div><p class="web-search-error" role="status" hidden>Search could not open. Try again.</p></form></div>`;
       const dismiss = () => { const callback = onClose; close(); callback?.(); };
       dialog.addEventListener("keydown", (event) => {
         event.stopPropagation();
+        if (!isConnections && event.key !== "Escape") event.currentTarget.setAttribute("data-search-ready", "");
         if (event.key === "Escape" && !event.isComposing) { event.preventDefault(); dismiss(); }
       });
       dialog.addEventListener("cancel", (event) => { event.preventDefault(); event.stopPropagation(); dismiss(); });
@@ -71,6 +72,10 @@
         if (event.target === dialog || event.target.closest?.("[data-web-close]")) dismiss();
       });
       if (!isConnections) {
+        const searchDialog = dialog;
+        const settleSearch = () => searchDialog.setAttribute("data-search-ready", "");
+        searchDialog.addEventListener("input", settleSearch, { once: true });
+        searchDialog.addEventListener("pointerdown", settleSearch, { once: true });
         const select = dialog.querySelector("select");
         select.addEventListener("change", () => {
           engine = normalizeEngine(select.value);

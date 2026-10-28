@@ -20,6 +20,7 @@
         onComplete();
         return;
       }
+      target?.setAttribute?.("data-motion-destination", "");
       const rect = node.getBoundingClientRect();
       const destination = target?.getBoundingClientRect();
       const x = destination?.width ? destination.left + destination.width / 2 : host.innerWidth - 110;
@@ -30,6 +31,8 @@
       const base = style.transform === "none" ? "" : style.transform;
       const opacityValue = Number.parseFloat(style.opacity);
       const opacity = Number.isFinite(opacityValue) ? opacityValue : 1;
+      const endX = Math.max(0.03, Math.min(0.14, (destination?.width || 44) / Math.max(1, rect.width)));
+      const endY = Math.max(0.03, Math.min(0.14, (destination?.height || 44) / Math.max(1, rect.height)));
       const wasInert = node.inert;
       let animation, finished = false;
       const consume = (event) => { event.preventDefault(); event.stopImmediatePropagation(); };
@@ -39,6 +42,7 @@
         doc.removeEventListener("visibilitychange", onVisibility);
         motion.removeEventListener("change", onMotion);
         node.removeAttribute("data-record-retracting");
+        target?.removeAttribute?.("data-motion-destination");
         node.inert = wasInert;
         active = null;
       };
@@ -67,9 +71,11 @@
       motion.addEventListener("change", onMotion);
       try {
         animation = node.animate([
-          { transform: `translate(0px, 0px) ${base} scale(1)`, opacity, transformOrigin: "center" },
-          { transform: `translate(${dx}px, ${dy}px) ${base} scale(0.16)`, opacity: 0, transformOrigin: "center" }
-        ], { duration: 330, easing: "cubic-bezier(0.32, 0, 0.2, 1)", fill: "forwards" });
+          { offset: 0, transform: `translate(0px, 0px) ${base} scale(1, 1)`, opacity, transformOrigin: "center" },
+          { offset: 0.24, transform: `translate(${dx * 0.08}px, ${dy * 0.06}px) ${base} scale(0.86, 0.98)`, opacity, transformOrigin: "center" },
+          { offset: 0.7, transform: `translate(${dx * 0.64}px, ${dy * 0.57}px) ${base} scale(0.25, 0.48)`, opacity: opacity * 0.8, transformOrigin: "center" },
+          { offset: 1, transform: `translate(${dx}px, ${dy}px) ${base} scale(${endX}, ${endY})`, opacity: 0, transformOrigin: "center" }
+        ], { duration: 480, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" });
         animation.finished.then(finish, finish);
       } catch { finish(); }
     }

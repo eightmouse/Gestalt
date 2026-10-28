@@ -30,8 +30,9 @@
     return rows;
   }
 
-  function createController(host = globalThis.window) {
+  function createController(host = globalThis.window, motionApi = host.GestaltRecordMotion) {
     const doc = host.document;
+    const windowMotion = motionApi?.createController(host);
     const desktop = host.matchMedia("(min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine)");
     let shell = null, sidebar = null, terminal = null, workspace = null;
     let workspaceWasInert = false, detach = () => {}, returnFocus = null;
@@ -101,6 +102,7 @@
         else sidebar.removeAttribute("aria-hidden");
       }
       if (terminal) {
+        if (shown) terminal.hidden = false;
         terminal.inert = !shown;
         terminal.setAttribute("aria-hidden", String(!shown));
         if (shown) terminal.setAttribute("aria-modal", "true");
@@ -116,6 +118,7 @@
     }
     function refresh() {
       if (destroyed) return;
+      if (!enabled() || blocked() || settings.palette) cancelRetraction();
       if (!noticesAvailable()) noticesOpen = false;
       if (!enabled()) { open = false; minimized = false; maximized = false; }
       else if (blocked() || settings.palette) open = false;
@@ -136,16 +139,37 @@
       event.preventDefault(); event.stopPropagation(); closeNotices();
     }
     function show() {
-      if (!enabled() || blocked() || settings.palette) return;
+      if (!enabled() || blocked() || settings.palette || windowMotion?.busy || open) return;
       if (!terminal?.contains(doc.activeElement) && !doc.activeElement?.closest?.("[data-desktop-terminal-restore]")) returnFocus = doc.activeElement;
       acknowledgeHint();
       noticesOpen = false;
+      terminal.toggleAttribute("data-terminal-restoring", minimized);
+      terminal.removeAttribute("data-terminal-ready");
       open = true; minimized = false; paint();
       (terminal?.querySelector('[aria-current="page"]') || terminal?.querySelector("[data-directory-section]"))?.focus();
     }
     function hide(minimize = false, restore = true) {
+      cancelRetraction();
       open = false; minimized = minimize; paint();
       if (restore) restoreFocus();
+    }
+    function cancelRetraction() {
+      windowMotion?.cancel();
+      shell?.removeAttribute("data-nav-retracting");
+    }
+    function minimizeTerminal() {
+      if (!open || windowMotion?.busy) return;
+      if (!windowMotion) { hide(true); return; }
+      terminal.setAttribute("data-terminal-ready", "");
+      shell.setAttribute("data-nav-retracting", "");
+      windowMotion.minimize({ node: terminal, target: shell.querySelector(".desktop-terminal-restore"), onComplete: () => {
+        shell?.removeAttribute("data-nav-retracting");
+        open = false; minimized = true; paint();
+        shell?.querySelector(".desktop-terminal-restore")?.focus({ preventScroll: true });
+      } });
+    }
+    function settleTerminal(event) {
+      if (open && terminal?.contains(event.target)) terminal.setAttribute("data-terminal-ready", "");
     }
     function click(event) {
       const target = event.target;
@@ -164,7 +188,7 @@
       } else if (target.closest?.("[data-desktop-terminal-restore]")) {
         event.preventDefault(); event.stopPropagation(); show();
       } else if (target.closest?.("[data-desktop-terminal-minimize]")) {
-        event.preventDefault(); event.stopPropagation(); hide(true);
+        event.preventDefault(); event.stopPropagation(); minimizeTerminal();
       } else if (target.closest?.("[data-desktop-terminal-maximize]")) {
         event.preventDefault(); event.stopPropagation(); maximized = !maximized; paint();
       } else if (target.closest?.("[data-desktop-nav-dismiss]")) {
@@ -185,6 +209,7 @@
       }
       if (!open) return;
       event.stopPropagation();
+      if (event.key !== "Escape") terminal.setAttribute("data-terminal-ready", "");
       if (event.key === "Escape") {
         event.preventDefault(); hide();
       } else if (event.key === "Tab") {
@@ -211,6 +236,7 @@
           catch { /* Storage is optional. */ }
         }
         if (nextShell !== shell) {
+          cancelRetraction();
           detach();
           if (workspace) workspace.inert = workspaceWasInert;
           if (sidebar) { sidebar.inert = false; sidebar.removeAttribute("aria-hidden"); }
@@ -221,6 +247,7 @@
           workspaceWasInert = Boolean(workspace?.inert);
           open = false;
           shell?.addEventListener("click", click);
+          shell?.addEventListener("pointerdown", settleTerminal);
           const attachedShell = shell;
           const attachedHint = shell?.querySelector(".desktop-terminal-hint");
           hintHovered = false; hintFocused = false;
@@ -234,6 +261,7 @@
           attachedHint?.addEventListener("focusout", blurHint);
           detach = () => {
             attachedShell?.removeEventListener("click", click);
+            attachedShell?.removeEventListener("pointerdown", settleTerminal);
             attachedHint?.removeEventListener("mouseenter", enterHint);
             attachedHint?.removeEventListener("mouseleave", leaveHint);
             attachedHint?.removeEventListener("focusin", focusHint);
@@ -245,6 +273,7 @@
         if (workspaceFocusAfterAttach && !blocked()) { workspace?.setAttribute("tabindex", "-1"); workspace?.focus({ preventScroll: true }); }
       },
       destroy() {
+        cancelRetraction();
         destroyed = true; detach();
         if (hintTimer !== null) host.clearTimeout(hintTimer);
         hintTimer = null;

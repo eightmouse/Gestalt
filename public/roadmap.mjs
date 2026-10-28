@@ -6,7 +6,7 @@ export const publicRoadmap = {
   groups: [
     {
       id: "working", title: "In progress", items: [
-        { title: "Window gestures", detail: "Smooth record minimizing keeps your reading position and open notes. A separate dematerializing close is next to explore." },
+        { title: "Closing a record", detail: "Explore a distinct dematerializing close, keeping it separate from minimizing and preserving the archive's quiet pace." },
         { title: "Seasonal details", detail: "Halloween dressing attached to dashboard frames; winter snow and New Year decorations are next to explore." },
         { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes." }
       ]
@@ -20,11 +20,11 @@ export const publicRoadmap = {
     },
     {
       id: "done", title: "Filed", items: [
+        { title: "Terminal and window gestures", detail: "T opens a directory with real section dates and a compact restore icon. Search and Terminal construct their frames before the contents resolve; minimizing contracts toward the restore control without losing reading state. The greeting keeps up with local time and returning tabs.", version: "v1.64.6" },
         { title: "Artwork and shortcuts", detail: "Independent title-background framing for Projects and Games. Press S for a separate web-search bar that opens results in a new tab; Connections holds the public X and Reddit links behind its own signal-acquisition sequence.", version: "v1.64.2" },
         { title: "Editing comforts", detail: "Optional note-heading titles, styled native selectors and clear local save states. Progress labels keep focus while typing; unfinished recommendation and hardware text stays in a local draft when the editor closes. Saving and publishing remain separate.", version: "v1.61.1" },
         { title: "System Notices", detail: "First-visit shortcuts open a quiet reference tray beside minimized windows, then fade away when left alone. Remembered visits respect local-memory permission.", version: "v1.60.2" },
         { title: "Settings and startup", detail: "A square profile welcome and composed workspace arrival. A dedicated palette button controls entry animation, full or quick startup, seasonal details and Terminal or Legacy navigation. Remembered choices respect local-memory permission.", version: "v1.59.1" },
-        { title: "Terminal navigation", detail: "Press T for a clickable directory with real section dates, window controls and a compact restore icon. A delayed side hint introduces the shortcut; Legacy Mode stays available.", version: "v1.57.2" },
         { title: "Section reading space", detail: "Written project updates, game sessions and a field-note reading desk beside the existing lists.", version: "v1.56.0" },
         { title: "A clearer timeline", detail: "Recent signals grouped by date, with source selection and a more readable trail.", version: "v1.52.0" },
         { title: "Editing in place", detail: "Create, format and edit field notes, games and projects in their own windows. Saves stay local; the publishing bell reviews saved changes and publishes the batch separately from drafts.", version: "v1.52.0" },

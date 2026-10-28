@@ -629,8 +629,8 @@ function formatDate() {
     .replaceAll("/", " / ");
 }
 
-function greeting() {
-  const hour = new Date().getHours();
+function greeting(date = new Date()) {
+  const hour = date.getHours();
 
   if (hour < 12) {
     return "Good morning.";
@@ -739,7 +739,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.64.2");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.64.6");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1486,7 +1486,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.64.2</span>
+        <span>v1.64.6</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1500,7 +1500,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.64.2</span>
+        <span class="version-label">v1.64.6</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1520,7 +1520,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.64.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.64.6</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2624,7 +2624,7 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.64.2")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.64.6")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2872,7 +2872,7 @@ function minimizeRecord() {
     root.querySelector(".reopen-control")?.focus({ preventScroll: true });
   };
   if (recordMotionController) {
-    recordMotionController.minimize({ node, target: root.querySelector(".workspace-window-tray"), enabled: state.entryAccessMode !== "off", onComplete: finish });
+    recordMotionController.minimize({ node, target: root.querySelector(".reopen-control"), enabled: state.entryAccessMode !== "off", onComplete: finish });
   } else finish();
 }
 
@@ -2889,13 +2889,13 @@ function restoreRecord() {
 }
 
 function workspaceWindowTray() {
-  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button>${!state.panelOpen && state.panelMinimized ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>` : ""}<button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Notices" aria-controls="system-notices" aria-expanded="false" title="System Notices" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button></div>`;
+  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button><button class="reopen-control" type="button" data-window-action="open"${!state.panelOpen && state.panelMinimized ? "" : " hidden"}>Restore active record</button><button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Notices" aria-controls="system-notices" aria-expanded="false" title="System Notices" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button></div>`;
 }
 
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.64.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.64.6</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3027,8 +3027,21 @@ function render() {
   }
 }
 
+function syncDashboardGreeting(date = new Date()) {
+  if (document.hidden || !state.bootDismissed || state.activeSection !== "system") return;
+  const heading = document.querySelector(".workspace-header h1");
+  const text = greeting(date);
+  if (!heading || heading.getAttribute("aria-label") === text) return;
+  heading.classList.remove("is-resolving");
+  heading.setAttribute("aria-label", text);
+  heading.style.setProperty("--headline-chars", String(text.length));
+  heading.innerHTML = `${renderHeadlineLetters(text)}<span class="cursor headline-cursor">_</span>`;
+}
+
 function syncTime() {
+  if (document.hidden) return;
   syncSeasonalAccent();
+  syncDashboardGreeting();
   const clockTarget = document.querySelector("[data-time-clock]");
   const dateTarget = document.querySelector("[data-time-date]");
 
@@ -3580,7 +3593,10 @@ document.addEventListener("error", (event) => {
   }
 }, true);
 
-document.addEventListener("visibilitychange", syncSeasonalMotion);
+document.addEventListener("visibilitychange", () => {
+  syncSeasonalMotion();
+  if (!document.hidden) syncTime();
+});
 
 document.addEventListener("change", (event) => {
   const input = event.target;

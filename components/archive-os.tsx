@@ -304,10 +304,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [archiveRecords, currentGame]);
 
   useEffect(() => {
-    const updateClock = () => setNow(new Date());
+    const updateClock = () => { if (!document.hidden) setNow(new Date()); };
     updateClock();
     const interval = window.setInterval(updateClock, 30_000);
-    return () => window.clearInterval(interval);
+    document.addEventListener("visibilitychange", updateClock);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", updateClock);
+    };
   }, []);
 
   useEffect(() => {
@@ -420,7 +424,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     const controller = recordMotionRef.current ??= recordMotion.createController();
     controller.minimize({
       node: shellRef.current?.querySelector<HTMLElement>(".record-window") ?? null,
-      target: shellRef.current?.querySelector<HTMLElement>(".workspace-window-tray"),
+      target: shellRef.current?.querySelector<HTMLElement>(".reopen-control"),
       enabled: entryAccessModeRef.current !== "off",
       onComplete: () => {
         stopRecordAccess();
@@ -755,6 +759,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <p className="route-label">// {routeTitle}</p>
             <h1
               aria-label={headline}
+              onAnimationEnd={(event) => {
+                if (event.animationName === "headline-letter-readable" && event.target instanceof HTMLElement && event.target.parentElement?.style.getPropertyValue("--headline-index") === String(headline.length - 1)) setHeadlineAnimating(false);
+              }}
               className={headlineAnimating ? "headline-decode-text is-resolving" : "headline-decode-text"}
               key={activeSection}
               style={{ "--headline-chars": headline.length } as CSSProperties}
@@ -872,24 +879,18 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
         <div className="workspace-window-tray">
           <DesktopTerminalRestore />
-          <AnimatePresence>
-            {!panelOpen && panelMinimized ? (
-              <motion.button
-                className="reopen-control"
-                type="button"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                onClick={() => {
-                  setPanelOpen(true);
-                  setPanelMinimized(false);
-                }}
-              >
-                <Square size={13} />
-                Restore active record
-              </motion.button>
-            ) : null}
-          </AnimatePresence>
+          <button
+            className="reopen-control"
+            type="button"
+            hidden={panelOpen || !panelMinimized}
+            onClick={() => {
+              setPanelOpen(true);
+              setPanelMinimized(false);
+            }}
+          >
+            <Square size={13} />
+            Restore active record
+          </button>
           <SystemNoticesButton />
         </div>
 

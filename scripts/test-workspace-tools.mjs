@@ -41,11 +41,20 @@ for (const name of ["connections-outline", "connections-register-scan", "connect
 }
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.connections-sheet::before, \.connections-sheet::after, \.connections-acquire \{ display: none; animation: none; \}/);
 assert.match(css, /\.connections-sheet \.connection-register:focus-within > \*/, "Keyboard access never waits for hidden links");
+for (const name of ["web-search-surface", "web-search-frame", "web-search-query-line", "web-search-field"]) {
+  assert.ok(css.includes(`@keyframes ${name}`));
+  assert.ok(!new RegExp(`animation:[^;]*${name}[^;]*infinite`).test(css), "Search has no looping animation");
+}
+assert.match(css, /\.web-search-dialog\[data-search-ready\].*animation: none;/, "Interaction settles the reveal without waiting");
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.web-search-form, \.web-search-heading, \.web-search-row > \* \{ animation: none; \}/);
+assert.match(css, /@keyframes web-search-surface \{ 0%, 30% \{ opacity: 0; clip-path: inset\(50% 0\); \}/, "The actual surface stays absent while the frame begins forming");
+assert.ok(!css.includes("web-search-arrive"), "The old simultaneous whole-window fade is removed");
 
 class Element {
   listeners = new Map(); children = []; open = false; isConnected = true; value = "";
+  attributes = new Map();
   constructor(tag) { this.tag = tag; }
-  setAttribute() {} removeAttribute() {} closest() { return null; } getClientRects() { return [{}]; }
+  setAttribute(name, value) { this.attributes.set(name, value); } removeAttribute(name) { this.attributes.delete(name); } closest() { return null; } getClientRects() { return [{}]; }
   focus() { this.focused = true; }
   set innerHTML(html) {
     this.html = html;
@@ -64,16 +73,20 @@ const storage = new Map(), destinations = []; let writes = 0, closed = 0, sameTa
 const doc = { body, activeElement: trigger, createElement: (tag) => new Element(tag), querySelector: (selector) => selector === ".archive-shell" ? shell : null, querySelectorAll: () => [trigger] };
 const host = { document: doc, open: (...args) => destinations.push(args), location: { assign() { sameTabNavigations++; } }, localStorage: { getItem: (key) => storage.get(key), setItem(key, value) { writes++; storage.set(key, value); } } };
 const controller = tools.createController(host);
-const events = (target) => ({ target, preventDefault() {}, stopPropagation() {} });
+const events = (target) => ({ target, currentTarget: target, preventDefault() {}, stopPropagation() {} });
 controller.open({ remember: false, onClose: () => closed++ });
 const dialog = body.children[0];
 assert.equal(dialog.parent, body); assert.equal(dialog.open, true); assert.equal(dialog.parts.input.focused, true);
 assert.ok(!/<button\b|<svg\b|data-web-close/.test(dialog.html), "Search has no redundant close or submit buttons");
 assert.equal((dialog.html.match(/<input\b/g) ?? []).length, 1, "One search input allows native implicit form submission with Enter");
+assert.match(dialog.html, /class="web-search-access" aria-hidden="true"/, "Frame construction is separate from the real form surface");
 controller.open(); assert.equal(body.children.length, 1, "Only one web search exists");
 dialog.parts.select.value = "google"; dialog.parts.select.listeners.get("change")();
 assert.equal(writes, 0, "No preference writes without local-memory consent");
 assert.equal(destinations.length, 0, "Opening, typing and engine selection never send requests");
+dialog.listeners.get("input")();
+assert.equal(dialog.attributes.get("data-search-ready"), "", "Typing finishes the decorative reveal immediately");
+assert.equal(destinations.length, 0, "Finishing a reveal does not submit the query");
 dialog.parts.form.listeners.get("submit")(events(dialog)); assert.equal(destinations.length, 0);
 dialog.parts.input.value = query;
 dialog.parts.form.listeners.get("submit")(events(dialog));
@@ -86,11 +99,17 @@ dialog.listeners.get("cancel")(events(dialog));
 assert.equal(closed, 1); assert.equal(body.children.length, 0); assert.equal(trigger.focused, true);
 controller.open({ remember: true, onClose: () => closed++ });
 const remembered = body.children[0];
+assert.equal(remembered.attributes.has("data-search-ready"), false, "Each new search gets a fresh opening sequence");
+remembered.listeners.get("pointerdown")();
+assert.equal(remembered.attributes.get("data-search-ready"), "", "Pointer interaction also settles the reveal");
 remembered.parts.select.value = "yandex"; remembered.parts.select.listeners.get("change")();
 assert.equal(writes, 1); assert.equal(storage.get("gestalt.web-search-engine"), "yandex");
 remembered.listeners.get("click")(events(remembered));
 assert.equal(closed, 2); assert.equal(body.children.length, 0);
 controller.open({ remember: true }); assert.equal(body.children[0].parts.select.value, "yandex");
+const keyboardDialog = body.children[0];
+keyboardDialog.listeners.get("keydown")({ ...events(keyboardDialog), key: "Tab" });
+assert.equal(keyboardDialog.attributes.get("data-search-ready"), "", "Keyboard navigation cannot land in an invisible opening form");
 controller.destroy(); assert.equal(body.children.length, 0); assert.equal(closed, 2);
 host.open = () => { throw new Error("Navigation refused"); };
 host.localStorage = { getItem() { throw new Error("Storage blocked"); }, setItem() { throw new Error("Storage blocked"); } };
@@ -110,6 +129,7 @@ host.localStorage.getItem = () => { socialStorageReads++; return null; };
 controller.open({ mode: "connections", remember: true, onClose: () => closed++ });
 const contactSheet = body.children[0];
 assert.equal(contactSheet.className, "connections-dialog");
+assert.equal(contactSheet.listeners.has("input"), false, "The search reveal never changes Connections behavior");
 assert.equal(contactSheet.parts["[data-web-close]"].focused, true, "Initial focus stays on the visible close control during acquisition");
 assert.equal(contactSheet.querySelector("form"), null, "Connections is not a reused web-search form");
 assert.equal(socialStorageReads, 0, "Opening public links does not inspect search preferences");

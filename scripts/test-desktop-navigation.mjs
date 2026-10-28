@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import navigation from "../public/desktop-navigation.js";
+import recordMotion from "../public/record-motion.js";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 assert.equal(navigation.normalizeMode("auto"), "terminal", "Existing Auto-hide preferences migrate");
@@ -46,7 +47,7 @@ class Node {
   toggleAttribute(key, value) { if (value) this.attrs.set(key, ""); else this.attrs.delete(key); }
   hasAttribute(key) { return this.attrs.has(key); }
   querySelector(selector) { return this.children.get(selector) || null; }
-  querySelectorAll() { return this.buttons || []; }
+  querySelectorAll(selector) { return selector === "video, audio" ? [] : this.buttons || []; }
   contains(node) { return node === this || [...this.children.values()].includes(node); }
   focus() { this.doc.activeElement = this; }
   closest(selector) { return this.selectors?.includes(selector) ? this : null; }
@@ -55,12 +56,15 @@ class Node {
   emit(name, args = {}) { for (const fn of this.listeners.get(name) || []) fn({ target: this, preventDefault() {}, stopPropagation() {}, ...args }); }
   dispatchEvent(event) { this.dispatched.push(event.type); this.emit(event.type); }
 }
-function fixture(saved = new Map()) {
+function fixture(saved = new Map(), withMotion = false) {
   const doc = new Node(); doc.hidden = false;
   const media = new Node(); media.matches = true;
+  const reduced = new Node(); reduced.matches = false;
+  const animations = [];
   let now = 0, timerId = 0;
   const timers = new Map();
-  const host = { document: doc, Event, matchMedia: () => media, localStorage: {
+  const host = { document: doc, Event, matchMedia: (query) => query.includes("prefers-reduced-motion") ? reduced : media,
+    innerWidth: 1920, innerHeight: 1080, getComputedStyle: () => ({ transform: "matrix(1, 0, 0, 1, -450, -300)", opacity: "1" }), localStorage: {
     getItem: (key) => saved.get(key), setItem: (key, value) => saved.set(key, value)
   }, setTimeout(fn, delay) { const id = ++timerId; timers.set(id, { fn, due: now + delay }); return id; }, clearTimeout(id) { timers.delete(id); } };
   const advance = (ms) => {
@@ -87,17 +91,66 @@ function fixture(saved = new Map()) {
     nodes.notices.selectors = [".system-notices-panel, [data-system-notices-toggle]"];
     terminal.children = new Map([['[aria-current="page"]', row], ["[data-directory-section]", row], ["[data-desktop-terminal-maximize]", maximize], ["close", close], ["minimize", minimize]]);
     terminal.buttons = [minimize, maximize, close, row];
+    terminal.getBoundingClientRect = () => ({ left: 510, top: 240, width: 900, height: 600 });
+    restore.getBoundingClientRect = () => ({ left: 1780, top: 988, width: 44, height: 44 });
+    terminal.animate = (frames, options) => {
+      let resolve, reject;
+      const finished = new Promise((yes, no) => { resolve = yes; reject = no; });
+      const animation = { frames, options, finished, resolve, cancel() { reject(new Error("Cancelled")); } };
+      animations.push(animation); return animation;
+    };
     workspace.children.set('[aria-label="Search records"]', search);
     workspace.children.set("restore", restore);
     return nodes;
   }
-  const nodes = surface(), controller = navigation.createController(host);
+  const nodes = surface(), controller = navigation.createController(host, withMotion ? recordMotion : undefined);
   doc.activeElement = nodes.search;
   const settings = { mode: "terminal", ready: true, busy: false, remember: false };
   const attach = (patch = {}, target = nodes.shell) => { Object.assign(settings, patch); controller.attach(target, settings); };
   const click = (node, target = nodes.shell) => target.emit("click", { target: node });
   const key = (value = "t", args = {}) => doc.emit("keydown", { key: value, ...args });
-  return { doc, media, saved, key, controller, attach, click, nodes, surface, advance, timers };
+  return { doc, media, reduced, animations, saved, key, controller, attach, click, nodes, surface, advance, timers };
+}
+{
+  const f = fixture(new Map(), true); f.attach(); f.key();
+  assert.ok(!f.nodes.terminal.hasAttribute("data-terminal-restoring"), "Fresh opens construct the terminal");
+  f.key("Tab");
+  assert.ok(f.nodes.terminal.hasAttribute("data-terminal-ready"), "Keyboard navigation immediately settles construction");
+  f.click(f.nodes.minimize);
+  assert.equal(f.animations.length, 1);
+  assert.ok(f.nodes.shell.hasAttribute("data-nav-retracting"), "Reserve the actual terminal restore slot while contracting");
+  assert.ok(f.nodes.shell.hasAttribute("data-nav-open"), "Keep modal isolation until the real terminal finishes moving");
+  assert.equal(f.nodes.workspace.inert, true);
+  f.click(f.nodes.minimize); assert.equal(f.animations.length, 1);
+  f.animations[0].resolve(); await Promise.resolve();
+  assert.ok(f.nodes.shell.hasAttribute("data-nav-minimized"));
+  assert.equal(f.nodes.terminal.hidden, true);
+  assert.equal(f.nodes.workspace.inert, false);
+  assert.equal(f.doc.activeElement, f.nodes.restore);
+  assert.ok(!f.nodes.shell.hasAttribute("data-nav-retracting"));
+  f.click(f.nodes.restore);
+  assert.equal(f.nodes.terminal.hidden, false);
+  assert.ok(f.nodes.terminal.hasAttribute("data-terminal-restoring"), "Restore skips frame reconstruction");
+  f.click(f.nodes.close); f.key();
+  assert.ok(!f.nodes.terminal.hasAttribute("data-terminal-restoring"));
+  f.nodes.shell.emit("pointerdown", { target: f.nodes.row });
+  assert.ok(f.nodes.terminal.hasAttribute("data-terminal-ready"), "Pointer interaction also settles construction");
+  f.reduced.matches = true; f.click(f.nodes.minimize);
+  assert.equal(f.animations.length, 1, "Reduced motion minimizes without animation");
+  assert.equal(f.nodes.workspace.inert, false);
+  f.controller.destroy();
+}
+for (const interrupt of ["hidden", "mode", "reattach", "destroy"]) {
+  const f = fixture(new Map(), true); f.attach(); f.key(); f.click(f.nodes.minimize);
+  if (interrupt === "hidden") { f.doc.hidden = true; f.doc.emit("visibilitychange"); }
+  if (interrupt === "mode") f.attach({ mode: "fixed" });
+  if (interrupt === "reattach") f.attach({}, f.surface().shell);
+  if (interrupt === "destroy") f.controller.destroy();
+  f.animations[0].resolve(); await Promise.resolve();
+  assert.ok(!f.nodes.shell.hasAttribute("data-nav-retracting"), `${interrupt} clears motion state`);
+  assert.equal(f.nodes.workspace.inert, false, `${interrupt} cannot strand modal isolation`);
+  assert.ok(!f.nodes.shell.hasAttribute("data-nav-minimized"), "An interrupted old terminal cannot complete later");
+  f.controller.destroy();
 }
 {
   const f = fixture(); const { shell, sidebar, terminal, workspace, backdrop, row, close, minimize, restore, maximize, search } = f.nodes;
@@ -322,6 +375,15 @@ for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) {
 assert.ok(read("app/layout.tsx").includes('"./desktop-navigation.css"'));
 assert.ok(read("components/archive/desktop-navigation.tsx").includes("controller.current?.destroy()"));
 const source = read("public/desktop-navigation.js"), css = read("app/desktop-navigation.css");
+assert.ok(read("components/archive/desktop-navigation.tsx").includes("navigation.createController(window, recordMotion)"), "React explicitly supplies the same motion helper as Pages");
+for (const name of ["desktop-terminal-frame", "desktop-terminal-surface", "desktop-terminal-populate"]) {
+  assert.ok(css.includes(`@keyframes ${name}`));
+  assert.ok(!new RegExp(`animation:[^;]*${name}[^;]*infinite`).test(css), "Terminal construction is finite");
+}
+assert.match(css, /@keyframes desktop-terminal-surface\s*\{\s*0%, 28% \{ opacity: 0; clip-path: inset\(50% 0\); \}/, "The real terminal surface waits for its frame");
+assert.match(css, /desktop-nav-terminal\[hidden\] \{ display: none !important; \}/, "Minimize hides the real terminal before releasing its filled animation");
+assert.ok(css.includes(":not([data-terminal-restoring]):not([data-terminal-ready])"), "Restore and interaction bypass construction");
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*desktop-nav-terminal[\s\S]*animation: none !important/);
 assert.ok(!/fetch\(|setInterval|requestAnimationFrame/.test(source));
 assert.ok(!/pointerenter|pointerleave/.test(source), "A real window needs no hover machinery");
 assert.equal((source.match(/host\.setTimeout\(/g) || []).length, 1, "One cancellable timer handles introduction and dismissal without polling");
@@ -378,13 +440,14 @@ assert.ok(renderContext.markup.includes('data-open-section="games" aria-current=
 assert.ok(renderContext.markup.includes('<time>--</time>'));
 assert.ok(!renderContext.markup.includes("onerror"));
 vm.runInContext(`${staticFunction("workspaceWindowTray")}\nvar tray = workspaceWindowTray();`, renderContext);
-assert.ok(!renderContext.tray.includes("Restore active record"));
+assert.match(renderContext.tray, /data-window-action="open" hidden>Restore active record/, "The real restore control stays hidden until minimized");
 renderContext.state.panelMinimized = true;
 vm.runInContext("tray = workspaceWindowTray();", renderContext);
 assert.ok(renderContext.tray.indexOf("Restore terminal") < renderContext.tray.indexOf("Restore active record"), "Terminal restore is on the left");
+assert.match(renderContext.tray, /data-window-action="open">Restore active record/);
 renderContext.state.panelOpen = true;
 vm.runInContext("tray = workspaceWindowTray();", renderContext);
-assert.ok(!renderContext.tray.includes("Restore active record"));
+assert.match(renderContext.tray, /data-window-action="open" hidden>Restore active record/);
 const reactTray = read("components/archive-os.tsx").split('className="workspace-window-tray"')[1]?.split("</div>")[0];
 assert.ok(reactTray?.indexOf("<DesktopTerminalRestore") < reactTray?.indexOf("Restore active record"), "Both readers use the same minimized-control order");
 assert.ok(read("static-app.js").includes("syncDesktopNavigation();"));

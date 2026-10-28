@@ -25,7 +25,7 @@ const node = {
   }
 };
 const host = { document: doc, matchMedia: () => media, innerWidth: 1920, innerHeight: 1080, getComputedStyle: () => ({ transform: "matrix(1, 0, 0, 1, 0, -20)", opacity: "1" }) };
-const target = { getBoundingClientRect: () => ({ left: 1700, top: 1000, width: 150, height: 40 }) };
+const target = { attributes: new Set(), setAttribute(name) { this.attributes.add(name); }, removeAttribute(name) { this.attributes.delete(name); }, getBoundingClientRect: () => ({ left: 1700, top: 1000, width: 150, height: 40 }) };
 const controller = motion.createController(host);
 let completed = 0;
 const start = (options = {}) => { node.hidden = false; controller.minimize({ node, target, onComplete: () => completed++, ...options }); };
@@ -33,8 +33,12 @@ start();
 assert.equal(controller.busy, true);
 assert.equal(node.hidden, false, "The actual window remains visible until its retraction finishes");
 assert.equal(node.inert, true);
-assert.equal(animations[0].options.duration, 330);
-assert.ok(animations[0].frames[1].transform.includes("translate(1225px, 570px)"));
+assert.ok(target.attributes.has("data-motion-destination"), "Measure the real restore control in its final slot, not the whole tray");
+assert.equal(animations[0].options.duration, 480);
+assert.equal(animations[0].frames.length, 4, "The window narrows before contracting along its path");
+assert.ok(animations[0].frames[1].transform.includes("scale(0.86, 0.98)"));
+assert.ok(animations[0].frames.at(-1).transform.includes("translate(1225px, 570px)"));
+assert.ok(animations[0].frames.at(-1).transform.includes("scale(0.14, 0.05714285714285714)"), "The end size follows the restore control rather than a fixed window fraction");
 assert.ok(animations[0].frames[0].transform.includes("matrix(1, 0, 0, 1, 0, -20)"), "Existing Setup/window positioning is preserved");
 let consumed = 0;
 doc.listeners.get("click")({ preventDefault() { consumed++; }, stopImmediatePropagation() { consumed++; } });
@@ -45,6 +49,7 @@ assert.equal(completed, 1); assert.equal(node.hidden, true); assert.equal(node.i
 assert.equal(mediaPauses, 1, "Hidden media stops playing without discarding its DOM or position");
 assert.equal(controller.busy, false); assert.equal(doc.listeners.size, 0); assert.equal(media.listeners.size, 0);
 assert.equal(node.attributes.size, 0, "Transient compositor hint is removed");
+assert.equal(target.attributes.size, 0, "The temporary restore-slot reservation is cleared");
 start(); controller.cancel(); await Promise.resolve();
 assert.equal(completed, 1, "Navigation/unmount cancellation does not hide a different record later");
 assert.equal(node.hidden, false); assert.equal(doc.listeners.size, 0);
