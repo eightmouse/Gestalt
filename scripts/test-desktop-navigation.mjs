@@ -180,7 +180,7 @@ for (const action of ["hidden", "busy", "dialog", "palette"]) {
   assert.ok(f.nodes.shell.hasAttribute("data-notices-open"), "Clicking the landing notification opens System Notices");
   assert.equal(f.doc.activeElement, f.nodes.notices);
   f.click(f.nodes.noticeClose);
-  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.get("gestalt.shortcut-notices"), "seen", "Acknowledgement persists only with consent");
+  assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.get("gestalt.shortcut-notices"), "seen-with-web-search", "Acknowledgement persists only with consent");
   f.attach({}, f.surface().shell); f.advance(5000);
   assert.equal(f.timers.size, 0, "Root replacement cannot replay a dismissed notification during this visit");
   const returning = fixture(new Map([["gestalt.terminal-hint", "seen"]])); returning.attach({ remember: true });
@@ -292,6 +292,15 @@ for (const [enter, leave] of [["mouseenter", "mouseleave"], ["focusin", "focusou
   f.controller.destroy();
 }
 {
+  const previous = fixture(new Map([["gestalt.shortcut-notices", "seen"]]));
+  previous.attach({ remember: true }); previous.advance(1200);
+  assert.ok(previous.nodes.shell.hasAttribute("data-terminal-hint"), "Earlier visitors are introduced to the new S shortcut once");
+  previous.click(previous.nodes.noticeButton); previous.key("s");
+  assert.ok(!previous.nodes.shell.hasAttribute("data-notices-open"), "S leaves the reference tray before web search opens");
+  assert.ok(!previous.nodes.shell.hasAttribute("data-nav-open"), "S must not activate the Terminal shortcut");
+  previous.controller.destroy();
+}
+{
   const f = fixture(); f.attach({ ready: false });
   assert.ok(!f.nodes.shell.hasAttribute("data-notices-visible"), "The tray still waits until startup is complete");
   f.attach({ ready: true, palette: true });
@@ -318,6 +327,7 @@ assert.ok(!/pointerenter|pointerleave/.test(source), "A real window needs no hov
 assert.equal((source.match(/host\.setTimeout\(/g) || []).length, 1, "One cancellable timer handles introduction and dismissal without polling");
 for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
   assert.ok(read(file).includes("data-system-notices-open"), "Both readers expose the clickable notification");
+  assert.ok(read(file).includes("Press <kbd>S</kbd> to search the web") && read(file).includes("<dt><kbd>S</kbd></dt><dd>Web search</dd>"), "The existing introduction and notice reference teach S in both readers");
   assert.ok(!read(file).includes("data-desktop-terminal-hint-dismiss"), "No redundant close button remains on the landing notification");
 }
 assert.match(css, /desktop-terminal-hint\s*\{[^}]+inset-inline-end:/, "Hint sits at the right edge, not the middle");

@@ -5,6 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   const key = "gestalt.desktop-navigation";
   const noticesKey = "gestalt.shortcut-notices";
+  const noticesRevision = "seen-with-web-search";
   function normalizeMode(value) { return value === "terminal" || value === "auto" ? "terminal" : "fixed"; }
   function readMode(storage) {
     try { return normalizeMode((storage || globalThis.localStorage).getItem(key)); }
@@ -44,7 +45,7 @@
     const canHint = () => noticesAvailable() && !noticesOpen && !minimized && !hintSeen;
     function rememberIntroduction() {
       if (!settings.remember) return;
-      try { host.localStorage.setItem(noticesKey, "seen"); }
+      try { host.localStorage.setItem(noticesKey, noticesRevision); }
       catch { /* The notice still works for this visit. */ }
     }
     function updateHintDelay() {
@@ -176,7 +177,7 @@
       if (noticesOpen && event.key === "Escape") {
         event.preventDefault(); event.stopPropagation(); closeNotices(); return;
       }
-      if (noticesOpen && !event.repeat && !event.isComposing && !event.ctrlKey && !event.altKey && !event.metaKey && ["t", "~", "`"].includes(event.key?.toLowerCase()) && !event.target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')) closeNotices(false);
+      if (noticesOpen && !event.repeat && !event.isComposing && !event.ctrlKey && !event.altKey && !event.metaKey && ["t", "s", "~", "`"].includes(event.key?.toLowerCase()) && !event.target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')) closeNotices(false);
       if (!enabled() || blocked()) return;
       const editing = event.target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]');
       if (!editing && !settings.palette && !event.repeat && !event.isComposing && !event.ctrlKey && !event.altKey && !event.metaKey && event.key?.toLowerCase() === "t") {
@@ -206,7 +207,7 @@
         const workspaceFocusAfterAttach = nextShell !== shell && workspace === doc.activeElement;
         settings = { ...nextSettings, mode: normalizeMode(nextSettings.mode) };
         if (settings.remember && !hintReady) {
-          try { hintSeen = hintSeen || host.localStorage.getItem(noticesKey) === "seen"; }
+          try { hintSeen = hintSeen || host.localStorage.getItem(noticesKey) === noticesRevision; }
           catch { /* Storage is optional. */ }
         }
         if (nextShell !== shell) {

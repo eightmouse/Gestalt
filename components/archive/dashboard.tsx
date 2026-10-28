@@ -225,7 +225,7 @@ function MemoryLoop() {
     const node = memoryRef.current;
     const rect = boundsRef.current;
 
-    if (!node || !rect || document.hidden || node.closest(".archive-shell")?.matches("[data-nav-open], .has-record")) {
+    if (!node || !rect || document.hidden || node.closest(".archive-shell")?.matches("[data-nav-open], [data-workspace-tool-open], .has-record")) {
       return;
     }
 

@@ -47,6 +47,8 @@ jobs:
           node --check public/seasonal.js
           node --check public/desktop-navigation.js
           node --check public/os-behaviour.js
+          node --check public/workspace-tools.js
+          node --check public/record-motion.js
           node scripts/test-desktop-navigation.mjs
           node --check scripts/prepare-pages.mjs
           node scripts/validate-content.mjs

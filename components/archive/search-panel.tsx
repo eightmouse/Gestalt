@@ -38,6 +38,7 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
               data-state={searchResultStateKey(result)}
               key={result.kind === "record" ? result.record.id : result.id}
               type="button"
+              aria-haspopup={result.kind === "command" && result.action === "connections" ? "dialog" : undefined}
               onClick={() => onOpenResult(result)}
             >
               <span>

@@ -18,7 +18,9 @@ import { formatReadableDate, recordHeaderImage } from "@/components/archive/reco
 import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
+import imageFraming from "@/public/image-framing.js";
 type RecordWindowProps = {
+  minimized?: boolean;
   accessPending?: boolean;
   accessComplete?: boolean;
   initialContent: ContentKey;
@@ -33,15 +35,15 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-export function RecordWindow({ accessPending = false, accessComplete = false, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
-function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
@@ -78,6 +80,8 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, in
   return (
     <>
     <motion.article
+      hidden={minimized}
+      inert={minimized}
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
       data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}
@@ -111,7 +115,7 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, in
           <div
             className={`${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}`}
           >
-            {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" decoding="async" /> : null}
+            {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" decoding="async" style={imageFraming.headerFrameStyle(record.meta)} /> : null}
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
@@ -187,7 +191,7 @@ function ArchiveRecordWindow({ accessPending, accessComplete, initialContent, in
   );
 }
 
-function SetupRecordWindow({ accessPending, accessComplete, maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
   const headerImage = setupRecordImage(record);
@@ -203,6 +207,8 @@ function SetupRecordWindow({ accessPending, accessComplete, maximized, record, o
 
   return (
     <motion.article
+      hidden={minimized}
+      inert={minimized}
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""} is-setup-record is-setup-record--${group}`}
       data-state={recordStateKey(record.status)}
       initial={{ opacity: 0 }}

@@ -38,7 +38,7 @@ async function fixture({ fail = false, exported = true, inline = true, section =
     window: { localStorage: { getItem: () => storage, setItem: (_key, value) => { storage = value; }, removeItem: () => { storage = null; } } },
     imageFraming: require("../public/image-framing.js"),
     gameLogPlacement: (form) => form.gamePlacement || form.meta?.gamePlacement || "session", gameActivityValue: (form) => form.gameActivity || form.meta?.gameActivity || "", compareSectionRecords: () => 0,
-    supportsInlineEditing, InlineRecordLayout() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ChevronDown: require("lucide-react").ChevronDown,
+    supportsInlineEditing, InlineRecordLayout() {}, HeaderFraming() {}, ArtworkFraming() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ImagePlus: require("lucide-react").ImagePlus, ChevronDown: require("lucide-react").ChevronDown,
     readStudioResponse: api.exports.readStudioResponse, StudioRequestError: api.exports.StudioRequestError,
     fetch: async (url, options) => {
       calls.push({ url, payload: JSON.parse(options.body || "{}") });
@@ -178,6 +178,40 @@ assert.equal(compare({ ...baseline, body: "Restored unsaved note" }, baseline), 
 const { headerImage: omittedHeader, ...olderDraft } = { ...baseline, headerImage: "/media/saved-header.png" };
 assert.equal(compare(olderDraft, { ...baseline, headerImage: "/media/saved-header.png" }), true, "An older draft omitting a saved editable field cannot appear clean");
 console.log("Save-state checks passed: edit/revert, notes/media, buffered edits, local-only success, failures/export retry and old/new editor parity.");
+
+for (const section of ["projects", "games"]) {
+  const editor = await fixture({ section, manual: true });
+  editor.layout().props.onUpdate("headerImage", "/media/header.png");
+  editor.layout().props.headerFraming.props.onChange({ headerZoom: 135, headerX: 30, headerY: 65 });
+  editor.layout().props.content.props.onFrameChange({ bannerFit: "contain", bannerZoom: 110, bannerX: 70, bannerY: 25 });
+  assert.equal(editor.layout().props.record.meta.headerZoom, 135);
+  assert.equal(editor.layout().props.record.meta.bannerX, 70);
+  assert.equal(editor.layout().props.saveState, "unsaved");
+  const draft = editor.storedDrafts()[`record:${record.id}`];
+  assert.equal(draft.form.headerX, 30);
+  assert.equal(draft.form.bannerY, 25);
+  assert.equal(editor.calls.length, 0, "Framing only updates the local draft until Save Record");
+  await editor.layout().props.onSave();
+  const payload = editor.calls.find((call) => call.url === "/api/studio/entry").payload;
+  for (const [key, value] of Object.entries({ headerZoom: 135, headerX: 30, headerY: 65, bannerFit: "contain", bannerZoom: 110, bannerX: 70, bannerY: 25 })) assert.equal(payload[key], value);
+  editor.layout().props.headerFraming.props.onChange({ headerZoom: 100, headerX: 50, headerY: 50 });
+  assert.equal(editor.layout().props.record.meta.headerZoom, undefined, "Reset restores the existing CSS crop");
+  assert.equal(editor.layout().props.record.meta.bannerZoom, 110, "Resetting the header cannot reset overview artwork");
+}
+console.log("Artwork editing passed: independent frames, draft retention, explicit saves and isolated reset.");
+
+const overviewEditor = await fixture({ section: "projects", manual: true });
+overviewEditor.layout().props.onUpdate("banner", "/media/overview.png");
+const findArtwork = (node, predicate) => !node || typeof node !== "object" ? undefined : predicate(node) ? node : [node.props?.children].flat(Infinity).map((child) => findArtwork(child, predicate)).find(Boolean);
+let overviewNode = overviewEditor.layout().props.content;
+let overviewTree = overviewNode.type({ ...overviewNode.props, activeContent: "overview" });
+assert.ok(findArtwork(overviewTree, (node) => node.props.banner === "/media/overview.png" && typeof node.props.onChange === "function"), "A visible Project overview image uses the shared framing controls");
+assert.ok(findArtwork(overviewTree, (node) => node.type === "button" && node.props.children.includes("Change overview image")));
+overviewEditor.layout().props.onUpdate("headerImage", "/media/header.png");
+overviewNode = overviewEditor.layout().props.content;
+overviewTree = overviewNode.type({ ...overviewNode.props, activeContent: "overview" });
+assert.equal(findArtwork(overviewTree, (node) => node.props.banner === "/media/overview.png"), undefined, "Do not offer a Project crop preview for artwork the reader hides behind a header");
+assert.equal(overviewEditor.layout().props.record.banner, "/media/overview.png", "Adding a header preserves the stored overview image");
 
 function bufferedFixture(name, props, dependencies = []) {
   let index = 0, refIndex = 0;

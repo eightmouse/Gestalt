@@ -103,6 +103,7 @@ const initialLocalMemory = readLocalMemoryState();
 const bootStartedAt = performance.now();
 let bootCleanup = null;
 let osBehaviourController = null;
+let workspaceToolsController = null;
 
 function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -258,6 +259,8 @@ const state = {
   timelineOpen: false,
   roadmapOpen: false,
   osBehaviourOpen: false,
+  webSearchOpen: false,
+  connectionsOpen: false,
   timelineSource: "all",
   archiveFolderWindow: null,
   navOpen: false,
@@ -272,6 +275,9 @@ const state = {
 
 const root = document.querySelector("#root");
 const desktopNavigationController = window.GestaltDesktopNavigation?.createController();
+const recordMotionController = window.GestaltRecordMotion?.createController();
+let minimizedRecordWindow = null;
+let recordRenderPending = false;
 let roadmapData = null;
 let roadmapLoadPromise = null;
 let roadmapFailed = false;
@@ -733,7 +739,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.61.1");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.64.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -865,6 +871,7 @@ function searchResults() {
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
     { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
     { kind: "command", id: "cmd-roadmap", title: "Open roadmap", detail: "Work in progress and filed milestones", action: "roadmap" },
+    { kind: "command", id: "cmd-connections", title: "Connections", detail: "External channels and social profiles", action: "connections" },
     { kind: "command", id: "cmd-os-behaviour", title: "Settings", detail: "Startup, navigation and display settings", action: "behaviour" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
@@ -874,7 +881,7 @@ function searchResults() {
   ];
 
   if (!query) {
-    return commands.slice(0, 4);
+    return commands.slice(0, 5);
   }
 
   const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(query));
@@ -1479,7 +1486,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.61.1</span>
+        <span>v1.64.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1493,7 +1500,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.61.1</span>
+        <span class="version-label">v1.64.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1513,7 +1520,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.61.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.64.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2430,7 +2437,7 @@ function recordWindow(record) {
     <div class="record-layout">
       <div class="record-main">
         <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}">
-          ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" decoding="async" />` : ""}
+          ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}" alt="" decoding="async" style="${window.GestaltImageFraming?.headerFrameCss(record) || ""}" />` : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">#${record.section.slice(0, 3).toUpperCase()}-${String(record.priority).padStart(3, "0")}</span>
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span></h2>
@@ -2498,6 +2505,8 @@ function searchPanel() {
                   ? "data-open-timeline"
                   : result.action === "roadmap"
                     ? "data-open-roadmap"
+                    : result.action === "connections"
+                      ? 'data-open-connections aria-haspopup="dialog"'
                     : `data-open-section="${result.section}"`;
               const stateAttr = result.record ? ` data-state="${recordStateKey(result.record.status)}"` : "";
 
@@ -2559,6 +2568,27 @@ function syncSearchPanel() {
   syncDesktopNavigation();
 }
 
+function openWebSearch() {
+  openWorkspaceTool("search");
+}
+
+function openWorkspaceTool(mode) {
+  const api = window.GestaltWorkspaceTools;
+  if (!api || state.webSearchOpen || state.connectionsOpen || (mode === "search" && (state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || state.expandedImage || state.archiveFolderWindow))) return;
+  state.searchOpen = false;
+  state.searchQuery = "";
+  state.webSearchOpen = mode === "search";
+  state.connectionsOpen = mode === "connections";
+  syncSearchPanel();
+  workspaceToolsController ??= api.createController();
+  workspaceToolsController.open({ mode, remember: state.localMemory === "granted", onClose() {
+    state.webSearchOpen = false;
+    state.connectionsOpen = false;
+    syncDesktopNavigation();
+  } });
+  syncDesktopNavigation();
+}
+
 function openOsBehaviour() {
   state.searchOpen = false;
   state.searchQuery = "";
@@ -2594,7 +2624,7 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.61.1")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.64.2")
       .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2815,6 +2845,49 @@ function syncImageLightbox() {
   if (!dialog.open) dialog.showModal();
 }
 
+function syncRecordWindowChrome() {
+  const focused = state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen;
+  root.querySelector(".archive-shell")?.classList.toggle("has-record", focused);
+  root.querySelector(".workspace")?.classList.toggle("has-record", focused);
+  const tray = root.querySelector(".workspace-window-tray");
+  if (tray) tray.outerHTML = workspaceWindowTray();
+  syncDesktopNavigation();
+}
+
+function minimizeRecord() {
+  if (!state.panelOpen || recordMotionController?.busy) return;
+  const node = root.querySelector(".record-window");
+  const finish = () => {
+    settleRecordAccessSequence();
+    state.panelOpen = false;
+    state.panelMinimized = true;
+    if (node) {
+      node.hidden = true;
+      node.classList.add("is-steady");
+      minimizedRecordWindow = { id: state.selectedId, node };
+    }
+    root.querySelector("[data-record-backdrop]")?.remove();
+    if (recordRenderPending) { recordRenderPending = false; render(); }
+    else syncRecordWindowChrome();
+    root.querySelector(".reopen-control")?.focus({ preventScroll: true });
+  };
+  if (recordMotionController) {
+    recordMotionController.minimize({ node, target: root.querySelector(".workspace-window-tray"), enabled: state.entryAccessMode !== "off", onComplete: finish });
+  } else finish();
+}
+
+function restoreRecord() {
+  const retained = minimizedRecordWindow?.id === state.selectedId ? minimizedRecordWindow.node : null;
+  state.panelOpen = true;
+  state.panelMinimized = false;
+  minimizedRecordWindow = null;
+  if (!retained?.isConnected) { render(); return; }
+  retained.hidden = false;
+  retained.insertAdjacentHTML("beforebegin", recordBackdrop());
+  syncRecordWindowChrome();
+  retained.querySelector("[data-window-action='minimize']")?.focus({ preventScroll: true });
+}
+
 function workspaceWindowTray() {
   return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button>${!state.panelOpen && state.panelMinimized ? `<button class="reopen-control" type="button" data-window-action="open">Restore active record</button>` : ""}<button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Notices" aria-controls="system-notices" aria-expanded="false" title="System Notices" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button></div>`;
 }
@@ -2822,15 +2895,18 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.61.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.64.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
     </div>
-  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Notices"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Notices" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM NOTICES</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Notices">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
+  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Notices"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Notices" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM NOTICES</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Notices">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>S</kbd></dt><dd>Web search</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
 }
 
 function render() {
+  if (recordMotionController?.busy) { recordRenderPending = true; return; }
+  const retained = state.panelMinimized && minimizedRecordWindow?.id === state.selectedId ? minimizedRecordWindow.node : null;
+  if (!retained) minimizedRecordWindow = null;
   if (!recordsLoaded) {
     root.innerHTML = `<main class="archive-shell archive-shell--unavailable">
       <div class="grain-layer"></div>
@@ -2908,6 +2984,8 @@ function render() {
   </main>`;
 
   root.innerHTML = markup;
+  if (retained) root.querySelector(".workspace")?.append(retained);
+  if (state.webSearchOpen || state.connectionsOpen) root.querySelector(".archive-shell")?.setAttribute("data-workspace-tool-open", "");
   syncImageLightbox();
   syncRoadmapDialog();
   syncOsBehaviourDialog();
@@ -3106,7 +3184,7 @@ function updateMemoryBounds() {
 }
 
 document.addEventListener("pointermove", (event) => {
-  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds || memoryNode.closest(".archive-shell")?.hasAttribute("data-nav-open")) {
+  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || state.webSearchOpen || state.connectionsOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds || memoryNode.closest(".archive-shell")?.hasAttribute("data-nav-open")) {
     return;
   }
 
@@ -3143,6 +3221,7 @@ document.addEventListener("click", (event) => {
   if (clickTarget.closest("[data-roadmap-close]")) { closeRoadmap(); return; }
   if (clickTarget.closest("[data-roadmap-retry]")) { void refreshPublicRoadmap(); return; }
   if (clickTarget.closest("[data-open-os-behaviour]")) { openOsBehaviour(); return; }
+  if (clickTarget.closest("[data-open-connections]")) { openWorkspaceTool("connections"); return; }
 
   const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
 
@@ -3210,10 +3289,7 @@ document.addEventListener("click", (event) => {
 
   if (!target) {
     if (state.panelOpen && !clickTarget.closest(".record-window")) {
-      stopRecordAccessSequence();
-      state.panelOpen = false;
-      state.panelMinimized = true;
-      render();
+      minimizeRecord();
     }
 
     return;
@@ -3256,10 +3332,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.dataset.recordBackdrop !== undefined) {
-    stopRecordAccessSequence();
-    state.panelOpen = false;
-    state.panelMinimized = true;
-    render();
+    minimizeRecord();
     return;
   }
 
@@ -3344,16 +3417,11 @@ document.addEventListener("click", (event) => {
   }
 
   if (windowAction === "open") {
-    state.panelOpen = true;
-    state.panelMinimized = false;
-    render();
+    restoreRecord();
   }
 
   if (windowAction === "minimize") {
-    stopRecordAccessSequence();
-    state.panelOpen = false;
-    state.panelMinimized = true;
-    render();
+    minimizeRecord();
   }
 
   if (windowAction === "close") {
@@ -3365,14 +3433,15 @@ document.addEventListener("click", (event) => {
 
   if (windowAction === "maximize") {
     state.panelMaximized = !state.panelMaximized;
-    render();
+    const node = root.querySelector(".record-window");
+    node?.classList.toggle("is-maximized", state.panelMaximized);
+    const name = node?.classList.contains("is-setup-record") ? "setup terminal" : "record";
+    target.setAttribute("aria-label", `${state.panelMaximized ? "Restore" : "Maximize"} ${name}`);
+    target.textContent = state.panelMaximized ? "restore" : "maximize";
   }
 
   if (state.panelOpen && !recordId && !sectionId && !contentKey && !windowAction && !clickTarget.closest(".record-window")) {
-    stopRecordAccessSequence();
-    state.panelOpen = false;
-    state.panelMinimized = true;
-    render();
+    minimizeRecord();
   }
 });
 
@@ -3407,6 +3476,12 @@ document.addEventListener("input", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (!state.bootDismissed || state.localMemory === "prompt") return;
+  if (String(event.key).toLowerCase() === "s" && window.GestaltWorkspaceTools?.shouldOpenSearch(event, { ready: true, busy: state.panelOpen || state.searchOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || state.webSearchOpen || state.connectionsOpen || state.navOpen || Boolean(state.expandedImage) || Boolean(state.archiveFolderWindow) }, document)) {
+    event.preventDefault();
+    event.stopPropagation();
+    openWebSearch();
+    return;
+  }
   if (event.repeat || event.isComposing) return;
   const target = event.target;
   const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('select, [role="textbox"]'))));

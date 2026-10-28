@@ -155,10 +155,53 @@ assert.deepEqual(imageFraming.imageFrameFields(frame), frame);
 assert.equal(imageFraming.imageFrameStyle(null), undefined, "Unconfigured records retain their original CSS framing");
 assert.equal(imageFraming.imageFrameCss({ bannerFit: 'url("javascript:bad")', bannerZoom: Infinity, bannerX: "50%;color:red", bannerY: {} }), "");
 assert.deepEqual(imageFraming.normalizeImageFrame({ bannerZoom: 10000, bannerX: -10, bannerY: 200 }), { bannerFit: "", bannerZoom: 200, bannerX: 0, bannerY: 100 });
+assert.equal(imageFraming.headerFrameStyle(frame), undefined, "Existing overview framing never changes the title background");
+assert.equal(imageFraming.headerFrameCss({ headerZoom: Infinity, headerX: "50%;color:red", headerY: {} }), "");
+assert.equal(imageFraming.headerFrameStyle(null), undefined, "Old records keep their exact CSS header crop");
+assert.deepEqual(imageFraming.normalizeHeaderFrame({ headerZoom: 1, headerX: -10, headerY: 900 }), { headerZoom: 100, headerX: 0, headerY: 100 });
+assert.deepEqual(imageFraming.headerFrameFields({ headerZoom: 999, headerX: "40", headerY: 60 }), { headerZoom: 200, headerX: 40, headerY: 60 });
+const headerStyle = imageFraming.headerFrameStyle({ ...frame, headerZoom: 135, headerX: 20, headerY: 75 });
+assert.equal(headerStyle.transform, "scale(1.35)");
+assert.equal(headerStyle.objectPosition, "20% 75%");
+assert.equal(headerStyle["--header-image-scale"], "1.35", "The entry animation settles to the saved header scale");
+assert.deepEqual(imageFraming.headerFrameFields(imageFraming.normalizeHeaderFrame(null)), {}, "Default reset adds no metadata");
 staticContext.bannerRecord = { section: "games", banner: steamCoverUrl(39210), ...frame };
 const framedStaticHtml = vm.runInContext("recordBanner(bannerRecord)", staticContext);
 const framedReactHtml = renderToStaticMarkup(react.exports.RecordBanner({ record: { section: "games", banner: steamCoverUrl(39210), meta: frame } }));
 for (const html of [framedStaticHtml, framedReactHtml]) assert.ok(html.includes("object-fit:cover;object-position:40% 60%;transform:scale(1.25);transform-origin:40% 60%"), "Both readers use the same bounded frame");
+
+Object.assign(react, {
+  useState: (value) => [value, () => {}], useEffect() {}, useRef: () => ({ current: null }),
+  motion: { article: ({ children }) => require("react").createElement("article", null, children) },
+  getRecordContents: () => [], recordHeaderImage: (record) => record.meta.headerImage || "",
+  recordStateKey: () => "active", formatReadableDate: (value) => value,
+  gameLogPlacement: () => "session", gameActivityValue: () => "",
+  RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
+  Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X
+});
+const headerComponent = ts.transpileModule(`export ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+vm.runInContext(`(() => { ${headerComponent} })()`, react);
+Object.assign(staticContext, {
+  state: { panelOpen: true }, getRecordContents: () => [], normalizeContentKey: () => "overview",
+  recordHeaderImage: (record) => record.headerImage || "", recordAccessSurfaceMarkup: () => "", renderRecordContent: () => "",
+  renderUpdateHistory: () => "", renderUpdateHistoryModal: () => "", readableDate: (value) => value,
+  gameLogPlacement: () => "session", gameActivityValue: () => ""
+});
+vm.runInContext(declaration("../static-app.js", "recordWindow"), staticContext);
+for (const section of ["projects", "games", "logs"]) {
+  const headerFrame = { headerZoom: 135, headerX: 20, headerY: 75 };
+  const record = { id: "header-fixture", title: "Header <fixture>", section, type: "Record", status: "Active", priority: 1, updated: "2026-10-27", body: "", meta: { headerImage: "/media/header.png", ...frame, ...headerFrame } };
+  staticContext.headerRecord = { ...record, ...record.meta };
+  const reactHeader = renderToStaticMarkup(react.exports.ArchiveRecordWindow({ record, initialContent: "overview", maximized: false }));
+  const staticHeader = vm.runInContext("recordWindow(headerRecord)", staticContext);
+  for (const html of [reactHeader, staticHeader]) {
+    assert.ok(html.includes(imageFraming.headerFrameCss(headerFrame)), "React and Pages render the saved header crop, not overview framing");
+    assert.ok(html.includes("Header &lt;fixture&gt;"));
+  }
+}
+const headerCss = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+assert.match(headerCss, /to \{ opacity: 0\.52; clip-path: inset\(0\); transform: scale\(var\(--header-image-scale, 1\)\); \}/, "Access animation retains the selected header zoom");
+console.log("Header framing passed: bounded independent metadata, original defaults, React/Pages parity and access-animation scale.");
 
 const studioContext = vm.createContext({});
 for (const name of ["studioRecordDraftKey", "studioNewDraftKey", "studioDraftKey"]) {

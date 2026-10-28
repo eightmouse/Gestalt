@@ -44,5 +44,36 @@ function imageFrameCss(value, defaultFit) {
   const style = imageFrameStyle(value, defaultFit);
   return style ? `object-fit:${style.objectFit};object-position:${style.objectPosition};transform:${style.transform};transform-origin:${style.transformOrigin}` : "";
 }
-return { normalizeImageFrame, imageFrameFields, imageFrameStyle, imageFrameCss };
+
+function normalizeHeaderFrame(value) {
+  return {
+    headerZoom: bounded(value?.headerZoom, 100, 100, 200),
+    headerX: bounded(value?.headerX, 50, 0, 100),
+    headerY: bounded(value?.headerY, 50, 0, 100)
+  };
+}
+
+function headerFrameFields(value) {
+  const frame = normalizeHeaderFrame(value);
+  return {
+    ...(frame.headerZoom !== 100 ? { headerZoom: frame.headerZoom } : {}),
+    ...(frame.headerX !== 50 ? { headerX: frame.headerX } : {}),
+    ...(frame.headerY !== 50 ? { headerY: frame.headerY } : {})
+  };
+}
+
+function headerFrameStyle(value) {
+  if (!Object.keys(headerFrameFields(value)).length) return undefined;
+  const frame = normalizeHeaderFrame(value);
+  return {
+    ...imageFrameStyle({ bannerZoom: frame.headerZoom, bannerX: frame.headerX, bannerY: frame.headerY }),
+    "--header-image-scale": String(frame.headerZoom / 100)
+  };
+}
+
+function headerFrameCss(value) {
+  const style = headerFrameStyle(value);
+  return style ? `object-fit:${style.objectFit};object-position:${style.objectPosition};transform:${style.transform};transform-origin:${style.transformOrigin};--header-image-scale:${style["--header-image-scale"]}` : "";
+}
+return { normalizeImageFrame, imageFrameFields, imageFrameStyle, imageFrameCss, normalizeHeaderFrame, headerFrameFields, headerFrameStyle, headerFrameCss };
 });

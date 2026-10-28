@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { Bell, Bold, Check, ChevronDown, Code, Heading1, Heading2, Heading3, Italic, Link, List, Quote, Type, X } from "lucide-react";
+import { Bell, Bold, Check, ChevronDown, Code, Heading1, Heading2, Heading3, ImagePlus, Italic, Link, List, Quote, Type, X } from "lucide-react";
 import "@/app/studio/studio.css";
 import { recordDisplaySummary } from "@/components/archive/record-utils";
 import { compareSectionRecords } from "@/lib/log-archive";
@@ -9,8 +9,9 @@ import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/ga
 import { formatNoteSelection, insertNoteLink, type NoteFormat } from "@/lib/note-formatting";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import type { SteamRecordSeed } from "@/public/steam-display.mjs";
-import imageFraming, { type ImageFrame } from "@/public/image-framing.js";
+import imageFraming, { type HeaderFrame, type ImageFrame } from "@/public/image-framing.js";
 import { ArtworkFraming } from "@/components/studio/artwork-framing";
+import { HeaderFraming } from "@/components/studio/header-framing";
 import { InlineRecordLayout } from "@/components/studio/inline-record-layout";
 import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
 import { supportsInlineEditing } from "@/lib/inline-editing";
@@ -22,7 +23,7 @@ type StudioSection = Exclude<RecordSection, "system">;
 type StudioContentKey = "overview" | "technical" | "notes" | "samples" | "recommendation" | "hardware" | "attachments";
 type SetupGroupId = "systems" | "tools" | "peripherals" | "notes";
 
-type StudioForm = ImageFrame & {
+type StudioForm = ImageFrame & HeaderFrame & {
   originalId: string;
   id: string;
   title: string;
@@ -83,6 +84,7 @@ type MediaImportOptions = {
   noteDisplayThumbnails?: boolean;
 };
 type StudioUpdate = <Key extends keyof StudioForm>(key: Key, value: StudioForm[Key]) => void;
+type UpdateArtworkFrame = (frame: ImageFrame | HeaderFrame) => void;
 type RetainBufferedDraft = (field: "hardware" | "recommendation", value: string) => void;
 type StudioDraft = {
   body: string;
@@ -322,6 +324,13 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     formRef.current = next;
     setForm(next);
     cacheDraft(next, nextBody);
+  }, [cacheDraft]);
+
+  const updateArtworkFrame = useCallback<UpdateArtworkFrame>((frame) => {
+    const next = { ...formRef.current, ...frame };
+    formRef.current = next;
+    setForm(next);
+    cacheDraft(next);
   }, [cacheDraft]);
 
   const openSection = useCallback((section: StudioSection) => {
@@ -738,6 +747,8 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   const retainBufferedDraft: RetainBufferedDraft = (field, value) => {
     cacheDraft({ ...form, [field]: value }, form.body, selectedId);
   };
+  const headerFraming = form.headerImage && (form.section === "projects" || form.section === "games")
+    ? <HeaderFraming frame={imageFraming.normalizeHeaderFrame(form)} onChange={updateArtworkFrame} /> : null;
   const titleAction = suggestedTitle ? (
     <button className="studio-use-note-title" type="button" disabled={saving || uploading} onClick={(event) => {
       const title = suggestedLogTitle({ ...formRef.current, body: bodyDraftRef.current });
@@ -757,13 +768,13 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     return <>
       <input ref={fileInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
         onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
-      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={editorMessage} titleAction={titleAction} saveState={saveState}
+      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={editorMessage} titleAction={titleAction} headerFraming={headerFraming} saveState={saveState}
         controls={form.section === "games" ? <GameInspectorControls form={form} onUpdate={update} /> : undefined}
         exportRequired={archiveRefreshRequired} onUpdate={update} onPickHeader={() => chooseFiles("headerImage")} onPickThumbnail={() => chooseFiles("banner")}
         onContentChange={(key) => { setActiveContent(key); onContentChange?.(key); }} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive}
         content={<StudioContent activeContent={inlineContent} form={form} record={activeRecord} uploading={uploading}
           onBodyCommit={(value) => update("body", value)} onFileDrop={uploadFiles} onFilePick={chooseFiles}
-          onNoteMediaUpload={uploadNoteMedia} onOptimizeNoteMedia={optimizeNoteMedia} onDraftChange={setBufferedDirty} onRetainDraft={retainBufferedDraft} onUpdate={update} />} />
+          onNoteMediaUpload={uploadNoteMedia} onOptimizeNoteMedia={optimizeNoteMedia} onDraftChange={setBufferedDirty} onRetainDraft={retainBufferedDraft} onFrameChange={updateArtworkFrame} onUpdate={update} />} />
     </>;
   }
 
@@ -849,6 +860,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
             <div className="studio-copy-layout">
               <div className="studio-copy-main">
                 <EditableHeading form={form} titleAction={titleAction} onDraftChange={setBufferedDirty} onFilePick={chooseFiles} onUpdate={update} />
+                {headerFraming}
                 <StudioContent
                   activeContent={activeContent}
                   form={form}
@@ -864,6 +876,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
                   onOptimizeNoteMedia={optimizeNoteMedia}
                   onDraftChange={setBufferedDirty}
                   onRetainDraft={retainBufferedDraft}
+                  onFrameChange={updateArtworkFrame}
                   onUpdate={update}
                 />
               </div>
@@ -1597,7 +1610,7 @@ function EditableHeading({
 }) {
   return (
     <div className={form.headerImage ? "studio-entry-heading has-heading-banner" : "studio-entry-heading"}>
-      {form.headerImage ? <img src={form.headerImage} alt="" decoding="async" /> : null}
+      {form.headerImage ? <img src={form.headerImage} alt="" decoding="async" style={imageFraming.headerFrameStyle(form)} /> : null}
       <div className="studio-heading-content">
         <div className="studio-heading-topline">
           <EditableText className="studio-kind-edit" label="Type" value={form.type} onDraftChange={onDraftChange} onChange={(value) => onUpdate("type", value)} />
@@ -1637,6 +1650,7 @@ function StudioContent({
   onBodyCommit,
   onDraftChange,
   onRetainDraft,
+  onFrameChange,
   onFileDrop,
   onFilePick,
   onNoteMediaUpload,
@@ -1650,6 +1664,7 @@ function StudioContent({
   onBodyCommit: (value: string) => void;
   onDraftChange: (dirty: boolean) => void;
   onRetainDraft: RetainBufferedDraft;
+  onFrameChange: UpdateArtworkFrame;
   onFileDrop: (files: FileList | File[], target?: MediaTarget) => void;
   onFilePick: (target: MediaTarget) => void;
   onNoteMediaUpload: (files: FileList | File[]) => Promise<string[]>;
@@ -1740,12 +1755,8 @@ function StudioContent({
   return (
     <section className="studio-content-terminal">
       <div className="terminal-title">// OVERVIEW</div>
-      {form.section === "games" ? <ArtworkFraming banner={form.banner} frame={imageFraming.normalizeImageFrame(form)} onChange={(frame) => {
-        onUpdate("bannerFit", frame.bannerFit);
-        onUpdate("bannerZoom", frame.bannerZoom);
-        onUpdate("bannerX", frame.bannerX);
-        onUpdate("bannerY", frame.bannerY);
-      }} /> : null}
+      {form.section === "projects" && !form.headerImage ? <button className="studio-artwork-reset" type="button" onClick={() => onFilePick("banner")}><ImagePlus size={15} aria-hidden="true" />{form.banner ? "Change overview image" : "Add overview image"}</button> : null}
+      {form.section === "games" || (form.section === "projects" && !form.headerImage) ? <ArtworkFraming banner={form.banner} frame={imageFraming.normalizeImageFrame(form)} onChange={onFrameChange} /> : null}
       {form.section === "logs" ? (
         <>
           <div className="studio-generated-overview">
@@ -2518,6 +2529,7 @@ function emptyForm(section: StudioSection = "logs", setupGroup: SetupGroupId | "
     summary: defaultSummary(section, normalizedSetupGroup),
     banner: "",
     ...imageFraming.normalizeImageFrame(null),
+    ...imageFraming.normalizeHeaderFrame(null),
     headerImage: "",
     iconImage: "",
     externalUrl: "",
@@ -2592,6 +2604,7 @@ function fromRecord(record?: RecordEntry): StudioForm {
     summary: record.summary,
     banner: record.banner ?? "",
     ...imageFraming.normalizeImageFrame(record.meta),
+    ...imageFraming.normalizeHeaderFrame(record.meta),
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
     iconImage: typeof record.meta.iconImage === "string" ? record.meta.iconImage : "",
     externalUrl: typeof record.meta.externalUrl === "string" ? record.meta.externalUrl : "",
@@ -2647,6 +2660,7 @@ function readStudioDrafts(): StudioDraftMap {
       .map(([key, draft]) => [key, { ...draft, form: {
         ...draft.form,
         ...imageFraming.normalizeImageFrame(draft.form),
+        ...imageFraming.normalizeHeaderFrame(draft.form),
         gamePlacement: draft.form.section === "games" ? gameLogPlacement(draft.form) : "",
         gameActivity: gameActivityValue(draft.form)
       } }]));
@@ -3005,6 +3019,7 @@ function toRecordPreview(form: StudioForm, body: string): RecordEntry {
     priority: form.priority,
     meta: {
       ...imageFraming.imageFrameFields(form),
+      ...imageFraming.headerFrameFields(form),
       headerImage: form.headerImage,
       iconImage: form.iconImage,
       externalUrl: form.externalUrl,

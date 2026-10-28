@@ -105,6 +105,22 @@ html:has(.record-layout.is-editing-record), body:has(.record-layout.is-editing-r
   margin-block: 8px 14px;
 }
 
+.studio-header-framing {
+  min-inline-size: 0;
+  padding-block-end: 12px;
+  border-block-end: 1px solid var(--line);
+}
+
+.studio-header-framing .studio-artwork-slider {
+  grid-template-columns: minmax(0, 1fr) minmax(60px, 1fr) 5ch;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.studio-header-framing .studio-artwork-slider span {
+  overflow-wrap: anywhere;
+}
+
 .studio-artwork-fit {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -799,6 +815,10 @@ html:has(.record-layout.is-editing-record), body:has(.record-layout.is-editing-r
   grid-template-rows: auto minmax(0, 1fr);
   gap: 16px;
   overflow: hidden;
+}
+
+.studio-copy-main:has(> .studio-header-framing) {
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
 .studio-setup-editor-layout {
@@ -2111,6 +2131,15 @@ input.studio-title-edit {
 }
 
 @media (max-width: 760px) {
+  .studio-shell.is-embedded .studio-copy-layout {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .studio-shell.is-embedded .studio-copy-main {
+    overflow: visible;
+  }
+
   .studio-workspace {
     padding: 30px 18px 72px;
   }

@@ -30,6 +30,9 @@ type EntryPayload = {
   bannerX?: number | string;
   bannerY?: number | string;
   headerImage?: string;
+  headerZoom?: number | string;
+  headerX?: number | string;
+  headerY?: number | string;
   iconImage?: string;
   externalUrl?: string;
   setupGroup?: string;
@@ -124,6 +127,11 @@ async function saveEntry(request: NextRequest) {
     bannerX: payload.bannerX ?? existing?.bannerX,
     bannerY: payload.bannerY ?? existing?.bannerY
   });
+  const headerFrame = imageFraming.headerFrameFields({
+    headerZoom: payload.headerZoom ?? existing?.headerZoom,
+    headerX: payload.headerX ?? existing?.headerX,
+    headerY: payload.headerY ?? existing?.headerY
+  });
   const writtenAt = section === "logs"
     ? clean(existing?.writtenAt) || (existing ? clean(existing.started) || clean(existing.updated) : new Date().toISOString())
     : clean(existing?.writtenAt);
@@ -177,6 +185,7 @@ async function saveEntry(request: NextRequest) {
     ...(clean(payload.banner) ? [`banner: "${escapeFrontmatter(clean(payload.banner))}"`] : []),
     ...Object.entries(bannerFrame).map(([key, value]) => `${key}: ${typeof value === "string" ? `"${value}"` : value}`),
     ...(clean(payload.headerImage) ? [`headerImage: "${escapeFrontmatter(clean(payload.headerImage))}"`] : []),
+    ...Object.entries(headerFrame).map(([key, value]) => `${key}: ${value}`),
     ...(clean(payload.iconImage) ? [`iconImage: "${escapeFrontmatter(clean(payload.iconImage))}"`] : []),
     ...(externalUrl ? [`externalUrl: "${escapeFrontmatter(externalUrl)}"`] : []),
     ...(section === "setup" && clean(payload.setupGroup) ? [`setupGroup: "${escapeFrontmatter(normalizeSetupGroup(clean(payload.setupGroup)))}"`] : []),

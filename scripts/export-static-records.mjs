@@ -107,6 +107,7 @@ for (const filename of filenames) {
     summary: data.summary || "No summary recorded.",
     banner: toStaticPath(data.banner),
     ...imageFraming.imageFrameFields(data),
+    ...imageFraming.headerFrameFields(data),
     dashboardImage: toStaticPath(data.dashboardImage),
     headerImage: toStaticPath(data.headerImage),
     iconImage: toStaticPath(data.iconImage),

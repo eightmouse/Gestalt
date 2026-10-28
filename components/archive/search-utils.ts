@@ -54,6 +54,7 @@ export function getSearchResults(records: RecordEntry[], query: string, currentG
     { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
     { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
     { kind: "command", id: "cmd-roadmap", title: "Open roadmap", detail: "Work in progress and filed milestones", action: "roadmap" },
+    { kind: "command", id: "cmd-connections", title: "Connections", detail: "External channels and social profiles", action: "connections" },
     { kind: "command", id: "cmd-os-behaviour", title: "Settings", detail: "Startup, navigation and display settings", action: "behaviour" },
     { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
     { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
@@ -63,7 +64,7 @@ export function getSearchResults(records: RecordEntry[], query: string, currentG
   ];
 
   if (!normalized) {
-    return commands.slice(0, 4);
+    return commands.slice(0, 5);
   }
 
   const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(normalized));

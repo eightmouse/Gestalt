@@ -33,6 +33,9 @@ import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/s
 import { TimelineWindow } from "@/components/archive/timeline-window";
 import { RoadmapWindow } from "@/components/archive/roadmap-window";
 import { OsBehaviourWindow } from "@/components/archive/os-behaviour-window";
+import { WorkspaceToolWindow } from "@/components/archive/workspace-tool-window";
+import workspaceTools from "@/public/workspace-tools.js";
+import recordMotion from "@/public/record-motion.js";
 import behaviour, { type StartupMode, type PreferenceKey } from "@/public/os-behaviour.js";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
@@ -155,6 +158,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [roadmapOpen, setRoadmapOpen] = useState(false);
   const [osBehaviourOpen, setOsBehaviourOpen] = useState(false);
+  const [webSearchOpen, setWebSearchOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [headlineAnimating, setHeadlineAnimating] = useState(true);
   const [localMemory, setLocalMemory] = useState<LocalMemoryState>("checking");
@@ -166,8 +171,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [inlineRecordId, setInlineRecordId] = useState<string | null>(null);
   const [inlineBusy, setInlineBusy] = useState(false);
   const [inlineDraftWindow, setInlineDraftWindow] = useState<RecordEntry | null>(null);
+  const webSearchState = useRef({ ready: false, busy: true });
+  const webSearchAvailable = !panelOpen && !timelineOpen && !roadmapOpen && !osBehaviourOpen && !webSearchOpen && !connectionsOpen && !studioRecordId && !inlineRecordId;
+  webSearchState.current = { ready: bootComplete && (localMemory === "granted" || localMemory === "session"), busy: !webSearchAvailable || searchOpen || navOpen };
   const searchRef = useRef<HTMLDivElement | null>(null);
   const recordAccessTimerRef = useRef<number | null>(null);
+  const recordMotionRef = useRef<ReturnType<typeof recordMotion.createController> | null>(null);
   const recordAccessPlayedRef = useRef(false);
   const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
@@ -261,6 +270,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? inlineDraftWindow ?? archiveRecords[0];
   const recordWindowKey = inlineDraftWindow?.id ?? selectedRecord?.id;
+  useEffect(() => () => recordMotionRef.current?.cancel(), [recordWindowKey]);
+  useEffect(() => {
+    if (panelMinimized && !panelOpen) shellRef.current?.querySelector<HTMLButtonElement>(".reopen-control")?.focus({ preventScroll: true });
+  }, [panelMinimized, panelOpen]);
   const editingInline = Boolean(inlineRecordId && inlineRecordId === recordWindowKey);
   const unsavedInline = Boolean(inlineDraftWindow && selectedId === inlineDraftWindow.id);
   const projectDashboardRecords = recordsBySection.projects
@@ -370,6 +383,17 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [bootComplete, localMemory, inlineRecordId, panelOpen, searchOpen]);
 
   useEffect(() => {
+    const open = (event: KeyboardEvent) => {
+      if (!workspaceTools.shouldOpenSearch(event, webSearchState.current, document)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setWebSearchOpen(true);
+    };
+    document.addEventListener("keydown", open);
+    return () => document.removeEventListener("keydown", open);
+  }, []);
+
+  useEffect(() => {
     if (!navOpen) {
       return;
     }
@@ -390,6 +414,22 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       setSelectedId(archiveRecords[0].id);
     }
   }, [archiveRecords, selectedId, setSelectedId, inlineDraftWindow]);
+
+  const minimizeRecord = () => {
+    if (inlineBusy || !panelOpen) return;
+    const controller = recordMotionRef.current ??= recordMotion.createController();
+    controller.minimize({
+      node: shellRef.current?.querySelector<HTMLElement>(".record-window") ?? null,
+      target: shellRef.current?.querySelector<HTMLElement>(".workspace-window-tray"),
+      enabled: entryAccessModeRef.current !== "off",
+      onComplete: () => {
+        stopRecordAccess();
+        setRecordAccessComplete(true);
+        setPanelOpen(false);
+        setPanelMinimized(true);
+      }
+    });
+  };
 
   const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteQuery = "") => {
     if (inlineBusy) return;
@@ -576,6 +616,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       return;
     }
 
+    if (result.action === "connections") {
+      if (inlineBusy) return;
+      setSearchOpen(false);
+      setSearchQuery("");
+      setNavOpen(false);
+      setConnectionsOpen(true);
+      return;
+    }
+
     if (result.record) {
       openRecord(result.record, result.content ?? "overview");
       return;
@@ -654,7 +703,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
   const showBoot = !bootComplete;
   useDesktopNavigation(shellRef, desktopNavigationMode, bootComplete && (localMemory === "granted" || localMemory === "session"),
-    hasFocusWindow || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen, localMemory === "granted");
+    hasFocusWindow || webSearchOpen || connectionsOpen || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen, localMemory === "granted");
 
   return (
     <main ref={shellRef} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
@@ -667,6 +716,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         return true;
       }} /> : null}
       {roadmapOpen ? <RoadmapWindow onClose={() => setRoadmapOpen(false)} /> : null}
+      {webSearchOpen || connectionsOpen ? <WorkspaceToolWindow mode={connectionsOpen ? "connections" : "search"} remember={localMemory === "granted"} onClose={() => { setWebSearchOpen(false); setConnectionsOpen(false); }} /> : null}
       {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
@@ -774,25 +824,20 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         </footer>
 
         <AnimatePresence>
-          {panelOpen && selectedRecord ? (
+          {(panelOpen || panelMinimized) && selectedRecord ? (
             <>
-              <motion.button
+              {panelOpen ? <motion.button
                 aria-label="Minimize active record"
                 className="record-backdrop"
                 type="button"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => {
-                  if (inlineBusy) return;
-                  if (!unsavedInline) setInlineRecordId(null);
-                  setPanelOpen(false);
-                  setPanelMinimized(true);
-                  stopRecordAccess();
-                }}
-              />
+                onClick={minimizeRecord}
+              /> : null}
               <RecordWindow
                 key={recordWindowKey}
+                minimized={!panelOpen}
                 accessPending={recordAccessPending}
                 accessComplete={recordAccessComplete}
                 maximized={panelMaximized}
@@ -818,13 +863,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                   setPanelMinimized(false);
                   stopRecordAccess();
                 }}
-                onMinimize={() => {
-                  if (inlineBusy) return;
-                  if (!unsavedInline) setInlineRecordId(null);
-                  setPanelOpen(false);
-                  setPanelMinimized(true);
-                  stopRecordAccess();
-                }}
+                onMinimize={minimizeRecord}
                 onMaximize={() => setPanelMaximized((current) => !current)}
               />
             </>

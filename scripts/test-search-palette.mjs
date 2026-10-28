@@ -25,7 +25,8 @@ for (const query of ["", "   ", "settings", "behaviour", "startup", "game", "dis
   const b = pages.searchResults();
   assert.equal(keys(a), keys(b), "React and Pages search remain in sync");
   if (!query.trim()) {
-    assert.equal(a.length, 4);
+    assert.equal(a.length, 5);
+    assert.deepEqual(Array.from(a, (item) => item.id).slice(2), ["cmd-roadmap", "cmd-connections", "cmd-os-behaviour"], "Connections is a normal command directly below Roadmap and above Settings");
     assert.ok(a.every((item) => item.kind === "command"), "No unsolicited record cards in the default palette");
     assert.ok(a.some((item) => item.action === "behaviour" && item.title === "Settings"), "Settings is reachable without typing");
   } else if (["distant", "quiet"].includes(query)) {
@@ -33,6 +34,7 @@ for (const query of ["", "   ", "settings", "behaviour", "startup", "game", "dis
   }
 }
 assert.equal(JSON.stringify(records), original);
+assert.ok(react.getSearchResults(records, "connections").some((item) => item.action === "connections"), "Connections remains searchable");
 
 function findNode(file, predicate) {
   const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");

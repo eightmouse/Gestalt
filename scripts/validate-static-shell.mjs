@@ -21,6 +21,8 @@ if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/
 
 const cacheTokenCases = [
   ['src="public/os-behaviour.js?v=1.59.0"', 'src="public/os-behaviour.js?v=12345"'],
+  ['src="public/workspace-tools.js?v=1.62.0"', 'src="public/workspace-tools.js?v=12345"'],
+  ['src="public/record-motion.js?v=1.64.0"', 'src="public/record-motion.js?v=12345"'],
   ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],
   ['href="app/desktop-navigation.css?v=1.54.0"', 'href="app/desktop-navigation.css?v=12345"'],
   ['src="public/seasonal.js?v=1.53.0"', 'src="public/seasonal.js?v=12345"'],
@@ -239,6 +241,10 @@ if (bootCheck.status !== 0) {
 }
 
 const behaviourCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-os-behaviour.mjs")], { encoding: "utf8" });
+const toolsCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-workspace-tools.mjs")], { encoding: "utf8" });
+const recordMotionCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-record-motion.mjs")], { encoding: "utf8" });
+if (recordMotionCheck.status !== 0) errors.push(`Record motion regression failed: ${(recordMotionCheck.stderr || recordMotionCheck.stdout || "").trim()}`);
+if (toolsCheck.status !== 0) errors.push(`Workspace tools regression failed: ${(toolsCheck.stderr || toolsCheck.stdout || "").trim()}`);
 if (behaviourCheck.status !== 0) errors.push(`OS Behaviour regression check failed: ${(behaviourCheck.stderr || behaviourCheck.stdout || "").trim()}`);
 
 const archiveCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-field-archive.mjs")], { encoding: "utf8" });
