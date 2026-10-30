@@ -1,6 +1,8 @@
 export type SeasonalMode = "auto" | "off";
 export type SeasonalDecoration = {
-  readonly placement: "projects-web" | "game-pumpkin" | "memory-hanging" | "log-web";
+  readonly placement: "projects-web" | "game-pumpkin" | "memory-hanging" | "log-web"
+    | "projects-frost" | "game-fir" | "memory-winter"
+    | "projects-ribbon" | "game-year-seal" | "memory-star";
   readonly image: string;
   readonly glowImage?: string;
 };

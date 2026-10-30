@@ -13,12 +13,12 @@ const sourceBefore = await readFile(path.join(root, "index.html"), "utf8");
 try {
   await preparePages({ root, destination, baseUrl: "https://fixture.github.io/Gestalt", fetchImpl: async () => new Response("missing", { status: 404 }) });
   const checked = await validatePagesAssets(destination);
-  for (const file of ["public/images/archive-banner.png", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/october-glow.svg"]) assert.ok(checked.includes(file));
+  for (const file of ["public/images/archive-banner.png", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/october-glow.svg", ...["winter-frost", "winter-fir", "winter-pendant", "january-ribbon", "january-seal", "january-star"].map((name) => `public/images/seasonal/${name}.svg`)]) assert.ok(checked.includes(file));
   const index = path.join(destination, "index.html");
   await writeFile(index, sourceBefore.replace('url("../public/images/archive-banner.png")', 'url("public/images/archive-banner.png")'));
   await assert.rejects(validatePagesAssets(destination), /app\/public\/images\/archive-banner.png/, "The previous stylesheet-relative URL bug must fail the prepared-artifact check");
   await writeFile(index, sourceBefore);
-  for (const file of ["public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg"]) {
+  for (const file of ["public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg"]) {
     await unlink(path.join(destination, file));
     await assert.rejects(validatePagesAssets(destination), /Missing prepared Pages asset/);
     await copyFile(path.join(root, file), path.join(destination, file));

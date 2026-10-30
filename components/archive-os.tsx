@@ -419,6 +419,22 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   }, [archiveRecords, selectedId, setSelectedId, inlineDraftWindow]);
 
+  const closeRecord = () => {
+    if (inlineBusy || !panelOpen) return;
+    const controller = recordMotionRef.current ??= recordMotion.createController();
+    controller.close({
+      node: shellRef.current?.querySelector<HTMLElement>(".record-window") ?? null,
+      enabled: entryAccessModeRef.current !== "off",
+      onComplete: () => {
+        setInlineRecordId(null);
+        setInlineDraftWindow(null);
+        setPanelOpen(false);
+        setPanelMinimized(false);
+        stopRecordAccess();
+      }
+    });
+  };
+
   const minimizeRecord = () => {
     if (inlineBusy || !panelOpen) return;
     const controller = recordMotionRef.current ??= recordMotion.createController();
@@ -862,14 +878,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                     onBusyChange={setInlineBusy} onContentChange={(content) => setInitialContent(content)}
                     onExit={finishInlineEditing} onRecordsChange={applyStudioRecords} />
                 ) : undefined}
-                onClose={() => {
-                  if (inlineBusy) return;
-                  setInlineRecordId(null);
-                  setInlineDraftWindow(null);
-                  setPanelOpen(false);
-                  setPanelMinimized(false);
-                  stopRecordAccess();
-                }}
+                onClose={closeRecord}
                 onMinimize={minimizeRecord}
                 onMaximize={() => setPanelMaximized((current) => !current)}
               />

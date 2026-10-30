@@ -71,8 +71,18 @@ assert.ok(!target.markup.includes("<img"), "Off-season renders no image request"
 now = new Date(2026, 11, 1);
 context.syncSeasonalAccent();
 assert.match(target.markup, /data-season="december"/);
-assert.match(target.markup, / hidden/, "December's redesigned dressing is still roadmap work");
-assert.ok(!target.markup.includes("<img"));
+assert.ok(!/ hidden/.test(target.markup), "December dressing becomes visible on the existing clock tick");
+assert.equal((target.markup.match(/<img\b/g) || []).length, 3);
+assert.match(target.markup, /winter-pendant\.svg/);
+const decemberWrites = writes;
+context.syncSeasonalAccent();
+assert.equal(writes, decemberWrites, "Unchanged winter dressing is not rebuilt");
+now = new Date(2027, 0, 1);
+context.syncSeasonalAccent();
+assert.match(target.markup, /data-season="january"/);
+assert.equal((target.markup.match(/<img\b/g) || []).length, 3);
+assert.match(target.markup, /january-star\.svg/);
+assert.ok(!target.markup.includes("winter-pendant"), "Changing seasons removes previous artwork");
 const mountedTarget = context.document.querySelector;
 context.document.querySelector = () => null;
 assert.doesNotThrow(() => context.syncSeasonalMotion());
@@ -112,8 +122,10 @@ for (const month of [0, 9, 11]) {
   }
   if (!detail.decorations.length) assert.match(react, /hidden=""/);
 }
-assert.equal(assets.size, 4, "Four placements reuse small local artwork and a face-only glow overlay");
-assert.ok([...assets].reduce((total, file) => total + statSync(new URL(`../${file}`, import.meta.url)).size, 0) < 6144, "The complete artwork set stays below 6 KB");
+assert.equal(assets.size, 10, "Seasonal placements use local artwork with only one optional face-glow overlay");
+assert.ok([...assets].reduce((total, file) => total + statSync(new URL(`../${file}`, import.meta.url)).size, 0) < 10240, "All three seasons together stay below 10 KB");
+assert.deepEqual(seasonal.seasonFor(new Date(2026, 11, 23)).decorations.map((item) => item.placement), ["projects-frost", "game-fir", "memory-winter"]);
+assert.deepEqual(seasonal.seasonFor(new Date(2027, 0, 23)).decorations.map((item) => item.placement), ["projects-ribbon", "game-year-seal", "memory-star"]);
 assert.deepEqual(seasonal.seasonFor(new Date(2026, 9, 23)).decorations.map((item) => item.placement), ["projects-web", "game-pumpkin", "memory-hanging", "log-web"]);
 assert.ok(!renderToStaticMarkup(createElement(reactContext.exports.SeasonalAccent, { now, mode: "off" })).includes("<img"));
 const index = read("index.html");

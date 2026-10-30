@@ -2,12 +2,12 @@
 export const publicRoadmap = {
   title: "On the desk",
   intro: "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  updated: "28 / 10 / 2026",
+  updated: "30 / 10 / 2026",
   groups: [
     {
       id: "working", title: "In progress", items: [
-        { title: "Closing a record", detail: "Explore a distinct dematerializing close, keeping it separate from minimizing and preserving the archive's quiet pace." },
-        { title: "Seasonal details", detail: "Halloween dressing attached to dashboard frames; winter snow and New Year decorations are next to explore." },
+        { title: "Closing a record", detail: "A content-first dissolve, then a frame contracting into a thin line. The first prototype is ready to try; minimizing keeps its own restore gesture." },
+        { title: "Seasonal details", detail: "Halloween stays as it is. December adds frost, a small fir and a hanging ornament; January brings a ribbon, seal and star. First versions are ready for review; falling snow remains a separate idea." },
         { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes." }
       ]
     },

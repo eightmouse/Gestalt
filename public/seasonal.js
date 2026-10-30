@@ -10,11 +10,20 @@
     Object.freeze({ placement: "memory-hanging", image: "public/images/seasonal/halloween-hanging.svg" }),
     Object.freeze({ placement: "log-web", image: "public/images/seasonal/halloween-web.svg" })
   ]);
-  const undecorated = Object.freeze([]);
+  const winter = Object.freeze([
+    Object.freeze({ placement: "projects-frost", image: "public/images/seasonal/winter-frost.svg" }),
+    Object.freeze({ placement: "game-fir", image: "public/images/seasonal/winter-fir.svg" }),
+    Object.freeze({ placement: "memory-winter", image: "public/images/seasonal/winter-pendant.svg" })
+  ]);
+  const newYear = Object.freeze([
+    Object.freeze({ placement: "projects-ribbon", image: "public/images/seasonal/january-ribbon.svg" }),
+    Object.freeze({ placement: "game-year-seal", image: "public/images/seasonal/january-seal.svg" }),
+    Object.freeze({ placement: "memory-star", image: "public/images/seasonal/january-star.svg" })
+  ]);
   const seasons = Object.freeze({
     9: Object.freeze({ id: "october", decorations: halloween }),
-    11: Object.freeze({ id: "december", decorations: undecorated }),
-    0: Object.freeze({ id: "january", decorations: undecorated })
+    11: Object.freeze({ id: "december", decorations: winter }),
+    0: Object.freeze({ id: "january", decorations: newYear })
   });
 
   function normalizeMode(value) { return value === "off" ? "off" : "auto"; }
