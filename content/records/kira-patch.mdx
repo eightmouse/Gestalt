@@ -11,6 +11,26 @@ priority: 2
 technicalStack: "Python"
 milestones: "Method 1 Research|100|Done; Patch Flow|80|In Progress; Verification|60|In Progress"
 ---
+:::note 30 / 10 / 2026 - Hi ~
+# Moving forward
+Been a while, I know. Yes, I'm working on KiraPatch again.
+I haven't fully fully stopped but due to all the stuff that has happened, I kept it low profile and only did very few things here and there, until more recently.
+I was not sure if I wanted to share more news about it and wait for a big step forward or not, however I have been slowly getting back at it.
+
+## Pls go straight to the point
+After reviewing the current code, I think the biggest improvement will come from changing how I prove correctness.
+
+- I was testing whether we could find a legal Pokémon, rather than consistently proving what the player receives. That can help diagnose generation, but selecting a legal temporary copy doesn’t establish that the final party Pokémon is legal.
+- The audit can count a shiny from any captured candidate. searches all candidates and can stop when one passes. That leaves room for a successful test while the actual delivered Pokémon differs.
+
+There's much more to it and this makes more sense when looked at with the harness I made.
+
+**Does this mean process will be smoother and or soon to be finished?**
+It's going to be better for sure and progress will follow, however for multiple reasons I can't give a timeline or a guarantee.
+
+All this said,  soon I should be in a better position to give more adequate answers regarding how faster the progress will be.
+:::
+
 :::note 20 / 05 / 2026 - What happened to KiraPatch?
 Helloo.
 KiraParch is alive and well, I've been working on in this whole time. I took some breaks to finish Gestalt so I can post more in-depth notes and rambles of what is going on with the stuff I'm working on.

@@ -46,13 +46,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (result.code !== 0) {
+      const siteUpdatePending = output.includes("Publish blocked: public site code has uncommitted changes");
       return NextResponse.json(
         {
-          error: `Publish failed with exit code ${result.code ?? "unknown"}.`,
+          error: siteUpdatePending
+            ? "Publishing is waiting for a reviewed site-code commit. Your note is saved locally; no push was attempted."
+            : `Publish failed with exit code ${result.code ?? "unknown"}.`,
+          ...(siteUpdatePending ? { code: "SITE_UPDATE_PENDING" } : {}),
           output,
           summary
         },
-        { status: 500 }
+        { status: siteUpdatePending ? 409 : 500 }
       );
     }
 

@@ -15,7 +15,7 @@ export type StudioPendingChanges = {
   siteCodeFiles?: string[];
 };
 export type StudioResponse = Partial<StudioPendingChanges> & {
-  error?: string; id?: string; message?: string; output?: string; path?: string;
+  error?: string; code?: string; id?: string; message?: string; output?: string; path?: string;
   summary?: PublishSummary; staticExported?: boolean; published?: boolean;
   warning?: string; writtenAt?: string; writtenOrder?: number;
 };

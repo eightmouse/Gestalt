@@ -78,10 +78,11 @@ export const useStudioPublishing = create<PublishingStore>((set, get) => ({
       const response = await fetch("/api/studio/publish", { method: "POST" });
       const data = await readStudioResponse(response);
       if (!response.ok) {
-        const detail = data.output?.includes("Publish blocked: public site code has uncommitted changes")
-          ? "Site updates need their own code commit first. Your saved notes are safe; publish them with the reviewed code batch."
+        const siteUpdatePending = data.code === "SITE_UPDATE_PENDING" || data.output?.includes("Publish blocked: public site code has uncommitted changes");
+        const detail = siteUpdatePending
+          ? "Your note is saved locally. Publishing is waiting for the current site-code changes to be reviewed and committed; no push was attempted."
           : data.error || "GitHub publish failed. Saved records remain local.";
-        set({ publishState: { phase: "error", title: "Publish blocked", detail, output: data.output, summary: data.summary } });
+        set({ publishState: { phase: "error", title: siteUpdatePending ? "Site update pending" : "Publish blocked", detail, output: data.output, summary: data.summary } });
         return false;
       }
       set({ publishState: { phase: "success", title: data.published === false ? "Nothing to publish" : "Archive pushed", detail: data.message || "GitHub received the update. Pages deployment runs separately.", output: data.output, summary: data.summary } });

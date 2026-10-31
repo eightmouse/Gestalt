@@ -254,6 +254,16 @@ try {
   await writeFile(fakePublisher, "process.exit(2);\n");
   assert.equal((await publish.POST(request())).status, 500);
   assert.equal((await refresh.POST(request())).status, 200, "Publish failure must release the shared lock");
+  const savedBeforeBlockedPublish = await readFile(recordPath, "utf8");
+  await writeFile(fakePublisher, "console.error('Publish blocked: public site code has uncommitted changes:'); process.exit(1);\n");
+  const blockedPublish = await publish.POST(request());
+  assert.equal(blockedPublish.status, 409, "Pending site code is an expected conflict, not an unexplained server failure");
+  const blockedData = await blockedPublish.json();
+  assert.equal(blockedData.code, "SITE_UPDATE_PENDING");
+  assert.match(blockedData.error, /note is saved locally; no push was attempted/i);
+  assert.ok(!blockedData.error.includes("exit code"));
+  assert.equal(await readFile(recordPath, "utf8"), savedBeforeBlockedPublish, "A blocked publish leaves the saved note untouched");
+  assert.equal((await refresh.POST(request())).status, 200, "A blocked publish releases the operation lock too");
   console.log("Async publishing: concurrent change review, write exclusion, and failure recovery passed.");
 
   const worker = path.join(fixture, "worker.mjs");

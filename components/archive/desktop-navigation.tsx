@@ -28,7 +28,7 @@ export function DesktopNavigationChrome({ records, activeSection, onOpenSection 
     </section>
     <section className="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
       <header className="desktop-terminal-bar">
-        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.65.0</small></span>
+        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.66.2</small></span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button>
           <button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button>

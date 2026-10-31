@@ -54,7 +54,8 @@ assert.equal(shared.getState().publishing, false);
 pushed = false; failure = true;
 assert.equal(await shared.getState().publishChanges(), false);
 assert.equal(shared.getState().pendingChanges.records.length, 2);
-assert.match(shared.getState().publishState.detail, /code commit first/);
+assert.match(shared.getState().publishState.detail, /reviewed and committed/);
+assert.equal(shared.getState().publishState.title, "Site update pending");
 assert.match(shared.getState().publishState.output, /uncommitted changes/);
 stale = true; failure = false;
 const attempts = calls.filter((url) => url === "/api/studio/publish").length;
@@ -80,6 +81,19 @@ const codeBlocked = store(async (url) => {
 });
 assert.equal(await codeBlocked.getState().publishChanges(), false);
 assert.equal(codeBlocked.getState().publishState.title, "Site update pending");
+const raceBlocked = store(async (url) => url === "/api/studio/changes" ? Response.json(pending())
+  : Response.json({ code: "SITE_UPDATE_PENDING", error: "Site update pending." }, { status: 409 }));
+assert.equal(await raceBlocked.getState().publishChanges(), false);
+assert.equal(raceBlocked.getState().publishState.title, "Site update pending");
+assert.match(raceBlocked.getState().publishState.detail, /saved locally/);
+assert.match(raceBlocked.getState().publishState.detail, /no push was attempted/);
+assert.equal(raceBlocked.getState().pendingChanges.records.length, 1);
+assert.equal(raceBlocked.getState().publishing, false, "A server-side conflict can be retried normally");
+const unexpectedFailure = store(async (url) => url === "/api/studio/changes" ? Response.json(pending())
+  : Response.json({ error: "Git connection failed." }, { status: 500 }));
+assert.equal(await unexpectedFailure.getState().publishChanges(), false);
+assert.equal(unexpectedFailure.getState().publishState.title, "Publish blocked");
+assert.equal(unexpectedFailure.getState().publishState.detail, "Git connection failed.", "Unrelated failures must not be mislabeled as pending code");
 await production.getState().refreshPendingChanges();
 assert.equal(await production.getState().publishChanges(), false);
 assert.equal(await production.getState().refreshArchive(), false);

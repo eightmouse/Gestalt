@@ -40,6 +40,7 @@ export async function validatePagesAssets(destination) {
   const preloads = links.filter((link) => link.rel === "preload" && link.as === "image");
   if (!preloads.some((link) => link.href === "public/images/eightmouse-avatar.png")) throw new Error("The local welcome portrait preload is missing.");
   for (const link of preloads) await asset(link.href);
+  for (const icon of ["prev", "next", "index"]) await asset(`public/images/ui/notebook-${icon}.svg`);
   for (let month = 0; month < 12; month++) {
     for (const decoration of seasonal.seasonFor(new Date(2026, month, 15))?.decorations || []) {
       await asset(decoration.image);

@@ -2,10 +2,11 @@
 export const publicRoadmap = {
   title: "On the desk",
   intro: "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  updated: "30 / 10 / 2026",
+  updated: "31 / 10 / 2026",
   groups: [
     {
       id: "working", title: "In progress", items: [
+        { title: "Field notebook", detail: "Current work and ideas have their own chapters. Filed holds a versioned update index, with newer/older navigation inside each update and a distinct binding-first reveal. Local editing and dated history follow the reading-flow review." },
         { title: "Closing a record", detail: "A content-first dissolve, then a frame contracting into a thin line. The first prototype is ready to try; minimizing keeps its own restore gesture." },
         { title: "Seasonal details", detail: "Halloween stays as it is. December adds frost, a small fir and a hanging ornament; January brings a ribbon, seal and star. First versions are ready for review; falling snow remains a separate idea." },
         { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes." }
@@ -13,7 +14,7 @@ export const publicRoadmap = {
     },
     {
       id: "ideas", title: "On the desk", items: [
-        { title: "Field notebook", detail: "Reimagine the roadmap as a Gestalt field journal: current work first, older dated pages to turn through, a distinct opening sequence and editing where the words sit. Design it before building it." },
+        { title: "Day Mode", detail: "A softer mineral-gray daytime palette, keeping Gestalt's archive character without a pure-white screen. Explore Day, Night and optional automatic switching after the notebook review." },
         { title: "Living archive", detail: "Explore responsive light, layered depth and distinct reactions for each section. Evolve Memory State without a 3D rebuild, keeping reading quiet and motion optional. Finish the editing comforts first." },
         { title: "Month-by-month folders", detail: "Let older field notes settle into folders while newer ones stay within reach." }
       ]
@@ -36,3 +37,14 @@ export const publicRoadmap = {
     }
   ]
 };
+
+// Filed history follows the curated newest-first order, grouped by real release.
+export function buildRoadmapHistory(data) {
+  const releases = new Map();
+  for (const item of data.groups.find((group) => group.id === "done")?.items || []) {
+    const version = item.version || "Unversioned";
+    if (!releases.has(version)) releases.set(version, { version, title: item.title, items: [] });
+    releases.get(version).items.push(item);
+  }
+  return [...releases.values()];
+}

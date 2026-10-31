@@ -282,6 +282,9 @@ let roadmapData = null;
 let roadmapLoadPromise = null;
 let roadmapFailed = false;
 let roadmapTrigger = null;
+let buildRoadmapHistory = null;
+let roadmapChapterId = "working";
+let roadmapReleaseIndex = null;
 let steamDisplayModule = null;
 let steamDisplaySnapshot = null;
 let steamDisplayStarted = false;
@@ -739,7 +742,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.65.0");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.66.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1486,7 +1489,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.65.0</span>
+        <span>v1.66.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1500,7 +1503,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.65.0</span>
+        <span class="version-label">v1.66.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1520,7 +1523,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.65.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.66.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2624,8 +2627,8 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.65.0")
-      .then((module) => { roadmapData = module.publicRoadmap; return roadmapData; })
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.66.2")
+      .then((module) => { buildRoadmapHistory = module.buildRoadmapHistory; roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
   }
@@ -2642,6 +2645,7 @@ async function refreshPublicRoadmap() {
 }
 
 function openRoadmap() {
+  if (state.roadmapOpen) return;
   stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -2651,6 +2655,8 @@ function openRoadmap() {
   state.searchQuery = "";
   state.navOpen = false;
   state.roadmapOpen = true;
+  roadmapChapterId = "working";
+  roadmapReleaseIndex = null;
   render();
   void refreshPublicRoadmap();
 }
@@ -2660,13 +2666,39 @@ function closeRoadmap() {
   render();
 }
 
-function renderRoadmapContent(data) {
-  return `<div class="roadmap-heading"><span>GESTALT / ROADMAP</span><h2>${escapeHtml(data.title)}</h2><p>${escapeHtml(data.intro)}</p></div>
-    ${data.groups.map((group) => `<section class="roadmap-group" data-roadmap-state="${escapeHtml(group.id)}">
-      <h3>${escapeHtml(group.title)}<span>${String(group.items.length).padStart(2, "0")}</span></h3>
-      <ul>${group.items.map((item) => `<li><span class="roadmap-mark" aria-hidden="true"></span><div><h4>${group.id === "done" ? `<s>${escapeHtml(item.title)}</s>` : escapeHtml(item.title)}</h4><p>${escapeHtml(item.detail)}</p></div>${item.version ? `<small>${escapeHtml(item.version)}</small>` : ""}</li>`).join("")}</ul>
-    </section>`).join("")}
-    <footer class="roadmap-footnote">Last revised: ${escapeHtml(data.updated)}</footer>`;
+function renderRoadmapContent(data, chapterId = roadmapChapterId, releaseIndex = roadmapReleaseIndex) {
+  const chapter = data.groups.find((group) => group.id === chapterId) || data.groups[0];
+  if (!chapter) return '<p class="roadmap-message" role="status">No work notes filed yet.</p>';
+  const history = buildRoadmapHistory?.(data) || [];
+  const release = chapter.id === "done" && releaseIndex !== null ? history[releaseIndex] : null;
+  const indexOpen = chapter.id === "done" && !release;
+  const items = release?.items || chapter.items;
+  const title = release?.version || chapter.title;
+  const intro = release ? null : chapter.id === "working" ? data.intro : indexOpen ? "Completed work, kept in the record." : "Loose ends and possibilities. Some will become records, some might not ~";
+  return `<nav class="notebook-chapters" aria-label="Notebook chapters">${data.groups.map((group) => `<button type="button" data-notebook-chapter="${escapeHtml(group.id)}"${group.id === chapter.id ? ' aria-current="page"' : ""}>${escapeHtml(group.title)}<span>${String(group.items.length).padStart(2, "0")}</span></button>`).join("")}</nav>
+    <div class="notebook-sheet"><span class="notebook-binding" aria-hidden="true"><i></i><i></i><i></i></span><div class="notebook-page" id="roadmap-page">
+      <div class="notebook-registration"><span>GESTALT / FIELD COPY</span><span>${release ? "FILED UPDATE" : indexOpen ? "UPDATE INDEX" : "WORKING COPY"}</span></div>
+      <header class="roadmap-heading"><span>${escapeHtml(release ? chapter.title : data.title)}</span><h2 id="roadmap-page-title" tabindex="-1">${escapeHtml(title)}</h2>${intro ? `<p>${escapeHtml(intro)}</p>` : ""}</header>
+      ${indexOpen ? `<ol class="notebook-release-index" aria-label="Filed updates">${history.map((update, index) => `<li><button type="button" data-notebook-release="${index}"><span class="notebook-release-version">${escapeHtml(update.version)}</span><span><strong>${escapeHtml(update.title)}</strong><small>${update.items.length} ${update.items.length === 1 ? "milestone" : "milestones"}</small></span><img src="public/images/ui/notebook-next.svg" alt="" /></button></li>`).join("")}${!history.length ? '<li class="roadmap-message">No completed updates filed yet.</li>' : ""}</ol>`
+        : `<section class="roadmap-group" data-roadmap-state="${escapeHtml(chapter.id)}" aria-labelledby="roadmap-page-title"><div class="notebook-entry-count"><span>${release ? "RELEASE NOTES" : "OPEN NOTES"}</span><span>${String(items.length).padStart(2, "0")} RECORDS</span></div><ol>${items.map((item, index) => `<li><span class="roadmap-mark" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span><div><h3>${release ? `<s>${escapeHtml(item.title)}</s>` : escapeHtml(item.title)}</h3><p>${escapeHtml(item.detail)}</p></div></li>`).join("")}</ol>${!items.length ? '<p class="roadmap-message">Nothing written here yet.</p>' : ""}</section>`}
+    </div></div>
+    ${release ? `<footer class="notebook-pagination is-history"><button type="button" data-notebook-index aria-label="Back to update index" title="Update index" aria-controls="roadmap-page"><img src="public/images/ui/notebook-index.svg" alt="" /></button><button type="button" data-notebook-release="${releaseIndex - 1}" aria-label="Newer update" title="Newer update" aria-controls="roadmap-page"${releaseIndex === 0 ? " disabled" : ""}><img src="public/images/ui/notebook-prev.svg" alt="" /></button><span role="status" aria-live="polite" aria-atomic="true">${escapeHtml(release.version)}<span>${String(releaseIndex + 1).padStart(2, "0")} / ${String(history.length).padStart(2, "0")}</span></span><button type="button" data-notebook-release="${releaseIndex + 1}" aria-label="Older update" title="Older update" aria-controls="roadmap-page"${releaseIndex === history.length - 1 ? " disabled" : ""}><img src="public/images/ui/notebook-next.svg" alt="" /></button></footer>`
+      : `<footer class="notebook-pagination is-summary"><span>${indexOpen ? `${history.length} filed updates` : `${items.length} open notes`}</span><span>Revised ${escapeHtml(data.updated)}</span></footer>`}`;
+}
+
+function navigateRoadmap(chapterId, releaseIndex = null) {
+  if (!state.roadmapOpen || !roadmapData || !["working", "ideas", "done"].includes(chapterId) || !roadmapData.groups.some((group) => group.id === chapterId)) return;
+  const history = buildRoadmapHistory?.(roadmapData) || [];
+  if (releaseIndex !== null && (chapterId !== "done" || !Number.isInteger(releaseIndex) || !history[releaseIndex])) return;
+  if (roadmapChapterId === chapterId && roadmapReleaseIndex === releaseIndex) return;
+  const previousRelease = roadmapChapterId === "done" ? roadmapReleaseIndex : null;
+  roadmapChapterId = chapterId;
+  roadmapReleaseIndex = releaseIndex;
+  syncRoadmapDialog();
+  const dialog = document.getElementById("gestalt-roadmap");
+  const selector = releaseIndex !== null ? "#roadmap-page-title" : chapterId === "done" && previousRelease !== null
+    ? `[data-notebook-release="${previousRelease}"]` : `[data-notebook-chapter="${chapterId}"]`;
+  dialog?.querySelector(selector)?.focus();
 }
 
 function syncRoadmapDialog() {
@@ -2691,21 +2723,31 @@ function syncRoadmapDialog() {
     dialog.id = "gestalt-roadmap";
     dialog.className = "roadmap-dialog";
     dialog.setAttribute("aria-label", "Gestalt roadmap");
-    dialog.innerHTML = '<article class="roadmap-note"><header class="window-bar"><span>// WORK NOTE</span><div class="window-actions"><button type="button" data-window-action="close" data-roadmap-close aria-label="Close roadmap">close</button></div></header><div class="roadmap-body"></div></article>';
+    dialog.innerHTML = '<article class="roadmap-note"><header class="window-bar"><span>// FIELD NOTEBOOK</span><div class="window-actions"><button type="button" data-window-action="close" data-roadmap-close aria-label="Close roadmap">close</button></div></header><div class="roadmap-body"></div></article>';
     dialog.addEventListener("keydown", (event) => event.stopPropagation());
     dialog.addEventListener("cancel", (event) => { event.preventDefault(); closeRoadmap(); });
-    dialog.addEventListener("click", (event) => { if (event.target === dialog) { event.stopPropagation(); closeRoadmap(); } });
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) { event.stopPropagation(); closeRoadmap(); return; }
+      const control = event.target instanceof Element ? event.target.closest("[data-notebook-chapter], [data-notebook-release], [data-notebook-index]") : null;
+      if (control && !control.disabled) {
+        event.stopPropagation();
+        if (control.hasAttribute("data-notebook-chapter")) navigateRoadmap(control.getAttribute("data-notebook-chapter"));
+        else navigateRoadmap("done", control.hasAttribute("data-notebook-release") ? Number(control.getAttribute("data-notebook-release")) : null);
+      }
+    });
     document.body.append(dialog);
     dialog.showModal();
   }
   const status = roadmapData ? "ready" : roadmapFailed ? "failed" : "loading";
-  if (dialog.dataset.roadmapState === status) return;
-  dialog.dataset.roadmapState = status;
+  const pageState = status === "ready" ? `${status}:${roadmapChapterId}:${roadmapReleaseIndex ?? "index"}` : status;
+  if (dialog.dataset.roadmapState === pageState) return;
+  dialog.dataset.roadmapState = pageState;
   const body = dialog.querySelector(".roadmap-body");
   body.setAttribute("aria-busy", String(status === "loading"));
   body.innerHTML = roadmapData ? renderRoadmapContent(roadmapData)
     : roadmapFailed ? '<div class="roadmap-message" role="status"><p>Work note unavailable.</p><button type="button" data-roadmap-retry>Try again</button></div>'
       : '<p class="roadmap-message" role="status">Retrieving work note...</p>';
+  if (status === "ready") dialog.setAttribute("data-notebook-ready", "");
 }
 
 function timelineSources(items) {
@@ -2910,7 +2952,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.65.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.66.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>

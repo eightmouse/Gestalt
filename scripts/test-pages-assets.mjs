@@ -18,7 +18,7 @@ try {
   await writeFile(index, sourceBefore.replace('url("../public/images/archive-banner.png")', 'url("public/images/archive-banner.png")'));
   await assert.rejects(validatePagesAssets(destination), /app\/public\/images\/archive-banner.png/, "The previous stylesheet-relative URL bug must fail the prepared-artifact check");
   await writeFile(index, sourceBefore);
-  for (const file of ["public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg"]) {
+  for (const file of ["public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
     await unlink(path.join(destination, file));
     await assert.rejects(validatePagesAssets(destination), /Missing prepared Pages asset/);
     await copyFile(path.join(root, file), path.join(destination, file));
