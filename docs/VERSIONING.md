@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current version: `v1.66.2`.
+Current version: `v1.67.0`.
+
+Local `v1.67.0` adds isolated content publishing. A content-only publish keeps the committed site's version; it must not advertise an unreviewed development version.
 
 ## Rules
 

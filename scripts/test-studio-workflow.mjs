@@ -240,7 +240,7 @@ try {
   await git("config", "user.email", "workflow@example.invalid");
   await git("config", "commit.gpgsign", "false");
   await git("config", "core.hooksPath", path.join(sandbox, "empty-hooks"));
-  const fakePublisher = path.join(fixture, "scripts/publish-site.mjs");
+  const fakePublisher = path.join(fixture, "scripts/publish-content.mjs");
   await writeFile(fakePublisher, "import fs from 'node:fs'; fs.writeFileSync('publish-started', 'yes'); const deadline=Date.now()+5000; const timer=setInterval(()=>{if(fs.existsSync('publish-finish')||Date.now()>deadline){clearInterval(timer); console.log('Published main to GitHub.');}},20);\n");
   let finished = false;
   const publishing = publish.POST(request()).then((response) => { finished = true; return response; });
@@ -264,6 +264,10 @@ try {
   assert.ok(!blockedData.error.includes("exit code"));
   assert.equal(await readFile(recordPath, "utf8"), savedBeforeBlockedPublish, "A blocked publish leaves the saved note untouched");
   assert.equal((await refresh.POST(request())).status, 200, "A blocked publish releases the operation lock too");
+  await writeFile(fakePublisher, "console.error('Content publish stopped: Saved content changed during publishing. Review and retry.'); process.exit(1);\n");
+  const changedDuringPublish = await publish.POST(request());
+  assert.match((await changedDuringPublish.json()).error, /Saved content changed during publishing/);
+  assert.equal(await readFile(recordPath, "utf8"), savedBeforeBlockedPublish);
   console.log("Async publishing: concurrent change review, write exclusion, and failure recovery passed.");
 
   const worker = path.join(fixture, "worker.mjs");
@@ -275,6 +279,7 @@ try {
   console.log("Process timeout: publisher-style child tree was stopped.");
 
   for (const name of ["publish-site.mjs", "static-cache.mjs"]) await copyFile(path.join(root, "scripts", name), path.join(fixture, "scripts", name));
+  await copyFile(path.join(root, "scripts/publish-site.mjs"), fakePublisher);
   await mkdir(path.join(fixture, "lib"));
   await copyFile(path.join(root, "lib/publish-paths.mjs"), path.join(fixture, "lib/publish-paths.mjs"));
   for (const name of ["validate-content.mjs", "validate-static-shell.mjs"]) await writeFile(path.join(fixture, "scripts", name), "process.exit(0);\n");

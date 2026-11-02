@@ -69,12 +69,8 @@ export const useStudioPublishing = create<PublishingStore>((set, get) => ({
     try {
       await get().refreshPendingChanges(true);
       if (get().pendingChangesError) throw new Error("Refresh the pending list before publishing.");
-      if (get().pendingChanges?.siteCodeFiles?.length) {
-        set({ publishState: { phase: "error", title: "Site update pending", detail: "Your saved notes are safe. Publish becomes available once the pending site-code batch is reviewed and committed." } });
-        return false;
-      }
       if (get().archiveRefreshRequired) throw new Error("Refresh the archive before publishing.");
-      set({ publishState: { phase: "running", title: "Publishing archive", detail: "Running checks, committing, and pushing saved changes to GitHub." } });
+      set({ publishState: { phase: "running", title: "Publishing archive", detail: "Checking saved content against the committed site, then pushing it separately from local code edits." } });
       const response = await fetch("/api/studio/publish", { method: "POST" });
       const data = await readStudioResponse(response);
       if (!response.ok) {

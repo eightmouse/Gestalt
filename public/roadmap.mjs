@@ -2,11 +2,12 @@
 export const publicRoadmap = {
   title: "On the desk",
   intro: "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  updated: "31 / 10 / 2026",
+  updated: "02 / 11 / 2026",
   groups: [
     {
       id: "working", title: "In progress", items: [
-        { title: "Field notebook", detail: "Current work and ideas have their own chapters. Filed holds a versioned update index, with newer/older navigation inside each update and a distinct binding-first reveal. Local editing and dated history follow the reading-flow review." },
+        { title: "Field notebook", detail: "Separate chapters and versioned history are in place. Refine the opening so the page forms naturally, and keep ordinary window-bar clicks from restarting it. Local editing and dated history follow the reading-flow review." },
+        { title: "Independent publishing", detail: "Saved notes can ship against the committed site while unfinished visual work stays local. Final release checks and recovery tests are in place; keep the review before publishing." },
         { title: "Closing a record", detail: "A content-first dissolve, then a frame contracting into a thin line. The first prototype is ready to try; minimizing keeps its own restore gesture." },
         { title: "Seasonal details", detail: "Halloween stays as it is. December adds frost, a small fir and a hanging ornament; January brings a ribbon, seal and star. First versions are ready for review; falling snow remains a separate idea." },
         { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes." }

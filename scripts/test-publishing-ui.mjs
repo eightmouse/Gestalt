@@ -75,12 +75,12 @@ assert.equal(await offline.getState().publishChanges(), false);
 assert.equal(offline.getState().publishing, false);
 assert.match(offline.getState().pendingChangesError, /Disconnected/);
 const production = store(() => { throw new Error("Production must not fetch Studio routes"); }, "production");
-const codeBlocked = store(async (url) => {
-  assert.equal(url, "/api/studio/changes", "A known site-code guard must not start the publisher");
-  return new Response(JSON.stringify(pending(1, { siteCodeFiles: ["app/globals.css"] })));
+const codeIndependent = store(async (url) => {
+  if (url === "/api/studio/changes") return Response.json(pending(1, { siteCodeFiles: ["app/globals.css"] }));
+  assert.equal(url, "/api/studio/publish");
+  return Response.json({ published: true });
 });
-assert.equal(await codeBlocked.getState().publishChanges(), false);
-assert.equal(codeBlocked.getState().publishState.title, "Site update pending");
+assert.equal(await codeIndependent.getState().publishChanges(), true, "Unfinished code does not block the isolated publisher");
 const raceBlocked = store(async (url) => url === "/api/studio/changes" ? Response.json(pending())
   : Response.json({ code: "SITE_UPDATE_PENDING", error: "Site update pending." }, { status: 409 }));
 assert.equal(await raceBlocked.getState().publishChanges(), false);
@@ -106,9 +106,9 @@ const html = (extra = {}) => renderToStaticMarkup(createElement(panel.exports.Pu
 assert.match(html(), /Unsaved drafts are not included/);
 assert.match(html(), /Pages deployment/);
 const waiting = html({ changes: pending(1, { siteCodeFiles: ["app/globals.css"] }) });
-assert.match(waiting, /Site update pending/);
+assert.match(waiting, /Local site changes stay here/);
 assert.match(waiting, /app\/globals.css/);
-assert.match(waiting, /disabled=""[^>]*>Waiting for site update/);
+assert.ok(!waiting.includes('disabled=""'), "Pending code alone does not disable content publishing");
 for (const extra of [{ saving: true }, { checking: true }, { error: "read failed" }, { refreshRequired: true }]) assert.match(html(extra), /disabled=""[^>]*>[^<]*(?:Working\.\.\.|Publish all pending changes)/);
 assert.ok(html({ changes: pending(1, { records: [{ id: "test", title: '<img src=x onerror="bad()">', change: "edited" }] }) }).includes("&lt;img"));
 assert.ok(!html({ notification: { phase: "error", title: "Failure", detail: "<script>bad()</script>", output: "<iframe>" } }).includes("<iframe>"));

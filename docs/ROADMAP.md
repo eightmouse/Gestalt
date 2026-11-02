@@ -2,6 +2,22 @@
 
 ## Current Priorities
 
+2 November 2026: verified published baseline is `v1.66.2`, commit `036e52d236a72b706ee604efd0db1aaa4fb33c83`; Pages run `41207223138` and live artifact checks succeeded. It includes the notebook and reviewed KiraPatch update. The release audit reported no known vulnerabilities at that time, not a permanent security guarantee.
+
+Current release preparation: `v1.67.0`, independent content publishing. On 2 November the owner authorized review, commit and push of this batch with the saved log before starting notebook motion fixes. `scripts/publish-content.mjs` prepares a temporary repository from committed HEAD, overlays only saved records/media, and uses the committed publisher/exporter/validators with Steam sync and TypeScript skipped. Source `.env.local`, working scripts, CSS and HTML are not copied. Existing packages are linked only for checks, without installation. The exported records must match the local archive before a content-only commit can be prepared. The source index is not used for the commit; unrelated staged code is preserved. Push must fast-forward normally, and local HEAD is reconciled only after success. No forced push or automatic merge into a dirty checkout. A different origin/HEAD requires explicit synchronization/review; unpushed code is not automatically included. The original strict publisher remains intact for its validation and reviewed-code workflow.
+
+Notebook fixes requested by the owner, to do after publishing reliability:
+- Replace the block-like left-to-right opening reveal with a more coherent page/materialization sequence; preserve the accepted chapter/history navigation.
+- Investigate animation replay from clicking a window title bar, including other affected windows. Ordinary header clicks must not restart an already-open window's animation.
+
+Safety review follow-up: validate complete staged payload inclusion despite differing ignore rules. Persist a local recovery journal before push, install a prepared content index before branch advancement, and resume interrupted local finalization rather than leaving staged reversals. Disposable Git tests cover both index-lock and branch-ref-lock failures after successful push. Normal failures and late saves preserve local records; uncertain branch/staging changes require explicit review.
+
+Next: owner acceptance of content publishing, then these notebook motion/lifecycle fixes. Day Mode remains approved for a later prototype, followed by resolution/zoom and measured Firefox/Chromium performance/accessibility/security work. No visual notebook fix is claimed by the publishing batch.
+
+## Previous Priorities (31 October)
+
+The release-preparation statements below are historical; the current status above supersedes them.
+
 Verified published checkpoint: `v1.65.0`, commit `a81b9ae3f2ebccfdfae0b7b7e33f56171132c92e`; Pages run `41038382321` and live artifact checks succeeded. It includes record closing, December/January dressing and the NIKKE notes/artwork. Next.js is pinned to 16.4.1. That release audit found no known vulnerabilities. Original media, publishing boundaries and supply-chain guards remain intact.
 
 Local refinement: `v1.66.2`, approved 31 October. Chapter tabs are separate from release history: Filed opens a version/title index, selected releases show their own milestones, and only release details have newer/older arrows and a back-to-index icon. Current work/ideas are no longer sliced into arbitrary three-item pages. Shared `buildRoadmapHistory` preserves curated order and groups same-version work without inventing dates. Superseded pagination code was removed. A finite binding/page-edge/unseal opening runs once after data is ready, not on chapter/release changes; reduced motion and entering reading controls skip it. No editor/API migration, dependency or new polling. Type/content/static-shell/Pages packaging checks pass. Actual browser/mobile rendering and opening smoothness remain for owner review; no workaround was used for the preceding browser-access denial. Owner KiraPatch content edits are included unchanged in the approved v1.66.2 release preparation; Git push and live deployment remain unverified until completed.

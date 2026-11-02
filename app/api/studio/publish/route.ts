@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     const result = await runStudioProcess(
       process.execPath,
-      ["scripts/publish-site.mjs", "--message", "Update archive"],
+      ["scripts/publish-content.mjs", "--message", "Update archive"],
       180_000
     );
     const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
@@ -47,11 +47,12 @@ export async function POST(request: NextRequest) {
 
     if (result.code !== 0) {
       const siteUpdatePending = output.includes("Publish blocked: public site code has uncommitted changes");
+      const contentProblem = output.match(/^Content publish stopped: (.+)$/m)?.[1];
       return NextResponse.json(
         {
           error: siteUpdatePending
             ? "Publishing is waiting for a reviewed site-code commit. Your note is saved locally; no push was attempted."
-            : `Publish failed with exit code ${result.code ?? "unknown"}.`,
+            : contentProblem || `Publish failed with exit code ${result.code ?? "unknown"}.`,
           ...(siteUpdatePending ? { code: "SITE_UPDATE_PENDING" } : {}),
           output,
           summary
@@ -87,15 +88,19 @@ async function summarizeSuccessfulPublish(output: string): Promise<PublishSummar
     recordsChanged: changed
       .filter((file) => file.startsWith("content/records/") && file.endsWith(".mdx"))
       .map((file) => file.replace(/^content\/records\//, "").replace(/\.mdx$/, "")),
-    staticExported: /Exported \d+ records to public\\data\\records\.js|Exported \d+ records to public\/data\/records\.js/.test(output)
+    staticExported: hasStaticExport(output)
   };
 }
 
 function summarizeFailedPublish(output: string): Partial<PublishSummary> {
   return {
     cacheToken: matchFirst(output, /Updated index\.html cache token:\s*(\d+)/),
-    staticExported: /Exported \d+ records to public\\data\\records\.js|Exported \d+ records to public\/data\/records\.js/.test(output)
+    staticExported: hasStaticExport(output)
   };
+}
+
+function hasStaticExport(output: string): boolean {
+  return /Exported \d+ records to public[\\/]data[\\/]records\.js|Recovered exported static archive\./.test(output);
 }
 
 async function capture(command: string, args: string[]): Promise<string> {
