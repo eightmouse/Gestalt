@@ -25,13 +25,28 @@ export async function validatePagesAssets(destination) {
   const html = await readFile(path.join(root, "index.html"), "utf8");
   // Inspect only quoted link attributes in the project-owned static head.
   const attribute = (tag, name) => tag.match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`, "i"))?.[2];
-  const links = [...html.matchAll(/<link\b[^>]*>/gi)].map(([tag]) => ({ rel: attribute(tag, "rel"), as: attribute(tag, "as"), href: attribute(tag, "href") }));
+  const links = [...html.matchAll(/<link\b[^>]*>/gi)].map((match) => ({ at: match.index, rel: attribute(match[0], "rel"), as: attribute(match[0], "as"), href: attribute(match[0], "href") }));
+  const headEnd = html.indexOf("</head>");
   let stylesheet;
+  let appearanceStylesheet;
   for (const link of links.filter((link) => link.rel === "stylesheet")) {
     const entry = await asset(link.href);
     if (entry.url.pathname.endsWith("/app/globals.css")) stylesheet = entry;
+    if (entry.url.pathname.endsWith("/app/appearance.css") && link.at < headEnd) appearanceStylesheet = entry;
   }
   if (!stylesheet) throw new Error("The public archive stylesheet is missing from the static head.");
+  if (!appearanceStylesheet) throw new Error("The Day stylesheet must be linked in the static head.");
+  let appearanceBootstrap;
+  for (const match of html.slice(0, headEnd).matchAll(/<script\b[^>]*>/gi)) {
+    const source = attribute(match[0], "src");
+    if (!source) continue;
+    const entry = await asset(source);
+    if (entry.url.pathname.endsWith("/public/appearance.js")) appearanceBootstrap = match.index;
+  }
+  const firstStyle = links.find((link) => link.rel === "stylesheet")?.at;
+  if (appearanceBootstrap === undefined || firstStyle === undefined || appearanceBootstrap > firstStyle) {
+    throw new Error("The appearance bootstrap must run before the stylesheets in the static head.");
+  }
   const css = await readFile(stylesheet.file, "utf8");
   if (!css.includes("var(--archive-image)")) throw new Error("The archive stylesheet no longer consumes the background variable.");
   const background = html.match(/--archive-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];

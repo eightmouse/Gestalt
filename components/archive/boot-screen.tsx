@@ -20,7 +20,7 @@ export function BootScreen() {
       <div className="boot-session">
         <span className="boot-session-label">// SESSION READY</span>
         <img className="boot-session-mark" src="/images/eightmouse-avatar.png" width="112" height="112" alt="" decoding="async" />
-        <span className="boot-session-user">Eightmouse</span>
+        <span className="boot-session-user" aria-label="Eightmouse">{renderHeadlineLetters("Eightmouse")}</span>
         <span className="boot-session-detail">Opening the archive</span>
       </div>
     </div>

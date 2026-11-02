@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./desktop-navigation.css";
+import "./appearance.css";
 
 export const metadata: Metadata = {
   title: "Gestalt Archive",
   description: "A personal operating-system style archive for projects, games, setup notes, and field logs.",
   icons: {
-    icon: "/favicon.ico?v=1.67.0"
+    icon: "/favicon.ico?v=1.68.13"
   }
 };
 
@@ -16,8 +17,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script src="/appearance.js" />
+        <script src="/os-behaviour.js" />
         <link rel="preload" as="image" href="/images/archive-banner.png" />
         <link rel="preload" as="image" href="/images/eightmouse-avatar.png" />
       </head>

@@ -71,6 +71,97 @@ for (const source of [reactBoot, staticBoot.getText(ast)]) {
 
 const reactSource = read("components/archive-os.tsx");
 const css = read("app/globals.css");
+const require = createRequire(import.meta.url);
+const behaviour = require("../public/os-behaviour.js");
+const postcss = createRequire(require.resolve("next/package.json"))("postcss");
+const sheet = postcss.parse(css);
+const declarations = (rule) => Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
+const bootDefaults = declarations(sheet.nodes.find((node) => node.selector === ".boot-screen"));
+const welcomeLetters = [".boot-session-user .headline-char:nth-child(-n + 3)", ".boot-session-user .headline-char:nth-child(n + 4):nth-child(-n + 6)", ".boot-session-user .headline-char:nth-child(n + 7)"].map((selector) => declarations(sheet.nodes.find((node) => node.selector === selector)));
+assert.equal(new Set(welcomeLetters.map((values) => values["--boot-user-duration"])).size, 3, "Each interrupted letter has its own brief duration");
+for (const [mask, nth] of [[0, "3n + 1"], [1, "3n + 2"], [2, "3n"]]) assert.ok(css.includes(`:root[data-boot-interference="${mask}"] .boot-session-user .headline-char:nth-child(${nth})`), "Each visit pattern selects just three of nine letters");
+const signalDetails = new Set();
+const welcomeMasks = new Set();
+for (const sample of [...Array.from({ length: 257 }, (_, index) => index / 257), -1, 1, 2, NaN, Infinity]) {
+  const attributes = new Map(), styles = new Map();
+  let draws = 0, writes = 0;
+  const doc = { documentElement: { getAttribute: (key) => attributes.get(key), setAttribute: (key, value) => attributes.set(key, value), style: { setProperty(key, value) { writes++; styles.set(key, value); } } } };
+  const profile = behaviour.initializeBootPresentation(doc, () => { draws++; return sample; });
+  const before = [...styles];
+  behaviour.initializeBootPresentation(doc, () => { throw new Error("No per-render randomness"); });
+  assert.equal(draws, 1);
+  assert.equal(writes, 6, "Six bounded pre-paint values, never an ongoing updater");
+  assert.deepEqual([...styles], before);
+  const ms = (name) => { assert.match(styles.get(name), /^-?\d+ms$/); return parseInt(styles.get(name)); };
+  const start = ms("--boot-signal-start"), duration = ms("--boot-signal-span");
+  assert.ok(start >= 90 && start <= 390 && duration >= 760 && duration <= 1160);
+  assert.ok(start + duration < 1800, "GESTALT settles before loader handoff");
+  const jitter = ms("--boot-user-jitter");
+  assert.ok(jitter >= -40 && jitter <= 40);
+  const override = sheet.nodes.find((node) => node.selector === `:root[data-boot-profile="${profile}"] .boot-screen`);
+  const userStart = parseInt(({ ...bootDefaults, ...(override ? declarations(override) : {}) })["--boot-user-delay"]) + jitter;
+  assert.ok(userStart >= 3000);
+  for (const [index, range] of [[0, [30, 180]], [1, [0, 90]], [2, [100, 240]]]) {
+    const offset = ms(`--boot-user-offset-${"abc"[index]}`);
+    assert.ok(offset >= range[0] && offset <= range[1]);
+    assert.ok(userStart + offset + parseInt(welcomeLetters[index]["--boot-user-duration"]) < 3744, "Every randomized letter settles before welcome fade");
+  }
+  signalDetails.add(JSON.stringify([...styles]));
+  welcomeMasks.add(attributes.get("data-boot-interference"));
+}
+assert.ok(signalDetails.size > 250, "Variation is finer than four repeated scripted timings");
+assert.deepEqual([...welcomeMasks].sort(), ["0", "1", "2"]);
+const curves = new Set();
+for (const [index, profile] of behaviour.bootProfiles.entries()) {
+  let draws = 0;
+  const attributes = new Map();
+  const doc = { documentElement: { getAttribute: (key) => attributes.get(key), setAttribute: (key, value) => attributes.set(key, value) } };
+  assert.equal(behaviour.initializeBootPresentation(doc, () => { draws++; return (index + 0.1) / behaviour.bootProfiles.length; }), profile);
+  assert.equal(behaviour.initializeBootPresentation(doc, () => { throw new Error("Must not reshuffle"); }), profile);
+  assert.equal(draws, 1, "One profile per document, not per render/section/palette");
+  const override = sheet.nodes.find((node) => node.selector === `:root[data-boot-profile="${profile}"] .boot-screen`);
+  const values = { ...bootDefaults, ...(override ? declarations(override) : {}) };
+  const meter = sheet.nodes.find((node) => node.type === "atrule" && node.name === "keyframes" && node.params === values["--boot-meter-sequence"]);
+  assert.ok(meter, `Missing progress curve ${profile}`);
+  const points = meter.nodes.flatMap((node) => {
+    const scale = Number(declarations(node).transform.match(/^scaleX\(([\d.]+)\)$/)?.[1]);
+    return node.selector.split(",").map((percentage) => [Number(percentage.trim().replace("%", "")), scale]);
+  });
+  assert.deepEqual(points[0], [0, 0]);
+  assert.deepEqual(points.at(-1), [100, 1]);
+  for (let step = 1; step < points.length; step++) {
+    assert.ok(points[step][0] > points[step - 1][0]);
+    assert.ok(points[step][1] > points[step - 1][1] && points[step][1] <= 1, "Progress keeps moving without hard stops, reversal or overflow");
+  }
+  curves.add(JSON.stringify(points));
+  const speeds = points.slice(1).map((point, index) => (point[1] - points[index][1]) / (point[0] - points[index][0]));
+  assert.ok(Math.max(...speeds) > Math.min(...speeds) * 4, "Progress still hesitates and catches, rather than moving at a fixed rate");
+  const end = parseInt(values["--boot-meter-duration"]) + parseInt(values["--boot-meter-delay"]);
+  assert.ok(end >= 1800 && end <= 2220, "Every bar finishes before the existing loader handoff");
+  const textEnd = parseInt(values["--boot-status-delay"]) + 18 * parseInt(values["--boot-status-step"]) + 450;
+  assert.ok(textEnd < 1800, "Status remains readable before the loader exits");
+  const userStart = parseInt(values["--boot-user-delay"]);
+  assert.ok(userStart >= 3000, "The name is readable before its signal disturbance");
+  for (const letter of welcomeLetters) assert.ok(userStart + Number(letter["--boot-user-offset"].match(/, (\d+)ms\)/)[1]) + parseInt(letter["--boot-user-duration"]) < 3744, "Fallback timing settles before welcome fade");
+}
+assert.equal(curves.size, 4, "Four distinct rhythms, not the same curve renamed");
+for (const name of ["boot-signal-lock", "boot-signal-register"]) {
+  const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
+  assert.ok(frames);
+  frames.walkDecls((d) => { assert.equal(d.prop, "opacity"); assert.ok(Number(d.value) >= 0.7 && Number(d.value) <= 1); });
+}
+assert.ok(!css.includes("boot-flicker") && !css.includes("steps(22, end)"), "The repeated word blink and fixed stepping are replaced");
+const head = read("index.html").slice(0, read("index.html").indexOf("<body>"));
+assert.ok(head.includes('src="public/os-behaviour.js'));
+assert.equal((read("index.html").match(/src="public\/os-behaviour\.js/g) || []).length, 1);
+assert.ok(read("app/layout.tsx").includes('<script src="/os-behaviour.js" />'));
+const attributes = new Map(); let draws = 0;
+const math = Object.create(Math); math.random = () => { draws++; return 0.6; };
+const presentation = vm.createContext({ Math: math, document: { documentElement: { getAttribute: (key) => attributes.get(key), setAttribute: (key, value) => attributes.set(key, value) } }, localStorage: { getItem() { throw new Error("Presentation must not read visitor storage"); } } });
+vm.runInContext(read("public/os-behaviour.js"), presentation);
+vm.runInContext(read("public/os-behaviour.js"), presentation);
+assert.equal(draws, 1, "Head/bootstrap and bundle reuse cannot choose a new rhythm");
+assert.equal(attributes.get("data-boot-profile"), "stream");
 assert.match(reactSource, /showBoot \? " is-booting" : ""/);
 assert.match(reactSource, /inert=\{showBoot\} aria-busy=\{showBoot\}/);
 assert.match(reactSource, /localMemory === "prompt" && bootComplete/);
@@ -122,12 +213,37 @@ assert.ok(read("lib/publish-paths.mjs").includes('"public/images/eightmouse-avat
 assert.match(reactSource, /if \(!bootComplete \|\| localMemory === "prompt"/);
 assert.match(staticSource, /if \(!state.bootDismissed \|\| state.localMemory === "prompt"\) return;/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.boot-screen \{\s*display: none;/);
-const require = createRequire(import.meta.url);
-const rendered = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/headline-text" ? { renderHeadlineLetters: () => null } : require(id) });
+const cipherModule = vm.createContext({ exports: {} });
+vm.runInContext(ts.transpileModule(read("components/archive/cipher.ts"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, cipherModule);
+const headlineModule = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/cipher" ? cipherModule.exports : require(id) });
+vm.runInContext(ts.transpileModule(read("components/archive/headline-text.tsx"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText, headlineModule);
+const rendered = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/headline-text" ? headlineModule.exports : require(id) });
 vm.runInContext(ts.transpileModule(reactScreen, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, rendered);
 const reactMarkup = renderToStaticMarkup(rendered.exports.BootScreen());
-const sessionMarkup = (markup) => markup.slice(markup.indexOf('<div class="boot-session">'), markup.indexOf("</div>", markup.indexOf('<div class="boot-session">')) + 6).replace(/\s+</g, "<").replaceAll('src="public/images/eightmouse-avatar.png"', 'src="/images/eightmouse-avatar.png"').replaceAll("/>", ">");
-assert.equal(sessionMarkup(reactMarkup), sessionMarkup(staticSource), "Both readers render the same session handoff with their own public asset paths");
+const staticLetters = vm.createContext({ cipherizeText: cipherModule.exports.cipherizeText });
+for (const name of ["escapeHtml", "renderHeadlineLetters"]) {
+  vm.runInContext(ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name).getText(ast), staticLetters);
+}
+const staticUserMarkup = staticSource.replace('${renderHeadlineLetters("Eightmouse")}', vm.runInContext('renderHeadlineLetters("Eightmouse")', staticLetters));
+const sessionMarkup = (markup) => markup.slice(markup.indexOf('<div class="boot-session">'), markup.indexOf("</div>", markup.indexOf('<div class="boot-session">')) + 6).replace(/\s+</g, "<").replaceAll('src="public/images/eightmouse-avatar.png"', 'src="/images/eightmouse-avatar.png"').replaceAll("/>", ">").replace(/<span aria-hidden="true" class="headline-char" style="--headline-index:(\d+)">/g, '<span class="headline-char" style="--headline-index: $1" aria-hidden="true">');
+assert.equal(sessionMarkup(reactMarkup), sessionMarkup(staticUserMarkup), "Both readers render the same welcome and cipher letters with their own public asset paths");
+assert.ok(reactMarkup.includes('class="boot-session-user" aria-label="Eightmouse"'));
+const userFrames = ["boot-user-readable", "boot-user-cipher"].map((name) => {
+  const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
+  assert.ok(frames);
+  frames.walkDecls((decl) => assert.ok(["opacity", "transform"].includes(decl.prop), "Name disturbance uses only opacity and transform"));
+  return frames.nodes.flatMap((node) => node.selector.split(",").map((percent) => [parseInt(percent), Number(declarations(node).opacity)])).sort((a, b) => a[0] - b[0]);
+});
+for (let percent = 0; percent <= 100; percent++) {
+  const [readable, cipher] = userFrames.map((points) => points.filter(([at]) => at <= percent).at(-1)[1]);
+  assert.equal(readable + cipher, 1, "Readable and cipher layers never overlap or leave a blank letter");
+  if (percent === 0 || percent === 100) assert.equal(readable, 1, "Welcome begins and ends readable");
+}
+assert.match(css, /\.boot-session-user :is\(\.headline-char-readable, \.headline-char-cipher\) \{[^}]*animation-duration: var\(--boot-user-duration\);[^}]*animation-fill-mode: both;/);
+assert.match(css, /\.boot-session-user \.headline-char \{ --boot-user-readable-sequence: none; --boot-user-cipher-sequence: none; \}/, "Unaffected letters stay still");
+assert.ok(css.includes("var(--boot-signal-span, var(--boot-signal-duration))") && css.includes("var(--boot-signal-start, 90ms)"), "GESTALT consumes bounded per-visit timing with CSS fallbacks");
+assert.ok(!css.includes("var(--headline-index) * 8ms"), "No evenly staggered welcome wave");
+assert.match(declarations(sheet.nodes.find((node) => node.selector === ".boot-meter b")).animation, /cubic-bezier\(0\.3, 0\.04, 0\.25, 1\)/, "Progress uses eased acceleration instead of rigid linear catches");
 
 // Document shortcuts must not bypass the inert boot surface or the consent dialog.
 const reactAst = ts.createSourceFile("components/archive-os.tsx", reactSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -202,4 +318,4 @@ for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) 
 const steamInit = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "initializeSteamDisplay").getText(ast);
 assert.match(steamInit, /if \(steamDisplayStarted\) return;/);
 assert.ok(!steamInit.includes("!state.bootDismissed"), "The existing one-shot Steam read can prepare during boot");
-console.log("Boot/session timing, cancellation, reduced motion, keyboard and React/static handoff checks passed.");
+console.log("Boot passed: stable visit rhythms, bounded signal/letter variation, monotonic progress, complementary cipher layers, unchanged handoff, cancellation, reduced motion and keyboard guards.");

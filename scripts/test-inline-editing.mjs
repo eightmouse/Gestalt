@@ -381,7 +381,7 @@ assert.match(editorCss, /\.studio-select-control > select:not\(\[multiple\]\)\s*
 assert.match(editorCss, /appearance: none; -webkit-appearance: none/);
 assert.match(editorCss, /\.studio-select-control\s*\{[^}]*align-self: start; block-size: fit-content/);
 assert.match(editorCss, /\.studio-select-control > svg\s*\{[^}]*pointer-events: none/);
-assert.match(read("app/globals.css"), /\.timeline-source select\s*\{[^}]*color-scheme: dark/);
+assert.match(read("app/globals.css"), /\.timeline-source select\s*\{[^}]*color-scheme: var\(--control-scheme, dark\)/);
 console.log("Editor selectors: shared native styling, labelled controls, decorative arrows, unchanged placement/activity behavior and save payload passed.");
 
 const reader = read("components/archive/record-window.tsx");

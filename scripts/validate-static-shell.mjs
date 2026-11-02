@@ -13,6 +13,8 @@ const errors = [];
 
 const assetCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-pages-assets.mjs")], { encoding: "utf8" });
 if (assetCheck.status !== 0) errors.push(`Prepared Pages asset regression failed: ${(assetCheck.stderr || assetCheck.stdout || "").trim()}`);
+const appearanceCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-appearance.mjs")], { encoding: "utf8" });
+if (appearanceCheck.status !== 0) errors.push(`Appearance regression failed: ${(appearanceCheck.stderr || appearanceCheck.stdout || "").trim()}`);
 
 const archiveImage = indexHtml.match(/--archive-image:\s*url\("([^"]+)"\)/)?.[1];
 if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-banner.png") {

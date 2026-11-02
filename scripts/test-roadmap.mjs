@@ -18,7 +18,8 @@ function functions(names) {
   }).join("\n");
 }
 assert.deepEqual(publicRoadmap.groups.map((group) => group.id), ["working", "ideas", "done"]);
-assert.ok(publicRoadmap.groups.every((group) => group.items.length > 0 && group.items.length <= 12));
+assert.ok(publicRoadmap.groups.every((group) => group.items.length > 0));
+assert.ok(publicRoadmap.groups.filter((group) => group.id !== "done").every((group) => group.items.length <= 12), "Current work stays bounded; filed history can grow");
 assert.ok(publicRoadmap.groups.find((group) => group.id === "done").items.length >= 6, "Start with real earlier milestones");
 const publicText = JSON.stringify(publicRoadmap);
 assert.ok(!/(?:[A-Z]:[\\/]+Users[\\/]|STEAM_API_KEY|STEAM_ID|\.env|github_pat_|ghp_|-----BEGIN|https?:\/\/)/i.test(publicText), "Curated public copy contains no local/config/credential references or remote links");
@@ -37,6 +38,19 @@ assert.deepEqual(buildRoadmapHistory({ ...publicRoadmap, groups: [] }), []);
 assert.deepEqual(buildRoadmapHistory({ ...publicRoadmap, groups: [{ id: "working", title: "Empty", items: [] }] }), []);
 const unversioned = buildRoadmapHistory({ ...publicRoadmap, groups: [{ id: "done", title: "Filed", items: [{ title: "No date", detail: "No invented version" }] }] });
 assert.equal(unversioned[0].version, "Unversioned");
+const extendedHistory = {
+  ...publicRoadmap,
+  groups: publicRoadmap.groups.map((group) => group.id === "done" ? {
+    ...group,
+    items: Array.from({ length: 30 }, (_, index) => ({
+      title: `Milestone ${index + 1}`, detail: "Completed work", version: `v2.${14 - Math.floor(index / 2)}.0`
+    }))
+  } : group)
+};
+const extendedReleases = buildRoadmapHistory(extendedHistory);
+assert.equal(extendedReleases.length, 15, "History retains releases beyond the former twelve-item cap");
+assert.ok(extendedReleases.every((release) => release.items.length === 2));
+assert.deepEqual(extendedReleases.flatMap((release) => release.items), extendedHistory.groups.find((group) => group.id === "done").items);
 
 class Element {
   dataset = {};
@@ -52,6 +66,7 @@ class Element {
   get innerHTML() { return this.html; }
   setAttribute(key, value) { this.attributes.set(key, value); }
   getAttribute(key) { return this.attributes.get(key) ?? null; }
+  closest(selector) { return this.ownerSelector === selector ? this : null; }
   append(node) { node.parent = this; this.children.push(node); }
   remove() { this.parent.children = this.parent.children.filter((node) => node !== this); this.isConnected = false; }
   querySelector(selector) { this.lastSelector = selector; return this.body ??= new Element("div"); }
@@ -98,6 +113,21 @@ assert.ok(ready.querySelector().innerHTML.includes("On the desk"));
 const filedTitle = publicRoadmap.groups.find((group) => group.id === "done").items[0].title;
 assert.ok(!ready.querySelector().innerHTML.includes(`<s>${filedTitle}</s>`), "Current work does not mount hidden history");
 assert.ok(!ready.querySelector().innerHTML.includes("Older update"), "Current work has no misleading history arrows");
+const windowBar = new Element("header"); windowBar.ownerSelector = ".roadmap-note";
+ready.listeners.get("focusin")({ target: windowBar });
+assert.ok(!ready.attributes.has("data-notebook-settled"), "Initial close/header focus must not skip opening");
+const readingControl = new Element("button"); readingControl.ownerSelector = ".roadmap-body";
+ready.listeners.get("focusin")({ target: readingControl });
+assert.ok(ready.attributes.has("data-notebook-settled"), "Focusing the reader settles immediately");
+ready.listeners.get("focusin")({ target: windowBar });
+assert.ok(ready.attributes.has("data-notebook-settled"), "Leaving the reader cannot clear settled state");
+ready.listeners.get("pointerdown")({ target: windowBar });
+assert.ok(ready.attributes.has("data-notebook-settled"), "Clicking the bar settles once rather than reattaching construction");
+ready.attributes.delete("data-notebook-settled");
+ready.listeners.get("animationend")({ animationName: "unrelated-animation" });
+assert.ok(!ready.attributes.has("data-notebook-settled"));
+ready.listeners.get("animationend")({ animationName: "notebook-register-edges" });
+assert.ok(ready.attributes.has("data-notebook-settled"), "Static natural completion retires opening styles once");
 const rendersBeforeTurn = shellRenders;
 context.navigateRoadmap("done");
 assert.match(ready.querySelector().innerHTML, /notebook-release-index/);
@@ -109,6 +139,7 @@ assert.equal(context.roadmapReleaseIndex, 0);
 assert.equal(shellRenders, rendersBeforeTurn, "History navigation updates the notebook only, not the dashboard");
 assert.equal(ready.shows, 1, "Turning a page does not reopen the modal");
 assert.ok(ready.attributes.has("data-notebook-ready"), "Opening is attached to the stable dialog, not remounted leaves");
+assert.ok(ready.attributes.has("data-notebook-settled"), "History navigation cannot replay opening");
 const leafWrites = ready.querySelector().writes;
 for (const index of [0, -1, 99, NaN, 1.5, "1"]) context.navigateRoadmap("done", index);
 context.navigateRoadmap("working", 0);
@@ -168,7 +199,7 @@ let stateLocation = { chapterId: "working", releaseIndex: null };
 let refIndex = 0;
 const effects = [];
 const reactDialog = new Element("dialog");
-const react = vm.createContext({ exports: {}, document, HTMLElement: Element, require(name) {
+const react = vm.createContext({ exports: {}, document, HTMLElement: Element, Element, require(name) {
   if (name === "react") return { useRef: () => ({ current: refIndex++ === 0 ? reactDialog : null }), useState: () => [[stateData, false, 0, buildRoadmapHistory(stateData), stateLocation][stateIndex++], () => {}], useEffect: (callback) => effects.push(callback) };
   if (name === "react-dom") return { createPortal: (element, target) => { assert.equal(target, body); return element; } };
   return require(name);
@@ -177,7 +208,7 @@ vm.runInContext(ts.transpileModule(read("components/archive/roadmap-window.tsx")
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX }
 }).outputText, react);
 const malicious = { ...publicRoadmap, title: '<script>alert("x")</script>', groups: [{ id: 'ideas" onclick="bad()', title: "<img>", items: [{ title: "<iframe>", detail: "<script>", version: '<img src="x">' }] }, { id: "done", title: "Filed", items: [{ title: "<iframe>", detail: "<script>", version: '<img src="x">' }] }] };
-for (const data of [publicRoadmap, malicious]) {
+for (const data of [publicRoadmap, extendedHistory, malicious]) {
   stateData = data;
   const releases = buildRoadmapHistory(data);
   const views = [...data.groups.map((group) => ({ chapterId: group.id, releaseIndex: null })), ...releases.map((_, index) => ({ chapterId: "done", releaseIndex: index }))];
@@ -199,6 +230,7 @@ for (const data of [publicRoadmap, malicious]) {
       assert.equal(html.includes('aria-label="Older update"'), Boolean(release));
       assert.equal(html.includes('aria-label="Back to update index"'), Boolean(release));
       assert.equal(html.includes('aria-label="Filed updates"'), indexOpen);
+      if (indexOpen) assert.equal((html.match(/data-notebook-release="\d+"/g) || []).length, releases.length, "Every release remains reachable from both renderers");
     }
   }
 }
@@ -207,6 +239,21 @@ assert.equal(reactDialog.open, true);
 cleanupFocus();
 assert.equal(reactDialog.open, false);
 assert.equal(trigger.focused, true);
+stateIndex = 0; refIndex = 0;
+const reactHandlers = react.exports.RoadmapWindow({ onClose() {} }).props;
+reactHandlers.onFocusCapture({ target: windowBar });
+assert.ok(!reactDialog.attributes.has("data-notebook-settled"));
+reactHandlers.onFocusCapture({ target: readingControl });
+reactHandlers.onFocusCapture({ target: windowBar });
+assert.ok(reactDialog.attributes.has("data-notebook-settled"), "React focus changes also retain settled state");
+reactDialog.attributes.delete("data-notebook-settled");
+reactHandlers.onAnimationEnd({ animationName: "unrelated-animation" });
+assert.ok(!reactDialog.attributes.has("data-notebook-settled"));
+reactHandlers.onAnimationEnd({ animationName: "notebook-register-edges" });
+assert.ok(reactDialog.attributes.has("data-notebook-settled"), "Natural completion releases the finite opening styles");
+reactDialog.attributes.delete("data-notebook-settled");
+reactHandlers.onPointerDownCapture({ target: windowBar });
+assert.ok(reactDialog.attributes.has("data-notebook-settled"), "React header interaction does not rearm the animation");
 const source = read("static-app.js");
 assert.match(source, /result\.action === "roadmap"\s*\? "data-open-roadmap"/);
 assert.match(source, /state\.panelOpen \|\| state\.timelineOpen \|\| state\.roadmapOpen/);
@@ -225,9 +272,11 @@ const css = read("app/globals.css");
 const scopedCss = css.slice(css.indexOf(".roadmap-dialog {"), css.indexOf("\n.window-bar {", css.indexOf(".roadmap-dialog {")));
 assert.ok(scopedCss.includes("minmax(0, 1fr)"));
 assert.ok(!/infinite|filter:|will-change:/.test(scopedCss), "Opening leaves no perpetual animation/filter/layer workload");
-assert.match(scopedCss, /data-notebook-ready\] \.roadmap-body \{ animation: notebook-unseal 1350ms/);
+assert.ok(!scopedCss.includes("notebook-unseal") && !scopedCss.includes("clip-path") && !scopedCss.includes("focus-within"), "No opaque body wipe or transient focus-based animation toggle remains");
+assert.match(scopedCss, /data-notebook-ready\]:not\(\[data-notebook-settled\]\)/);
+assert.match(scopedCss, /animation: notebook-ink-arrive 420ms/);
+assert.ok(scopedCss.includes("@keyframes notebook-register-edges") && scopedCss.includes("@keyframes notebook-register-spine"));
 assert.match(scopedCss, /prefers-reduced-motion: reduce/);
-assert.match(scopedCss, /focus-within/);
 assert.ok(!/setTimeout|setInterval|requestAnimationFrame/.test(read("components/archive/roadmap-window.tsx")), "No new motion timer or loop");
 assert.ok(!source.includes("buildRoadmapPages") && !source.includes("turnRoadmapPage"), "The superseded mixed chapter/page path is removed");
 console.log("Public notebook checks passed: independent chapters/release index, grouped history, safe renderer parity, cached modal lifecycle, focus restoration, finite reduced-motion-aware opening and publish boundaries.");

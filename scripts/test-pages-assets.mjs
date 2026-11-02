@@ -18,7 +18,17 @@ try {
   await writeFile(index, sourceBefore.replace('url("../public/images/archive-banner.png")', 'url("public/images/archive-banner.png")'));
   await assert.rejects(validatePagesAssets(destination), /app\/public\/images\/archive-banner.png/, "The previous stylesheet-relative URL bug must fail the prepared-artifact check");
   await writeFile(index, sourceBefore);
-  for (const file of ["public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
+  const bootstrapTag = sourceBefore.match(/<script\b[^>]*src="public\/appearance\.js[^"]*"[^>]*><\/script>/)?.[0];
+  const appearanceLink = sourceBefore.match(/<link\b[^>]*href="app\/appearance\.css[^"]*"[^>]*>/)?.[0];
+  assert.ok(bootstrapTag && appearanceLink);
+  await writeFile(index, sourceBefore.replace(bootstrapTag, ""));
+  await assert.rejects(validatePagesAssets(destination), /bootstrap must run before/, "A packaged but unreferenced theme helper is not enough");
+  await writeFile(index, sourceBefore.replace(bootstrapTag, "").replace("</head>", `${bootstrapTag}</head>`));
+  await assert.rejects(validatePagesAssets(destination), /bootstrap must run before/, "A late theme helper could flash the wrong appearance");
+  await writeFile(index, sourceBefore.replace(appearanceLink, ""));
+  await assert.rejects(validatePagesAssets(destination), /Day stylesheet must be linked/, "A packaged but unreferenced Day stylesheet must fail deployment");
+  await writeFile(index, sourceBefore);
+  for (const file of ["public/appearance.js", "app/appearance.css", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
     await unlink(path.join(destination, file));
     await assert.rejects(validatePagesAssets(destination), /Missing prepared Pages asset/);
     await copyFile(path.join(root, file), path.join(destination, file));

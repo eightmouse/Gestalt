@@ -1,10 +1,34 @@
 (function (root, factory) {
-  const api = factory();
+  const api = root.GestaltOsBehaviour || factory();
   if (typeof module === "object" && module.exports) module.exports = api;
-  else root.GestaltOsBehaviour = api;
+  else { root.GestaltOsBehaviour = api; api.initializeBootPresentation(); }
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   const startupKey = "gestalt.startup";
+  const bootProfiles = Object.freeze(["staged", "probe", "stream", "verify"]);
+  function initializeBootPresentation(doc = globalThis.document, random = Math.random) {
+    const element = doc?.documentElement;
+    if (!element) return bootProfiles[0];
+    const existing = element.getAttribute("data-boot-profile");
+    if (bootProfiles.includes(existing)) return existing;
+    const sample = random();
+    const index = Number.isFinite(sample) ? Math.max(0, Math.min(bootProfiles.length - 1, Math.floor(sample * bootProfiles.length))) : 0;
+    // One visit's entropy also varies signal details, without a running randomizer.
+    const detail = Math.floor((Number.isFinite(sample) ? Math.max(0, Math.min(1, sample)) : 0) * 0xffffffff) >>> 0;
+    element.setAttribute("data-boot-interference", String((detail >>> 7) % 3));
+    const variations = {
+      "--boot-signal-start": `${90 + (detail >>> 2) % 301}ms`,
+      "--boot-signal-span": `${760 + (detail >>> 11) % 401}ms`,
+      "--boot-user-jitter": `${(detail >>> 19) % 81 - 40}ms`,
+      "--boot-user-offset-a": `${30 + (detail >>> 5) % 151}ms`,
+      "--boot-user-offset-b": `${(detail >>> 13) % 91}ms`,
+      "--boot-user-offset-c": `${100 + (detail >>> 8) % 141}ms`
+    };
+    for (const [name, value] of Object.entries(variations)) element.style?.setProperty(name, value);
+    element.setAttribute("data-boot-profile", bootProfiles[index]);
+    return bootProfiles[index];
+  }
   const groups = [
+    { key: "appearance", title: "APPEARANCE", options: [["night", "Night"], ["day", "Day"], ["auto", "Auto"]] },
     { key: "entry", title: "ENTRY ANIMATION", options: [["first", "First entry only"], ["always", "Every entry"], ["off", "Off"]] },
     { key: "startup", title: "NEXT STARTUP", options: [["full", "Full welcome"], ["quick", "Quick start"]] },
     { key: "seasonal", title: "SEASONAL DETAILS", options: [["auto", "By calendar"], ["off", "Off"]] },
@@ -98,5 +122,5 @@
     }
     return { open, update, close, destroy: close };
   }
-  return { normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
+  return { bootProfiles, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
 });

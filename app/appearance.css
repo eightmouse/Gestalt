@@ -1,0 +1,102 @@
+:root[data-appearance="day"] {
+  color-scheme: light;
+  --control-scheme: light;
+  --bg: #bbc0bb;
+  --panel: rgba(208, 212, 204, 0.86);
+  --panel-strong: rgba(221, 224, 217, 0.96);
+  --glass-panel: rgba(208, 212, 204, 0.8);
+  --glass-panel-hover: rgba(221, 224, 217, 0.88);
+  --text: #303b34;
+  --text-strong: #252c29;
+  --muted: #3a473f;
+  --muted-2: #3b483f;
+  --accent: #57452d;
+  --accent-dim: rgba(107, 89, 60, 0.24);
+  --line: rgba(37, 44, 41, 0.24);
+  --line-strong: rgba(37, 44, 41, 0.46);
+  --surface-edge-light: rgba(255, 255, 255, 0.42);
+  --surface-edge-low: rgba(37, 44, 41, 0.28);
+  --control-edge-signal: rgba(107, 89, 60, 0.62);
+  --window-bar-fill: linear-gradient(180deg, rgba(245, 247, 241, 0.28), rgba(157, 171, 160, 0.12)), #b9c2b8;
+  --window-bar-muted: #3a473f;
+  --window-bar-edge: rgba(37, 44, 41, 0.3);
+  --window-outline: rgba(37, 44, 41, 0.42);
+  --record-focus-scrim: rgba(49, 60, 52, 0.34);
+  --terminal-focus-scrim: rgba(49, 60, 52, 0.24);
+  --window-bar-contact: inset 0 -1px 0 rgba(37, 44, 41, 0.1);
+  --control-top-light: rgba(255, 255, 255, 0.32);
+  --control-press-fill: rgba(37, 44, 41, 0.1);
+  --control-press-shadow: inset 0 1px 3px rgba(37, 44, 41, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.34);
+  --trace-line: rgba(37, 44, 41, 0.1);
+  --shadow: rgba(35, 43, 38, 0.12);
+  --elevation-panel: 0 3px 10px -4px rgba(35, 43, 38, 0.13), 0 1px 2px rgba(35, 43, 38, 0.05);
+  --elevation-popover: 0 7px 20px -7px rgba(35, 43, 38, 0.18), 0 2px 4px rgba(35, 43, 38, 0.06);
+  --elevation-window: 0 14px 36px -12px rgba(35, 43, 38, 0.2), 0 2px 6px rgba(35, 43, 38, 0.07);
+  --surface-input: #dde0d9;
+  --surface-window: #d0d4cc;
+  --surface-sheet: #d0d4cc;
+  --surface-binding: #b8c0b6;
+  --surface-raised: #d4d9d0;
+  --subtle-text: #3a473f;
+  --danger-text: #8d362d;
+  --tone-ink: 37, 44, 41;
+  --tone-strong: 37, 44, 41;
+  --tone-highlight: 37, 44, 41;
+  --tone-muted: 78, 90, 84;
+  --tone-accent: 107, 89, 60;
+  --tone-ambient: 107, 123, 110;
+  --tone-base: 187, 192, 187;
+  --tone-surface: 208, 212, 204;
+  --tone-recessed: 185, 193, 184;
+  --tone-well: 164, 176, 166;
+  --tone-scrim: 50, 59, 54;
+}
+
+/* The scenery is washed with light at its existing layer, never over the text. */
+:root[data-appearance="day"] body::before {
+  opacity: 0.18;
+  filter: grayscale(1) contrast(0.98) brightness(1.12);
+}
+:root[data-appearance="day"] .archive-shell::before { opacity: 0.42; }
+:root[data-appearance="day"] .grain-layer { opacity: 0.035; }
+:root[data-appearance="day"] .scanline-layer { opacity: 0.045; }
+:root[data-appearance="day"] .archive-shell { background: linear-gradient(180deg, transparent, rgba(70, 86, 73, 0.08)); }
+/* Keep nearby panels close to the surface; reserve a wider lift for windows. */
+:root[data-appearance="day"] .workspace::before { box-shadow: none; }
+:root[data-appearance="day"] :is(.dashboard-panel, .studio-panel, .studio-nav-copy, .studio-section-copy) { box-shadow: var(--elevation-panel); }
+:root[data-appearance="day"] :is(.search-panel, .command-panel, .latin-tooltip > span, .studio-notification-panel) { box-shadow: var(--elevation-popover); }
+:root[data-appearance="day"] :is(.record-window, .timeline-window, .roadmap-note, .os-behaviour-frame, .archive-folder-window, .archive-nav-panel, .update-history-window, .studio-record-copy, .static-data-error, .local-memory-consent > div) { box-shadow: var(--elevation-window); }
+:root[data-appearance="day"] .studio-panel :is(.studio-nav-copy, .studio-section-copy) { box-shadow: none; }
+/* Reuse existing borders: no extra frame, changing dimensions or stacked shadow. */
+:root[data-appearance="day"] :is(.dashboard-panel, .section-record-column, .setup-group, .studio-panel, .studio-nav-copy, .studio-section-copy) {
+  border-block-start-color: var(--surface-edge-light);
+  border-block-end-color: var(--surface-edge-low);
+}
+:root[data-appearance="day"] :is(.dashboard-panel h2, .section-record-column h3, .record-aside h3) { color: var(--text-strong); }
+:root[data-appearance="day"] :is(.note-entry-date, .note-media figcaption, .record-id, .record-meta dt, .system-status dt) { color: var(--muted); }
+:root[data-appearance="day"] :is(.game-cover, .current-game[data-state] .game-cover) { box-shadow: 0 0 0 1px rgba(37, 44, 41, 0.075), 0 3px 7px -3px rgba(35, 43, 38, 0.12); }
+:root[data-appearance="day"] :is(.connections-dialog, .web-search-dialog, .roadmap-dialog, .os-behaviour-dialog, .studio-review-dialog)::backdrop { background: rgba(49, 60, 52, 0.4); }
+:root[data-appearance="day"] :is(.archive-folder-backdrop, .local-memory-consent, .archive-nav-backdrop) { background: rgba(49, 60, 52, 0.34); }
+:root[data-appearance="day"] .notebook-binding { background: rgba(100, 116, 103, 0.13); }
+:root[data-appearance="day"] .note-entry--indexed > .note-entry-body { background: rgba(221, 224, 217, 0.3); }
+:root[data-appearance="day"] :is(.record-heading.has-heading-banner p, .record-heading.has-heading-banner .record-id) { color: var(--text-strong); }
+:root[data-appearance="day"] .record-heading.has-heading-banner::before {
+  background:
+    linear-gradient(180deg, rgba(208, 212, 204, 0.12), rgba(208, 212, 204, 0.72) 45%, rgba(208, 212, 204, 0.96)),
+    linear-gradient(90deg, rgba(208, 212, 204, 0.92), rgba(208, 212, 204, 0.72) 62%, rgba(208, 212, 204, 0.74));
+}
+/* Day signals are ink traces; Night retains its existing luminous treatment. */
+:root[data-appearance="day"] .active-projects-panel .record-list button::after,
+:root[data-appearance="day"] .latest-log::before { box-shadow: none; }
+:root[data-appearance="day"] .section-record:is(:hover, :focus-visible)::after { box-shadow: none; }
+:root[data-appearance="day"] .dashboard-panel h2.is-actionable:is(:hover, :focus-within) { text-shadow: none; }
+:root[data-appearance="day"] .dashboard-panel h2.is-actionable:is(:hover, :focus-within) .panel-title-action::after { box-shadow: none; background-color: rgba(107, 89, 60, 0.12); }
+:root[data-appearance="day"] :is(.notebook-pagination button img, .notebook-release-index button img) { filter: brightness(0.25); }
+
+/* Media viewers and labels laid directly on photographs keep their dark backing. */
+:root[data-appearance="day"] :is(.note-image-lightbox, .setup-inspection-photo span, .setup-tile--peripherals i) { --text: #d8d2bf; --text-strong: #ece6d3; --muted: #b7b2a4; }
+:root[data-appearance="day"] .note-image-lightbox { background: rgba(18, 24, 20, 0.88); }
+:root[data-appearance="day"] :is(.studio-header-button, .studio-thumbnail-button, .studio-editable-input) { background: rgba(221, 224, 217, 0.88); }
+:root[data-appearance="day"] .studio-danger-action { background: #e3cdc7; }
+:root[data-appearance="day"] .studio-danger-action:hover { background: #ddbeb7; }
+:root[data-appearance="day"] .seasonal-decoration img:not(.seasonal-glow) { filter: brightness(0.65); }

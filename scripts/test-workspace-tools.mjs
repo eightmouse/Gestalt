@@ -40,7 +40,8 @@ for (const name of ["connections-outline", "connections-register-scan", "connect
   assert.ok(!new RegExp(`animation:[^;]*${name}[^;]*infinite`).test(css), "Connections has no looping animation");
 }
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.connections-sheet::before, \.connections-sheet::after, \.connections-acquire \{ display: none; animation: none; \}/);
-assert.match(css, /\.connections-sheet \.connection-register:focus-within > \*/, "Keyboard access never waits for hidden links");
+assert.match(css, /\.connections-dialog\[data-connections-ready\].*animation: none;/, "Interaction settles the opening permanently, not just while links have focus");
+assert.ok(!css.includes("connection-register:focus-within"), "Moving focus to the window bar must not reattach the animation");
 for (const name of ["web-search-surface", "web-search-frame", "web-search-query-line", "web-search-field"]) {
   assert.ok(css.includes(`@keyframes ${name}`));
   assert.ok(!new RegExp(`animation:[^;]*${name}[^;]*infinite`).test(css), "Search has no looping animation");
@@ -133,8 +134,27 @@ assert.equal(contactSheet.listeners.has("input"), false, "The search reveal neve
 assert.equal(contactSheet.parts["[data-web-close]"].focused, true, "Initial focus stays on the visible close control during acquisition");
 assert.equal(contactSheet.querySelector("form"), null, "Connections is not a reused web-search form");
 assert.equal(socialStorageReads, 0, "Opening public links does not inspect search preferences");
+assert.equal(contactSheet.attributes.has("data-connections-ready"), false, "Initial close focus preserves the opening sequence");
+contactSheet.listeners.get("focusin")({ ...events(contactSheet), target: contactSheet.parts["[data-web-close]"] });
+assert.equal(contactSheet.attributes.has("data-connections-ready"), false);
+const channel = { closest: (selector) => selector === ".connection-register" ? {} : null };
+contactSheet.listeners.get("focusin")({ ...events(contactSheet), target: channel });
+assert.equal(contactSheet.attributes.get("data-connections-ready"), "", "Keyboard/programmatic focus makes channels immediately readable");
+contactSheet.listeners.get("focusin")({ ...events(contactSheet), target: contactSheet.parts["[data-web-close]"] });
+assert.equal(contactSheet.attributes.get("data-connections-ready"), "", "Returning to the header cannot restart acquisition");
 contactSheet.listeners.get("click")(events(contactSheet));
 assert.equal(body.children.length, 0); assert.equal(closed, 4);
+controller.open({ mode: "connections" });
+const reopenedContacts = body.children[0];
+assert.equal(reopenedContacts.attributes.has("data-connections-ready"), false, "A genuinely reopened window gets a fresh sequence");
+reopenedContacts.listeners.get("pointerdown")();
+assert.equal(reopenedContacts.attributes.get("data-connections-ready"), "");
+controller.destroy();
+controller.open({ mode: "connections" });
+const keyboardContacts = body.children[0];
+keyboardContacts.listeners.get("keydown")({ ...events(keyboardContacts), key: "Tab" });
+assert.equal(keyboardContacts.attributes.get("data-connections-ready"), "", "Tabbing settles before hidden controls receive focus");
+controller.destroy();
 assert.ok(!/fetch\(|setInterval|setTimeout|requestAnimationFrame|eval\(/.test(read("public/workspace-tools.js")));
 
 const require = createRequire(import.meta.url);

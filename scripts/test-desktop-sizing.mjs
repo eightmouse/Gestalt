@@ -34,7 +34,8 @@ assert.match(policy.slice(maximize), /inline-size: auto;/);
 assert.match(policy, /\.record-window\.is-setup-record\.is-maximized \{ transform: translateZ\(0\); \}/);
 assert.match(policy, /\.archive-folder-titlebar button, \.archive-folder-pathbar button\).*inline-size: calc\(28px \* var\(--desktop-size\)\); block-size: calc\(28px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.archive-folder-window \.archive-file \{ min-block-size: calc\(80px \* var\(--desktop-size\)\)/);
-assert.match(policy, /\.record-window \.window-bar \{ block-size: calc\(48px \* var\(--desktop-size\)\)/, "Titlebar itself must grow with its grid row");
+assert.match(policy, /\.record-window:not\(\.is-setup-record\) \{\s*--record-titlebar-size: calc\(42px \* var\(--desktop-size\)\);[^}]*grid-template-rows: var\(--record-titlebar-size\) minmax\(0, 1fr\)/, "Slim entry row must still grow with the desktop tier");
+assert.match(policy, /\.record-window:not\(\.is-setup-record\) \.window-bar \{ block-size: var\(--record-titlebar-size\)/, "Titlebar and grid must consume the same scaled height");
 assert.match(policy, /\.setup-bay \{ inline-size: min\(100%, var\(--dashboard-max-inline\)\)/, "Setup must not retain its baseline inline-size cap");
 assert.match(policy, /\.archive-folder-page \{ inline-size: min\(100%, calc\(1320px \* var\(--desktop-size\)\)\)/, "Archive root grows, not only the focused folder");
 for (const [group, width] of [["tools", 96], ["peripherals", 154]]) {

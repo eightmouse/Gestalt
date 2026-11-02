@@ -37,6 +37,7 @@ import { WorkspaceToolWindow } from "@/components/archive/workspace-tool-window"
 import workspaceTools from "@/public/workspace-tools.js";
 import recordMotion from "@/public/record-motion.js";
 import behaviour, { type StartupMode, type PreferenceKey } from "@/public/os-behaviour.js";
+import appearance, { type AppearanceMode } from "@/public/appearance.js";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, steamRecordSeed, type SteamRecordSeed, type SteamSnapshot } from "@/public/steam-display.mjs";
@@ -182,6 +183,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
   const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
   const [startupMode, setStartupMode] = useState<StartupMode>("full");
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("night");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
 
@@ -235,6 +237,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSeasonalMode(seasonal.readMode());
     setDesktopNavigationMode(desktopNavigation.readMode());
     setStartupMode(behaviour.readStartupMode());
+    setAppearanceMode(appearance.initialize(window));
     entryAccessModeRef.current = mode;
     setEntryAccessMode(mode);
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -304,7 +307,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [archiveRecords, currentGame]);
 
   useEffect(() => {
-    const updateClock = () => { if (!document.hidden) setNow(new Date()); };
+    const updateClock = () => { if (!document.hidden) { const date = new Date(); appearance.sync(document, date); setNow(date); } };
     updateClock();
     const interval = window.setInterval(updateClock, 30_000);
     document.addEventListener("visibilitychange", updateClock);
@@ -691,6 +694,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   ) : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen || osBehaviourOpen;
   const changeOsPreference = (key: PreferenceKey, value: string) => {
+    if (key === "appearance") setAppearanceMode(appearance.setMode(value, localMemory === "granted"));
     if (key === "entry") changeEntryAccessMode(normalizeEntryAccessMode(value));
     if (key === "startup") {
       const mode = behaviour.normalizeStartupMode(value);
@@ -737,7 +741,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       }} /> : null}
       {roadmapOpen ? <RoadmapWindow onClose={() => setRoadmapOpen(false)} /> : null}
       {webSearchOpen || connectionsOpen ? <WorkspaceToolWindow mode={connectionsOpen ? "connections" : "search"} remember={localMemory === "granted"} onClose={() => { setWebSearchOpen(false); setConnectionsOpen(false); }} /> : null}
-      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
+      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode, appearance: appearanceMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />

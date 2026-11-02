@@ -63,10 +63,12 @@ export function RoadmapWindow({ onClose }: { onClose: () => void }) {
   const [attempt, setAttempt] = useState(0);
   const [history, setHistory] = useState<RoadmapRelease[]>([]);
   const [location, setLocation] = useState<{ chapterId: RoadmapChapterId; releaseIndex: number | null }>({ chapterId: "working", releaseIndex: null });
+  const settleOpening = () => dialogRef.current?.setAttribute("data-notebook-settled", "");
 
   const navigate = (chapterId: RoadmapChapterId, releaseIndex: number | null = null) => {
     if (!["working", "ideas", "done"].includes(chapterId) || !data?.groups.some((group) => group.id === chapterId) || (releaseIndex !== null && (chapterId !== "done" || !Number.isInteger(releaseIndex) || !history[releaseIndex]))) return;
     if (location.chapterId === chapterId && location.releaseIndex === releaseIndex) return;
+    settleOpening();
     focusRequest.current = releaseIndex !== null ? "#roadmap-page-title" : chapterId === "done" && location.releaseIndex !== null
       ? `[data-notebook-release="${location.releaseIndex}"]` : `[data-notebook-chapter="${chapterId}"]`;
     setLocation({ chapterId, releaseIndex });
@@ -111,6 +113,9 @@ export function RoadmapWindow({ onClose }: { onClose: () => void }) {
   return createPortal(
     <dialog className="roadmap-dialog" ref={dialogRef} aria-label="Gestalt roadmap" data-notebook-ready={data ? "" : undefined}
       onKeyDown={(event) => event.stopPropagation()}
+      onPointerDownCapture={(event) => { if (event.target instanceof Element && event.target.closest(".roadmap-note")) settleOpening(); }}
+      onFocusCapture={(event) => { if (event.target instanceof Element && event.target.closest(".roadmap-body")) settleOpening(); }}
+      onAnimationEnd={(event) => { if (event.animationName === "notebook-register-edges") settleOpening(); }}
       onCancel={(event) => { event.preventDefault(); event.stopPropagation(); onClose(); }}
       onClick={(event) => { if (event.target === event.currentTarget) { event.stopPropagation(); onClose(); } }}>
       <article className="roadmap-note">

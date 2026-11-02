@@ -6,22 +6,24 @@ export const publicRoadmap = {
   groups: [
     {
       id: "working", title: "In progress", items: [
-        { title: "Field notebook", detail: "Separate chapters and versioned history are in place. Refine the opening so the page forms naturally, and keep ordinary window-bar clicks from restarting it. Local editing and dated history follow the reading-flow review." },
-        { title: "Independent publishing", detail: "Saved notes can ship against the committed site while unfinished visual work stays local. Final release checks and recovery tests are in place; keep the review before publishing." },
-        { title: "Closing a record", detail: "A content-first dissolve, then a frame contracting into a thin line. The first prototype is ready to try; minimizing keeps its own restore gesture." },
-        { title: "Seasonal details", detail: "Halloween stays as it is. December adds frost, a small fir and a hanging ornament; January brings a ribbon, seal and star. First versions are ready for review; falling snow remains a separate idea." },
-        { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes." }
+        { title: "Field notebook", detail: "Separate chapters, versioned history and the lighter opening have been reviewed. Local editing and dated history remain for a separate step." },
+        { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes and browser zoom, without stretching the archive." },
+        { title: "Cross-browser smoothness", detail: "Compare Firefox and Chromium carefully, especially opening records and returning to the workspace. Keep the atmosphere while fixing measured bottlenecks." }
       ]
     },
     {
       id: "ideas", title: "On the desk", items: [
-        { title: "Day Mode", detail: "A softer mineral-gray daytime palette, keeping Gestalt's archive character without a pure-white screen. Explore Day, Night and optional automatic switching after the notebook review." },
+        { title: "Less mechanical motion", detail: "Review repeating effects one at a time: varied rhythms, quiet pauses and distinct section identities, without restless reading text or heavier background work." },
         { title: "Living archive", detail: "Explore responsive light, layered depth and distinct reactions for each section. Evolve Memory State without a 3D rebuild, keeping reading quiet and motion optional. Finish the editing comforts first." },
         { title: "Month-by-month folders", detail: "Let older field notes settle into folders while newer ones stay within reach." }
       ]
     },
     {
       id: "done", title: "Filed", items: [
+        { title: "Day, Night and window depth", detail: "A mineral-gray Day appearance alongside Night and local-clock Auto. Clearer labels, continuous window frames, tactile controls and slimmer entry bars, with permission-aware remembered preferences.", version: "v1.68.13" },
+        { title: "Startup and notebook settling", detail: "Boot progress and brief signal interruptions vary between visits without extending startup. The notebook opens with lighter registration details; clicking its header or the Connections header no longer restarts the opening.", version: "v1.68.13" },
+        { title: "Independent publishing", detail: "Saved notes publish against the committed site while unfinished visual work stays local. Interrupted publication can recover without sweeping unrelated code into a content update.", version: "v1.67.0" },
+        { title: "Record closing and winter details", detail: "Closing dissolves the content before the frame contracts; minimizing keeps its own restore gesture. December and January join the calendar decorations, with seasonal details remaining optional.", version: "v1.65.0" },
         { title: "Terminal and window gestures", detail: "T opens a directory with real section dates and a compact restore icon. Search and Terminal construct their frames before the contents resolve; minimizing contracts toward the restore control without losing reading state. The greeting keeps up with local time and returning tabs.", version: "v1.64.6" },
         { title: "Artwork and shortcuts", detail: "Independent title-background framing for Projects and Games. Press S for a separate web-search bar that opens results in a new tab; Connections holds the public X and Reddit links behind its own signal-acquisition sequence.", version: "v1.64.2" },
         { title: "Editing comforts", detail: "Optional note-heading titles, styled native selectors and clear local save states. Progress labels keep focus while typing; unfinished recommendation and hardware text stays in a local draft when the editor closes. Saving and publishing remain separate.", version: "v1.61.1" },

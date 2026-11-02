@@ -73,7 +73,7 @@ const clockContext = vm.createContext({ exports: {}, document: {
 }, window: {
   setInterval: (fn, delay) => { assert.equal(delay, 30_000); intervals++; return 7; },
   clearInterval: (id) => { assert.equal(id, 7); cleared++; }
-}, setNow: () => updates++ });
+}, appearance: { sync() {} }, setNow: () => updates++ });
 vm.runInContext(`exports.cleanup = (${clockEffect.getText(react)})();`, clockContext);
 assert.equal(updates, 1); assert.equal(intervals, 1);
 clockContext.document.hidden = true; listener(); assert.equal(updates, 1);

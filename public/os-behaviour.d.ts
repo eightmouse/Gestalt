@@ -1,6 +1,6 @@
 export type StartupMode = "full" | "quick";
-export type PreferenceKey = "entry" | "startup" | "seasonal" | "navigation";
-export type PreferenceValues = { entry: "first" | "always" | "off"; startup: StartupMode; seasonal: "auto" | "off"; navigation: "fixed" | "terminal" };
+export type PreferenceKey = "entry" | "startup" | "seasonal" | "navigation" | "appearance";
+export type PreferenceValues = { entry: "first" | "always" | "off"; startup: StartupMode; seasonal: "auto" | "off"; navigation: "fixed" | "terminal"; appearance?: "night" | "day" | "auto" };
 export type PreferenceHandlers = { onChange(key: PreferenceKey, value: string): boolean | void; onClose(): void };
 export type OsBehaviourController = {
   open(values: PreferenceValues, handlers: PreferenceHandlers, remember: boolean): void;
@@ -9,6 +9,8 @@ export type OsBehaviourController = {
   destroy(): void;
 };
 declare const behaviour: {
+  bootProfiles: readonly string[];
+  initializeBootPresentation(doc?: Document, random?: () => number): string;
   normalizeStartupMode(value: unknown): StartupMode;
   readStartupMode(storage?: Pick<Storage, "getItem">): StartupMode;
   saveStartupMode(value: StartupMode, storage?: Pick<Storage, "getItem" | "setItem">): boolean;

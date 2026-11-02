@@ -4,7 +4,7 @@ This repo is designed to be safe to publish and cautious to install.
 
 ## Install Policy
 
-- Prefer the static prototype until dependency installation is explicitly needed.
+- GitHub Pages serves the public static archive; Next.js and Studio are local authoring tools, not part of the deployed server.
 - Use `pnpm install --ignore-scripts` or `pnpm run install:safe`.
 - Do not remove the package release-age buffer unless there is a specific reason.
 - Do not run the dev server on a public interface. The default `pnpm dev` script binds to `127.0.0.1`.
@@ -12,8 +12,8 @@ This repo is designed to be safe to publish and cautious to install.
 ## Dependency Guardrails
 
 - Dependencies are pinned to exact versions, not `latest`.
-- `next` is pinned to `16.3.8`. Recheck current advisories when reviewing dependency safety; a pinned version is not a continuing guarantee.
-- React Server Component transport packages are overridden to `19.2.6`, which is outside the vulnerable `19.2.0` through `19.2.5` range from CVE-2026-23870.
+- `next` is pinned to `16.4.1`. Recheck current advisories when reviewing dependency safety; a pinned version is not a continuing guarantee.
+- React Server Component transport packages are separately pinned to `19.2.6` in the workspace overrides. Review the lockfile and current advisories together before changing them.
 - Install scripts are disabled in `.npmrc`.
 - pnpm is configured with a seven-day release-age delay, `trustPolicy: no-downgrade`, blocked exotic transitive dependencies, and strict dependency builds.
 - Studio write routes require development mode, a loopback host, and a loopback `Origin` header.
@@ -21,7 +21,7 @@ This repo is designed to be safe to publish and cautious to install.
 
 ## Latest Review
 
-The [20 October 2026 review](REVIEW_2026-10-20.md) records the dependency audit, text/metadata scans, negative Studio API checks, fixes, and remaining limitations. No credentials or private user-directory paths matched the reviewed public text scan, and the dependency audit reported no advisories at that time. Intentional personal entries and screenshots still need the owner's editorial judgment.
+The [2 November 2026 release review](REVIEW_2026-11-02.md) covers the appearance/startup batch, current dependency audit, privacy scan, isolated editing/publishing checks and known browser-testing limits. The audit reported no advisories at that time; that is not a guarantee against undisclosed or future issues. The earlier [20 October review](REVIEW_2026-10-20.md) remains historical context. Intentional personal entries and screenshots still need the owner's editorial judgment.
 
 ## Before Publishing
 
