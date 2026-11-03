@@ -203,9 +203,13 @@ assert.equal(archiveSheet.nodes.find((node) => node.selector === ".setup-console
 const controlSize = (rule) => parseInt(rule.nodes.find((node) => node.prop === "block-size").value);
 const desktopControl = controlSize(archiveSheet.nodes.find((node) => node.selector === ".window-actions button"));
 const editControl = controlSize(archiveSheet.nodes.find((node) => node.selector === ".window-edit-action"));
+assert.equal(editControl, desktopControl, "Desktop edit gears match the existing close/minimize/maximize control size");
 const mobileControls = [];
 archiveSheet.walkRules(".window-actions button", (rule) => { if (rule.parent.type === "atrule" && rule.parent.params.includes("max-width: 760px")) mobileControls.push(controlSize(rule)); });
 assert.equal(mobileControls.length, 1);
+const mobileEditControls = [];
+archiveSheet.walkRules(".window-edit-action", (rule) => { if (rule.parent.type === "atrule" && rule.parent.params.includes("max-width: 760px")) mobileEditControls.push(controlSize(rule)); });
+assert.deepEqual(mobileEditControls, mobileControls, "Mobile edit gears retain the same touch target as the window controls");
 assert.ok(42 >= Math.max(desktopControl, editControl) + 8 && 44 >= Math.max(...mobileControls, editControl) + 8, "Actual edit/control sizes retain vertical clearance on desktop and mobile");
 archiveSheet.walkRules(".archive-shell > .workspace > .record-window:not(.is-setup-record) .window-bar", (rule) => assert.equal(rule.nodes.find((node) => node.prop === "block-size").value, "var(--record-titlebar-size)", "Scaled bar and grid consume the same height"));
 const focusScene = archiveSheet.nodes.find((node) => node.selector?.startsWith(".workspace.has-record > .workspace-header"));

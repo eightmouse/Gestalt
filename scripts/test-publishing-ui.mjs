@@ -105,6 +105,10 @@ const props = { changes: pending(), error: "", notification: null, saving: false
 const html = (extra = {}) => renderToStaticMarkup(createElement(panel.exports.PublishNotificationPanel, { ...props, ...extra }));
 assert.match(html(), /Unsaved drafts are not included/);
 assert.match(html(), /Pages deployment/);
+const notebookOnly = html({ changes: pending(0, { notebookChanged: true, changedFiles: 1 }), onReviewNotebook() {} });
+assert.match(notebookOnly, /1 pending change/);
+assert.match(notebookOnly, /Field notebook/);
+assert.ok(!notebookOnly.includes('disabled=""'), "Saved notebook alone enables the existing publisher");
 const waiting = html({ changes: pending(1, { siteCodeFiles: ["app/globals.css"] }) });
 assert.match(waiting, /Local site changes stay here/);
 assert.match(waiting, /app\/globals.css/);

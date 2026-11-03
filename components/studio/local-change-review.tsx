@@ -10,7 +10,7 @@ import { PublishNotificationPanel } from "@/components/studio/change-review-pane
 export function LocalReviewButton() {
   const { pendingChanges, pendingChangesError, publishState, publishing, reviewOpen, setReviewOpen } = useStudioPublishing();
   const failed = Boolean(pendingChangesError || publishState?.phase === "error");
-  const count = pendingChanges?.records.length;
+  const count = pendingChanges ? pendingChanges.records.length + (pendingChanges.notebookChanged ? 1 : 0) : undefined;
   const badge = count === 0 && (pendingChanges?.changedFiles || pendingChanges?.unpushedCommits) ? "+" : count ?? "...";
   return <button className={`local-review-button${failed ? " is-error" : ""}`} type="button" aria-label={`Review saved changes${count === undefined ? "" : ` (${count})`}`}
     title="Review saved changes" aria-haspopup="dialog" aria-expanded={reviewOpen} aria-controls="local-change-review" onClick={() => setReviewOpen(!reviewOpen)}>
@@ -18,7 +18,7 @@ export function LocalReviewButton() {
   </button>;
 }
 
-export function LocalChangeReview({ busy, onReview }: { busy: boolean; onReview: (id: string) => boolean }) {
+export function LocalChangeReview({ busy, onReview, onReviewNotebook }: { busy: boolean; onReview: (id: string) => boolean; onReviewNotebook: () => void }) {
   const { pendingChanges, pendingChangesError, publishState, publishing, checking, archiveRefreshRequired,
     reviewOpen, setReviewOpen, refreshPendingChanges, refreshArchive, publishChanges } = useStudioPublishing();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -54,6 +54,7 @@ export function LocalChangeReview({ busy, onReview }: { busy: boolean; onReview:
     onKeyDown={(event) => event.stopPropagation()} onCancel={(event) => { event.preventDefault(); setReviewOpen(false); }}
     onClick={(event) => { if (event.target === event.currentTarget) { event.stopPropagation(); setReviewOpen(false); } }}>
     <PublishNotificationPanel changes={pendingChanges} error={reviewError || pendingChangesError} notification={publishState} saving={busy || publishing} checking={checking}
+      onReviewNotebook={() => { if (!busy && !publishing) { setReviewOpen(false); onReviewNotebook(); } }}
       refreshRequired={archiveRefreshRequired} onClose={() => setReviewOpen(false)} onPublish={() => { void publishChanges(); }} onRefresh={() => { void refreshArchive(); }}
       onRetry={() => { setReviewError(""); void refreshPendingChanges(true); }} onReview={(id) => {
         if (busy || publishing) return;

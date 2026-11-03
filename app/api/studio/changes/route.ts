@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const publishPaths = [
   "content/records",
   "public/data/records.js",
+  "public/data/roadmap.json",
   "public/favicon.ico",
   "public/favicon.svg",
   "public/media/records",
@@ -59,10 +60,11 @@ export async function POST(request: NextRequest) {
 
   const changedPaths = changedEntries
     .map(({ path }) => path)
-    .filter((path) => path.startsWith("content/records/") || path === "public/data/records.js" || path.startsWith("public/media/records/"));
+    .filter((path) => path.startsWith("content/records/") || path === "public/data/records.js" || path === "public/data/roadmap.json" || path.startsWith("public/media/records/"));
 
   return NextResponse.json({
     records: changedRecords,
+    notebookChanged: changedPaths.includes("public/data/roadmap.json"),
     siteCodeFiles,
     changedFiles: changedPaths.length,
     mediaFiles: changedPaths.filter((path) => path.startsWith("public/media/records/")).length,

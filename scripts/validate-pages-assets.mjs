@@ -2,6 +2,7 @@ import { lstat, readFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import seasonal from "../public/seasonal.js";
+import { validateRoadmap } from "../public/roadmap.mjs";
 
 export async function validatePagesAssets(destination) {
   const root = path.resolve(destination);
@@ -23,6 +24,8 @@ export async function validatePagesAssets(destination) {
   }
 
   const html = await readFile(path.join(root, "index.html"), "utf8");
+  const notebook = await asset("public/data/roadmap.json");
+  validateRoadmap(JSON.parse(await readFile(notebook.file, "utf8")));
   // Inspect only quoted link attributes in the project-owned static head.
   const attribute = (tag, name) => tag.match(new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`, "i"))?.[2];
   const links = [...html.matchAll(/<link\b[^>]*>/gi)].map((match) => ({ at: match.index, rel: attribute(match[0], "rel"), as: attribute(match[0], "as"), href: attribute(match[0], "href") }));

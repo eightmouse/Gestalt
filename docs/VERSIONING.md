@@ -2,7 +2,15 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current version: `v1.68.14`.
+Current release target: `v1.70.0`. Last verified published: `v1.68.14`.
+
+`v1.70.0` adds explicit local release filing: select completed notebook items and supply a version/date, preserving older history and the separate publishing step. Dates render in both readers without inventing dates for older releases. Includes the accepted local notebook editing/window refinements below and a quoted-frontmatter save/export round-trip fix found during note review. The owner authorized reviewing and pushing this full batch with saved notes. Verify Git and Pages before claiming deployment success.
+
+`v1.69.2` strengthens notebook completion strikethroughs in both themes and places the gear beside FIELD NOTEBOOK. Notebook and entry gears now match close controls at desktop, scaled desktop and mobile sizes. The owner-prioritized roadmap order is updated; Setup editing is parked. No notebook frame/border, records/media, dependencies or publish behavior changed; no new push authorized.
+
+`v1.69.1` widens normal Archive Entry windows from 960px to 1120px, using the same existing desktop tiers and viewport safety cap. Heights, typography, maximized/mobile layouts and custom Setup/notebook windows are unchanged. Includes the local v1.69.0 notebook prototype; no new publication authorized.
+
+`v1.69.0` adds local in-place notebook authoring, bounded JSON data, conflict-aware atomic saves and notebook review/publishing through the existing bell. Completion does not file a release. No new dependencies or changes to authored records/original media. Await owner visual acceptance and authorization before committing/pushing this prototype.
 
 `v1.68.14` corrects large-desktop typography, section header/icon proportions and Archive footer clearance. Both readers share a disposable, reduced-motion-aware Memory State pointer handler; hidden/offscreen/covered dashboard effects pause without restarting. Record windows gain keyboard focus boundaries and restoration. No dependency, schema or original media changes.
 

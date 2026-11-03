@@ -104,6 +104,10 @@ if (desktopCheck.status !== 0) errors.push(`Desktop sizing regression failed: ${
 const timelineCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-timeline.mjs")], { encoding: "utf8" });
 if (timelineCheck.status !== 0) errors.push(`Timeline regression failed: ${(timelineCheck.stderr || timelineCheck.stdout || "").trim()}`);
 const roadmapCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-roadmap.mjs")], { encoding: "utf8" });
+const notebookCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-notebook-editing.mjs")], { encoding: "utf8" });
+if (notebookCheck.status !== 0) errors.push(`Notebook save regression failed: ${(notebookCheck.stderr || notebookCheck.stdout || "").trim()}`);
+const notebookClientCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-notebook-client.mjs")], { encoding: "utf8" });
+if (notebookClientCheck.status !== 0) errors.push(`Notebook client regression failed: ${(notebookClientCheck.stderr || notebookClientCheck.stdout || "").trim()}`);
 if (roadmapCheck.status !== 0) errors.push(`Public roadmap regression failed: ${(roadmapCheck.stderr || roadmapCheck.stdout || "").trim()}`);
 const inlineEditingCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-inline-editing.mjs")], { encoding: "utf8" });
 if (inlineEditingCheck.status !== 0) errors.push(`Inline editing regression failed: ${(inlineEditingCheck.stderr || inlineEditingCheck.stdout || "").trim()}`);

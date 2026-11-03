@@ -225,6 +225,17 @@ try {
   const projectSource = await readFile(path.join(fixture, "content/records/framed-project.mdx"), "utf8");
   for (const fragment of ["headerZoom: 145", "bannerZoom: 120", 'samples: ["/media/sample.png"]', 'milestones: "Core|80|Active"', 'technicalStack: "TypeScript']) assert.ok(projectSource.includes(fragment), "Artwork changes retain project content");
   assert.equal((await entry.DELETE(request({ id: framedProject.id }, undefined, "DELETE"))).status, 200);
+  const quotedRecommendation = 'A "quoted" thought.\nAnother line, with a literal \\ character.';
+  for (let round = 0; round < 3; round++) {
+    const parsed = (await load("content")).parseFrontmatter(await readFile(secondPath, "utf8")).data;
+    const text = round === 0 ? quotedRecommendation : parsed.recommendation;
+    assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, recommendation: text }))).status, 200);
+    const reread = (await load("content")).parseFrontmatter(await readFile(secondPath, "utf8")).data;
+    assert.equal(reread.recommendation, quotedRecommendation, "Repeated saves decode quoted scalars exactly once");
+    const exported = { window: {} };
+    runInNewContext(await readFile(path.join(fixture, "public/data/records.js"), "utf8"), exported);
+    assert.equal(exported.window.__GESTALT_RECORDS.find((item) => item.id === secondGame.id).recommendation, quotedRecommendation, "Static export agrees with the local parser");
+  }
   assert.equal((await entry.POST(request({ ...secondGame, originalId: secondGame.id, steamAppId: "39210" }))).status, 200);
   const beforeDuplicate = await readFile(secondPath, "utf8");
   const duplicate = await entry.POST(request({ ...game, id: "another-title", title: "Different title", steamAppId: "39210" }));
@@ -283,6 +294,7 @@ try {
   await mkdir(path.join(fixture, "lib"));
   await copyFile(path.join(root, "lib/publish-paths.mjs"), path.join(fixture, "lib/publish-paths.mjs"));
   for (const name of ["validate-content.mjs", "validate-static-shell.mjs"]) await writeFile(path.join(fixture, "scripts", name), "process.exit(0);\n");
+  for (const file of ["scripts/validate-notebook.mjs", "public/roadmap.mjs", "public/data/roadmap.json"]) await copyFile(path.join(root, file), path.join(fixture, file));
   await mkdir(path.join(fixture, "public/media/records"), { recursive: true });
   await writeFile(path.join(fixture, "public/media/records/fixture.txt"), "fixture\n");
   await writeFile(path.join(fixture, "public/favicon.ico"), "fixture\n");

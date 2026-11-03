@@ -13,6 +13,7 @@ export type StudioPendingChanges = {
   records: StudioPendingRecord[]; changedFiles: number; mediaFiles: number;
   staticDataChanged: boolean; staticExportRequired: boolean; unpushedCommits: number;
   siteCodeFiles?: string[];
+  notebookChanged?: boolean;
 };
 export type StudioResponse = Partial<StudioPendingChanges> & {
   error?: string; code?: string; id?: string; message?: string; output?: string; path?: string;

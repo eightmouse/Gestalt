@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 const root = realpathSync(process.cwd());
-const payload = ["content/records", "public/media/records"];
+const payload = ["content/records", "public/media/records", "public/data/roadmap.json"];
 const generated = ["public/data/records.js", "index.html"];
 const dryRun = process.argv.includes("--dry-run");
 const messageIndex = process.argv.findIndex((arg) => arg === "--message" || arg === "-m");
@@ -25,7 +25,7 @@ function execute(cwd, command, args, print = false, options = {}) {
 const git = (...args) => execute(root, "git", args);
 const split = (value) => value.split("\0").filter(Boolean);
 const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
-const isPayload = (file) => payload.some((scope) => file.startsWith(`${scope}/`));
+const isPayload = (file) => file === "public/data/roadmap.json" || payload.slice(0, 2).some((scope) => file.startsWith(`${scope}/`));
 
 function exportedRecords(source) {
   const match = source.match(/^window\.__GESTALT_RECORDS\s*=\s*([\s\S]*);\s*$/);
@@ -174,6 +174,7 @@ function publishContent(branch, base, remoteBase) {
   execute(temporary, "git", ["clone", "--quiet", "--shared", "--no-checkout", "--no-tags", "--", root, site]);
   const tempGit = (...args) => execute(site, "git", args);
   tempGit("checkout", "--quiet", "--detach", base);
+  if (original.has("public/data/roadmap.json") && !existsSync(path.join(site, "scripts/validate-notebook.mjs"))) throw new Error("Notebook publishing needs its first reviewed code release. Saved notes and notebook edits are unchanged.");
   tempGit("config", "core.hooksPath", path.join(temporary, "no-hooks"));
   const author = git("var", "GIT_AUTHOR_IDENT").match(/^(.*) <([^>]*)> \d+ [+-]\d+$/);
   if (!author) throw new Error("Configure your Git author before publishing.");

@@ -733,7 +733,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen /> : null}
-      {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReview={(id) => {
+      {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
         if (!record || inlineBusy) return false;
         openRecord(record, record.section === "setup" ? "overview" : "notes");

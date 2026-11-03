@@ -1,5 +1,29 @@
 # Gestalt Project Checkpoint
 
+## Release Filing: v1.70.0
+
+Owner authorized the full notebook/window batch and saved game notes for review, commit and push on 3 November 2026. Public notebook text is now `public/data/roadmap.json`; runtime helpers remain in `public/roadmap.mjs`. Notebook authoring/filing is development-only. `File release` selects completed working/idea items, takes an explicit version and date, then saves locally through the same bounded, revision-checked atomic route and shared write lock. Filing cannot modify older releases or duplicate a version; ordinary saves still cannot alter history. Both public renderers display authored dates and preserve undated legacy history. The real v1.70.0 filing was verified locally, along with mobile form fit and immediate history-index updates. Git/Pages publication is not implied by source documentation; verify it separately.
+
+During owner-note review, quoted recommendation text was found to gain backslashes after repeated saves. `lib/content.ts` and the static exporter now decode double-quoted JSON scalars once, retaining legacy parsing fallback. Isolated Studio tests cover three save/read/export cycles including quotes, newlines and a literal backslash. Only the already-corrupted FFXIV quotation was repaired; authored note wording remains unchanged. Original media, installed dependencies and supply-chain controls are untouched. Generated next-env.d.ts stays out of the release.
+
+## Notebook Controls And Completion: v1.69.2
+
+Owner clarified that the faint line was the completed-title strikethrough, not a window border. It now uses a continuous 2px current-text-color decoration in both reading and editing. Notebook gear sits beside FIELD NOTEBOOK, ahead of its local save/reload actions; close remains at the right. Normal entry and notebook gears match the existing close target at 26px desktop / 34px mobile, with scaled entry tiers using the same 26px multiplier. Window sizes, title-bar heights, focus, opening and save/publish behavior are unchanged. Chromium measurements verified matching gear/close size and top alignment at 1080p, 2K, 4K and mobile; Day/Night completion colors and mobile notebook fit were checked. Keep actual Firefox/Edge acceptance open. No new commit/push authorized.
+
+Updated owner order: notebook release filing, Memory State, less mechanical motion, month/year folders, then deep performance/display/security checks. Setup editing is parked; targeted safety/regression checks continue during each step. User record/media edits are separate and must be preserved.
+
+## Wider Reading Windows: v1.69.1
+
+Owner requested a modest width-only adjustment after accepting the notebook editor. Normal entry width is now 1120px instead of 960px, with the same discrete desktop-tier multipliers and workspace cap. Entry height, type, maximize, mobile, notebook and custom Setup geometry are unchanged. In-app Chromium checks covered 1920x1080, 2560x1440, 3840x2160, 1366x768 and 390x844; tested entries stayed within the viewport without horizontal content overflow. Project Notes, a game entry and maximize/restore were checked. TypeScript and full static-shell regressions passed. Includes the unpushed notebook batch; no new publication authorized. Keep actual Firefox/Edge acceptance open.
+
+## Local Notebook Authoring: v1.69.0
+
+Owner approved this prototype on 3 November 2026; not committed/pushed. `public/data/roadmap.json` is the sole public notebook content source. `public/roadmap.mjs` validates/loads it and groups release history; neither reader imports internal docs. The development-only `components/studio/notebook-editor.tsx` controls edit in place within the existing notebook, using session/in-memory drafts and a local-only POST route at `app/api/studio/notebook/route.ts`. `lib/notebook-store.mjs` owns fixed-path, revision-checked atomic saves. Read requests do not acquire a write lock, avoiding development Strict Mode duplicate-read conflicts.
+
+Completion is an optional boolean on working/idea items, not a move into Filed. Existing Filed records and notebook/chapter headings cannot be changed by the route. No automatic version/date assignment for releases. The bell and isolated publisher include only `public/data/roadmap.json` as notebook content; runtime/helper/style changes still require separate code review. A first migration code release is required before content-only notebook publishing. Original notes/media and dependencies remain unchanged. See Current Priorities in ROADMAP for remaining work and browser-test limits.
+
+Verification: production build (without filesystem-tracing warnings), TypeScript, 57-record validation, public notebook/schema/client recovery, Pages packaging and isolated content-publishing tests pass. Local Chromium checked real typing, chapter changes, close/reopen draft recovery, explicit saves, bell review and 390x844 wrapping. The public/static renderer shares the validated JSON and has escaping/completion parity tests; no actual Pages deployment of this local prototype is claimed. Actual Firefox/Edge acceptance remains open. No dependencies were installed; audit reports zero known advisories at this checkpoint. Temporary test servers were stopped after verification; use the existing Gestalt launcher to review.
+
 ## Responsive And Ambient Follow-up: v1.68.14
 
 Owner authorized this scoped resolution/performance batch and commit/push on 2 November 2026. See [review](REVIEW_2026-11-02-RESPONSIVE.md) and Current Priorities in ROADMAP. Runtime now includes `public/ambient-motion.js`, shared by React and Pages, packaged explicitly and cache-tokened before `static-app.js`. It owns disposable Memory State pointer/viewport listeners and one page-lifetime hidden-state marker; there is no polling or new dependency. Record keyboard focus lives alongside the existing shared `public/record-motion.js` controller.

@@ -742,7 +742,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.68.14");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.70.0");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1489,7 +1489,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.68.14</span>
+        <span>v1.70.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1503,7 +1503,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.68.14</span>
+        <span class="version-label">v1.70.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1523,7 +1523,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.68.14</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.70.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2629,8 +2629,8 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.68.14")
-      .then((module) => { buildRoadmapHistory = module.buildRoadmapHistory; roadmapData = module.publicRoadmap; return roadmapData; })
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.70.0")
+      .then(async (module) => { buildRoadmapHistory = module.buildRoadmapHistory; roadmapData = await module.loadRoadmap(new URL("public/data/roadmap.json", document.baseURI)); return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
   }
@@ -2680,12 +2680,12 @@ function renderRoadmapContent(data, chapterId = roadmapChapterId, releaseIndex =
   return `<nav class="notebook-chapters" aria-label="Notebook chapters">${data.groups.map((group) => `<button type="button" data-notebook-chapter="${escapeHtml(group.id)}"${group.id === chapter.id ? ' aria-current="page"' : ""}>${escapeHtml(group.title)}<span>${String(group.items.length).padStart(2, "0")}</span></button>`).join("")}</nav>
     <div class="notebook-sheet"><span class="notebook-binding" aria-hidden="true"><i></i><i></i><i></i></span><div class="notebook-page" id="roadmap-page">
       <div class="notebook-registration"><span>GESTALT / FIELD COPY</span><span>${release ? "FILED UPDATE" : indexOpen ? "UPDATE INDEX" : "WORKING COPY"}</span></div>
-      <header class="roadmap-heading"><span>${escapeHtml(release ? chapter.title : data.title)}</span><h2 id="roadmap-page-title" tabindex="-1">${escapeHtml(title)}</h2>${intro ? `<p>${escapeHtml(intro)}</p>` : ""}</header>
-      ${indexOpen ? `<ol class="notebook-release-index" aria-label="Filed updates">${history.map((update, index) => `<li><button type="button" data-notebook-release="${index}"><span class="notebook-release-version">${escapeHtml(update.version)}</span><span><strong>${escapeHtml(update.title)}</strong><small>${update.items.length} ${update.items.length === 1 ? "milestone" : "milestones"}</small></span><img src="public/images/ui/notebook-next.svg" alt="" /></button></li>`).join("")}${!history.length ? '<li class="roadmap-message">No completed updates filed yet.</li>' : ""}</ol>`
-        : `<section class="roadmap-group" data-roadmap-state="${escapeHtml(chapter.id)}" aria-labelledby="roadmap-page-title"><div class="notebook-entry-count"><span>${release ? "RELEASE NOTES" : "OPEN NOTES"}</span><span>${String(items.length).padStart(2, "0")} RECORDS</span></div><ol>${items.map((item, index) => `<li><span class="roadmap-mark" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span><div><h3>${release ? `<s>${escapeHtml(item.title)}</s>` : escapeHtml(item.title)}</h3><p>${escapeHtml(item.detail)}</p></div></li>`).join("")}</ol>${!items.length ? '<p class="roadmap-message">Nothing written here yet.</p>' : ""}</section>`}
+      <header class="roadmap-heading"><span>${escapeHtml(release ? chapter.title : data.title)}</span><h2 id="roadmap-page-title" tabindex="-1">${escapeHtml(title)}</h2>${intro ? `<p>${escapeHtml(intro)}</p>` : ""}</header>${release?.releasedOn ? `<time class="notebook-release-date" datetime="${escapeHtml(release.releasedOn)}">${escapeHtml(readableDate(release.releasedOn))}</time>` : ""}
+      ${indexOpen ? `<ol class="notebook-release-index" aria-label="Filed updates">${history.map((update, index) => `<li><button type="button" data-notebook-release="${index}"><span class="notebook-release-version">${escapeHtml(update.version)}</span><span><strong>${escapeHtml(update.title)}</strong><small>${update.releasedOn ? `<time datetime="${escapeHtml(update.releasedOn)}">${escapeHtml(readableDate(update.releasedOn))}</time> . ` : ""}${update.items.length} ${update.items.length === 1 ? "milestone" : "milestones"}</small></span><img src="public/images/ui/notebook-next.svg" alt="" /></button></li>`).join("")}${!history.length ? '<li class="roadmap-message">No completed updates filed yet.</li>' : ""}</ol>`
+        : `<section class="roadmap-group" data-roadmap-state="${escapeHtml(chapter.id)}" aria-labelledby="roadmap-page-title"><div class="notebook-entry-count"><span>${release ? "RELEASE NOTES" : "WORK NOTES"}</span><span>${String(items.length).padStart(2, "0")} RECORDS</span></div><ol>${items.map((item, index) => `<li><span class="roadmap-mark" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span><div><h3>${release || item.completed ? `<s>${escapeHtml(item.title)}</s>` : escapeHtml(item.title)}</h3><p>${escapeHtml(item.detail)}</p></div></li>`).join("")}</ol>${!items.length ? '<p class="roadmap-message">Nothing written here yet.</p>' : ""}</section>`}
     </div></div>
     ${release ? `<footer class="notebook-pagination is-history"><button type="button" data-notebook-index aria-label="Back to update index" title="Update index" aria-controls="roadmap-page"><img src="public/images/ui/notebook-index.svg" alt="" /></button><button type="button" data-notebook-release="${releaseIndex - 1}" aria-label="Newer update" title="Newer update" aria-controls="roadmap-page"${releaseIndex === 0 ? " disabled" : ""}><img src="public/images/ui/notebook-prev.svg" alt="" /></button><span role="status" aria-live="polite" aria-atomic="true">${escapeHtml(release.version)}<span>${String(releaseIndex + 1).padStart(2, "0")} / ${String(history.length).padStart(2, "0")}</span></span><button type="button" data-notebook-release="${releaseIndex + 1}" aria-label="Older update" title="Older update" aria-controls="roadmap-page"${releaseIndex === history.length - 1 ? " disabled" : ""}><img src="public/images/ui/notebook-next.svg" alt="" /></button></footer>`
-      : `<footer class="notebook-pagination is-summary"><span>${indexOpen ? `${history.length} filed updates` : `${items.length} open notes`}</span><span>Revised ${escapeHtml(data.updated)}</span></footer>`}`;
+      : `<footer class="notebook-pagination is-summary"><span>${indexOpen ? `${history.length} filed updates` : `${items.filter((item) => !item.completed).length} open notes`}</span><span>Revised ${escapeHtml(data.updated)}</span></footer>`}`;
 }
 
 function navigateRoadmap(chapterId, releaseIndex = null) {
@@ -2959,7 +2959,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.68.14</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.70.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>

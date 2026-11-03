@@ -35,7 +35,7 @@ try {
   await writeFile(index, sourceBefore.replace(ambientTag, "").replace("</body>", `${ambientTag}</body>`));
   await assert.rejects(validatePagesAssets(destination), /ambient helper must load before/, "A late runtime helper must fail deployment");
   await writeFile(index, sourceBefore);
-  for (const file of ["public/appearance.js", "public/ambient-motion.js", "app/appearance.css", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
+  for (const file of ["public/data/roadmap.json", "public/appearance.js", "public/ambient-motion.js", "app/appearance.css", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
     await unlink(path.join(destination, file));
     await assert.rejects(validatePagesAssets(destination), /Missing prepared Pages asset/);
     await copyFile(path.join(root, file), path.join(destination, file));

@@ -2,7 +2,7 @@
 
 import type { PublishState, PublishSummary, StudioPendingChanges } from "@/lib/studio-client-api";
 
-export function PublishNotificationPanel({ changes, error, notification, saving, checking = false, refreshRequired, onClose, onPublish, onRefresh, onRetry, onReview }: {
+export function PublishNotificationPanel({ changes, error, notification, saving, checking = false, refreshRequired, onClose, onPublish, onRefresh, onRetry, onReview, onReviewNotebook }: {
   changes: StudioPendingChanges | null;
   error: string;
   notification: PublishState | null;
@@ -14,25 +14,27 @@ export function PublishNotificationPanel({ changes, error, notification, saving,
   onRefresh: () => void;
   onRetry: () => void;
   onReview: (id: string) => void;
+  onReviewNotebook?: () => void;
 }) {
   return <aside className="studio-notification-panel studio-change-review-panel" aria-label="Pending archive changes">
     <div className="studio-notification-head">
-      <div><p>// CHANGE REVIEW</p><h2>{changes?.records.length ?? 0} pending {changes?.records.length === 1 ? "record" : "records"}</h2><small>{changes?.changedFiles ?? 0} publishable files</small></div>
+      <div><p>// CHANGE REVIEW</p><h2>{(changes?.records.length ?? 0) + (changes?.notebookChanged ? 1 : 0)} pending {(changes?.records.length ?? 0) + (changes?.notebookChanged ? 1 : 0) === 1 ? "change" : "changes"}</h2><small>{changes?.changedFiles ?? 0} publishable files</small></div>
       <button type="button" onClick={onClose} aria-label="Close change review">Close</button>
     </div>
     {checking ? <p className="studio-pending-guidance" role="status">Checking saved changes...</p> : null}
     {error ? <p className="studio-change-review-error" role="alert">{error}</p> : null}
     {changes?.siteCodeFiles?.length ? <div className="studio-pending-guidance" role="status"><strong>Local site changes stay here</strong><p>Saved content is checked against the committed site. These code edits are not included in a content publish.</p><details><summary>View site files ({changes.siteCodeFiles.length})</summary><ul>{changes.siteCodeFiles.map((file) => <li key={file}>{file}</li>)}</ul></details></div> : null}
     <ol className="studio-pending-records">
+      {changes?.notebookChanged ? <li data-change="edited"><span className="studio-pending-kind">edited</span><div><strong>Field notebook</strong><small>Public roadmap</small></div>{onReviewNotebook ? <button type="button" disabled={saving} onClick={onReviewNotebook}>Review</button> : <a href="/">Open reader</a>}</li> : null}
       {changes?.records.map((record) => <li key={record.id} data-change={record.change}>
         <span className="studio-pending-kind">{record.change}</span><div><strong>{record.title}</strong><small>{record.section ?? "archive"} / {record.id}</small></div>
         {record.change === "deleted" ? <i>REMOVAL</i> : <button type="button" disabled={saving} onClick={() => onReview(record.id)}>Review</button>}
       </li>)}
-      {changes && changes.records.length === 0 ? <li className="studio-pending-empty">No saved record edits are waiting to publish.</li> : null}
+      {changes && changes.records.length === 0 && !changes.notebookChanged ? <li className="studio-pending-empty">No saved edits are waiting to publish.</li> : null}
     </ol>
     {changes && (changes.mediaFiles > 0 || changes.staticDataChanged) ? <p className="studio-pending-assets">{changes.mediaFiles > 0 ? `${changes.mediaFiles} media file${changes.mediaFiles === 1 ? "" : "s"}` : "No new media"}{changes.staticDataChanged ? " . Static archive index updated" : ""}</p> : null}
     {changes && changes.unpushedCommits > 0 ? <p className="studio-pending-assets">{changes.unpushedCommits} local commit{changes.unpushedCommits === 1 ? " is" : "s are"} waiting to reach GitHub.</p> : null}
-    <p className="studio-pending-guidance">Unsaved drafts are not included. Save each record first. A successful push still needs a Pages deployment.</p>
+    <p className="studio-pending-guidance">Unsaved drafts are not included. Save your edits first. A successful push still needs a Pages deployment.</p>
     {refreshRequired ? <button className="studio-publish-all" type="button" disabled={saving} onClick={onRefresh}>Refresh archive</button> : null}
     {error ? <button className="studio-publish-all" type="button" disabled={saving || checking} onClick={onRetry}>Retry change review</button> : null}
     <button className="studio-publish-all" type="button" disabled={saving || checking || Boolean(error) || refreshRequired || !(changes?.changedFiles || changes?.unpushedCommits)} onClick={onPublish}>{saving ? "Working..." : "Publish all pending changes"}</button>

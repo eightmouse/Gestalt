@@ -5,10 +5,11 @@ import vm from "node:vm";
 import ts from "typescript";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { publicRoadmap, buildRoadmapHistory } from "../public/roadmap.mjs";
+import { validateRoadmap, loadRoadmap, buildRoadmapHistory, releaseDateLabel } from "../public/roadmap.mjs";
 
 const require = createRequire(import.meta.url);
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+const publicRoadmap = validateRoadmap(JSON.parse(read("public/data/roadmap.json")));
 function functions(names) {
   const ast = ts.createSourceFile("static-app.js", read("static-app.js"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   return names.map((name) => {
@@ -18,12 +19,13 @@ function functions(names) {
   }).join("\n");
 }
 assert.deepEqual(publicRoadmap.groups.map((group) => group.id), ["working", "ideas", "done"]);
-assert.ok(publicRoadmap.groups.every((group) => group.items.length > 0));
+assert.ok(publicRoadmap.groups.every((group) => Array.isArray(group.items)), "Working chapters may be empty after completed work is filed");
 assert.ok(publicRoadmap.groups.filter((group) => group.id !== "done").every((group) => group.items.length <= 12), "Current work stays bounded; filed history can grow");
 assert.ok(publicRoadmap.groups.find((group) => group.id === "done").items.length >= 6, "Start with real earlier milestones");
 const publicText = JSON.stringify(publicRoadmap);
 assert.ok(!/(?:[A-Z]:[\\/]+Users[\\/]|STEAM_API_KEY|STEAM_ID|\.env|github_pat_|ghp_|-----BEGIN|https?:\/\/)/i.test(publicText), "Curated public copy contains no local/config/credential references or remote links");
-assert.ok(!/\bimport\b|\bfetch\(/.test(read("public/roadmap.mjs")), "Public copy does not read internal documents or external services");
+await loadRoadmap("/data/roadmap.json", async (url, options) => { assert.equal(url, "/data/roadmap.json"); assert.equal(options.cache, "no-cache"); return Response.json(publicRoadmap); });
+assert.ok(!/https?:|docs\//.test(read("public/roadmap.mjs")), "Loader only reads the curated same-site JSON, never internal documents or external services");
 const sourceBefore = JSON.stringify(publicRoadmap);
 const history = buildRoadmapHistory(publicRoadmap);
 assert.equal(history.length, new Set(publicRoadmap.groups.find((group) => group.id === "done").items.map((item) => item.version || "Unversioned")).size);
@@ -43,7 +45,7 @@ const extendedHistory = {
   groups: publicRoadmap.groups.map((group) => group.id === "done" ? {
     ...group,
     items: Array.from({ length: 30 }, (_, index) => ({
-      title: `Milestone ${index + 1}`, detail: "Completed work", version: `v2.${14 - Math.floor(index / 2)}.0`
+      title: `Milestone ${index + 1}`, detail: "Completed work", version: `v2.${14 - Math.floor(index / 2)}.0`, releasedOn: `2026-11-${String(15 - Math.floor(index / 2)).padStart(2, "0")}`
     }))
   } : group)
 };
@@ -78,12 +80,13 @@ class Element {
 }
 const body = new Element("body");
 const trigger = new Element("button");
-const document = { body, activeElement: trigger, createElement: (tag) => new Element(tag), getElementById: (id) => body.children.find((node) => node.id === id), querySelectorAll: () => [trigger] };
+const document = { baseURI: "https://fixture.invalid/Gestalt/", body, activeElement: trigger, createElement: (tag) => new Element(tag), getElementById: (id) => body.children.find((node) => node.id === id), querySelectorAll: () => [trigger] };
 let requested = 0;
 let resolveModule;
 let rejectModule;
 let shellRenders = 0;
-const context = vm.createContext({ document, HTMLElement: Element, Element, state: {}, roadmapData: null, roadmapLoadPromise: null, roadmapFailed: false, roadmapTrigger: null, roadmapChapterId: "working", roadmapReleaseIndex: null, buildRoadmapHistory: null,
+const context = vm.createContext({ URL, document, HTMLElement: Element, Element, state: {}, roadmapData: null, roadmapLoadPromise: null, roadmapFailed: false, roadmapTrigger: null, roadmapChapterId: "working", roadmapReleaseIndex: null, buildRoadmapHistory: null,
+  readableDate: releaseDateLabel,
   stopRecordAccessSequence() {}, render() { shellRenders++; context.syncRoadmapDialog(); },
   loadFixture() { requested++; return new Promise((resolve, reject) => { resolveModule = resolve; rejectModule = reject; }); }
 });
@@ -102,7 +105,7 @@ const sameLoad = context.refreshPublicRoadmap();
 assert.equal(requested, 1, "Concurrent opens/retries share one module request");
 context.closeRoadmap();
 assert.equal(body.children.length, 0);
-resolveModule({ publicRoadmap, buildRoadmapHistory });
+resolveModule({ loadRoadmap: async () => publicRoadmap, buildRoadmapHistory });
 await sameLoad;
 assert.equal(body.children.length, 0, "Late completion cannot reopen a dismissed note");
 context.openRoadmap();
@@ -174,7 +177,7 @@ await failedLoad;
 assert.ok(body.children[0].querySelector().innerHTML.includes("Work note unavailable"));
 assert.ok(!body.children[0].querySelector().innerHTML.includes("Sensitive"));
 const retry = context.refreshPublicRoadmap();
-resolveModule({ publicRoadmap, buildRoadmapHistory });
+resolveModule({ loadRoadmap: async () => publicRoadmap, buildRoadmapHistory });
 await retry;
 assert.ok(body.children[0].querySelector().innerHTML.includes("On the desk"));
 let cancelled = 0;
@@ -199,8 +202,10 @@ let stateLocation = { chapterId: "working", releaseIndex: null };
 let refIndex = 0;
 const effects = [];
 const reactDialog = new Element("dialog");
-const react = vm.createContext({ exports: {}, document, HTMLElement: Element, Element, require(name) {
-  if (name === "react") return { useRef: () => ({ current: refIndex++ === 0 ? reactDialog : null }), useState: () => [[stateData, false, 0, buildRoadmapHistory(stateData), stateLocation][stateIndex++], () => {}], useEffect: (callback) => effects.push(callback) };
+const react = vm.createContext({ exports: {}, process: { env: { NODE_ENV: "production" } }, document, HTMLElement: Element, Element, require(name) {
+  if (name === "next/dynamic") return () => () => null;
+  if (name === "@/public/roadmap.mjs") return { buildRoadmapHistory, releaseDateLabel };
+  if (name === "react") return { useRef: () => ({ current: refIndex++ === 0 ? reactDialog : null }), useState: () => [[stateData, false, 0, buildRoadmapHistory(stateData), stateLocation, null][stateIndex++], () => {}], useEffect: (callback) => effects.push(callback) };
   if (name === "react-dom") return { createPortal: (element, target) => { assert.equal(target, body); return element; } };
   return require(name);
 } });
@@ -225,12 +230,13 @@ for (const data of [publicRoadmap, extendedHistory, malicious]) {
       assert.equal((html.match(/class="roadmap-mark"/g) || []).length, indexOpen ? 0 : (release?.items || chapter.items).length);
       assert.ok(!html.includes("<script>") && !html.includes("<iframe>") && !html.includes('<img src="x">'));
       assert.ok(!html.includes('data-roadmap-state="ideas" onclick="bad()"'));
-      assert.equal((html.match(/<s>/g) || []).length, release?.items.length || 0);
+      assert.equal((html.match(/<s>/g) || []).length, indexOpen ? 0 : release?.items.length ?? chapter.items.filter((item) => item.completed).length);
       assert.equal(html.includes('aria-label="Newer update"'), Boolean(release));
       assert.equal(html.includes('aria-label="Older update"'), Boolean(release));
       assert.equal(html.includes('aria-label="Back to update index"'), Boolean(release));
       assert.equal(html.includes('aria-label="Filed updates"'), indexOpen);
       if (indexOpen) assert.equal((html.match(/data-notebook-release="\d+"/g) || []).length, releases.length, "Every release remains reachable from both renderers");
+      if (release?.releasedOn) assert.ok(html.includes(releaseDateLabel(release.releasedOn)), "Both readers display an explicitly authored release date");
     }
   }
 }
@@ -269,6 +275,9 @@ for (const name of ["prev", "next", "index"]) {
   assert.ok(!/script|foreignObject|\bon\w+=|https?:\/\/(?!www\.w3\.org)/.test(icon));
 }
 const css = read("app/globals.css");
+assert.match(css, /\.roadmap-group h3 s \{[^}]*text-decoration-color: currentColor; text-decoration-thickness: 2px;/, "Completion lines stay visible in both theme text colors");
+assert.match(read("app/studio/notebook.css"), /\[data-completed\] \.notebook-title-input \{[^}]*text-decoration-color: currentColor; text-decoration-thickness: 2px;/, "Editing retains the same completion line");
+assert.match(read("components/archive/roadmap-window.tsx"), /className="window-title-group"><span>\/\/ FIELD NOTEBOOK<\/span>\{process\.env/, "Local gear belongs beside the notebook title, not among close controls");
 const scopedCss = css.slice(css.indexOf(".roadmap-dialog {"), css.indexOf("\n.window-bar {", css.indexOf(".roadmap-dialog {")));
 assert.ok(scopedCss.includes("minmax(0, 1fr)"));
 assert.ok(!/infinite|filter:|will-change:/.test(scopedCss), "Opening leaves no perpetual animation/filter/layer workload");

@@ -8,6 +8,7 @@ const root = process.cwd();
 const publishPaths = [
   "content/records",
   "public/data/records.js",
+  "public/data/roadmap.json",
   "public/favicon.ico",
   "public/favicon.svg",
   "public/media/records",
@@ -190,7 +191,7 @@ function scanForPrivateMaterial() {
 }
 
 function isPublishPath(file) {
-  return file === "public/data/records.js" ||
+  return file === "public/data/records.js" || file === "public/data/roadmap.json" ||
     file === "public/favicon.ico" ||
     file === "public/favicon.svg" ||
     file === "index.html" ||
@@ -199,7 +200,7 @@ function isPublishPath(file) {
 }
 
 function isArchivePayloadPath(file) {
-  return file === "public/data/records.js" ||
+  return file === "public/data/records.js" || file === "public/data/roadmap.json" ||
     file.startsWith("content/records/") ||
     file.startsWith("public/media/records/");
 }
@@ -326,6 +327,7 @@ if (archiveChanged) {
   console.log("\nRetrying local commits that have not reached GitHub.");
 }
 run("node", ["scripts/validate-content.mjs"]);
+run("node", ["scripts/validate-notebook.mjs"]);
 run("node", ["scripts/validate-static-shell.mjs"]);
 if (skipTypecheck) {
   console.log("\n> TypeScript check skipped for content-only publish");

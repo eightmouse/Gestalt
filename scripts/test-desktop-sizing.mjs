@@ -20,6 +20,9 @@ for (const selector of policy.matchAll(/(?:^|\})\s*([^{}]+)\{/g)) {
   assert.ok(value.startsWith(".archive-shell"), `Size rule must start at the reader shell: ${value}`);
 }
 assert.match(policy, /--dashboard-max-inline: calc\(1180px \* var\(--desktop-size\)\)/);
+assert.match(css, /--record-window-inline: 1120px;/, "Normal reading windows gain width, not height or type scaling");
+assert.match(policy, /--record-window-inline: calc\(1120px \* var\(--desktop-size\)\)/, "Wide entries retain the same proportions at larger desktop tiers");
+assert.match(css, /inline-size: min\(var\(--record-window-inline\), calc\(100vw - var\(--sidebar-width\) - var\(--record-window-margin\)\)\)/, "Smaller viewports still cap the entry within the available workspace");
 assert.match(policy, /--section-split-max-inline: var\(--dashboard-max-inline\)/);
 assert.match(policy, /grid-template-rows: minmax\(0, 1fr\) minmax\(0, 0\.9fr\) minmax\(0, 0\.92fr\)/);
 assert.ok(!/nth-child/.test(policy), "Large tiers do not silently change the number of visible records");
@@ -36,6 +39,7 @@ assert.match(policy, /\.archive-folder-titlebar button, \.archive-folder-pathbar
 assert.match(policy, /\.archive-folder-window \.archive-file \{ min-block-size: calc\(80px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.record-window:not\(\.is-setup-record\) \{\s*--record-titlebar-size: calc\(42px \* var\(--desktop-size\)\);[^}]*grid-template-rows: var\(--record-titlebar-size\) minmax\(0, 1fr\)/, "Slim entry row must still grow with the desktop tier");
 assert.match(policy, /\.record-window:not\(\.is-setup-record\) \.window-bar \{ block-size: var\(--record-titlebar-size\)/, "Titlebar and grid must consume the same scaled height");
+assert.match(policy, /\.window-edit-action \{ inline-size: calc\(26px \* var\(--desktop-size\)\); block-size: calc\(26px \* var\(--desktop-size\)\)/, "Large-desktop gears use the same control size multiplier as close");
 assert.match(policy, /\.setup-bay \{ inline-size: min\(100%, var\(--dashboard-max-inline\)\)/, "Setup must not retain its baseline inline-size cap");
 assert.match(policy, /\.archive-folder-page \{ inline-size: min\(100%, calc\(1320px \* var\(--desktop-size\)\)\)/, "Archive root grows, not only the focused folder");
 for (const [group, width] of [["tools", 96], ["peripherals", 154]]) {

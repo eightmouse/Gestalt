@@ -28,7 +28,7 @@ try {
   git("config", "user.name", "Publish fixture");
   git("config", "user.email", "fixture@example.invalid");
   git("config", "core.autocrlf", "false");
-  for (const file of ["scripts/publish-site.mjs", "scripts/static-cache.mjs", "scripts/export-static-records.mjs", "scripts/validate-content.mjs", "lib/publish-paths.mjs", "public/image-framing.js"]) {
+  for (const file of ["scripts/publish-site.mjs", "scripts/static-cache.mjs", "scripts/export-static-records.mjs", "scripts/validate-content.mjs", "scripts/validate-notebook.mjs", "lib/publish-paths.mjs", "public/image-framing.js", "public/roadmap.mjs", "public/data/roadmap.json"]) {
     mkdirSync(path.dirname(path.join(fixture, file)), { recursive: true });
     copyFileSync(path.join(root, file), path.join(fixture, file));
   }
@@ -189,6 +189,23 @@ try {
   assert.equal(git("rev-parse", "HEAD"), beforeWriteRecovery, "Generated-file recovery does not create another commit");
   assert.equal(read("public/data/records.js"), beforeReplacement);
   assert.equal(existsSync(path.join(fixture, ".git/gestalt-content-publish-state.json")), false);
+
+  const notebookBefore = JSON.parse(read("public/data/roadmap.json"));
+  const notebookEdit = structuredClone(notebookBefore);
+  notebookEdit.groups[0].items[0] = { title: "Notebook-only publish fixture", detail: "Fixture work", completed: true };
+  write("public/data/roadmap.json", JSON.stringify(notebookEdit, null, 2) + "\n");
+  const beforeNotebook = git("rev-parse", "HEAD");
+  checked("--message", "Publish notebook fixture");
+  assert.notEqual(git("rev-parse", "HEAD"), beforeNotebook);
+  assert.deepEqual(JSON.parse(git("show", "HEAD:public/data/roadmap.json")), notebookEdit);
+  assert.equal(git("rev-parse", ":app/globals.css"), stagedCss, "Notebook publication preserves separately staged code");
+  assert.ok(!git("diff", "--cached", "--name-only", "--", "public/data/roadmap.json"), "Notebook is not left pending after publication");
+  write("public/data/roadmap.json", '{"groups":[]}');
+  rejected(/Notebook validation failed/);
+  write("public/data/roadmap.json", JSON.stringify(notebookEdit, null, 2) + "\n");
+  rmSync(path.join(fixture, "public/data/roadmap.json"));
+  rejected(/Notebook validation failed/);
+  write("public/data/roadmap.json", JSON.stringify(notebookEdit, null, 2) + "\n");
 
   git("commit", "-m", "Unpublished reviewed code fixture");
   rejected(/same reviewed commit/);

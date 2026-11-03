@@ -1,0 +1,39 @@
+.notebook-editor-controls { --notebook-control-size: 26px; display: flex; align-items: center; gap: 6px; }
+.notebook-editor-controls button:not(.window-edit-action), .notebook-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-inline-size: var(--notebook-control-size, 30px); min-block-size: var(--notebook-control-size, 30px); padding: 4px; background: transparent; color: var(--text); border: 1px solid var(--line); font: inherit; cursor: pointer; }
+.roadmap-note .notebook-editor-controls button:not(.window-edit-action) { inline-size: var(--notebook-control-size); block-size: var(--notebook-control-size); flex-shrink: 0; font-size: 12px; }
+.roadmap-note .notebook-editor-controls button.notebook-save { inline-size: auto; padding-inline: 8px; }
+.notebook-entry-count:has(.notebook-add) { align-items: center; gap: 12px; }
+.notebook-entry-count:has(.notebook-add) > span:nth-child(2) { margin-inline-start: auto; }
+.notebook-editor-controls button:disabled, .notebook-add:disabled { opacity: 0.45; cursor: default; }
+.notebook-editor-status { margin-block: 12px 0; font-size: 13px; color: var(--text); }
+.notebook-editor-status[role="alert"] { color: var(--danger, #d58b82); }
+.notebook-item-editor { min-inline-size: 0; }
+.notebook-item-heading { display: grid; grid-template-columns: minmax(0, 1fr) 30px; gap: 10px; align-items: start; }
+.notebook-remove { display: grid; place-items: center; inline-size: 30px; block-size: 30px; color: var(--muted); border: 0; background: transparent; cursor: pointer; }
+.notebook-remove:hover { color: var(--danger, #d58b82); }
+.notebook-item-editor textarea { display: block; inline-size: 100%; min-inline-size: 0; resize: none; overflow: hidden; overflow-wrap: anywhere; box-sizing: border-box; padding: 3px 5px; margin-inline: -5px; border: 1px solid transparent; border-radius: 0; background: transparent; color: var(--text); font: inherit; line-height: 1.65; }
+.notebook-item-editor .notebook-title-input { font-size: 18px; color: var(--text-strong); line-height: 1.4; }
+.notebook-item-editor .notebook-detail-input { margin-block-start: 8px; font-size: 15px; }
+.notebook-item-editor textarea:hover { border-color: var(--line); }
+.notebook-item-editor textarea:focus { border-color: var(--accent-dim); outline: 1px solid var(--accent-dim); background: rgba(var(--tone-well, 0, 0, 0), 0.08); }
+.notebook-item-complete { appearance: none; position: relative; inline-size: 18px; block-size: 18px; margin: 5px 0 0; border: 1px solid var(--accent-dim); border-radius: 0; background: transparent; cursor: pointer; }
+.notebook-item-complete:checked::after { content: ""; position: absolute; inset: 2px 5px 4px; border: solid var(--text-strong); border-width: 0 1px 1px 0; transform: rotate(45deg); }
+.notebook-item-editor[data-completed] .notebook-title-input { text-decoration: line-through; text-decoration-color: currentColor; text-decoration-thickness: 2px; }
+.notebook-filing { margin-block: 18px; padding: 16px; border: 1px solid var(--line-strong); background: rgba(var(--tone-well, 0, 0, 0), 0.08); }
+.notebook-filing fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.notebook-filing legend { padding: 0 0 12px; color: var(--text-strong); font-size: 17px; }
+.notebook-release-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.notebook-release-fields label { display: grid; min-inline-size: 0; gap: 6px; font-size: 13px; }
+.notebook-release-fields input { min-inline-size: 0; inline-size: 100%; padding: 7px; border: 1px solid var(--line-strong); border-radius: 0; background: var(--surface-input, #141711); color: var(--text); color-scheme: var(--control-scheme, dark); font: inherit; font-size: 16px; }
+.notebook-file-selection { max-block-size: 220px; overflow: auto; overscroll-behavior: contain; margin-block: 14px; scrollbar-width: thin; scrollbar-color: var(--accent-dim) transparent; }
+.notebook-file-selection label { display: flex; align-items: center; gap: 10px; min-block-size: 34px; font-size: 15px; overflow-wrap: anywhere; cursor: pointer; }
+.notebook-file-selection input { flex: 0 0 auto; inline-size: 18px; block-size: 18px; accent-color: var(--accent); }
+.notebook-filing-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.notebook-filing-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-block-size: 34px; padding: 6px 10px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
+.notebook-filing-actions button:disabled { opacity: 0.45; cursor: default; }
+@media (max-width: 760px) {
+  .roadmap-note .window-bar:has(.notebook-editor-controls) { padding-inline: 10px; gap: 6px; }
+  .notebook-editor-controls { --notebook-control-size: 34px; gap: 4px; }
+  .notebook-item-editor .notebook-title-input { font-size: 17px; }
+  .notebook-release-fields { grid-template-columns: 1fr; }
+}

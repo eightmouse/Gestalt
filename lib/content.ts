@@ -37,6 +37,10 @@ function parseScalar(rawValue: string): string | number | boolean | string[] {
     return Number(value);
   }
 
+  if (value.startsWith('"') && value.endsWith('"')) {
+    try { return JSON.parse(value) as string; } catch { /* Preserve legacy non-JSON quoted scalars. */ }
+  }
+
   return value.replace(/^["']|["']$/g, "");
 }
 
