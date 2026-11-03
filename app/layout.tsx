@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Gestalt Archive",
   description: "A personal operating-system style archive for projects, games, setup notes, and field logs.",
   icons: {
-    icon: "/favicon.ico?v=1.68.13"
+    icon: "/favicon.ico?v=1.68.14"
   }
 };
 

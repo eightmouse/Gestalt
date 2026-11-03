@@ -730,7 +730,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     hasFocusWindow || webSearchOpen || connectionsOpen || navOpen || Boolean(studioRecordId) || Boolean(inlineRecordId), searchOpen, localMemory === "granted");
 
   return (
-    <main ref={shellRef} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
+    <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReview={(id) => {

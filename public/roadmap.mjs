@@ -7,8 +7,8 @@ export const publicRoadmap = {
     {
       id: "working", title: "In progress", items: [
         { title: "Field notebook", detail: "Separate chapters, versioned history and the lighter opening have been reviewed. Local editing and dated history remain for a separate step." },
-        { title: "Desktop consistency", detail: "Keep the same proportions and reading comfort across screen sizes and browser zoom, without stretching the archive." },
-        { title: "Cross-browser smoothness", detail: "Compare Firefox and Chromium carefully, especially opening records and returning to the workspace. Keep the atmosphere while fixing measured bottlenecks." }
+        { title: "Desktop consistency", detail: "Large-screen labels, manifest icons and Archive spacing now keep their desktop proportions. Continue real display/zoom checks without stretching the archive." },
+        { title: "Cross-browser smoothness", detail: "Covered, hidden and offscreen effects now rest; pointer work is shared and bounded. Firefox/Edge timing comparisons remain open, especially opening records and returning to the workspace." }
       ]
     },
     {
@@ -20,6 +20,7 @@ export const publicRoadmap = {
     },
     {
       id: "done", title: "Filed", items: [
+        { title: "Desktop proportions and quieter background work", detail: "Scaled reading labels and section manifests, consistent Archive footer spacing, shared reduced-motion-aware Memory State input, paused covered/offscreen effects and keyboard boundaries for record windows.", version: "v1.68.14" },
         { title: "Day, Night and window depth", detail: "A mineral-gray Day appearance alongside Night and local-clock Auto. Clearer labels, continuous window frames, tactile controls and slimmer entry bars, with permission-aware remembered preferences.", version: "v1.68.13" },
         { title: "Startup and notebook settling", detail: "Boot progress and brief signal interruptions vary between visits without extending startup. The notebook opens with lighter registration details; clicking its header or the Connections header no longer restarts the opening.", version: "v1.68.13" },
         { title: "Independent publishing", detail: "Saved notes publish against the committed site while unfinished visual work stays local. Interrupted publication can recover without sweeping unrelated code into a content update.", version: "v1.67.0" },

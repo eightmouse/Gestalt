@@ -19,6 +19,7 @@ import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
+import recordMotion from "@/public/record-motion.js";
 type RecordWindowProps = {
   minimized?: boolean;
   accessPending?: boolean;
@@ -43,7 +44,16 @@ export function RecordWindow({ minimized = false, accessPending = false, accessC
   return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
+function useRecordFocus(minimized: boolean | undefined, id: string) {
+  const ref = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!minimized) return recordMotion.focusWithin(ref.current);
+  }, [minimized, id]);
+  return ref;
+}
+
 function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+  const windowRef = useRecordFocus(minimized, record.id);
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
@@ -80,6 +90,10 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   return (
     <>
     <motion.article
+      ref={windowRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       hidden={minimized}
       inert={minimized}
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
@@ -192,6 +206,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
 }
 
 function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+  const windowRef = useRecordFocus(minimized, record.id);
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
   const headerImage = setupRecordImage(record);
@@ -207,6 +222,10 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
 
   return (
     <motion.article
+      ref={windowRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       hidden={minimized}
       inert={minimized}
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""} is-setup-record is-setup-record--${group}`}

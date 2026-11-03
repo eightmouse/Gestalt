@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current version: `v1.68.13`.
+Current version: `v1.68.14`.
+
+`v1.68.14` corrects large-desktop typography, section header/icon proportions and Archive footer clearance. Both readers share a disposable, reduced-motion-aware Memory State pointer handler; hidden/offscreen/covered dashboard effects pause without restarting. Record windows gain keyboard focus boundaries and restoration. No dependency, schema or original media changes.
 
 Shipped `v1.67.0` adds isolated content publishing. A content-only publish keeps the committed site's version; it must not advertise an unreviewed development version. Local `v1.68.0` adds Day/Night/Auto appearance and includes the accepted v1.67.1 notebook motion refinement.
 

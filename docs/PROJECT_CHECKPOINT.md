@@ -1,5 +1,11 @@
 # Gestalt Project Checkpoint
 
+## Responsive And Ambient Follow-up: v1.68.14
+
+Owner authorized this scoped resolution/performance batch and commit/push on 2 November 2026. See [review](REVIEW_2026-11-02-RESPONSIVE.md) and Current Priorities in ROADMAP. Runtime now includes `public/ambient-motion.js`, shared by React and Pages, packaged explicitly and cache-tokened before `static-app.js`. It owns disposable Memory State pointer/viewport listeners and one page-lifetime hidden-state marker; there is no polling or new dependency. Record keyboard focus lives alongside the existing shared `public/record-motion.js` controller.
+
+Keep actual Firefox/Edge frame-time profiling and physical-display/browser-zoom acceptance open. The in-app Chromium viewport checks are not those measurements. User records, original media, schema, save/publish behavior and Studio sizing remain untouched. Verify Git/Pages independently when publishing; this is source documentation, not a claim about remote deployment.
+
 ## Current Checkpoint: 2 November 2026
 
 Source checkpoint: `v1.68.13`. Owner authorized reviewing, committing and publishing the accepted Day/Night/startup/notebook batch. See [the release review](REVIEW_2026-11-02.md) for test results, modeled contrast, asset weight, privacy/dependency checks and browser limitations. The final artifact guard checks both theme references and early helper order, not just file presence. No authored records/media or dependencies changed. Current audit reports no known advisories, not permanent security assurance. Windows Firefox automation was blocked by URL-policy enforcement limits; no alternate UI mechanism was used. Actual cross-browser visual/frame timing and responsive acceptance remain open.

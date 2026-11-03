@@ -742,7 +742,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.68.13");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.68.14");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1489,7 +1489,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.68.13</span>
+        <span>v1.68.14</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1503,7 +1503,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.68.13</span>
+        <span class="version-label">v1.68.14</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1523,7 +1523,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.68.13</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.68.14</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2288,7 +2288,7 @@ function setupRecordWindow(record) {
         ? setupNoteBody(record, notes)
         : setupSystemBody(record, profile, specs, headerImage);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} is-setup-record is-setup-record--${group}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
+  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} is-setup-record is-setup-record--${group}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
     ${recordAccessSurfaceMarkup()}
     <div class="setup-window-shell">
       <section class="setup-console setup-console--${group}" aria-label="${escapeHtml(record.title)} setup profile">
@@ -2426,7 +2426,7 @@ function recordWindow(record) {
 
   const headerImage = recordHeaderImage(record);
 
-  return `<article class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
+  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
     ${recordAccessSurfaceMarkup()}
     <header class="window-bar">
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
@@ -2543,6 +2543,7 @@ function searchPanel() {
 }
 
 function syncSearchPanel() {
+  document.querySelector(".archive-shell")?.toggleAttribute("data-search-open", state.searchOpen);
   const header = document.querySelector(".workspace-header");
   if (!header) return;
   const panel = header.querySelector(".command-panel");
@@ -2628,7 +2629,7 @@ function syncOsBehaviourDialog() {
 function loadPublicRoadmap() {
   if (roadmapData) return Promise.resolve(roadmapData);
   if (!roadmapLoadPromise) {
-    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.68.13")
+    roadmapLoadPromise = import("./public/roadmap.mjs?v=1.68.14")
       .then((module) => { buildRoadmapHistory = module.buildRoadmapHistory; roadmapData = module.publicRoadmap; return roadmapData; })
       .catch(() => null)
       .finally(() => { roadmapLoadPromise = null; });
@@ -2958,7 +2959,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.68.13</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.68.14</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3049,6 +3050,7 @@ function render() {
   root.innerHTML = markup;
   if (retained) root.querySelector(".workspace")?.append(retained);
   if (state.webSearchOpen || state.connectionsOpen) root.querySelector(".archive-shell")?.setAttribute("data-workspace-tool-open", "");
+  root.querySelector(".archive-shell")?.toggleAttribute("data-search-open", state.searchOpen);
   syncImageLightbox();
   syncRoadmapDialog();
   syncOsBehaviourDialog();
@@ -3080,7 +3082,8 @@ function render() {
     state.headlineAnimating = false;
   }
 
-  updateMemoryBounds();
+  syncMemoryMotion();
+  syncRecordFocus();
   void initializeSteamDisplay();
 
   if (state.searchOpen) {
@@ -3239,54 +3242,24 @@ async function requestWeather() {
   }
 }
 
-function setMemoryPointer(node, x, y) {
-  node.style.setProperty("--memory-core-x", `${(x * 4).toFixed(2)}px`);
-  node.style.setProperty("--memory-core-y", `${(y * 4).toFixed(2)}px`);
-  node.style.setProperty("--memory-orbit-x", `${(x * -6).toFixed(2)}px`);
-  node.style.setProperty("--memory-orbit-y", `${(y * -5).toFixed(2)}px`);
-  node.style.setProperty("--memory-shard-x", `${(x * 7).toFixed(2)}px`);
-  node.style.setProperty("--memory-shard-y", `${(y * 5).toFixed(2)}px`);
-  node.style.setProperty("--memory-axis-x", `${(x * 2).toFixed(2)}px`);
-  node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
-}
-
-let memoryFrame = 0;
 let memoryNode = null;
-let memoryBounds = null;
-let memoryPointer = null;
-
-function updateMemoryBounds() {
-  memoryNode = document.querySelector("[data-memory-loop]");
-  memoryBounds = memoryNode instanceof HTMLElement ? memoryNode.getBoundingClientRect() : null;
+let recordFocusNode = null;
+let recordFocusCleanup = null;
+function syncRecordFocus() {
+  const node = document.querySelector(".record-window:not([hidden]):not([inert])");
+  if (node === recordFocusNode) return;
+  recordFocusCleanup?.();
+  recordFocusNode = node;
+  recordFocusCleanup = window.GestaltRecordMotion.focusWithin(node);
 }
-
-document.addEventListener("pointermove", (event) => {
-  if (state.activeSection !== "system" || state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen || state.webSearchOpen || state.connectionsOpen || document.hidden || !(memoryNode instanceof HTMLElement) || !memoryBounds || memoryNode.closest(".archive-shell")?.hasAttribute("data-nav-open")) {
-    return;
-  }
-
-  const rect = memoryBounds;
-  const x = Math.max(-1, Math.min(1, (event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2)));
-  const y = Math.max(-1, Math.min(1, (event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2)));
-
-  memoryPointer = { x, y };
-
-  if (memoryFrame) {
-    return;
-  }
-
-  memoryFrame = window.requestAnimationFrame(() => {
-    const pointer = memoryPointer;
-
-    if (memoryNode instanceof HTMLElement && pointer) {
-      setMemoryPointer(memoryNode, pointer.x, pointer.y);
-    }
-    memoryFrame = 0;
-  });
-});
-
-window.addEventListener("resize", updateMemoryBounds, { passive: true });
-document.addEventListener("gestalt:navigation-layout", updateMemoryBounds);
+let memoryCleanup = null;
+function syncMemoryMotion() {
+  const node = document.querySelector("[data-memory-loop]");
+  if (node === memoryNode) return;
+  memoryCleanup?.();
+  memoryNode = node;
+  memoryCleanup = window.GestaltAmbientMotion.watchMemory(node);
+}
 
 document.addEventListener("click", (event) => {
   const clickTarget = event.target;

@@ -77,9 +77,14 @@ function panelFixture() {
 const toggle = { active: false, getClientRects() { return [{}]; }, closest() { return null; }, focus() { focused = this; document.activeElement = this; } };
 toggle.classList = { toggle(_, value) { toggle.active = value; } };
 const header = { querySelector() { return activePanel; }, append(panel) { activePanel = panel; } };
+let ambientPaused = false;
+const shell = { toggleAttribute(name, value) { assert.equal(name, "data-search-open"); ambientPaused = value; } };
 const document = {
   activeElement: toggle,
-  querySelector(selector) { assert.equal(selector, ".workspace-header", "Palette updates never traverse/rebuild the dashboard"); return header; },
+  querySelector(selector) {
+    if (selector === ".archive-shell") return shell;
+    assert.equal(selector, ".workspace-header", "Palette updates never traverse/rebuild the dashboard"); return header;
+  },
   querySelectorAll() { return [toggle]; },
   createElement(tag) {
     assert.equal(tag, "template");
@@ -90,6 +95,7 @@ const paletteContext = vm.createContext({ document, state: searchState, searchPa
 vm.runInContext(declaration("static-app.js", "syncSearchPanel"), paletteContext);
 searchState.searchOpen = true;
 paletteContext.syncSearchPanel();
+assert.equal(ambientPaused, true, "Palette opening suspends ambient work without replacing the dashboard");
 const retainedPanel = activePanel, retainedInput = activePanel.querySelector("[data-search-input]");
 assert.equal(focused, retainedInput); assert.equal(toggle.active, true);
 searchState.searchQuery = "game";
@@ -100,6 +106,7 @@ assert.deepEqual(activePanel.querySelector(".search-suggestions").childNodes, [2
 searchState.searchOpen = false;
 paletteContext.syncSearchPanel();
 assert.equal(activePanel, null); assert.equal(focused, toggle); assert.equal(toggle.active, false);
+assert.equal(ambientPaused, false, "Closing resumes the existing animation phases");
 assert.equal(navUpdates, 3, "The existing navigation controller observes palette state without losing its DOM");
 
 const inputHandler = findNode("static-app.js", (node) => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText() === "document.addEventListener" && node.expression.arguments[0]?.text === "input");

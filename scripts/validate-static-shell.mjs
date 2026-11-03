@@ -15,6 +15,10 @@ const assetCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-pa
 if (assetCheck.status !== 0) errors.push(`Prepared Pages asset regression failed: ${(assetCheck.stderr || assetCheck.stdout || "").trim()}`);
 const appearanceCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-appearance.mjs")], { encoding: "utf8" });
 if (appearanceCheck.status !== 0) errors.push(`Appearance regression failed: ${(appearanceCheck.stderr || appearanceCheck.stdout || "").trim()}`);
+const ambientCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-ambient-motion.mjs")], { encoding: "utf8" });
+if (ambientCheck.status !== 0) errors.push(`Ambient lifecycle regression failed: ${(ambientCheck.stderr || ambientCheck.stdout || "").trim()}`);
+const recordFocusCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-record-focus.mjs")], { encoding: "utf8" });
+if (recordFocusCheck.status !== 0) errors.push(`Record keyboard regression failed: ${(recordFocusCheck.stderr || recordFocusCheck.stdout || "").trim()}`);
 
 const archiveImage = indexHtml.match(/--archive-image:\s*url\("([^"]+)"\)/)?.[1];
 if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-banner.png") {

@@ -8,6 +8,7 @@ import type { ActivityEntry } from "@/components/archive/record-utils";
 import { steamBannerImage, steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import { SeasonalAccent } from "@/components/archive/seasonal-accent";
 import type { SeasonalMode } from "@/public/seasonal.js";
+import ambientMotion from "@/public/ambient-motion.js";
 
 type DashboardProps = {
   now?: Date | null;
@@ -196,76 +197,7 @@ function CurrentGame({ display, record, onCreate }: { display: CurrentGameDispla
 
 function MemoryLoop() {
   const memoryRef = useRef<HTMLDivElement | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const boundsRef = useRef<DOMRectReadOnly | null>(null);
-  const pointerRef = useRef<{ x: number; y: number } | null>(null);
-
-  const setMemoryPointer = (x: number, y: number) => {
-    const node = memoryRef.current;
-
-    if (!node) {
-      return;
-    }
-
-    node.style.setProperty("--memory-core-x", `${(x * 4).toFixed(2)}px`);
-    node.style.setProperty("--memory-core-y", `${(y * 4).toFixed(2)}px`);
-    node.style.setProperty("--memory-orbit-x", `${(x * -6).toFixed(2)}px`);
-    node.style.setProperty("--memory-orbit-y", `${(y * -5).toFixed(2)}px`);
-    node.style.setProperty("--memory-shard-x", `${(x * 7).toFixed(2)}px`);
-    node.style.setProperty("--memory-shard-y", `${(y * 5).toFixed(2)}px`);
-    node.style.setProperty("--memory-axis-x", `${(x * 2).toFixed(2)}px`);
-    node.style.setProperty("--memory-axis-y", `${(y * 2).toFixed(2)}px`);
-  };
-  const clampPointer = (value: number) => Math.max(-1, Math.min(1, value));
-  const updateBounds = () => {
-    boundsRef.current = memoryRef.current?.getBoundingClientRect() ?? null;
-  };
-
-  const handlePointerMove = (event: globalThis.PointerEvent) => {
-    const node = memoryRef.current;
-    const rect = boundsRef.current;
-
-    if (!node || !rect || document.hidden || node.closest(".archive-shell")?.matches("[data-nav-open], [data-workspace-tool-open], .has-record")) {
-      return;
-    }
-
-    const x = clampPointer((event.clientX - (rect.left + rect.width / 2)) / (window.innerWidth / 2));
-    const y = clampPointer((event.clientY - (rect.top + rect.height / 2)) / (window.innerHeight / 2));
-
-    pointerRef.current = { x, y };
-
-    if (frameRef.current !== null) {
-      return;
-    }
-
-    frameRef.current = window.requestAnimationFrame(() => {
-      frameRef.current = null;
-      const pointer = pointerRef.current;
-
-      if (pointer) {
-        setMemoryPointer(pointer.x, pointer.y);
-      }
-    });
-  };
-
-  useEffect(() => {
-    updateBounds();
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    window.addEventListener("resize", updateBounds, { passive: true });
-    document.addEventListener("gestalt:navigation-layout", updateBounds);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("resize", updateBounds);
-      document.removeEventListener("gestalt:navigation-layout", updateBounds);
-
-      if (frameRef.current !== null) {
-        window.cancelAnimationFrame(frameRef.current);
-      }
-
-      pointerRef.current = null;
-    };
-  }, []);
+  useEffect(() => ambientMotion.watchMemory(memoryRef.current), []);
 
   return (
     <div className="memory-loop" aria-hidden="true" ref={memoryRef}>

@@ -52,4 +52,12 @@ assert.match(policy, /\.record-heading:not\(\.has-heading-banner\) \{ margin-blo
 assert.match(css, /\.note-media--banner \.note-media-button img \{\s*position: absolute;\s*inset: 0;\s*max-block-size: none;/, "Loaded banner images must fit their frame at baseline as well as large sizes");
 assert.match(css, /\.banner-frame img \{\s*position: absolute;\s*inset: 0;/);
 assert.match(policy, /\.note-media--banner \.note-media-button \{ min-block-size: 0;/, "The large-tier default media minimum must not stretch cropped banners");
+assert.match(policy, /\.window-bar \{[^}]*font-size: calc\(16px \* var\(--desktop-size\)\)/, "Window-bar labels keep baseline proportions instead of shrinking relatively");
+assert.match(policy, /\.record-aside li button \{ font-size: calc\(16px \* var\(--desktop-size\)\)/);
+assert.match(policy, /:is\(\.record-meta dt, \.record-aside h3\) \{ font-size: calc\(13px \* var\(--desktop-size\)\)/);
+assert.match(policy, /\.section-signal \{ transform: scale\(var\(--desktop-size\)\); transform-origin: center;/, "Navigation glyphs scale inside their allocated track");
+assert.match(policy, /\.section-page-header h2 \{ font-size: calc\(34px \* var\(--desktop-size\)\)/, "Setup/Archive manifests keep the 34px desktop heading ratio");
+assert.match(policy, /\.section-page-header \{ grid-template-columns: calc\(34px \* var\(--desktop-size\)\)/);
+assert.match(policy, /\.setup-tile strong \{ font-size: calc\(16px \* var\(--desktop-size\)\)/);
+assert.match(policy, /\.workspace:has\(\.archive-folder-page\) \{\s*--workspace-pad-bottom: calc\(32px \* var\(--desktop-size\)\);\s*--footer-reserve: calc\(48px \* var\(--desktop-size\)\)/, "Archive keeps its own baseline footer clearance at larger tiers");
 console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing.");

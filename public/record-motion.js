@@ -3,6 +3,32 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.GestaltRecordMotion = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  function focusWithin(node, host = globalThis.window) {
+    if (!node) return () => {};
+    const doc = host.document;
+    const previous = doc.activeElement;
+    const tabbable = () => [...node.querySelectorAll("button, a[href], input, select, textarea, summary, [tabindex]")]
+      .filter((control) => control.tabIndex >= 0 && !control.disabled && control.getClientRects().length && !control.closest("[inert], [hidden]"));
+    const onKey = (event) => {
+      if (event.key !== "Tab" || event.defaultPrevented) return;
+      const controls = tabbable();
+      const current = controls.indexOf(doc.activeElement);
+      if (!controls.length || current === -1 || event.shiftKey && current === 0 || !event.shiftKey && current === controls.length - 1) {
+        event.preventDefault();
+        (event.shiftKey ? controls.at(-1) || node : controls[0] || node).focus({ preventScroll: true });
+      }
+    };
+    node.addEventListener("keydown", onKey);
+    node.focus({ preventScroll: true });
+    return () => {
+      node.removeEventListener("keydown", onKey);
+      // Do not steal focus from a restore button or a nested window.
+      if (doc.activeElement !== doc.body && !node.contains(doc.activeElement)) return;
+      const target = previous !== doc.body && previous?.isConnected && previous.getClientRects().length && !previous.closest("[inert], [hidden]")
+        ? previous : [...doc.querySelectorAll("[data-search-toggle], .archive-menu-toggle")].find((control) => control.getClientRects().length && !control.closest("[inert], [hidden]"));
+      target?.focus({ preventScroll: true });
+    };
+  }
   function createController(host = globalThis.window) {
     const doc = host.document;
     let active = null;
@@ -104,5 +130,5 @@
     }
     return { minimize: (options) => run(options), close: (options) => run(options, true), cancel, destroy: cancel, get busy() { return Boolean(active); } };
   }
-  return Object.freeze({ createController });
+  return Object.freeze({ createController, focusWithin });
 });

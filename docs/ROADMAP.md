@@ -2,6 +2,10 @@
 
 ## Current Priorities
 
+2 November follow-up, `v1.68.14`: owner authorized the resolution/performance batch, review, commit and push. Corrected demonstrated large-tier shrinkage in title-bar/Contents/date text, section headings/icons, Setup labels and Archive footer reservation. Replaced duplicate Memory State pointer handlers with one disposable helper; reduced motion/coarse pointers, hidden tabs, covered workspace and offscreen memory stop unnecessary work. Added record dialog semantics, bounded Tab/Shift+Tab and focus restoration after reproducing keyboard escape into the background. See [responsive/performance review](REVIEW_2026-11-02-RESPONSIVE.md).
+
+Rendered Chromium viewport checks and deterministic lifecycle tests are complete for this scoped batch. Actual Firefox/Edge frame-time traces, physical 2K/4K displays, OS scaling and real browser zoom are NOT certified. The owner agreed to compare Firefox/Edge after the pass. Keep that acceptance open rather than labelling cross-browser performance finished. New features remain deferred until after this release. X feed and the bottom dock remain cancelled.
+
 Release checkpoint: `v1.68.13`, reviewed 2 November 2026. The owner authorized this batch's review, commit and push. Day/Night material/readability, continuous frames, slimmer entry bars, startup variation and notebook/Connections replay fixes are accepted locally. The release guard additionally verifies linked theme assets and early bootstrap in the real public artifact. The [release review](REVIEW_2026-11-02.md) records source/pipeline/privacy/dependency checks and the explicit browser-automation limit. This authorization supersedes the no-push notes in the prototype history below, not future work. Git and Pages must still be verified independently during publication.
 
 Next focused work: resolution/zoom consistency, followed by measured Firefox/Chromium performance and accessibility checks. Browser visual/FPS acceptance is not complete. Notebook local authoring/dated history, Living archive/Memory State and gradual month/year folders remain later work; X integration and the bottom dock stay cancelled.

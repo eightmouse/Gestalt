@@ -179,7 +179,7 @@ Object.assign(react, {
   RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
   Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X
 });
-const headerComponent = ts.transpileModule(`export ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const headerComponent = ts.transpileModule(`${declaration("../components/archive/record-window.tsx", "useRecordFocus")}\nexport ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 vm.runInContext(`(() => { ${headerComponent} })()`, react);
 Object.assign(staticContext, {
   state: { panelOpen: true }, getRecordContents: () => [], normalizeContentKey: () => "overview",
