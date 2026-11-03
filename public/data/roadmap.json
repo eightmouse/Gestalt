@@ -40,6 +40,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Bounded notebook retrieval",
+          "detail": "A stalled first request now reaches a retry state instead of waiting indefinitely. Late expired requests cannot overwrite newer notebook data.",
+          "version": "v1.70.1",
+          "releasedOn": "2026-11-03"
+        },
+        {
           "title": "Notebook editing in place",
           "detail": "A local gear opens editing on the page: change wording, add work and mark it complete. Drafts survive closing the window; saves stay local until published through the bell.",
           "version": "v1.70.0",

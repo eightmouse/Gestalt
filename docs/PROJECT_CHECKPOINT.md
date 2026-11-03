@@ -1,5 +1,9 @@
 # Gestalt Project Checkpoint
 
+## Publication Follow-up: v1.70.1
+
+The approved v1.70.0 code/notes batch was committed as 89e8e60c and deployed successfully in Pages run 41618343677; live file/media comparisons and content publishing preflight passed. A final public browser check revealed an unbounded first lazy retrieval. Both readers now have a finite 12-second module/data deadline and existing retry fallback; JSON fetch aborts at 10 seconds. Expired module completions cannot start a late data fetch or overwrite a newer result; timeout handles are cleared on settlement/React cleanup. Tests simulate a never-settling request, late completion and successful retry. No animation loop, dependency or record change was added. Live browser network responsiveness remains distinct from file/deployment verification.
+
 ## Release Filing: v1.70.0
 
 Owner authorized the full notebook/window batch and saved game notes for review, commit and push on 3 November 2026. Public notebook text is now `public/data/roadmap.json`; runtime helpers remain in `public/roadmap.mjs`. Notebook authoring/filing is development-only. `File release` selects completed working/idea items, takes an explicit version and date, then saves locally through the same bounded, revision-checked atomic route and shared write lock. Filing cannot modify older releases or duplicate a version; ordinary saves still cannot alter history. Both public renderers display authored dates and preserve undated legacy history. The real v1.70.0 filing was verified locally, along with mobile form fit and immediate history-index updates. Git/Pages publication is not implied by source documentation; verify it separately.

@@ -54,7 +54,7 @@ export function fileNotebookRelease(data, filing) {
 }
 
 export async function loadRoadmap(url = new URL("./data/roadmap.json", import.meta.url), fetchImpl = fetch) {
-  const response = await fetchImpl(url, { cache: "no-cache" });
+  const response = await fetchImpl(url, { cache: "no-cache", signal: AbortSignal.timeout(10000) });
   if (!response.ok) throw new Error("Notebook unavailable.");
   return validateRoadmap(await response.json());
 }

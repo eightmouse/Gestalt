@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current release target: `v1.70.0`. Last verified published: `v1.68.14`.
+Current release target: `v1.70.1`. Verified base release: `v1.70.0`.
+
+`v1.70.1` bounds lazy notebook retrieval: a stalled module/data request becomes the existing retry state rather than an endless loading message. Late expired requests cannot overwrite a retry, and settled/closed reads release their deadline. This small publication follow-up was identified in the live browser check; no layout or authored record changes.
 
 `v1.70.0` adds explicit local release filing: select completed notebook items and supply a version/date, preserving older history and the separate publishing step. Dates render in both readers without inventing dates for older releases. Includes the accepted local notebook editing/window refinements below and a quoted-frontmatter save/export round-trip fix found during note review. The owner authorized reviewing and pushing this full batch with saved notes. Verify Git and Pages before claiming deployment success.
 

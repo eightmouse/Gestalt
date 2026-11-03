@@ -118,17 +118,19 @@ export function RoadmapWindow({ onClose }: { onClose: () => void }) {
   }, []);
 
   useEffect(() => {
-    let active = true;
+    let active = true, expired = false;
     setFailed(false);
+    const deadline = window.setTimeout(() => { expired = true; if (active) setFailed(true); }, 12000);
     import("@/public/roadmap.mjs").then(async (module) => {
+      if (!active || expired) return;
       const loaded = await module.loadRoadmap("/data/roadmap.json");
-      if (active) {
+      if (active && !expired) {
         setHistory(module.buildRoadmapHistory(loaded));
         setLocation({ chapterId: "working", releaseIndex: null });
         setData(loaded);
       }
-    }).catch(() => { if (active) setFailed(true); });
-    return () => { active = false; };
+    }).catch(() => { if (active) setFailed(true); }).finally(() => window.clearTimeout(deadline));
+    return () => { active = false; window.clearTimeout(deadline); };
   }, [attempt]);
 
   if (typeof document === "undefined") return null;

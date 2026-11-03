@@ -85,7 +85,11 @@ let requested = 0;
 let resolveModule;
 let rejectModule;
 let shellRenders = 0;
+const deadlines = new Map(); let deadlineId = 0;
+const setDeadline = (callback, delay) => { assert.equal(delay, 12000); deadlines.set(++deadlineId, callback); return deadlineId; };
+const clearDeadline = (id) => deadlines.delete(id);
 const context = vm.createContext({ URL, document, HTMLElement: Element, Element, state: {}, roadmapData: null, roadmapLoadPromise: null, roadmapFailed: false, roadmapTrigger: null, roadmapChapterId: "working", roadmapReleaseIndex: null, buildRoadmapHistory: null,
+  setTimeout: setDeadline, clearTimeout: clearDeadline,
   readableDate: releaseDateLabel,
   stopRecordAccessSequence() {}, render() { shellRenders++; context.syncRoadmapDialog(); },
   loadFixture() { requested++; return new Promise((resolve, reject) => { resolveModule = resolve; rejectModule = reject; }); }
@@ -196,13 +200,31 @@ context.closeRoadmap();
 assert.equal(menu.focused, true, "Closing after palette removal returns focus to the visible handheld menu");
 document.activeElement = trigger;
 
+context.roadmapData = null;
+context.openRoadmap();
+const stalled = context.refreshPublicRoadmap();
+assert.equal(deadlines.size, 1);
+[...deadlines.values()][0]();
+await stalled;
+assert.match(body.children[0].querySelector().innerHTML, /Work note unavailable/);
+let lateFetch = false;
+resolveModule({ loadRoadmap: async () => { lateFetch = true; return publicRoadmap; }, buildRoadmapHistory });
+await Promise.resolve(); await Promise.resolve();
+assert.equal(lateFetch, false, "An expired module request cannot start another fetch or overwrite a retry");
+const afterTimeout = context.refreshPublicRoadmap();
+resolveModule({ loadRoadmap: async () => publicRoadmap, buildRoadmapHistory });
+await afterTimeout;
+assert.ok(body.children[0].querySelector().innerHTML.includes("On the desk"));
+context.closeRoadmap();
+assert.equal(deadlines.size, 0, "Settled retrievals leave no timeout running");
+
 let stateData = publicRoadmap;
 let stateIndex = 0;
 let stateLocation = { chapterId: "working", releaseIndex: null };
 let refIndex = 0;
 const effects = [];
 const reactDialog = new Element("dialog");
-const react = vm.createContext({ exports: {}, process: { env: { NODE_ENV: "production" } }, document, HTMLElement: Element, Element, require(name) {
+const react = vm.createContext({ exports: {}, window: { setTimeout: setDeadline, clearTimeout: clearDeadline }, process: { env: { NODE_ENV: "production" } }, document, HTMLElement: Element, Element, require(name) {
   if (name === "next/dynamic") return () => () => null;
   if (name === "@/public/roadmap.mjs") return { buildRoadmapHistory, releaseDateLabel };
   if (name === "react") return { useRef: () => ({ current: refIndex++ === 0 ? reactDialog : null }), useState: () => [[stateData, false, 0, buildRoadmapHistory(stateData), stateLocation, null][stateIndex++], () => {}], useEffect: (callback) => effects.push(callback) };
@@ -286,6 +308,8 @@ assert.match(scopedCss, /data-notebook-ready\]:not\(\[data-notebook-settled\]\)/
 assert.match(scopedCss, /animation: notebook-ink-arrive 420ms/);
 assert.ok(scopedCss.includes("@keyframes notebook-register-edges") && scopedCss.includes("@keyframes notebook-register-spine"));
 assert.match(scopedCss, /prefers-reduced-motion: reduce/);
-assert.ok(!/setTimeout|setInterval|requestAnimationFrame/.test(read("components/archive/roadmap-window.tsx")), "No new motion timer or loop");
+assert.ok(!/setInterval|requestAnimationFrame/.test(read("components/archive/roadmap-window.tsx")), "No motion loop");
+assert.match(read("components/archive/roadmap-window.tsx"), /window\.setTimeout\([^\n]*12000\)/, "Only a finite retrieval deadline is added");
+assert.match(read("components/archive/roadmap-window.tsx"), /window\.clearTimeout\(deadline\)/);
 assert.ok(!source.includes("buildRoadmapPages") && !source.includes("turnRoadmapPage"), "The superseded mixed chapter/page path is removed");
 console.log("Public notebook checks passed: independent chapters/release index, grouped history, safe renderer parity, cached modal lifecycle, focus restoration, finite reduced-motion-aware opening and publish boundaries.");
