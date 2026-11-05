@@ -169,7 +169,7 @@ export function recentActivity(records: RecordEntry[], limit: number): ActivityE
 
       return {
         content: trace && !setupDetail ? "notes" as const : undefined,
-        date: activityDate(record),
+        date: record.section === "logs" ? logArchiveDate(record) : trace?.date ?? record.updated,
         detail: setupDetail ?? (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
         record,
         title: record.title

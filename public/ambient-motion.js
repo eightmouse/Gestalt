@@ -19,7 +19,7 @@
     const motion = host.matchMedia("(prefers-reduced-motion: reduce), (pointer: coarse)");
     let frame = null, pointer = null, bounds = null, visible = true, previous = "";
     const paused = () => doc.hidden || motion.matches || !visible || !node.isConnected ||
-      shell?.matches(".has-record, .is-booting, [data-nav-open], [data-workspace-tool-open], [data-search-open]");
+      shell?.matches(".has-record, .is-booting, [data-nav-blocked], [data-nav-open], [data-workspace-tool-open], [data-search-open]");
     const stop = () => {
       if (frame !== null) host.cancelAnimationFrame(frame);
       frame = null;

@@ -2,7 +2,13 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current release target: `v1.73.0`. Previous published code release: `v1.72.2` (515b82e2), followed by content commit 92a88bd6.
+Current version: `v1.73.1`. Release base: `v1.73.0` (2afc93fa).
+
+5 November release review: owner authorized committing and pushing v1.73.1, including the Archive Relay roadmap idea. File only this patch's completed fixes; the wider stability pass stays open. No new feature, dependency or credential integration is included. Exclude generated development types and verify Git, Pages and independent note publishing before reporting publication success. This supersedes the historical hold-publication notes below for this batch only.
+
+`v1.73.1` begins the runtime stability pass without visual changes: reuse derived React readouts while inputs are stable, keep closed search idle, sort dashboard projects without mutating section arrays, and reuse the existing activity trace in both readers. Memory State follows/prunes only when stream dimensions change or overflow requires it, including width/wrapping invalidation. The legacy pointer helper also pauses during consent. Existing timers, rhythm, history bounds and accessibility behavior remain; add focused lifecycle/invalidation tests. This is not a whole-site FPS or cross-browser sign-off. Hold commit/push for owner review.
+
+The same patch keeps public Settings open/close from rebuilding the workspace, retaining native-dialog focus and the mobile-menu fallback. Its control checks exposed the existing palette/header stacking conflict over entries; a conditional stacking fix lifts only the popup and keeps the title/clock dimming and ordinary record-control order. The in-flow mobile popup receives position:relative/inset:auto without new dimensions or offsets.
 
 5 November release review: owner approved publishing the folder batch before the stability pass, including the saved NIKKE note. This supersedes the local hold-publication note below for this batch only. File the accepted work, run release checks, stage explicit reviewed paths and verify Pages plus the isolated note-publishing path. Exclude generated development types and keep the active Studio server running.
 

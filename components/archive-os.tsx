@@ -289,13 +289,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [panelMinimized, panelOpen]);
   const editingInline = Boolean(inlineRecordId && inlineRecordId === recordWindowKey);
   const unsavedInline = Boolean(inlineDraftWindow && selectedId === inlineDraftWindow.id);
-  const projectDashboardRecords = recordsBySection.projects
-    .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority);
+  const projectDashboardRecords = useMemo(() => [...recordsBySection.projects]
+    .sort((a, b) => projectStatusRank(a.status) - projectStatusRank(b.status) || b.updated.localeCompare(a.updated) || a.priority - b.priority), [recordsBySection.projects]);
   const currentGameDisplay = useMemo(() => steamReady ? resolveCurrentGame(steamSnapshot, recordsBySection.games) : null, [steamReady, steamSnapshot, recordsBySection.games]);
   const currentGame = recordsBySection.games.find((record) => record.id === currentGameDisplay?.recordId);
-  const latestLog = [...recordsBySection.logs].sort(compareLogWritingOrder)[0];
-  const activity = recentActivity(archiveRecords, 6);
-  const metrics = { ...getArchiveMetrics(archiveRecords, currentGame), activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
+  const latestLog = useMemo(() => [...recordsBySection.logs].sort(compareLogWritingOrder)[0], [recordsBySection.logs]);
+  const activity = useMemo(() => recentActivity(archiveRecords, 6), [archiveRecords]);
+  const archiveMetrics = useMemo(() => getArchiveMetrics(archiveRecords, currentGame), [archiveRecords, currentGame]);
+  const metrics = { ...archiveMetrics, activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
 
   useEffect(() => {
     let active = true;
@@ -675,7 +676,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   };
 
-  const searchResults = getSearchResults(archiveRecords, searchQuery, currentGame, latestLog);
+  const searchResults = useMemo(() => searchOpen ? getSearchResults(archiveRecords, searchQuery, currentGame, latestLog) : [], [searchOpen, archiveRecords, searchQuery, currentGame, latestLog]);
   const applyStudioRecords = (updatedRecords: RecordEntry[], currentId?: string | null, options?: { keepEditorOpen?: boolean }) => {
     setInitialNoteQuery("");
     setArchiveRecords((current) => [...current.filter((record) => record.section === "system"), ...updatedRecords]);

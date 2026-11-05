@@ -11,7 +11,14 @@ export function OsBehaviourWindow({ values, remember, onChange, onClose }: Prefe
   useEffect(() => {
     const dialog = behaviour.createController();
     controller.current = dialog;
-    dialog.open(initial.current.values, { onChange: (key, value) => handlers.current.onChange(key, value), onClose: () => handlers.current.onClose() }, initial.current.remember);
+    dialog.open(initial.current.values, {
+      onChange: (key, value) => handlers.current.onChange(key, value),
+      onClose: () => {
+        dialog.destroy();
+        handlers.current.onClose();
+        document.querySelector<HTMLElement>(".record-window:not([hidden]):not([inert]), .timeline-window")?.focus({ preventScroll: true });
+      }
+    }, initial.current.remember);
     return () => { dialog.destroy(); controller.current = null; };
   }, []);
   useEffect(() => { controller.current?.update(values, remember); }, [values, remember]);

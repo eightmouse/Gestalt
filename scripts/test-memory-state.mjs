@@ -7,20 +7,21 @@ import { updateStaticCacheTokens } from "./static-cache.mjs";
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 function fixture() {
   const listeners = new Map(), timers = new Map(), motionListeners = new Set();
-  let intersection, mutation, resize, writes = 0, covered = false, now = 0, nextTimer = 0;
+  let intersection, mutation, resize, writes = 0, covered = false, now = 0, nextTimer = 0, rectReads = 0, scrollWrites = 0;
   class Element {
-    children = []; dataset = {}; text = ""; top = 0; clientHeight = 240; isConnected = true; handlers = new Map();
+    children = []; dataset = {}; text = ""; top = 0; clientHeight = 240; clientWidth = 320; blockHeight = 40; isConnected = true; handlers = new Map();
     set textContent(value) { writes++; this.text = value; this.children = []; }
     get textContent() { return this.text + this.children.map((child) => child.textContent).join(""); }
     get scrollTop() { return this.top; }
-    set scrollTop(value) { this.top = Math.max(0, Math.min(value, this.scrollHeight - this.clientHeight)); }
-    get scrollHeight() { return this.children.length * 40; }
+    set scrollTop(value) { scrollWrites++; this.top = Math.max(0, Math.min(value, this.scrollHeight - this.clientHeight)); }
+    get scrollHeight() { return this.children.reduce((height, row) => height + row.blockHeight, 0); }
     append(...children) { writes++; for (const child of children) { child.parent = this; this.children.push(child); } }
     remove() { writes++; this.parent.children = this.parent.children.filter((child) => child !== this); }
     setAttribute() {}
     getBoundingClientRect() {
-      const top = this.parent ? this.parent.children.indexOf(this) * 40 - this.parent.scrollTop : 0;
-      return { top, bottom: top + (this.parent ? 40 : this.clientHeight) };
+      rectReads++;
+      const top = this.parent ? this.parent.children.slice(0, this.parent.children.indexOf(this)).reduce((height, row) => height + row.blockHeight, 0) - this.parent.scrollTop : 0;
+      return { top, bottom: top + (this.parent ? this.blockHeight : this.clientHeight) };
     }
     addEventListener(name, fn) { this.handlers.set(name, fn); }
     removeEventListener(name) { this.handlers.delete(name); }
@@ -38,6 +39,7 @@ function fixture() {
     ResizeObserver: class { constructor(fn) { resize = fn; } observe() {} disconnect() { resize = null; } }
   };
   return { host, list, node, document, listeners, timers, motionListeners, get writes() { return writes; },
+    get rectReads() { return rectReads; }, get scrollWrites() { return scrollWrites; },
     text: () => list.children.map((row) => row.children[1].textContent).join("\n"),
     advance(ms) {
       const until = now + ms; let steps = 0;
@@ -50,7 +52,7 @@ function fixture() {
       }
       now = until;
     },
-    resize(height) { list.clientHeight = height; resize?.(); },
+    resize(height, width = list.clientWidth) { list.clientHeight = height; list.clientWidth = width; resize?.(); },
     reduce(value) { motion.matches = value; for (const fn of motionListeners) fn(); },
     cover(value) { covered = value; mutation?.(); }, intersect(value) { intersection([{ isIntersecting: value }]); },
     visibility(value) { document.hidden = value; listeners.get("visibilitychange")?.(); } };
@@ -134,8 +136,12 @@ const burst = fixture();
 memory.record("workspace.ready", {}, burst.host);
 const stopBurst = memory.watchTrace(burst.node, burst.host);
 for (let index = 1; index <= 100; index++) memory.record("note.expand", { index }, burst.host);
-burst.advance(20000);
-assert.match(burst.text(), /record\.notes\.at\(99\)/, "Rapid actions keep a bounded recent queue, not minutes of delayed typing");
+let latestBurstSeen = false;
+for (let second = 0; second < 30; second++) {
+  burst.advance(1000);
+  latestBurstSeen ||= /record\.notes\.at\(99\)/.test(burst.text());
+}
+assert.ok(latestBurstSeen, "Rapid actions reach the latest note promptly, even if later idle writing prunes that line");
 assert.ok(burst.list.children.length <= 60);
 burst.visibility(true); const hiddenBurst = burst.writes;
 burst.advance(60000); assert.equal(burst.writes, hiddenBurst); assert.equal(burst.timers.size, 0);
@@ -154,6 +160,33 @@ const stopNumbering = memory.watchTrace(numbering.node, numbering.host);
 for (let i = 0; i < 600; i++) memory.record("record.close", {}, numbering.host);
 assert.equal(numbering.list.children.at(-1).children[0].textContent, "1200", "Numbers keep advancing beyond 999 even though earlier lines have been discarded");
 assert.ok(numbering.list.children.length <= 6); stopNumbering();
+
+const quiet = fixture();
+memory.record("workspace.ready", {}, quiet.host);
+const stopQuiet = memory.watchTrace(quiet.node, quiet.host);
+memory.record("record.close", {}, quiet.host);
+quiet.advance(5000);
+assert.equal(quiet.list.children.length, 5);
+assert.equal(quiet.rectReads, 0, "A stream that fits must not measure row rectangles during character bursts");
+assert.equal(quiet.scrollWrites, 0, "A stream that fits needs no scroll writes");
+quiet.resize(80);
+assert.equal(quiet.list.children.length, 2, "Changing the viewport still follows and prunes immediately");
+const settledReads = quiet.rectReads, settledScroll = quiet.scrollWrites;
+quiet.resize(80);
+assert.equal(quiet.rectReads, settledReads, "Unchanged size does not remeasure retained rows");
+assert.equal(quiet.scrollWrites, settledScroll, "Unchanged size does not rewrite scroll position");
+memory.record("record.open", { section: "games" }, quiet.host);
+const growingRow = quiet.list.children.at(-1);
+growingRow.blockHeight = 120;
+const beforeWrap = quiet.scrollWrites;
+quiet.advance(300);
+assert.ok(quiet.scrollWrites > beforeWrap, "A wrapping line changes scroll height and is followed without waiting for ResizeObserver");
+const overflowReads = quiet.rectReads;
+quiet.resize(80);
+assert.equal(quiet.rectReads, overflowReads, "An overflowing stream also skips unchanged geometry");
+quiet.resize(80, 240);
+assert.ok(quiet.rectReads > overflowReads, "Width changes invalidate retained row geometry even at the same scroll height");
+stopQuiet();
 
 const data = new Map(); let storageWrites = 0;
 const storage = { getItem: (key) => data.get(key), setItem(key, value) { storageWrites++; data.set(key, value); } };

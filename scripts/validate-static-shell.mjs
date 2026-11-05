@@ -236,6 +236,11 @@ if (summaryCheck.status !== 0) {
   errors.push(`Record summary regression check failed: ${(summaryCheck.stderr || summaryCheck.stdout || "").trim()}`);
 }
 
+const readoutCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-derived-readouts.mjs")], { encoding: "utf8" });
+if (readoutCheck.status !== 0) {
+  errors.push(`Derived readout regression check failed: ${(readoutCheck.stderr || readoutCheck.stdout || "").trim()}`);
+}
+
 const logOrderCheck = spawnSync(process.execPath, [path.join(root, "scripts", "test-log-order.mjs")], { encoding: "utf8" });
 if (logOrderCheck.status !== 0) {
   errors.push(`Log ordering regression check failed: ${(logOrderCheck.stderr || logOrderCheck.stdout || "").trim()}`);

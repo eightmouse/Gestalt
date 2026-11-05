@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
 
@@ -114,4 +115,18 @@ class SearchInput { dataset = { searchInput: "" }; value = "quiet"; }
 Object.assign(paletteContext, { HTMLInputElement: SearchInput });
 vm.runInContext(`const inputHandler = ${inputHandler.node.expression.arguments[1].getText(inputHandler.ast)}; inputHandler({ target: new HTMLInputElement() });`, paletteContext);
 assert.equal(searchState.searchQuery, "quiet");
+const require = createRequire(import.meta.url);
+const css = createRequire(require.resolve("next/package.json"))("postcss").parse(readFileSync(new URL("../app/globals.css", import.meta.url), "utf8"));
+const declarationValue = (selector, property) => css.nodes.find((node) => node.selector === selector)?.nodes.find((node) => node.prop === property)?.value;
+assert.equal(declarationValue(".workspace > .workspace-header:has(> .command-panel)", "z-index"), "auto", "The open palette escapes the header's lower stacking context");
+assert.equal(declarationValue(".workspace.has-record > .workspace-header:has(> .command-panel)", "opacity"), "1", "Parent opacity must not trap or dim the palette");
+assert.equal(declarationValue(".workspace.has-record > .workspace-header:has(> .command-panel) > :not(.command-panel)", "opacity"), "0.44", "Background title and clock retain their existing focus dimming");
+assert.ok(Number(declarationValue(".workspace-header > .command-panel", "z-index")) > Number(declarationValue(".record-window", "z-index")), "Only the palette sits above record controls");
+let mobileLayer = false;
+css.walkRules(".command-panel", (rule) => {
+  if (rule.parent.type !== "atrule") return;
+  const value = (property) => rule.nodes.find((node) => node.prop === property)?.value;
+  if (value("position") === "relative" && value("inset") === "auto") mobileLayer = true;
+});
+assert.ok(mobileLayer, "The in-flow mobile palette needs a positioned layer with no inherited inset offset");
 console.log("Palette checks passed: command/search parity, mobile handoff, in-place updates, retained input focus and unchanged records.");

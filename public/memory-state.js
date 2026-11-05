@@ -90,6 +90,7 @@
     const lineLimit = 60, queueLimit = 4;
     let visible = true, disposed = false, hydrated = false, available = false;
     let timer = null, current = null, queue = [], lastId = 0, serial = 0, passage = -1;
+    let followedHeight = -1, followedViewport = -1, followedWidth = -1;
     const random = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
     const active = () => !disposed && visible && !doc.hidden && node.isConnected &&
       !shell?.matches(".has-record, .is-booting, [data-nav-blocked], [data-nav-open], [data-search-open], [data-workspace-tool-open]");
@@ -105,12 +106,19 @@
       timer = host.setTimeout(() => { timer = null; if (active()) fn(); }, delay);
     }
     function follow() {
-      list.scrollTop = list.scrollHeight;
+      const height = list.scrollHeight, viewport = list.clientHeight, width = list.clientWidth;
+      if (height === followedHeight && viewport === followedViewport && width === followedWidth) return;
+      followedHeight = height; followedViewport = viewport; followedWidth = width;
+      if (height <= viewport) return;
+      list.scrollTop = height;
       const top = list.getBoundingClientRect().top;
       // Read the clipped rows together, then discard them without renumbering survivors.
       const expired = [...list.children].slice(0, -1).filter((row) => row.getBoundingClientRect().bottom <= top);
       for (const row of expired) row.remove();
-      if (expired.length) list.scrollTop = list.scrollHeight;
+      if (expired.length) {
+        followedHeight = list.scrollHeight;
+        list.scrollTop = followedHeight;
+      }
     }
     function appendLine(text, first) {
       const row = doc.createElement("li"), number = doc.createElement("span"), code = doc.createElement("code");

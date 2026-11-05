@@ -6,15 +6,20 @@
     {
       "id": "working",
       "title": "In progress",
-      "items": []
+      "items": [
+        {
+          "title": "Performance and display pass",
+          "detail": "Checking repeated work, hidden effects and window transitions first. Then revisit Firefox/Edge differences, display sizes and zoom, accessibility and publication safety. Keep the accepted look and note-writing workflow intact."
+        }
+      ]
     },
     {
       "id": "ideas",
       "title": "On the desk",
       "items": [
         {
-          "title": "Performance and display pass",
-          "detail": "Chrome is the everyday testing baseline for now. After the visual and folder work, revisit the remaining Firefox/Edge differences, real browser zoom and common display sizes. Targeted transition fixes are in, but the deeper performance pass is not declared solved. Check for regressions, unnecessary work, stale code and security issues."
+          "title": "Archive Relay",
+          "detail": "An idea for a writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
         },
         {
           "title": "Setup editing in place",
@@ -26,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Less repeated workspace work",
+          "detail": "Stable readouts reuse their results, closed search stays idle and Memory State avoids unchanged layout measurements. Settings keeps the workspace in place, and the palette stays usable above entries. The wider browser and display review continues.",
+          "version": "v1.73.1",
+          "releasedOn": "2026-11-05"
+        },
         {
           "title": "Month-by-month folders",
           "detail": "Recent field notes stay loose while complete older months settle into MM/YYYY folders when the archive grows past 24 notes. Keep at least 12 recent files and their complete months within reach. Same file-manager windows, original writing order and content files.",

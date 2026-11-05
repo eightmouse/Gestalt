@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import vm from "node:vm";
+import ts from "typescript";
 import behaviour from "../public/os-behaviour.js";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
@@ -128,4 +130,22 @@ for (const file of ["components/archive/search-panel.tsx", "static-app.js"]) {
   assert.ok(read(file).includes('aria-haspopup="dialog"'));
 }
 assert.match(read("app/globals.css"), /\.command-panel \{\s*inline-size: min\(420px/);
+const componentSource = read("components/archive/os-behaviour-window.tsx");
+const componentAst = ts.createSourceFile("os-behaviour-window.tsx", componentSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const component = componentAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "OsBehaviourWindow");
+const effects = [], focusOrder = [];
+let nativeHandlers;
+const local = vm.createContext({ exports: {},
+  useRef: (current) => ({ current }), useEffect: (effect) => effects.push(effect),
+  behaviour: { createController: () => ({
+    open(value, handlers) { nativeHandlers = handlers; }, update() {}, destroy() { focusOrder.push("native-close"); }
+  }) },
+  document: { querySelector: () => ({ focus() { focusOrder.push("record-focus"); } }) }
+});
+vm.runInContext(ts.transpileModule(component.getText(componentAst), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, local);
+local.exports.OsBehaviourWindow({ values, remember: false, onChange() {}, onClose() { focusOrder.push("reader-close"); } });
+const cleanLocal = effects[0](); effects[1]();
+nativeHandlers.onClose();
+assert.deepEqual(focusOrder, ["native-close", "reader-close", "record-focus"], "Local Settings closes its native layer before restoring the retained record's focus");
+cleanLocal();
 console.log("OS Behaviour: safe storage, shared controls, stable native dialog, dismissal/focus, startup choices and packaging passed.");

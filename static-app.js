@@ -448,7 +448,7 @@ function recentActivity(limit) {
 
       return {
         content: trace && !setupDetail ? "notes" : undefined,
-        date: activityDate(record),
+        date: record.section === "logs" ? logArchiveDate(record) : trace?.date || record.updated,
         detail: setupDetail || (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
         record,
         title: record.title
@@ -747,7 +747,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.73.0");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.73.1");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1494,7 +1494,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.73.0</span>
+        <span>v1.73.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1508,7 +1508,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.73.0</span>
+        <span class="version-label">v1.73.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1528,7 +1528,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.73.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.73.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2646,12 +2646,16 @@ function openWorkspaceTool(mode) {
 }
 
 function openOsBehaviour() {
+  const rebuild = state.navOpen || !root.querySelector(".workspace");
   state.searchOpen = false;
   state.searchQuery = "";
   state.navOpen = false;
   state.osBehaviourOpen = true;
-  state.windowSteady = true;
-  render();
+  if (rebuild) { state.windowSteady = true; render(); return; }
+  syncSearchPanel();
+  syncWorkspaceFocus();
+  syncOsBehaviourDialog();
+  syncDesktopNavigation();
 }
 
 function syncOsBehaviourDialog() {
@@ -2663,7 +2667,13 @@ function syncOsBehaviourDialog() {
   }
   osBehaviourController ??= api.createController();
   osBehaviourController.open({ entry: state.entryAccessMode, startup: state.startupMode, seasonal: state.seasonalMode, navigation: state.desktopNavigationMode, appearance: window.GestaltAppearance?.getMode() || "night", memory: state.memoryMode }, {
-    onClose() { state.osBehaviourOpen = false; state.windowSteady = true; render(); },
+    onClose() {
+      state.osBehaviourOpen = false;
+      syncOsBehaviourDialog();
+      syncWorkspaceFocus();
+      syncDesktopNavigation();
+      root.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window")?.focus({ preventScroll: true });
+    },
     onChange(key, value) {
       if (key === "appearance") window.GestaltAppearance?.setMode(value, state.localMemory === "granted");
       if (key === "entry") changeEntryAccessMode(value);
@@ -2684,7 +2694,7 @@ function loadPublicRoadmap() {
   if (!roadmapLoadPromise) {
     let timer, expired = false;
     const deadline = new Promise((resolve) => { timer = setTimeout(() => { expired = true; resolve(null); }, 12000); });
-    const request = import("./public/roadmap.mjs?v=1.73.0")
+    const request = import("./public/roadmap.mjs?v=1.73.1")
       .then(async (module) => expired ? null : { module, data: await module.loadRoadmap(new URL("public/data/roadmap.json", document.baseURI)) });
     roadmapLoadPromise = Promise.race([request, deadline])
       .then((result) => { if (!result || expired) return null; buildRoadmapHistory = result.module.buildRoadmapHistory; roadmapData = result.data; return roadmapData; })
@@ -2952,11 +2962,15 @@ function syncImageLightbox() {
   if (!dialog.open) dialog.showModal();
 }
 
-function syncRecordWindowChrome() {
+function syncWorkspaceFocus() {
   const focused = state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen;
   root.querySelector(".archive-shell")?.classList.toggle("has-record", focused);
   root.querySelector(".workspace")?.classList.toggle("has-record", focused);
   root.querySelector(".dashboard-grid")?.classList.toggle("is-muted", state.panelOpen);
+}
+
+function syncRecordWindowChrome() {
+  syncWorkspaceFocus();
   const tray = root.querySelector(".workspace-window-tray");
   if (tray) tray.outerHTML = workspaceWindowTray();
   syncDesktopNavigation();
@@ -3039,7 +3053,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.73.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.73.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>

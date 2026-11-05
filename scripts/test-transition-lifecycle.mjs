@@ -6,7 +6,7 @@ import ts from "typescript";
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const source = read("static-app.js");
 const ast = ts.createSourceFile("static-app.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-const functions = ["syncRecordWindow", "syncRecordWindowChrome", "closeRecord", "completeBoot"].map((name) => {
+const functions = ["syncRecordWindow", "syncWorkspaceFocus", "syncRecordWindowChrome", "closeRecord", "completeBoot", "openOsBehaviour", "syncOsBehaviourDialog"].map((name) => {
   const node = ast.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === name);
   assert.ok(node, `${name} exists`);
   return node.getText(ast);
@@ -40,6 +40,7 @@ assert.equal(vm.runInContext("syncRecordWindow()", context), true);
 assert.equal(workspace.inserted.html, "backdropnew");
 assert.equal(nodes.get(".grain-layer"), background);
 assert.equal(nodes.get(".dashboard-grid"), dashboard);
+
 assert.equal(dashboard.scrollTop, 146, "Window updates preserve section scroll and actual dashboard nodes");
 assert.equal(context.minimizedRecordWindow, null);
 assert.equal(context.state.windowSteady, false, "The transient tab-change flag cannot suppress a later opening");
@@ -83,6 +84,42 @@ context.state.localMemory = "session";
 vm.runInContext("completeBoot()", context);
 assert.ok(!nodes.has(".local-memory-consent"));
 assert.equal(nodes.get(".dashboard-grid"), dashboard);
+
+let settingsHandlers, nativeSettingsOpen = false, settingsDestroyed = 0;
+context.window.GestaltOsBehaviour = { createController: () => ({
+  open(values, handlers) { nativeSettingsOpen = true; settingsHandlers = handlers; },
+  destroy() { nativeSettingsOpen = false; settingsDestroyed++; }
+}) };
+context.osBehaviourController = null;
+context.state.panelOpen = false;
+context.state.searchOpen = true;
+context.state.searchQuery = "settings";
+const beforeSettingsRenders = renders;
+const retainedMemory = node(".memory-trace");
+vm.runInContext("openOsBehaviour()", context);
+assert.equal(nativeSettingsOpen, true);
+assert.equal(context.state.searchOpen, false);
+assert.ok(shell.classList.values.has("has-record") && workspace.classList.values.has("has-record"));
+assert.equal(renders, beforeSettingsRenders, "Settings opens without replacing the workspace");
+settingsHandlers.onClose();
+assert.equal(nativeSettingsOpen, false);
+assert.equal(settingsDestroyed, 1);
+assert.equal(context.osBehaviourController, null);
+assert.ok(!shell.classList.values.has("has-record") && !workspace.classList.values.has("has-record"));
+assert.equal(renders, beforeSettingsRenders, "Settings close never rebuilds the dashboard");
+assert.equal(nodes.get(".memory-trace"), retainedMemory);
+assert.equal(nodes.get(".grain-layer"), background);
+assert.equal(dashboard.scrollTop, 146);
+context.state.panelOpen = true;
+const focusedRecord = node(".record-window:not([hidden]):not([inert]), .timeline-window");
+focusedRecord.focus = () => { focusedRecord.focused = true; };
+vm.runInContext("openOsBehaviour()", context); settingsHandlers.onClose();
+assert.ok(shell.classList.values.has("has-record"), "A record underneath Settings keeps its focus scrim");
+assert.equal(focusedRecord.focused, true, "Closing Settings returns keyboard focus to the retained record");
+focusedRecord.remove();
+context.state.navOpen = true;
+vm.runInContext("openOsBehaviour()", context);
+assert.equal(renders, beforeSettingsRenders + 1, "Mobile navigation retains its existing dismissal/render fallback");
 
 const css = read("app/globals.css");
 assert.match(css, /\.grain-layer,\s*\.scanline-layer\s*\{[^}]*transform: translateZ\(0\)/, "Only the static texture overlays get cached layers");

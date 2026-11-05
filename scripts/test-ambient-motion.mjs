@@ -21,11 +21,12 @@ function fixture(observer = true) {
     };
   };
   const attributes = new Map(), properties = new Map(), frames = new Map();
-  let writes = 0, reads = 0, nextFrame = 0, blocked = false, intersection;
+  let writes = 0, reads = 0, nextFrame = 0, intersection;
+  const blocked = new Set();
   const doc = { ...events(), hidden: false, documentElement: { toggleAttribute(name, value) { attributes.set(name, value); } } };
   const motion = { ...events(), matches: false };
   const node = { isConnected: true, style: { setProperty(name, value) { writes++; properties.set(name, value); } },
-    closest: () => ({ matches: () => blocked }),
+    closest: () => ({ matches: (selector) => [...blocked].some((state) => selector.split(", ").includes(state)) }),
     getBoundingClientRect() { reads++; return { left: 100, top: 100, width: 100, height: 100 }; },
     toggleAttribute(name, value) { attributes.set(name, value); }, removeAttribute(name) { attributes.delete(name); }
   };
@@ -39,7 +40,7 @@ function fixture(observer = true) {
   };
   return { host, doc, motion, node, frames, attributes, properties,
     get writes() { return writes; }, get reads() { return reads; },
-    block(value) { blocked = value; },
+    block(value, state = ".has-record") { if (value) blocked.add(state); else blocked.delete(state); },
     move(x = 650, y = 650) { host.emit("pointermove", { clientX: x, clientY: y }); },
     intersect(value) { intersection([{ isIntersecting: value }]); },
     flush() { const callbacks = [...frames.values()]; frames.clear(); for (const callback of callbacks) callback(); }
@@ -94,6 +95,15 @@ const fallback = fixture(false);
 const cleanupFallback = ambient.watchMemory(fallback.node, fallback.host);
 fallback.move(); fallback.flush(); assert.equal(fallback.writes, 8, "No IntersectionObserver still preserves pointer behavior");
 cleanupFallback();
+const consent = fixture();
+const cleanupConsent = ambient.watchMemory(consent.node, consent.host);
+consent.block(true, "[data-nav-blocked]");
+consent.move();
+assert.equal(consent.frames.size, 0, "Consent-covered legacy visuals do not queue pointer work");
+assert.equal(consent.reads, 0);
+consent.block(false, "[data-nav-blocked]");
+consent.move(); consent.flush(); assert.equal(consent.writes, 8);
+cleanupConsent();
 
 // The static reader must retain its watcher across ordinary shell renders.
 const source = read("static-app.js");

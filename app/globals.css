@@ -2129,6 +2129,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   opacity: 0.44;
 }
 
+.workspace > .workspace-header:has(> .command-panel) { z-index: auto; }
+.workspace.has-record > .workspace-header:has(> .command-panel) { opacity: 1; }
+.workspace.has-record > .workspace-header:has(> .command-panel) > :not(.command-panel) { opacity: 0.44; }
+.workspace-header > .command-panel { z-index: 80; }
+
 .record-backdrop {
   position: fixed;
   inset: 0;
@@ -8925,6 +8930,8 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   }
 
   .command-panel {
+    position: relative;
+    inset: auto;
     animation-duration: 180ms;
   }
 
