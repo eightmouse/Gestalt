@@ -1530,9 +1530,9 @@ button:focus-visible {
 .seasonal-decoration[data-placement="projects-web"] img { inline-size: calc(84px * var(--desktop-size, 1)); block-size: calc(60px * var(--desktop-size, 1)); opacity: 0.78; }
 .seasonal-decoration[data-placement="game-pumpkin"] { --pumpkin-size: calc(78px * var(--desktop-size, 1)); grid-column: 1; grid-row: 2; }
 .seasonal-decoration[data-placement="game-pumpkin"] img { inset-block-start: auto; inset-block-end: 0; inset-inline-end: calc(12px * var(--desktop-size, 1)); inline-size: var(--pumpkin-size); block-size: var(--pumpkin-size); }
-.seasonal-decoration img.seasonal-glow { opacity: 0.25; animation: seasonal-ember 5.8s ease-in-out infinite; }
+.seasonal-decoration img.seasonal-glow { opacity: 0.25; animation: seasonal-ember 21.7s ease-in-out -6.1s infinite; }
 .seasonal-decoration[data-placement="memory-hanging"] { grid-column: 3; grid-row: 2 / span 2; }
-.seasonal-decoration[data-placement="memory-hanging"] img { inset-inline-end: calc(7px * var(--desktop-size, 1)); inline-size: calc(80px * var(--desktop-size, 1)); block-size: calc(132px * var(--desktop-size, 1)); transform-origin: 68.75% 1.63%; animation: seasonal-swing 7.2s ease-in-out infinite; }
+.seasonal-decoration[data-placement="memory-hanging"] img { inset-inline-end: calc(7px * var(--desktop-size, 1)); inline-size: calc(80px * var(--desktop-size, 1)); block-size: calc(132px * var(--desktop-size, 1)); transform-origin: 68.75% 1.63%; animation: seasonal-swing 28s ease-in-out infinite; }
 .seasonal-decoration[data-placement="log-web"] { grid-column: 2; grid-row: 2; }
 .seasonal-decoration[data-placement="log-web"] img { inline-size: calc(42px * var(--desktop-size, 1)); block-size: calc(30px * var(--desktop-size, 1)); opacity: 0.53; }
 .seasonal-decoration:is([data-placement="projects-frost"], [data-placement="projects-ribbon"]) { grid-column: 1 / span 2; grid-row: 1; }
@@ -1540,10 +1540,25 @@ button:focus-visible {
 .seasonal-decoration:is([data-placement="game-fir"], [data-placement="game-year-seal"]) { grid-column: 1; grid-row: 2; }
 .seasonal-decoration:is([data-placement="game-fir"], [data-placement="game-year-seal"]) img { inset-block-start: auto; inset-block-end: 0; inset-inline-end: calc(12px * var(--desktop-size, 1)); inline-size: calc(64px * var(--desktop-size, 1)); block-size: calc(78px * var(--desktop-size, 1)); }
 .seasonal-decoration:is([data-placement="memory-winter"], [data-placement="memory-star"]) { grid-column: 3; grid-row: 2 / span 2; }
-.seasonal-decoration:is([data-placement="memory-winter"], [data-placement="memory-star"]) img { inset-inline-end: calc(7px * var(--desktop-size, 1)); inline-size: calc(80px * var(--desktop-size, 1)); block-size: calc(132px * var(--desktop-size, 1)); transform-origin: 68.75% 1.63%; animation: seasonal-swing 7.2s ease-in-out infinite; }
+.seasonal-decoration:is([data-placement="memory-winter"], [data-placement="memory-star"]) img { inset-inline-end: calc(7px * var(--desktop-size, 1)); inline-size: calc(80px * var(--desktop-size, 1)); block-size: calc(132px * var(--desktop-size, 1)); transform-origin: 68.75% 1.63%; animation: seasonal-swing 28s ease-in-out infinite; }
 .dashboard-grid.without-memory .seasonal-decoration:is([data-placement="memory-hanging"], [data-placement="memory-winter"], [data-placement="memory-star"]) { display: none; }
-@keyframes seasonal-swing { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
-@keyframes seasonal-ember { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.62; } }
+@keyframes seasonal-swing {
+  0%, 8%, 100% { transform: rotate(0deg); }
+  14% { transform: rotate(-4deg); }
+  26% { transform: rotate(4deg); }
+  38% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(1.5deg); }
+  62% { transform: rotate(-0.6deg); }
+  71% { transform: rotate(0deg); }
+}
+@keyframes seasonal-ember {
+  0%, 7%, 53%, 65%, 100% { opacity: 0.12; }
+  18% { opacity: 0.62; }
+  28% { opacity: 0.22; }
+  37% { opacity: 0.42; }
+  79% { opacity: 0.52; }
+  94% { opacity: 0.12; }
+}
 .seasonal-accent[data-paused] img,
 .archive-shell:is(.has-record, .is-booting) .seasonal-decoration img { animation-play-state: paused; }
 @media (prefers-reduced-motion: reduce) {
@@ -3878,23 +3893,23 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .active-projects-panel .record-list button:nth-child(2) {
-  --project-line-duration: 16.2s;
-  --project-line-delay: -4.6s;
+  --project-line-duration: 59.4s;
+  --project-line-delay: -13.2s;
 }
 
 .active-projects-panel .record-list button:nth-child(3) {
-  --project-line-duration: 12.8s;
-  --project-line-delay: -8.3s;
+  --project-line-duration: 48.6s;
+  --project-line-delay: -34.5s;
 }
 
 .active-projects-panel .record-list button:nth-child(4) {
-  --project-line-duration: 18.1s;
-  --project-line-delay: -2.7s;
+  --project-line-duration: 57.6s;
+  --project-line-delay: -21.4s;
 }
 
 .active-projects-panel .record-list button:nth-child(5) {
-  --project-line-duration: 15.3s;
-  --project-line-delay: -10.4s;
+  --project-line-duration: 62.1s;
+  --project-line-delay: -45.9s;
 }
 
 .active-projects-panel .record-list button:nth-child(n + 4) {
@@ -3923,7 +3938,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   transform-origin: left center;
   transform: translateX(-135%) scaleX(0.48);
   will-change: opacity, transform;
-  animation: dashboard-project-line var(--project-line-duration, 14.4s) linear infinite;
+  animation: dashboard-project-line var(--project-line-duration, 54s) linear infinite;
   animation-delay: var(--project-line-delay, 0s);
 }
 
@@ -4058,7 +4073,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   background:
     radial-gradient(ellipse at 50% 48%, rgba(var(--tone-strong, 236, 230, 211), 0.3), transparent 58%),
     linear-gradient(135deg, transparent 16%, rgba(var(--tone-ink, 217, 213, 193), 0.16) 48%, transparent 78%);
-  animation: dashboard-cover-signal 7.6s ease-in-out infinite;
+  animation: dashboard-cover-signal 29s ease-in-out -3.9s infinite;
 }
 
 .game-cover img {
@@ -4127,7 +4142,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   inline-size: 2px;
   pointer-events: none;
   opacity: 0;
-  animation: dashboard-log-tick 7.6s linear infinite;
+  animation: dashboard-log-tick 48s linear -2.1s infinite;
 }
 
 /* Move a full-height track; its small painted light keeps the exact original path. */
@@ -4269,8 +4284,15 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   text-shadow: 0 0 9px rgba(var(--tone-strong, 236, 230, 211), 0.32), 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.12);
   pointer-events: none;
   opacity: 0;
-  animation: dashboard-new-badge 5.8s ease-in-out infinite;
+  animation: dashboard-new-badge var(--new-badge-duration, 23.8s) ease-in-out infinite;
+  animation-delay: var(--new-badge-delay, -2.6s);
 }
+
+.activity-feed li[data-activity-age="new"]:nth-child(2) { --new-badge-duration: 27.4s; --new-badge-delay: -6.8s; }
+.activity-feed li[data-activity-age="new"]:nth-child(3) { --new-badge-duration: 22.7s; --new-badge-delay: -11.9s; }
+.activity-feed li[data-activity-age="new"]:nth-child(4) { --new-badge-duration: 25.9s; --new-badge-delay: -17.2s; }
+.activity-feed li[data-activity-age="new"]:nth-child(5) { --new-badge-duration: 29.1s; --new-badge-delay: -4.1s; }
+.activity-feed li[data-activity-age="new"]:nth-child(6) { --new-badge-duration: 24.6s; --new-badge-delay: -20.3s; }
 
 @media (min-width: 761px) {
   .activity-panel .activity-feed {
@@ -4699,7 +4721,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
     -2px 0 rgba(147, 157, 139, 0.18);
   pointer-events: none;
   transform: translateX(0);
-  animation: weather-temp-glitch 6.8s steps(2, end) infinite;
+  animation: weather-temp-glitch 37s steps(2, end) -1.8s infinite;
 }
 
 .weather-condition {
@@ -4987,15 +5009,15 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 :root[data-archive-hidden] :is(.dashboard-grid, .seasonal-accent) *,
 :root[data-archive-hidden] :is(.dashboard-grid, .seasonal-accent) *::before,
 :root[data-archive-hidden] :is(.dashboard-grid, .seasonal-accent) *::after,
-.archive-shell:is(.is-booting, [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *,
-.archive-shell:is(.is-booting, [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *::before,
-.archive-shell:is(.is-booting, [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *::after,
+.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *,
+.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *::before,
+.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *::after,
 .memory-loop[data-memory-offscreen],
 .memory-loop[data-memory-offscreen] *,
 .memory-loop[data-memory-offscreen]::before,
 .memory-loop[data-memory-offscreen]::after,
 .memory-loop[data-memory-offscreen] *::before,
-.memory-loop[data-memory-offscreen] *::after { animation-play-state: paused; }
+.memory-loop[data-memory-offscreen] *::after { animation-play-state: paused !important; }
 
 .workspace-footer {
   position: absolute;
@@ -7967,25 +7989,62 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 @keyframes dashboard-project-line {
   0%,
-  62% {
+  4% {
     opacity: 0;
     transform: translateX(-135%) scaleX(0.48);
   }
 
-  68% {
+  5.55% {
     opacity: 0.34;
   }
 
-  83% {
+  9.43% {
     opacity: 0.56;
     transform: translateX(245%) scaleX(0.92);
   }
 
-  91% {
+  11.5%,
+  34.99% {
     opacity: 0;
     transform: translateX(330%) scaleX(0.54);
   }
 
+  /* Each return happens during a fully dark rest, never a visible reverse trip. */
+  35% {
+    opacity: 0;
+    transform: translateX(-135%) scaleX(0.48);
+  }
+
+  36.86% {
+    opacity: 0.34;
+  }
+
+  41.52% {
+    opacity: 0.56;
+    transform: translateX(245%) scaleX(0.92);
+  }
+
+  44%,
+  71.99% {
+    opacity: 0;
+    transform: translateX(330%) scaleX(0.54);
+  }
+
+  72% {
+    opacity: 0;
+    transform: translateX(-135%) scaleX(0.48);
+  }
+
+  73.45% {
+    opacity: 0.34;
+  }
+
+  77.07% {
+    opacity: 0.56;
+    transform: translateX(245%) scaleX(0.92);
+  }
+
+  79%,
   100% {
     opacity: 0;
     transform: translateX(330%) scaleX(0.54);
@@ -7994,49 +8053,90 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 @keyframes dashboard-cover-signal {
   0%,
+  5%,
+  30%,
+  51%,
+  82%,
   100% {
     opacity: 0.42;
     transform: scale(0.96);
   }
 
-  46% {
+  14% {
     opacity: 0.78;
     transform: scale(1.03);
   }
 
-  58% {
+  24% {
     opacity: 0.5;
     transform: scale(0.99);
+  }
+
+  66% {
+    opacity: 0.66;
+    transform: scale(1.02);
   }
 }
 
 @keyframes dashboard-new-badge {
   0%,
+  20%,
+  33%,
+  68%,
+  94%,
   100% {
     opacity: 0;
   }
 
-  52% {
+  12% {
     opacity: 1;
   }
+
+  26% { opacity: 0.35; }
+  80% { opacity: 0.7; }
 }
 
 @keyframes dashboard-log-tick {
   0%,
-  52% {
+  7% {
     opacity: 0;
     transform: translateY(0);
   }
 
-  60% {
+  8.27%,
+  12.09% {
     opacity: 0.62;
   }
 
-  84% {
-    opacity: 0.62;
+  14%,
+  38.99% {
+    opacity: 0;
+    transform: translateY(100%);
   }
 
-  96%,
+  39% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  40.45%,
+  44.82% { opacity: 0.62; }
+
+  47%,
+  75.99% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  76% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  77.18%,
+  80.73% { opacity: 0.62; }
+
+  82.5%,
   100% {
     opacity: 0;
     transform: translateY(100%);
@@ -8045,31 +8145,40 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 @keyframes weather-temp-glitch {
   0%,
-  70%,
+  17.1%,
+  41.2%,
+  41.85%,
+  78.2%,
+  79.7%,
   100% {
     opacity: 0;
     transform: translateX(0);
   }
 
-  73% {
+  17.4% {
     opacity: 0.55;
     transform: translateX(2px);
   }
 
-  74% {
+  17.72% {
     opacity: 0;
     transform: translateX(-1px);
   }
 
-  76% {
+  18.08% {
     opacity: 0.44;
     transform: translateX(-2px);
   }
 
-  78% {
+  18.55% {
     opacity: 0;
     transform: translateX(0);
   }
+
+  41.48% { opacity: 0.4; transform: translateX(1px); }
+  78.52% { opacity: 0.55; transform: translateX(-2px); }
+  78.88% { opacity: 0; transform: translateX(1px); }
+  79.23% { opacity: 0.44; transform: translateX(2px); }
 }
 
 @keyframes boot-exit {

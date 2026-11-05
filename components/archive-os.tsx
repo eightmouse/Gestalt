@@ -37,6 +37,7 @@ import { WorkspaceToolWindow } from "@/components/archive/workspace-tool-window"
 import workspaceTools from "@/public/workspace-tools.js";
 import recordMotion from "@/public/record-motion.js";
 import memoryState, { type MemoryStateMode } from "@/public/memory-state.js";
+import ambientMotion from "@/public/ambient-motion.js";
 import behaviour, { type StartupMode, type PreferenceKey } from "@/public/os-behaviour.js";
 import appearance, { type AppearanceMode } from "@/public/appearance.js";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
@@ -188,6 +189,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [memoryMode, setMemoryMode] = useState<MemoryStateMode>("trace");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
+
+  useEffect(() => { ambientMotion.initialize(); }, []);
 
   const changeEntryAccessMode = (value: EntryAccessMode) => {
     const mode = normalizeEntryAccessMode(value);

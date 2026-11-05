@@ -137,6 +137,17 @@ const seasonalStart = css.indexOf(".seasonal-accent {");
 const seasonalCss = css.slice(seasonalStart, css.indexOf(".workspace-header h1", seasonalStart));
 assert.ok(!/transition\s*:|filter\s*:/.test(seasonalCss), "No animated filters or unnecessary transitions");
 assert.equal((seasonalCss.match(/@keyframes /g) || []).length, 2, "Only the requested swing and ember animate");
+const seasonalSheet = createRequire(require.resolve("next/package.json"))("postcss").parse(seasonalCss);
+const seasonalPoints = (name) => seasonalSheet.nodes.find((node) => node.name === "keyframes" && node.params === name).nodes.filter((node) => node.type === "rule").flatMap((node) => {
+  const values = Object.fromEntries(node.nodes.filter((child) => child.type === "decl").map((child) => [child.prop, child.value]));
+  return node.selector.split(",").map((at) => ({ at: parseFloat(at), ...values }));
+}).sort((a, b) => a.at - b.at);
+const swing = seasonalPoints("seasonal-swing");
+assert.ok(swing.every((point) => Math.abs(Number(point.transform.match(/rotate\((-?[\d.]+)deg\)/)[1])) <= 4), "Swing stays within the original ornament bounds");
+assert.deepEqual(swing.filter((point) => point.at >= 26 && point.at <= 71).map((point) => Math.abs(Number(point.transform.match(/rotate\((-?[\d.]+)deg\)/)[1]))), [4, 2.5, 1.5, 0.6, 0], "The ornament settles after a gust instead of swinging identically forever");
+assert.ok([0, 8, 71, 100].every((at) => swing.find((point) => point.at === at)?.transform === "rotate(0deg)"));
+const ember = seasonalPoints("seasonal-ember").map((point) => Number(point.opacity));
+assert.equal(Math.min(...ember), 0.12); assert.equal(Math.max(...ember), 0.62, "Ember brightness limits stay unchanged");
 assert.match(seasonalCss, /transform-origin: 68\.75% 1\.63%/, "The ornament swings from its pin");
 assert.match(seasonalCss, /rotate\(-4deg\)/);
 assert.match(seasonalCss, /rotate\(4deg\)/);

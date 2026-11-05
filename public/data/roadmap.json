@@ -13,10 +13,6 @@
       "title": "On the desk",
       "items": [
         {
-          "title": "Less mechanical motion",
-          "detail": "Then review repeating effects one at a time: varied rhythms, quiet pauses and distinct section identities, without restless reading text or heavier background work."
-        },
-        {
           "title": "Month-by-month folders",
           "detail": "Let older field notes settle into folders while newer ones stay within reach."
         },
@@ -34,6 +30,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Quieter ambient rhythms",
+          "detail": "Project traces, log scans, cover glow, NEW chips, weather and seasonal details each have their own rhythm and quiet rests. Same artwork and layout, with text kept still. Hidden and covered effects pause reliably in either Memory State mode.",
+          "version": "v1.72.2",
+          "releasedOn": "2026-11-05"
+        },
         {
           "title": "Memory State code surface",
           "detail": "Short code-like sequences respond to actions, with quiet idle passages between them. The one-way stream drops hidden lines while its numbering continues. Legacy Visual stays on the left in Settings; Code Surface sits on the right.",

@@ -2,7 +2,13 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current local target: `v1.72.0`. Verified published base: `v1.70.1`.
+Current release: `v1.72.2`. Previous published checkpoint: `v1.72.0` (65f0f858).
+
+5 November release review: owner accepted both motion passes and authorized commit/push before further note writing. This supersedes the local hold-publication notes below for this batch. File the ambient milestone, validate the public artifact, then verify deployment and the isolated content-publish path against the new commit. Exclude generated development-only types and leave the active Studio server alone.
+
+`v1.72.2` varies the remaining ambient dashboard and seasonal rhythms while preserving their distinct appearance: steady-speed downward log scans, unequal cover breaths, staggered NEW acknowledgements, rare bounded weather bursts and settling ornaments/embers. Use existing CSS surfaces and shared pause guards; leave layout, readable text, images, Memory State, boot and real loading indicators unchanged. No dependency, schema or author-content changes; not committed/pushed.
+
+`v1.72.1` varies the Projects separator light's CSS rhythm across three passes and unequal rests, preserving its accepted geometry, glow, brightness and one-way path. Other card effects and layout stay unchanged. Restore the existing React hidden-tab guard for either Memory State mode and pause Project lights during navigation-blocked states. No new timers, frame loops, dependency, content/schema change or publication requested.
 
 5 November release review: owner authorized committing and pushing v1.72.0 with saved game notes and media. This supersedes the historical hold-publication notes below for this batch. The accepted Memory State, Timeline, window-control and transition work is filed in the public notebook; deeper browser performance remains open. Deployment verification follows the push.
 

@@ -46,6 +46,12 @@ function fixture(observer = true) {
   };
 }
 const f = fixture();
+ambient.initialize(f.doc);
+ambient.initialize(f.doc);
+assert.equal(f.doc.handlers.get("visibilitychange").size, 1, "The workspace guard works without mounting the optional legacy visual");
+f.doc.hidden = true; f.doc.emit("visibilitychange");
+assert.equal(f.attributes.get("data-archive-hidden"), true);
+f.doc.hidden = false; f.doc.emit("visibilitychange");
 const dispose = ambient.watchMemory(f.node, f.host);
 ambient.initialize(f.doc);
 assert.equal(f.doc.handlers.get("visibilitychange").size, 2, "One page-lifetime visibility observer plus the disposable pointer observer");
@@ -100,6 +106,7 @@ context.syncMemoryMotion(); context.syncMemoryMotion();
 assert.equal(mounted, 1);
 current = {}; context.syncMemoryMotion(); assert.equal(released, 1);
 assert.ok(read("components/archive/memory-state.tsx").includes("useEffect(() => ambientMotion.watchMemory(memoryRef.current), [])"));
+assert.ok(read("components/archive-os.tsx").includes("useEffect(() => { ambientMotion.initialize(); }, [])"), "Workspace visibility guards initialize even when Code Surface is selected instead of Legacy Visual");
 for (const file of ["scripts/prepare-pages.mjs", "lib/publish-paths.mjs"]) assert.ok(read(file).includes('"public/ambient-motion.js"'));
 const helperAt = read("index.html").indexOf('src="public/ambient-motion.js');
 assert.ok(helperAt >= 0 && helperAt < read("index.html").indexOf('src="static-app.js'));
