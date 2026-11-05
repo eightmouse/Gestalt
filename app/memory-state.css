@@ -1,0 +1,25 @@
+.memory-trace {
+  --trace-size: var(--desktop-size, 1);
+  min-block-size: 0;
+  block-size: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.025), transparent 60%), rgba(var(--tone-base, 5, 6, 5), 0.34);
+}
+.memory-trace-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: calc(13px * var(--trace-size)); border-block-end: 1px solid var(--line); color: var(--reading-muted, var(--muted)); font: calc(11px * var(--trace-size))/1.4 var(--mono); }
+.memory-trace-lines { min-block-size: 0; margin: 0; padding: calc(14px * var(--trace-size)) calc(12px * var(--trace-size)); overflow: hidden; overflow-anchor: none; list-style: none; }
+.memory-trace-lines:empty::before { content: "// awaiting signal"; color: var(--muted); font: calc(12px * var(--trace-size))/1.9 var(--mono); }
+.memory-trace-lines > li { display: grid; grid-template-columns: minmax(3ch, max-content) minmax(0, 1fr); gap: calc(8px * var(--trace-size)); font: calc(12px * var(--trace-size))/1.9 "Cascadia Mono", "Consolas", monospace; }
+.memory-trace-lines > .memory-code-block:not(:first-child) { margin-block-start: calc(12px * var(--trace-size)); }
+.memory-code-number { color: var(--muted); font-size: 0.85em; text-align: end; user-select: none; }
+.memory-trace-lines code { min-inline-size: 0; color: var(--reading-text, var(--text)); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.memory-trace-lines .memory-code-keyword { color: var(--text-strong); }
+.memory-trace-lines .memory-code-string { color: var(--accent); }
+.memory-trace-lines .memory-code-comment { color: var(--reading-muted, var(--muted)); }
+.memory-trace-lines [data-writing] code::after { content: "_"; color: var(--accent); }
+:root[data-appearance="day"] .memory-trace { --reading-muted: var(--muted); }
+@media (max-width: 760px) {
+  .memory-trace { --trace-size: 1; block-size: 250px; }
+}

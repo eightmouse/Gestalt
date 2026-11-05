@@ -17,6 +17,7 @@ import type { RecordEntry } from "@/lib/types";
 import noteInline, { type NoteInlineToken } from "@/public/note-inline.js";
 import { steamBannerImage } from "@/public/steam-display.mjs";
 import imageFraming from "@/public/image-framing.js";
+import memoryState from "@/public/memory-state.js";
 export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label: string }> {
   if (record.section === "games") {
     return [
@@ -397,7 +398,9 @@ function NoteEntry({ body, defaultOpen, index, title }: { body: string; defaultO
         if (event.currentTarget.open) setHasLoaded(true);
       }}
     >
-      <summary>
+      <summary onClick={(event) => {
+        if (!event.defaultPrevented && !detailsRef.current?.open && index !== undefined) memoryState.record("note.expand", { index: index + 1 });
+      }}>
         {index === undefined ? (
           <span>{title}</span>
         ) : (

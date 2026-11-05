@@ -22,6 +22,7 @@ files.push("public/workspace-tools.js");
 files.push("public/record-motion.js");
 files.push("public/appearance.js", "app/appearance.css");
 files.push("public/ambient-motion.js");
+files.push("public/memory-state.js", "app/memory-state.css");
 const output = () => path.join(temporary, `site-${sequence++}`);
 const config = (extra = {}) => ({ root, destination: output(), baseUrl: "https://fixture.github.io/Gestalt", now, ...extra });
 const secretKey = "fixture-secret-not-a-real-key";

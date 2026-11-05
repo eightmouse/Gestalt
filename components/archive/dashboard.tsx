@@ -8,11 +8,13 @@ import type { ActivityEntry } from "@/components/archive/record-utils";
 import { steamBannerImage, steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import { SeasonalAccent } from "@/components/archive/seasonal-accent";
 import type { SeasonalMode } from "@/public/seasonal.js";
-import ambientMotion from "@/public/ambient-motion.js";
+import { MemoryState } from "@/components/archive/memory-state";
+import type { MemoryStateMode } from "@/public/memory-state.js";
 
 type DashboardProps = {
   now?: Date | null;
   seasonalMode?: SeasonalMode;
+  memoryMode?: MemoryStateMode;
   activity: ActivityEntry[];
   currentGame?: RecordEntry;
   currentGameDisplay: CurrentGameDisplay | null;
@@ -66,6 +68,7 @@ let weatherLoaded = false;
 export function ArchiveDashboard({
   now = null,
   seasonalMode = "auto",
+  memoryMode = "trace",
   activity,
   currentGame,
   currentGameDisplay,
@@ -114,13 +117,14 @@ export function ArchiveDashboard({
 
       {MEMORY_STATE_ENABLED ? (
         <DashboardPanel title="MEMORY STATE" className="memory-panel">
-          <MemoryLoop />
+          <MemoryState mode={memoryMode} />
         </DashboardPanel>
       ) : null}
 
       <DashboardPanel title="LATEST LOG" className="latest-log-panel" footerLabel="Read log" onFooter={() => latestLog && onOpenRecord(latestLog)}>
         {latestLog ? (
           <div className="latest-log" data-state={dashboardRecordStateKey(latestLog.status)}>
+            <i className="latest-log-signal" aria-hidden="true" />
             <span>{shortDate(latestLog.updated)}</span>
             <p>{recordDisplaySummary(latestLog)}</p>
           </div>
@@ -191,23 +195,6 @@ function CurrentGame({ display, record, onCreate }: { display: CurrentGameDispla
         {display.lastPlayed ? <span>Last Played: {display.lastPlayed}</span> : null}
         {onCreate ? <button className="current-game-create" type="button" onClick={onCreate}><FilePlus2 size={14} aria-hidden="true" />Create game record</button> : null}
       </div>
-    </div>
-  );
-}
-
-function MemoryLoop() {
-  const memoryRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => ambientMotion.watchMemory(memoryRef.current), []);
-
-  return (
-    <div className="memory-loop" aria-hidden="true" ref={memoryRef}>
-      <span className="memory-core" />
-      <span className="memory-orbit" />
-      <span className="memory-gate" />
-      <span className="memory-shard" />
-      <span className="memory-rain" />
-      <span className="memory-axis" />
-      <span className="memory-nodes" />
     </div>
   );
 }

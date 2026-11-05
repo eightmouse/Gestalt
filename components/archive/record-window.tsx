@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import { motion } from "framer-motion";
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { Maximize2, Minimize2, Settings, X } from "lucide-react";
@@ -20,6 +19,7 @@ import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
 import recordMotion from "@/public/record-motion.js";
+import memoryState from "@/public/memory-state.js";
 type RecordWindowProps = {
   minimized?: boolean;
   accessPending?: boolean;
@@ -89,7 +89,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
 
   return (
     <>
-    <motion.article
+    <article
       ref={windowRef}
       role="dialog"
       aria-modal="true"
@@ -98,28 +98,26 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
       inert={minimized}
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
       data-state={recordStateKey(record.status)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
       aria-label={`${record.title} archive entry`}
     >
       <RecordAccessSurface />
       <header className="window-bar">
         <div className="window-title-group">
           <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
-          {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
         </div>
-        <div className="window-actions">
-          <button type="button" disabled={editorBusy} data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
-            <Minimize2 size={14} />
-          </button>
-          <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label={maximized ? "Restore record" : "Maximize record"}>
-            <Maximize2 size={14} />
-          </button>
-          <button type="button" disabled={editorBusy} data-window-action="close" onClick={onClose} aria-label="Close record">
-            <X size={15} />
-          </button>
+        <div className="window-control-group">
+          {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
+          <div className="window-actions">
+            <button type="button" disabled={editorBusy} data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
+              <Minimize2 size={14} />
+            </button>
+            <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label={maximized ? "Restore record" : "Maximize record"}>
+              <Maximize2 size={14} />
+            </button>
+            <button type="button" disabled={editorBusy} data-window-action="close" onClick={onClose} aria-label="Close record">
+              <X size={15} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -166,6 +164,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
                   <button
                     type="button"
                     onClick={() => {
+                      if (activeContent !== item.key) memoryState.record("content.select", { view: item.key });
                       setActiveContent(item.key);
                       if (item.key !== "notes") {
                         setNoteSearchQuery("");
@@ -200,7 +199,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
         </>}
       </div>
       {updateHistoryOpen && record.section !== "games" ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
-    </motion.article>
+    </article>
     </>
   );
 }
@@ -221,7 +220,7 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
       ];
 
   return (
-    <motion.article
+    <article
       ref={windowRef}
       role="dialog"
       aria-modal="true"
@@ -230,10 +229,6 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
       inert={minimized}
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""} is-setup-record is-setup-record--${group}`}
       data-state={recordStateKey(record.status)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
       aria-label={`${record.title} setup terminal`}
     >
       <RecordAccessSurface />
@@ -265,7 +260,7 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
       {expandedImage ? (
         <ImageLightbox image={expandedImage} label="Close expanded setup image" onClose={() => setExpandedImage(null)} />
       ) : null}
-    </motion.article>
+    </article>
   );
 }
 

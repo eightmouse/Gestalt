@@ -12,11 +12,21 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const temporary = await mkdtemp(path.join(os.tmpdir(), "gestalt-notebook-test-"));
 const file = path.join(temporary, "public/data/roadmap.json");
 const originalCwd = process.cwd(), mode = process.env.NODE_ENV;
-const sample = JSON.parse(await readFile(path.join(root, "public/data/roadmap.json"), "utf8"));
+validateRoadmap(JSON.parse(await readFile(path.join(root, "public/data/roadmap.json"), "utf8")));
+const sample = {
+  title: "Field notebook", intro: "Isolated editing fixture.", updated: "03 / 11 / 2026",
+  groups: [
+    { id: "working", title: "In progress", items: [{ title: "First task", detail: "Ready to edit." }, { title: "Open task", detail: "Not completed." }] },
+    { id: "ideas", title: "On the desk", items: [] },
+    { id: "done", title: "Filed", items: [{ title: "Earlier release", detail: "Retain history.", version: "v1.0.0", releasedOn: "2026-11-01" }] }
+  ]
+};
 const clone = () => structuredClone(sample);
 try {
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, JSON.stringify(sample));
+  const emptyWorking = clone(); emptyWorking.groups[0].items = [];
+  assert.doesNotThrow(() => validateRoadmap(emptyWorking), "Filing every completed item may leave an empty working chapter");
   for (const corrupt of [null, [], { ...sample, groups: [] }, { ...sample, secret: "unexpected field" }]) assert.throws(() => validateRoadmap(corrupt));
   for (const patch of [{ title: "" }, { completed: "yes" }, { title: "x".repeat(161) }, { detail: "x".repeat(2001) }, { version: "v1.0.0" }, { onclick: "bad()" }]) {
     const bad = clone(); Object.assign(bad.groups[0].items[0], patch); assert.throws(() => validateRoadmap(bad));

@@ -177,7 +177,7 @@ Object.assign(react, {
   recordStateKey: () => "active", formatReadableDate: (value) => value,
   gameLogPlacement: () => "session", gameActivityValue: () => "",
   RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
-  Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X
+  Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X, Settings: require("lucide-react").Settings
 });
 const headerComponent = ts.transpileModule(`${declaration("../components/archive/record-window.tsx", "useRecordFocus")}\nexport ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 vm.runInContext(`(() => { ${headerComponent} })()`, react);
@@ -188,19 +188,37 @@ Object.assign(staticContext, {
   gameLogPlacement: () => "session", gameActivityValue: () => ""
 });
 vm.runInContext(declaration("../static-app.js", "recordWindow"), staticContext);
+function findHeaderElement(node, className) {
+  if (!node || typeof node !== "object") return null;
+  if (node.props?.className === className) return node;
+  for (const child of [node.props?.children].flat(Infinity)) {
+    const found = findHeaderElement(child, className);
+    if (found) return found;
+  }
+  return null;
+}
 for (const section of ["projects", "games", "logs"]) {
   const headerFrame = { headerZoom: 135, headerX: 20, headerY: 75 };
   const record = { id: "header-fixture", title: "Header <fixture>", section, type: "Record", status: "Active", priority: 1, updated: "2026-10-27", body: "", meta: { headerImage: "/media/header.png", ...frame, ...headerFrame } };
   staticContext.headerRecord = { ...record, ...record.meta };
   const reactHeader = renderToStaticMarkup(react.exports.ArchiveRecordWindow({ record, initialContent: "overview", maximized: false }));
   const staticHeader = vm.runInContext("recordWindow(headerRecord)", staticContext);
+  let editedContent;
+  const localHeader = react.exports.ArchiveRecordWindow({ record, initialContent: "overview", maximized: false, onEdit: (content) => { editedContent = content; } });
+  assert.equal(findHeaderElement(findHeaderElement(localHeader, "window-title-group"), "window-edit-action"), null, "The title is not an editing toolbar");
+  const controls = findHeaderElement(localHeader, "window-control-group");
+  const gear = findHeaderElement(controls, "window-edit-action");
+  assert.ok(gear && findHeaderElement(controls, "window-actions"), `${section} places the gear beside window controls`);
+  gear.props.onClick(); assert.equal(editedContent, "overview", "Moving the gear retains the active-content edit action");
+  assert.equal(gear.props["aria-label"], "Edit this record locally");
+  assert.ok(!reactHeader.includes("window-edit-action"), "Public/readonly entries gain no edit control");
   for (const html of [reactHeader, staticHeader]) {
     assert.ok(html.includes(imageFraming.headerFrameCss(headerFrame)), "React and Pages render the saved header crop, not overview framing");
     assert.ok(html.includes("Header &lt;fixture&gt;"));
   }
 }
 const headerCss = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
-assert.match(headerCss, /to \{ opacity: 0\.52; clip-path: inset\(0\); transform: scale\(var\(--header-image-scale, 1\)\); \}/, "Access animation retains the selected header zoom");
+assert.match(headerCss, /to \{ opacity: 0\.52; transform: scale\(var\(--header-image-scale, 1\)\); \}/, "Mask-free access animation retains the selected header zoom");
 console.log("Header framing passed: bounded independent metadata, original defaults, React/Pages parity and access-animation scale.");
 
 const studioContext = vm.createContext({});

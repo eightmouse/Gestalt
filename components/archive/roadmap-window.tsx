@@ -143,7 +143,13 @@ export function RoadmapWindow({ onClose }: { onClose: () => void }) {
       onCancel={(event) => { event.preventDefault(); event.stopPropagation(); if (!editor?.busy) onClose(); }}
       onClick={(event) => { if (event.target === event.currentTarget) { event.stopPropagation(); if (!editor?.busy) onClose(); } }}>
       <article className="roadmap-note">
-        <header className="window-bar"><div className="window-title-group"><span>// FIELD NOTEBOOK</span>{process.env.NODE_ENV === "development" && data ? <NotebookEditorControls data={data} onChange={setEditor} /> : null}</div><div className="window-actions"><button type="button" data-window-action="close" aria-label="Close roadmap" disabled={editor?.busy} onClick={onClose}>close</button></div></header>
+        <header className="window-bar">
+          <div className="window-title-group"><span>// FIELD NOTEBOOK</span></div>
+          <div className="window-control-group">
+            {process.env.NODE_ENV === "development" && data ? <NotebookEditorControls data={data} onChange={setEditor} /> : null}
+            <div className="window-actions"><button type="button" data-window-action="close" aria-label="Close roadmap" disabled={editor?.busy} onClick={onClose}>close</button></div>
+          </div>
+        </header>
         <div className="roadmap-body" aria-busy={!data && !failed}>
           {data ? <RoadmapNotebook data={editor?.data || data} history={visibleHistory} chapterId={location.chapterId} releaseIndex={location.releaseIndex} onNavigate={navigate} editor={editor} />
             : failed ? <div className="roadmap-message" role="status"><p>Work note unavailable.</p><button type="button" onClick={() => setAttempt((value) => value + 1)}>Try again</button></div> : <p className="roadmap-message" role="status">Retrieving work note...</p>}

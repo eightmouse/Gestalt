@@ -165,7 +165,6 @@ export function NotebookEditorControls({ data, onChange }: { data: PublicRoadmap
     finally { if (mounted.current) setBusy(false); }
   };
   return <div className="notebook-editor-controls">
-    <button type="button" className="window-edit-action" disabled={busy || publishing || !saved} onClick={() => { setEditing((value) => !value); setFilingOpen(false); }} aria-pressed={editing} title={editing ? "Read notebook" : "Edit notebook"} aria-label={editing ? "Read notebook" : "Edit notebook"}><Settings size={14} /></button>
     {error ? <button type="button" disabled={busy || publishing} onClick={() => { void reload(); }} title="Reload saved copy" aria-label="Reload saved notebook"><BookOpen size={15} /></button> : null}
     {editing ? <button type="button" className="notebook-save" disabled={!dirty || busy || publishing || !saved || filingOpen} onClick={() => { void save(); }}><Save size={15} /><span>Save</span></button> : null}
     {editing && completed.length > 0 ? <button type="button" disabled={busy || publishing || !saved} aria-label="File release" title="File release" aria-pressed={filingOpen} onClick={() => {
@@ -173,5 +172,6 @@ export function NotebookEditorControls({ data, onChange }: { data: PublicRoadmap
       setFiling({ version: "", date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`, items: completed.map((item) => item.key) });
       setFilingOpen((value) => !value); setError("");
     }}><Archive size={14} /></button> : null}
+    <button type="button" className="window-edit-action" disabled={busy || publishing || !saved} onClick={() => { setEditing((value) => !value); setFilingOpen(false); }} aria-pressed={editing} title={editing ? "Read notebook" : "Edit notebook"} aria-label={editing ? "Read notebook" : "Edit notebook"}><Settings size={14} /></button>
   </div>;
 }

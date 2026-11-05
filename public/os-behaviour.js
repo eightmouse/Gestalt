@@ -32,7 +32,8 @@
     { key: "entry", title: "ENTRY ANIMATION", options: [["first", "First entry only"], ["always", "Every entry"], ["off", "Off"]] },
     { key: "startup", title: "NEXT STARTUP", options: [["full", "Full welcome"], ["quick", "Quick start"]] },
     { key: "seasonal", title: "SEASONAL DETAILS", options: [["auto", "By calendar"], ["off", "Off"]] },
-    { key: "navigation", title: "DESKTOP NAVIGATION", options: [["fixed", "Legacy Mode"], ["terminal", "Terminal"]] }
+    { key: "navigation", title: "DESKTOP NAVIGATION", options: [["fixed", "Legacy Mode"], ["terminal", "Terminal"]] },
+    { key: "memory", title: "MEMORY STATE", defaultValue: "trace", options: [["legacy", "Legacy Visual"], ["trace", "Code Surface"]] }
   ];
   function normalizeStartupMode(value) { return value === "quick" ? "quick" : "full"; }
   function readStartupMode(storage) {
@@ -50,7 +51,7 @@
     } catch { return false; }
   }
   function normalizeValues(values = {}) {
-    return Object.fromEntries(groups.map((group) => [group.key, group.options.some(([value]) => value === values?.[group.key]) ? values[group.key] : group.options[0][0]]));
+    return Object.fromEntries(groups.map((group) => [group.key, group.options.some(([value]) => value === values?.[group.key]) ? values[group.key] : group.defaultValue || group.options[0][0]]));
   }
   function renderContent(values, remember) {
     const selected = normalizeValues(values);

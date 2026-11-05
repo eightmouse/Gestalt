@@ -70,6 +70,7 @@
         motion.removeEventListener("change", onMotion);
         node.removeAttribute("data-record-retracting");
         node.removeAttribute("data-record-closing");
+        node.removeAttribute("data-record-content-hidden");
         target?.removeAttribute?.("data-motion-destination");
         node.inert = wasInert;
         active = null;
@@ -112,6 +113,10 @@
             content.finished.catch(() => {});
             contents.push(content);
           }
+          // Once dissolved, stop compositing the nested content during frame contraction.
+          Promise.all(contents.map((content) => content.finished)).then(() => {
+            if (!finished) node.setAttribute("data-record-content-hidden", "");
+          }, () => {});
           const lineHeight = Math.min(1, 2 / Math.max(1, rect.height));
           animation = node.animate([
             { offset: 0, transform: `${base} scale(1, 1)`, opacity, transformOrigin: "center" },

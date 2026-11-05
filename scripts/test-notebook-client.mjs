@@ -56,6 +56,7 @@ const unmount = () => { effects.forEach((effect) => effect.cleanup?.()); state =
 render(); await settle();
 assert.equal(editor.busy, false); assert.equal(writes, 0);
 button("Edit notebook").props.onClick(); render();
+assert.equal([tree.props.children].flat(Infinity).filter((child) => child?.type === "button").at(-1).props.className, "window-edit-action", "The gear stays nearest the close cluster when editing adds Save/File controls");
 editor.change("working", 0, { title: "Draft one" }); render();
 editor.change("working", 0, { title: "Draft one two" }); render();
 assert.equal(editor.data.groups[0].items[0].title, "Draft one two", "Repeated typing retains the current draft");

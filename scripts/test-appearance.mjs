@@ -295,7 +295,7 @@ assert.equal(desktopRoles.get(".desktop-nav-terminal::before, .desktop-nav-termi
 assert.equal(desktopRoles.get(".archive-shell[data-nav-wide] > .desktop-nav-terminal").border, "0", "Terminal outer geometry is unchanged");
 const frameEnd = decls(desktop.nodes.find((node) => node.name === "keyframes" && node.params === "desktop-terminal-frame").nodes.find((node) => node.selector === "100%"));
 assert.equal(frameEnd.opacity, "1");
-assert.equal(frameEnd["border-color"], "var(--window-outline)", "Animated and reduced-motion/restored frames share the same steady color");
+assert.equal(frameEnd["border-color"], undefined, "Construction inherits the same steady outline instead of repainting border colors");
 assert.equal(desktopRoles.get(".desktop-terminal-bar small").color, "var(--window-bar-muted)", "Terminal version remains legible on raised graphite fill");
 assert.equal(desktopRoles.get(".desktop-terminal-bar")["border-block-end"], "1px solid var(--window-bar-edge)");
 assert.equal(decls(archiveSheet.nodes.find((node) => node.selector === ".setup-console-prompt")).color, "var(--window-bar-muted)");
@@ -304,5 +304,5 @@ assert.equal(desktopRoles.get(".archive-shell[data-nav-wide] > .desktop-nav-back
 assert.ok(!/backdrop-filter|\bfilter:/.test(read("app/desktop-navigation.css")), "Terminal separation adds no blur/filter work");
 const reduced = archiveSheet.nodes.find((node) => node.name === "media" && node.params === "(prefers-reduced-motion: reduce)" && node.toString().includes("transition-duration: 0.001ms"));
 assert.ok(reduced, "Existing reduced-motion transition guard still covers the edge response");
-assert.ok([...shadowRoles].some(([selector, value]) => selector.includes(".active-projects-panel .record-list button::after") && selector.includes(".latest-log::before") && value === "none"), "Day travelling traces do not inherit luminous halos");
+assert.ok([...shadowRoles].some(([selector, value]) => selector.includes(".active-projects-panel .record-list button::after") && selector.includes(".latest-log-signal::before") && value === "none"), "Day travelling traces do not inherit luminous halos");
 console.log("Appearance passed: theme/storage/clock guards, Day/Night reading/control contrast, continuous single frames, inset-only bar shading, preserved geometry/construction/focus, reduced motion and Pages/cache inclusion.");

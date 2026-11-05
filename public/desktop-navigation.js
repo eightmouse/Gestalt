@@ -30,7 +30,7 @@
     return rows;
   }
 
-  function createController(host = globalThis.window, motionApi = host.GestaltRecordMotion) {
+  function createController(host = globalThis.window, motionApi = host.GestaltRecordMotion, traceApi = host.GestaltMemoryState) {
     const doc = host.document;
     const windowMotion = motionApi?.createController(host);
     const desktop = host.matchMedia("(min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine)");
@@ -118,6 +118,7 @@
     }
     function refresh() {
       if (destroyed) return;
+      if (open && (!enabled() || blocked() || settings.palette)) traceApi?.record("terminal.close", {}, host);
       if (!enabled() || blocked() || settings.palette) cancelRetraction();
       if (!noticesAvailable()) noticesOpen = false;
       if (!enabled()) { open = false; minimized = false; maximized = false; }
@@ -138,10 +139,11 @@
       if (!noticesOpen || event.target?.closest?.(".system-notices-panel, [data-system-notices-toggle]")) return;
       event.preventDefault(); event.stopPropagation(); closeNotices();
     }
-    function show() {
+    function show(source = "pointer") {
       if (!enabled() || blocked() || settings.palette || windowMotion?.busy || open) return;
       if (!terminal?.contains(doc.activeElement) && !doc.activeElement?.closest?.("[data-desktop-terminal-restore]")) returnFocus = doc.activeElement;
       acknowledgeHint();
+      traceApi?.record("terminal.open", { source: minimized ? "restore" : source }, host);
       noticesOpen = false;
       terminal.toggleAttribute("data-terminal-restoring", minimized);
       terminal.removeAttribute("data-terminal-ready");
@@ -149,6 +151,7 @@
       (terminal?.querySelector('[aria-current="page"]') || terminal?.querySelector("[data-directory-section]"))?.focus();
     }
     function hide(minimize = false, restore = true) {
+      if (open) traceApi?.record(minimize ? "terminal.minimize" : "terminal.close", {}, host);
       cancelRetraction();
       open = false; minimized = minimize; paint();
       if (restore) restoreFocus();
@@ -163,6 +166,7 @@
       terminal.setAttribute("data-terminal-ready", "");
       shell.setAttribute("data-nav-retracting", "");
       windowMotion.minimize({ node: terminal, target: shell.querySelector(".desktop-terminal-restore"), onComplete: () => {
+        traceApi?.record("terminal.minimize", {}, host);
         shell?.removeAttribute("data-nav-retracting");
         open = false; minimized = true; paint();
         shell?.querySelector(".desktop-terminal-restore")?.focus({ preventScroll: true });
@@ -186,7 +190,7 @@
       } else if (target.closest?.("[data-system-notices-close]")) {
         event.preventDefault(); event.stopPropagation(); closeNotices();
       } else if (target.closest?.("[data-desktop-terminal-restore]")) {
-        event.preventDefault(); event.stopPropagation(); show();
+        event.preventDefault(); event.stopPropagation(); show("restore");
       } else if (target.closest?.("[data-desktop-terminal-minimize]")) {
         event.preventDefault(); event.stopPropagation(); minimizeTerminal();
       } else if (target.closest?.("[data-desktop-terminal-maximize]")) {
@@ -205,7 +209,7 @@
       if (!enabled() || blocked()) return;
       const editing = event.target?.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]');
       if (!editing && !settings.palette && !event.repeat && !event.isComposing && !event.ctrlKey && !event.altKey && !event.metaKey && event.key?.toLowerCase() === "t") {
-        event.preventDefault(); event.stopPropagation(); if (!open) show(); return;
+        event.preventDefault(); event.stopPropagation(); if (!open) show("keyboard"); return;
       }
       if (!open) return;
       event.stopPropagation();

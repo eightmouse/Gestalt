@@ -3,10 +3,11 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
-import { createElement, useRef, useState } from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 const require = createRequire(import.meta.url);
+const postcss = createRequire(require.resolve("next/package.json"))("postcss");
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 function functions(file, names) {
   const kind = file.endsWith("tsx") ? ts.ScriptKind.TSX : file.endsWith(".ts") ? ts.ScriptKind.TS : ts.ScriptKind.JS;
@@ -50,8 +51,22 @@ assert.equal(JSON.stringify(items), before, "Presentation does not reorder or ed
 
 const dates = compile(functions("components/archive/record-utils.ts", ["formatReadableDate"])).exports;
 const react = compile(`${functions("components/archive/timeline-window.tsx", ["TimelineWindow", "timelineStateKey"])}\nexports.Window = TimelineWindow;`, {
-  ...policy, ...dates, useRef, useState, motion: { article: "article" }
+  ...policy, ...dates, useEffect, useRef, useState
 });
+const keyboard = compile(`${functions("components/archive/timeline-window.tsx", ["TimelineWindow", "timelineStateKey"])}\nexports.Window = TimelineWindow;`, {
+  ...policy, ...dates, useEffect() {}, useRef: () => ({ current: null }), useState: (value) => [value, () => {}]
+});
+let closed = 0;
+const windowElement = keyboard.exports.Window({ items, onClose() { closed++; }, onOpenRecord() {} });
+for (const change of [{ key: "Enter" }, { defaultPrevented: true }, { repeat: true }, { ctrlKey: true }, { altKey: true }, { metaKey: true }, { nativeEvent: { isComposing: true } }]) {
+  windowElement.props.onKeyDown({ key: "Escape", nativeEvent: {}, preventDefault() { assert.fail("Unrelated or consumed keys stay native"); }, stopPropagation() {}, ...change });
+}
+assert.equal(closed, 0);
+let prevented = false, stopped = false;
+windowElement.props.onKeyDown({ key: "Escape", nativeEvent: {}, preventDefault() { prevented = true; }, stopPropagation() { stopped = true; } });
+assert.equal(closed, 1, "Escape closes the React timeline just as it does on Pages");
+assert.ok(prevented && stopped, "Closing cannot also trigger a background shortcut");
+assert.match(functions("static-app.js", ["syncRecordFocus"]), /\.timeline-window/, "Pages reuses the same bounded focus helper");
 for (const values of [[], items, [{ ...items[0], title: '<img src=x onerror="bad()">', detail: "Private-looking <script> text", record: { ...record, id: 'quote" onclick="bad()' } }]]) {
   staticContext.getTimelineItems = () => values;
   staticContext.state = { timelineOpen: true, timelineSource: "all" };
@@ -60,6 +75,8 @@ for (const values of [[], items, [{ ...items[0], title: '<img src=x onerror="bad
     staticContext.timelineWindow()
   ];
   for (const html of htmls) {
+    assert.equal((html.match(/class="timeline-registration" aria-hidden="true"/g) || []).length, 1, "Both readers have one decorative time register");
+    assert.match(html, /role="dialog" aria-modal="true" tabindex="-1"/, "Both timelines announce and focus the active window");
     assert.equal((html.match(/class="timeline-day"/g) || []).length, new Set(values.map((item) => item.date)).size);
     assert.ok(html.includes(`Showing ${values.length} of ${values.length} recent signals`));
     assert.ok(html.includes('aria-controls="timeline-results"'));
@@ -97,4 +114,24 @@ assert.equal(results.innerHTML, filtered, "Closed windows do no filter work");
 assert.ok(!functions("static-app.js", ["changeTimelineSource"]).includes("render();"), "Filtering does not rebuild or reopen the public shell");
 assert.match(functions("static-app.js", ["openTimeline"]), /state\.timelineSource = "all"/);
 assert.ok(!read("app/globals.css").includes(".timeline-metrics"), "Retired counter-card styles are removed");
-console.log("Timeline checks passed: grouping/filter parity, stable chronology, escaping, empty states and in-place static updates.");
+assert.ok(!read("components/archive/timeline-window.tsx").includes("motion.article"), "CSS owns the same single entrance in both readers");
+const sheet = postcss.parse(read("app/globals.css"));
+for (const name of ["timeline-arrive", "timeline-register-line", "timeline-register-spine", "timeline-register-ticks", "timeline-ink-arrive"]) {
+  const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
+  assert.ok(frames, `${name} exists`);
+  frames.walkDecls((decl) => assert.ok(["opacity", "transform"].includes(decl.prop), `${name} does not animate masks, filters or layout`));
+}
+const animated = [];
+sheet.walkDecls("animation", (decl) => { if (decl.value.startsWith("timeline-")) animated.push(decl); });
+assert.equal(animated.length, 7);
+for (const decl of animated) {
+  assert.ok(!decl.value.includes("infinite"), "The opening stops by itself");
+  assert.ok(!/timeline-(day|list)|timeline-results/.test(decl.parent.selector), "Filtered contents do not own entrance animations");
+  assert.ok(decl.value.endsWith("backwards"), "Finished entrances retain no forward animation layer");
+}
+const registration = sheet.nodes.find((node) => node.selector === ".timeline-registration");
+assert.ok(registration.nodes.some((node) => node.prop === "pointer-events" && node.value === "none"));
+const reduced = sheet.nodes.find((node) => node.name === "media" && node.params === "(prefers-reduced-motion: reduce)" && node.nodes.some((child) => child.selector === ".timeline-registration"));
+assert.ok(reduced, "Reduced motion removes the register and all staged entrance animations");
+assert.ok(reduced.nodes.some((node) => node.selector?.includes(".timeline-window > .timeline-body") && node.nodes.some((decl) => decl.prop === "animation" && decl.value === "none")));
+console.log("Timeline checks passed: shared finite entrance, motion fallback, grouping/filter parity, stable chronology, escaping, empty states and non-replaying static updates.");

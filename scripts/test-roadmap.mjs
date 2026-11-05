@@ -299,7 +299,8 @@ for (const name of ["prev", "next", "index"]) {
 const css = read("app/globals.css");
 assert.match(css, /\.roadmap-group h3 s \{[^}]*text-decoration-color: currentColor; text-decoration-thickness: 2px;/, "Completion lines stay visible in both theme text colors");
 assert.match(read("app/studio/notebook.css"), /\[data-completed\] \.notebook-title-input \{[^}]*text-decoration-color: currentColor; text-decoration-thickness: 2px;/, "Editing retains the same completion line");
-assert.match(read("components/archive/roadmap-window.tsx"), /className="window-title-group"><span>\/\/ FIELD NOTEBOOK<\/span>\{process\.env/, "Local gear belongs beside the notebook title, not among close controls");
+assert.match(read("components/archive/roadmap-window.tsx"), /className="window-control-group">\s*\{process\.env/, "Notebook editing shares the right-hand window-control group");
+assert.match(read("components/archive/roadmap-window.tsx"), /className="window-title-group"><span>\/\/ FIELD NOTEBOOK<\/span><\/div>/, "The title remains separate from editing controls");
 const scopedCss = css.slice(css.indexOf(".roadmap-dialog {"), css.indexOf("\n.window-bar {", css.indexOf(".roadmap-dialog {")));
 assert.ok(scopedCss.includes("minmax(0, 1fr)"));
 assert.ok(!/infinite|filter:|will-change:/.test(scopedCss), "Opening leaves no perpetual animation/filter/layer workload");

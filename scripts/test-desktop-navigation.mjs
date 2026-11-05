@@ -103,13 +103,24 @@ function fixture(saved = new Map(), withMotion = false) {
     workspace.children.set("restore", restore);
     return nodes;
   }
-  const nodes = surface(), controller = navigation.createController(host, withMotion ? recordMotion : undefined);
+  const trace = [];
+  const nodes = surface(), controller = navigation.createController(host, withMotion ? recordMotion : undefined, { record: (name, fields, target) => { assert.equal(target, host); trace.push({ name, ...fields }); } });
   doc.activeElement = nodes.search;
   const settings = { mode: "terminal", ready: true, busy: false, remember: false };
   const attach = (patch = {}, target = nodes.shell) => { Object.assign(settings, patch); controller.attach(target, settings); };
   const click = (node, target = nodes.shell) => target.emit("click", { target: node });
   const key = (value = "t", args = {}) => doc.emit("keydown", { key: value, ...args });
-  return { doc, media, reduced, animations, saved, key, controller, attach, click, nodes, surface, advance, timers };
+  return { doc, media, reduced, animations, saved, key, controller, attach, click, nodes, surface, advance, timers, trace };
+}
+{
+  const f = fixture(); f.attach(); f.key(); f.key();
+  assert.deepEqual(f.trace, [{ name: "terminal.open", source: "keyboard" }], "T on an open terminal cannot generate duplicate events");
+  f.click(f.nodes.minimize);
+  assert.equal(f.trace.at(-1).name, "terminal.minimize");
+  f.click(f.nodes.restore);
+  assert.deepEqual(f.trace.at(-1), { name: "terminal.open", source: "restore" });
+  f.click(f.nodes.close); assert.equal(f.trace.at(-1).name, "terminal.close");
+  f.controller.destroy();
 }
 {
   const f = fixture(new Map(), true); f.attach(); f.key();
@@ -375,12 +386,12 @@ for (const file of ["scripts/prepare-pages.mjs", "scripts/publish-site.mjs"]) {
 assert.ok(read("app/layout.tsx").includes('"./desktop-navigation.css"'));
 assert.ok(read("components/archive/desktop-navigation.tsx").includes("controller.current?.destroy()"));
 const source = read("public/desktop-navigation.js"), css = read("app/desktop-navigation.css");
-assert.ok(read("components/archive/desktop-navigation.tsx").includes("navigation.createController(window, recordMotion)"), "React explicitly supplies the same motion helper as Pages");
+assert.ok(read("components/archive/desktop-navigation.tsx").includes("navigation.createController(window, recordMotion, memoryState)"), "React explicitly supplies the same motion and session helpers as Pages");
 for (const name of ["desktop-terminal-frame", "desktop-terminal-surface", "desktop-terminal-populate"]) {
   assert.ok(css.includes(`@keyframes ${name}`));
   assert.ok(!new RegExp(`animation:[^;]*${name}[^;]*infinite`).test(css), "Terminal construction is finite");
 }
-assert.match(css, /@keyframes desktop-terminal-surface\s*\{\s*0%, 28% \{ opacity: 0; clip-path: inset\(50% 0\); \}/, "The real terminal surface waits for its frame");
+assert.match(css, /@keyframes desktop-terminal-surface\s*\{\s*0%, 28% \{ opacity: 0; transform: scaleY\(0\); \}/, "The empty terminal background waits for its frame without clipping the text");
 assert.match(css, /desktop-nav-terminal\[hidden\] \{ display: none !important; \}/, "Minimize hides the real terminal before releasing its filled animation");
 assert.ok(css.includes(":not([data-terminal-restoring]):not([data-terminal-ready])"), "Restore and interaction bypass construction");
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*desktop-nav-terminal[\s\S]*animation: none !important/);

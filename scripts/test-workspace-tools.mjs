@@ -48,7 +48,7 @@ for (const name of ["web-search-surface", "web-search-frame", "web-search-query-
 }
 assert.match(css, /\.web-search-dialog\[data-search-ready\].*animation: none;/, "Interaction settles the reveal without waiting");
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.web-search-form, \.web-search-heading, \.web-search-row > \* \{ animation: none; \}/);
-assert.match(css, /@keyframes web-search-surface \{ 0%, 30% \{ opacity: 0; clip-path: inset\(50% 0\); \}/, "The actual surface stays absent while the frame begins forming");
+assert.match(css, /@keyframes web-search-surface \{ 0%, 30% \{ opacity: 0; \}/, "The actual surface stays absent while the independent frame forms, without another mask");
 assert.ok(!css.includes("web-search-arrive"), "The old simultaneous whole-window fade is removed");
 
 class Element {

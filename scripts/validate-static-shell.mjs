@@ -17,8 +17,14 @@ const appearanceCheck = spawnSync(process.execPath, [path.join(root, "scripts/te
 if (appearanceCheck.status !== 0) errors.push(`Appearance regression failed: ${(appearanceCheck.stderr || appearanceCheck.stdout || "").trim()}`);
 const ambientCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-ambient-motion.mjs")], { encoding: "utf8" });
 if (ambientCheck.status !== 0) errors.push(`Ambient lifecycle regression failed: ${(ambientCheck.stderr || ambientCheck.stdout || "").trim()}`);
+const memoryCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-memory-state.mjs")], { encoding: "utf8" });
+if (memoryCheck.status !== 0) errors.push(`Session trace regression failed: ${(memoryCheck.stderr || memoryCheck.stdout || "").trim()}`);
 const recordFocusCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-record-focus.mjs")], { encoding: "utf8" });
 if (recordFocusCheck.status !== 0) errors.push(`Record keyboard regression failed: ${(recordFocusCheck.stderr || recordFocusCheck.stdout || "").trim()}`);
+const transitionCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-transition-lifecycle.mjs")], { encoding: "utf8" });
+if (transitionCheck.status !== 0) errors.push(`Transition lifecycle regression failed: ${(transitionCheck.stderr || transitionCheck.stdout || "").trim()}`);
+const effectsCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-compositor-effects.mjs")], { encoding: "utf8" });
+if (effectsCheck.status !== 0) errors.push(`Compositor effects regression failed: ${(effectsCheck.stderr || effectsCheck.stdout || "").trim()}`);
 
 const archiveImage = indexHtml.match(/--archive-image:\s*url\("([^"]+)"\)/)?.[1];
 if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-banner.png") {

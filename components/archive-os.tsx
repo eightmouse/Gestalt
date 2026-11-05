@@ -36,6 +36,7 @@ import { OsBehaviourWindow } from "@/components/archive/os-behaviour-window";
 import { WorkspaceToolWindow } from "@/components/archive/workspace-tool-window";
 import workspaceTools from "@/public/workspace-tools.js";
 import recordMotion from "@/public/record-motion.js";
+import memoryState, { type MemoryStateMode } from "@/public/memory-state.js";
 import behaviour, { type StartupMode, type PreferenceKey } from "@/public/os-behaviour.js";
 import appearance, { type AppearanceMode } from "@/public/appearance.js";
 import type { ContentKey, SearchResult } from "@/components/archive/types";
@@ -184,6 +185,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
   const [startupMode, setStartupMode] = useState<StartupMode>("full");
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("night");
+  const [memoryMode, setMemoryMode] = useState<MemoryStateMode>("trace");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
 
@@ -238,6 +240,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setDesktopNavigationMode(desktopNavigation.readMode());
     setStartupMode(behaviour.readStartupMode());
     setAppearanceMode(appearance.initialize(window));
+    setMemoryMode(memoryState.readMode());
     entryAccessModeRef.current = mode;
     setEntryAccessMode(mode);
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -250,6 +253,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     motionQuery.addEventListener("change", onMotionChange);
     return () => motionQuery.removeEventListener("change", onMotionChange);
   }, []);
+
+  useEffect(() => {
+    if (bootComplete && (localMemory === "granted" || localMemory === "session")) memoryState.record("workspace.ready");
+  }, [bootComplete, localMemory]);
 
   const recordsBySection = useMemo(() => {
     return sections.reduce<Record<RecordSection, RecordEntry[]>>(
@@ -423,12 +430,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [archiveRecords, selectedId, setSelectedId, inlineDraftWindow]);
 
   const closeRecord = () => {
-    if (inlineBusy || !panelOpen) return;
+    const node = shellRef.current?.querySelector<HTMLElement>(".record-window");
+    if (inlineBusy || !panelOpen || !node || node.hidden) return;
     const controller = recordMotionRef.current ??= recordMotion.createController();
     controller.close({
-      node: shellRef.current?.querySelector<HTMLElement>(".record-window") ?? null,
+      node,
       enabled: entryAccessModeRef.current !== "off",
       onComplete: () => {
+        memoryState.record("record.close");
         setInlineRecordId(null);
         setInlineDraftWindow(null);
         setPanelOpen(false);
@@ -439,13 +448,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
 
   const minimizeRecord = () => {
-    if (inlineBusy || !panelOpen) return;
+    const node = shellRef.current?.querySelector<HTMLElement>(".record-window");
+    if (inlineBusy || !panelOpen || !node || node.hidden) return;
     const controller = recordMotionRef.current ??= recordMotion.createController();
     controller.minimize({
-      node: shellRef.current?.querySelector<HTMLElement>(".record-window") ?? null,
+      node,
       target: shellRef.current?.querySelector<HTMLElement>(".reopen-control"),
       enabled: entryAccessModeRef.current !== "off",
       onComplete: () => {
+        memoryState.record("record.minimize");
         stopRecordAccess();
         setRecordAccessComplete(true);
         setPanelOpen(false);
@@ -456,6 +467,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteQuery = "") => {
     if (inlineBusy) return;
+    memoryState.record("record.open", { section: record.section });
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     startRecordAccess();
@@ -542,6 +554,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     const sectionChanged = activeSection !== section;
+    if (sectionChanged) memoryState.record("section.enter", { section });
 
     setActiveSection(section);
     stopRecordAccess();
@@ -588,6 +601,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     const sectionChanged = activeSection !== "system";
+    if (sectionChanged) memoryState.record("section.enter", { section: "system" });
 
     stopRecordAccess();
     setActiveSection("system");
@@ -694,6 +708,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   ) : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen || osBehaviourOpen;
   const changeOsPreference = (key: PreferenceKey, value: string) => {
+    if (key === "memory") {
+      const mode = memoryState.normalizeMode(value);
+      setMemoryMode(mode);
+      if (localMemory === "granted") memoryState.saveMode(mode);
+    }
     if (key === "appearance") setAppearanceMode(appearance.setMode(value, localMemory === "granted"));
     if (key === "entry") changeEntryAccessMode(normalizeEntryAccessMode(value));
     if (key === "startup") {
@@ -741,7 +760,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       }} /> : null}
       {roadmapOpen ? <RoadmapWindow onClose={() => setRoadmapOpen(false)} /> : null}
       {webSearchOpen || connectionsOpen ? <WorkspaceToolWindow mode={connectionsOpen ? "connections" : "search"} remember={localMemory === "granted"} onClose={() => { setWebSearchOpen(false); setConnectionsOpen(false); }} /> : null}
-      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode, appearance: appearanceMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
+      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode, appearance: appearanceMode, memory: memoryMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />
@@ -820,6 +839,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
         {activeSection === "system" ? (
           <ArchiveDashboard
+            memoryMode={memoryMode}
             now={now}
             seasonalMode={seasonalMode}
             activity={activity}
@@ -884,7 +904,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 ) : undefined}
                 onClose={closeRecord}
                 onMinimize={minimizeRecord}
-                onMaximize={() => setPanelMaximized((current) => !current)}
+                onMaximize={() => {
+                  const next = !panelMaximized;
+                  setPanelMaximized(next);
+                  memoryState.record("record.resize", { state: next ? "maximized" : "normal" });
+                }}
               />
             </>
           ) : null}
@@ -897,6 +921,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             type="button"
             hidden={panelOpen || !panelMinimized}
             onClick={() => {
+              memoryState.record("record.restore");
               setPanelOpen(true);
               setPanelMinimized(false);
             }}

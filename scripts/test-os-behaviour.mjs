@@ -34,6 +34,10 @@ assert.ok(once.includes("// SETTINGS") && once.includes('aria-label="Close Setti
 assert.ok(!once.includes("OS BEHAVIOUR"));
 assert.equal((once.match(/ disabled/g) || []).length, 2, "Only the next-startup options need remembered storage");
 assert.ok(once.includes("Local memory required."));
+const memoryGroup = once.match(/<fieldset[^>]*data-os-group="memory"[\s\S]*?<\/fieldset>/)[0];
+assert.ok(memoryGroup.indexOf('value="legacy"') < memoryGroup.indexOf('value="trace"'), "Memory matches navigation: legacy left, newer right");
+assert.match(memoryGroup, /value="trace" checked/, "Reordering options does not change the newer mode's default");
+assert.ok(memoryGroup.includes("Code Surface"));
 
 class Element {
   children = []; listeners = new Map(); isConnected = true; open = false; writes = 0; focused = false;

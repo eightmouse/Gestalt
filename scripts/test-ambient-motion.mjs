@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ambient from "../public/ambient-motion.js";
+import memoryState from "../public/memory-state.js";
 import { updateStaticCacheTokens } from "./static-cache.mjs";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
@@ -96,7 +99,7 @@ vm.runInContext(sync.getText(ast), context);
 context.syncMemoryMotion(); context.syncMemoryMotion();
 assert.equal(mounted, 1);
 current = {}; context.syncMemoryMotion(); assert.equal(released, 1);
-assert.ok(read("components/archive/dashboard.tsx").includes("useEffect(() => ambientMotion.watchMemory(memoryRef.current), [])"));
+assert.ok(read("components/archive/memory-state.tsx").includes("useEffect(() => ambientMotion.watchMemory(memoryRef.current), [])"));
 for (const file of ["scripts/prepare-pages.mjs", "lib/publish-paths.mjs"]) assert.ok(read(file).includes('"public/ambient-motion.js"'));
 const helperAt = read("index.html").indexOf('src="public/ambient-motion.js');
 assert.ok(helperAt >= 0 && helperAt < read("index.html").indexOf('src="static-app.js'));
@@ -109,4 +112,46 @@ for (const state of ["data-archive-hidden", "data-memory-offscreen", "data-searc
   css.walkRules((rule) => { if (rule.selector.includes(state)) rule.walkDecls("animation-play-state", (decl) => { if (decl.value === "paused") pauses = true; }); });
   assert.ok(pauses, `${state} pauses decorative CSS without resetting animations`);
 }
-console.log("Ambient lifecycle passed: 100 inputs/one frame, no repeated writes, modal/reduced-motion/hidden/offscreen guards, cleanup/remount and both-reader packaging.");
+const reactSource = read("components/archive/memory-state.tsx");
+const reactAst = ts.createSourceFile("dashboard.tsx", reactSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const memory = reactAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "MemoryLoop");
+const component = vm.createContext({ require, exports: {}, useRef: () => ({ current: null }), useEffect() {} });
+vm.runInContext(ts.transpileModule(`${memory.getText(reactAst)}\nexports.MemoryLoop = MemoryLoop;`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText, component);
+const staticMemory = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "memoryLoop");
+vm.runInContext(staticMemory.getText(ast), context);
+const htmls = [renderToStaticMarkup(createElement(component.exports.MemoryLoop)), context.memoryLoop()];
+for (const html of htmls) {
+  assert.match(html, /aria-hidden="true"/);
+  assert.equal((html.match(/class="memory-field"/g) || []).length, 1);
+  assert.deepEqual([...html.matchAll(/<span class="([^"]+)"/g)].map((match) => match[1]), ["memory-core", "memory-orbit", "memory-gate", "memory-shard", "memory-nodes"]);
+}
+const placement = css.nodes.find((node) => node.selector?.includes(".memory-field > :where(span)"));
+assert.ok(placement, "Zero-specificity span matching lets each later class own its inset");
+const mobileField = css.nodes.find((node) => node.name === "media" && node.params === "(max-width: 760px)" && node.nodes.some((child) => child.selector === ".memory-field"));
+assert.ok(mobileField?.nodes[0].nodes.some((node) => node.prop === "inline-size" && node.value === "min(82%, 210px)"), "Square field fits the existing 250px mobile panel without clipping");
+assert.ok(!css.nodes.some((node) => node.selector?.split(",").some((selector) => selector.trim() === ".memory-loop span")), "The old shared inset cannot override per-layer bounds");
+for (const name of ["memory-core", "memory-orbit", "memory-gate", "memory-shard", "memory-nodes"]) {
+  const layer = css.nodes.find((node) => node.selector === `.${name}`);
+  assert.ok(css.nodes.indexOf(layer) > css.nodes.indexOf(placement));
+  assert.ok(layer.nodes.some((node) => node.prop === "inset" && node.value !== "0"), `${name} has its own bounded geometry`);
+}
+for (const retired of ["memory-rain", "memory-axis", "memory-shell-a", "memory-shell-b", "memory-scan", "memory-fall"]) {
+  assert.ok(!css.nodes.some((node) => node.selector === `.${retired}` || node.name === "keyframes" && node.params === retired), `${retired} is removed, not left running invisibly`);
+}
+const motionFrames = css.nodes.filter((node) => node.name === "keyframes" && node.params.startsWith("memory-"));
+assert.equal(motionFrames.length, 6, "Five fragments plus the existing ambient drift, without new loops");
+for (const frames of motionFrames) frames.walkDecls((decl) => assert.ok(["transform", "opacity"].includes(decl.prop), `${frames.params} keeps geometry and static masks out of keyframes`));
+const traceCss = postcss.parse(read("app/memory-state.css"));
+assert.ok(!traceCss.nodes.some((node) => node.name === "keyframes"));
+assert.ok(!/infinite|backdrop-filter|\bfilter:|will-change/.test(traceCss.toString()), "The code writer has no CSS animation loops or new filters");
+const traceRoot = traceCss.nodes.find((node) => node.selector === ".memory-trace");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "grid-template-rows" && node.value === "auto minmax(0, 1fr)"), "Code scrolls inside a stable heading, not the dashboard");
+const traceComponent = reactAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "SessionTrace");
+const traceContext = vm.createContext({ require, exports: {}, useRef: () => ({ current: null }), useEffect() {} });
+vm.runInContext(ts.transpileModule(`${traceComponent.getText(reactAst)}\nexports.SessionTrace = SessionTrace;`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText, traceContext);
+const traceHtml = renderToStaticMarkup(createElement(traceContext.exports.SessionTrace));
+assert.equal(traceHtml, `<div class="memory-trace">${memoryState.renderShell()}</div>`, "React and Pages use the same code-stream shell");
+for (const label of ["workspace.gs", "Workspace code stream", 'aria-live="off"']) assert.ok(traceHtml.includes(label));
+assert.ok(!traceHtml.includes("PSEUDOCODE") && !traceHtml.includes("tabindex"));
+assert.ok(traceCss.nodes.find((node) => node.selector === ".memory-trace-lines").nodes.some((node) => node.prop === "overflow" && node.value === "hidden"), "The stream has no manual scrollback or scrollbar");
+console.log("Ambient lifecycle passed: bounded five-layer reader parity, per-layer sizing, retired loops removed, coalesced input, pause guards, cleanup/remount and packaging.");

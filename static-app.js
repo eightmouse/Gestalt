@@ -253,6 +253,7 @@ const state = {
   panelMinimized: false,
   panelMaximized: false,
   memoryStateEnabled: true,
+  memoryMode: window.GestaltMemoryState?.readMode() || "trace",
   activeContent: "overview",
   searchOpen: false,
   searchQuery: "",
@@ -304,6 +305,8 @@ function openRecord(recordId, contentKey = "overview", noteQuery = "") {
     return;
   }
 
+  window.GestaltMemoryState?.record("record.open", { section: record.section });
+
   stopRecordAccessSequence();
   state.accessPending = shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   if (state.accessPending) {
@@ -324,7 +327,7 @@ function openRecord(recordId, contentKey = "overview", noteQuery = "") {
   state.navOpen = false;
   state.noteSearchQuery = typeof noteQuery === "string" ? noteQuery : "";
   state.updateHistoryOpen = false;
-  render();
+  if (!syncRecordWindow()) render();
   startRecordAccessSequence();
 }
 
@@ -334,6 +337,7 @@ function openSection(sectionId) {
   }
 
   state.previousActiveSection = state.activeSection;
+  window.GestaltMemoryState?.record("section.enter", { section: sectionId });
   stopRecordAccessSequence();
   state.headlineAnimating = state.activeSection !== sectionId;
   state.activeSection = sectionId;
@@ -370,6 +374,7 @@ function openHome() {
   stopRecordAccessSequence();
   if (state.activeSection !== "system") {
     state.previousActiveSection = state.activeSection;
+    window.GestaltMemoryState?.record("section.enter", { section: "system" });
   }
   state.headlineAnimating = state.activeSection !== "system";
   state.activeSection = "system";
@@ -742,7 +747,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.70.1");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.72.0");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1489,7 +1494,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.70.1</span>
+        <span>v1.72.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1503,7 +1508,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.70.1</span>
+        <span class="version-label">v1.72.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1523,7 +1528,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.70.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.72.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1651,14 +1656,33 @@ function weatherRefreshIcon() {
 
 function memoryLoop() {
   return `<div class="memory-loop" aria-hidden="true" data-memory-loop>
+    <div class="memory-field">
     <span class="memory-core"></span>
     <span class="memory-orbit"></span>
     <span class="memory-gate"></span>
     <span class="memory-shard"></span>
-    <span class="memory-rain"></span>
-    <span class="memory-axis"></span>
     <span class="memory-nodes"></span>
+    </div>
   </div>`;
+}
+
+function memoryPanelContent() {
+  return state.memoryMode === "legacy" || !window.GestaltMemoryState
+    ? memoryLoop()
+    : `<div class="memory-trace" data-memory-trace>${window.GestaltMemoryState.renderShell()}</div>`;
+}
+
+function changeMemoryMode(value) {
+  const api = window.GestaltMemoryState;
+  if (!api) return;
+  const mode = api.normalizeMode(value);
+  if (mode === state.memoryMode) return;
+  state.memoryMode = mode;
+  if (state.localMemory === "granted") api.saveMode(mode);
+  const panel = root.querySelector(".memory-panel > div");
+  if (panel) panel.innerHTML = memoryPanelContent();
+  syncMemoryMotion();
+  syncMemoryTrace();
 }
 
 function currentGamePanel() {
@@ -1702,7 +1726,7 @@ function dashboard() {
     : `<p class="subtle">No projects filed yet.</p>`;
 
   const log = latestLog
-    ? `<div class="latest-log" data-state="${recordStateKey(latestLog.status)}"><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(recordDisplaySummary(latestLog))}</p></div>`
+    ? `<div class="latest-log" data-state="${recordStateKey(latestLog.status)}"><i class="latest-log-signal" aria-hidden="true"></i><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(recordDisplaySummary(latestLog))}</p></div>`
     : `<p class="subtle">No field notes stored.</p>`;
 
   const feed = activityRows.length
@@ -1725,7 +1749,7 @@ function dashboard() {
   return `<div class="dashboard-grid${state.panelOpen ? " is-muted" : ""}${state.memoryStateEnabled ? "" : " without-memory"}">
     ${dashboardPanel("PROJECTS", projectList, `View all (${activeProjects.length})`, `data-open-section="projects"`, "wide-panel active-projects-panel")}
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
-    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", memoryLoop(), "", "", "memory-panel") : ""}
+    ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", memoryPanelContent(), "", "", "memory-panel") : ""}
     ${currentGamePanel()}
     ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "", "latest-log-panel")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
@@ -2610,13 +2634,14 @@ function syncOsBehaviourDialog() {
     return;
   }
   osBehaviourController ??= api.createController();
-  osBehaviourController.open({ entry: state.entryAccessMode, startup: state.startupMode, seasonal: state.seasonalMode, navigation: state.desktopNavigationMode, appearance: window.GestaltAppearance?.getMode() || "night" }, {
+  osBehaviourController.open({ entry: state.entryAccessMode, startup: state.startupMode, seasonal: state.seasonalMode, navigation: state.desktopNavigationMode, appearance: window.GestaltAppearance?.getMode() || "night", memory: state.memoryMode }, {
     onClose() { state.osBehaviourOpen = false; state.windowSteady = true; render(); },
     onChange(key, value) {
       if (key === "appearance") window.GestaltAppearance?.setMode(value, state.localMemory === "granted");
       if (key === "entry") changeEntryAccessMode(value);
       if (key === "seasonal") changeSeasonalMode(value);
       if (key === "navigation") changeDesktopNavigationMode(value);
+      if (key === "memory") changeMemoryMode(value);
       if (key === "startup") {
         if (!api.saveStartupMode(value)) return false;
         state.startupMode = api.normalizeStartupMode(value);
@@ -2631,7 +2656,7 @@ function loadPublicRoadmap() {
   if (!roadmapLoadPromise) {
     let timer, expired = false;
     const deadline = new Promise((resolve) => { timer = setTimeout(() => { expired = true; resolve(null); }, 12000); });
-    const request = import("./public/roadmap.mjs?v=1.70.1")
+    const request = import("./public/roadmap.mjs?v=1.72.0")
       .then(async (module) => expired ? null : { module, data: await module.loadRoadmap(new URL("public/data/roadmap.json", document.baseURI)) });
     roadmapLoadPromise = Promise.race([request, deadline])
       .then((result) => { if (!result || expired) return null; buildRoadmapHistory = result.module.buildRoadmapHistory; roadmapData = result.data; return roadmapData; })
@@ -2823,7 +2848,8 @@ function timelineWindow() {
   const range = items.length ? `${readableDate(items[items.length - 1].date)} to ${readableDate(items[0].date)}` : "No activity recorded";
 
   return `<button class="record-backdrop" type="button" aria-label="Close timeline" data-timeline-close></button>
-    <article class="timeline-window" aria-label="Archive timeline">
+    <article role="dialog" aria-modal="true" tabindex="-1" class="timeline-window" aria-label="Archive timeline">
+      <div class="timeline-registration" aria-hidden="true"><i></i><i></i><i></i></div>
       <header class="window-bar">
         <span>// TIMELINE RECONSTRUCTION</span>
         <div class="window-actions">
@@ -2902,20 +2928,40 @@ function syncRecordWindowChrome() {
   const focused = state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen;
   root.querySelector(".archive-shell")?.classList.toggle("has-record", focused);
   root.querySelector(".workspace")?.classList.toggle("has-record", focused);
+  root.querySelector(".dashboard-grid")?.classList.toggle("is-muted", state.panelOpen);
   const tray = root.querySelector(".workspace-window-tray");
   if (tray) tray.outerHTML = workspaceWindowTray();
   syncDesktopNavigation();
+  syncRecordFocus();
+}
+
+// A window change must not rebuild the scenery, dashboard, images or section scroll.
+function syncRecordWindow() {
+  const workspace = root.querySelector(".workspace");
+  if (!workspace || !state.bootDismissed || root.querySelector(".archive-folder-window, .archive-nav-panel, .timeline-window")) return false;
+  root.querySelector(".record-window")?.remove();
+  root.querySelector("[data-record-backdrop]")?.remove();
+  minimizedRecordWindow = null;
+  syncSearchPanel();
+  syncRoadmapDialog();
+  workspace.insertAdjacentHTML("beforeend", recordBackdrop() + recordWindow(selectedRecord()));
+  state.windowSteady = false;
+  syncRecordWindowChrome();
+  return true;
 }
 
 function closeRecord() {
   if (!state.panelOpen || recordMotionController?.busy) return;
   const finish = () => {
+    window.GestaltMemoryState?.record("record.close");
     stopRecordAccessSequence();
     state.panelOpen = false;
     state.panelMinimized = false;
     minimizedRecordWindow = null;
-    recordRenderPending = false;
-    render();
+    root.querySelector(".record-window")?.remove();
+    root.querySelector("[data-record-backdrop]")?.remove();
+    if (recordRenderPending) { recordRenderPending = false; render(); }
+    else syncRecordWindowChrome();
   };
   if (recordMotionController) {
     recordMotionController.close({ node: root.querySelector(".record-window"), enabled: state.entryAccessMode !== "off", onComplete: finish });
@@ -2926,6 +2972,7 @@ function minimizeRecord() {
   if (!state.panelOpen || recordMotionController?.busy) return;
   const node = root.querySelector(".record-window");
   const finish = () => {
+    window.GestaltMemoryState?.record("record.minimize");
     settleRecordAccessSequence();
     state.panelOpen = false;
     state.panelMinimized = true;
@@ -2945,6 +2992,7 @@ function minimizeRecord() {
 }
 
 function restoreRecord() {
+  window.GestaltMemoryState?.record("record.restore");
   const retained = minimizedRecordWindow?.id === state.selectedId ? minimizedRecordWindow.node : null;
   state.panelOpen = true;
   state.panelMinimized = false;
@@ -2963,7 +3011,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.70.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.72.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3072,9 +3120,7 @@ function render() {
 
   if (!state.bootDismissed && !bootCleanup) {
     bootCleanup = scheduleBootCompletion(() => {
-      state.bootDismissed = true;
-      bootCleanup = null;
-      render();
+      completeBoot();
     }, performance.now() - bootStartedAt, state.startupMode);
   }
 
@@ -3087,6 +3133,7 @@ function render() {
   }
 
   syncMemoryMotion();
+  syncMemoryTrace();
   syncRecordFocus();
   void initializeSteamDisplay();
 
@@ -3095,6 +3142,24 @@ function render() {
     input?.focus();
     input?.setSelectionRange(input.value.length, input.value.length);
   }
+}
+
+function completeBoot() {
+  state.bootDismissed = true;
+  bootCleanup = null;
+  const shell = root.querySelector(".archive-shell");
+  if (!shell) { render(); return; }
+  shell.classList.remove("is-booting", "is-quick-boot");
+  shell.inert = false;
+  shell.removeAttribute("aria-busy");
+  shell.style.removeProperty("--boot-elapsed");
+  root.querySelector(".boot-screen")?.remove();
+  const prompt = root.querySelector(".local-memory-consent");
+  if (state.localMemory === "prompt") {
+    if (!prompt) shell.insertAdjacentHTML("afterbegin", localMemoryPrompt());
+  } else prompt?.remove();
+  syncDesktopNavigation();
+  syncMemoryTrace();
 }
 
 function syncDashboardGreeting(date = new Date()) {
@@ -3250,7 +3315,7 @@ let memoryNode = null;
 let recordFocusNode = null;
 let recordFocusCleanup = null;
 function syncRecordFocus() {
-  const node = document.querySelector(".record-window:not([hidden]):not([inert])");
+  const node = document.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window");
   if (node === recordFocusNode) return;
   recordFocusCleanup?.();
   recordFocusNode = node;
@@ -3263,6 +3328,18 @@ function syncMemoryMotion() {
   memoryCleanup?.();
   memoryNode = node;
   memoryCleanup = window.GestaltAmbientMotion.watchMemory(node);
+}
+
+let traceNode = null, traceCleanup = null;
+function syncMemoryTrace() {
+  const api = window.GestaltMemoryState;
+  if (!api) return;
+  if (state.bootDismissed && state.localMemory !== "prompt") api.record("workspace.ready");
+  const node = document.querySelector("[data-memory-trace]");
+  if (node === traceNode) return;
+  traceCleanup?.();
+  traceNode = node;
+  traceCleanup = node ? api.watchTrace(node) : null;
 }
 
 document.addEventListener("click", (event) => {
@@ -3278,6 +3355,10 @@ document.addEventListener("click", (event) => {
   if (clickTarget.closest("[data-open-connections]")) { openWorkspaceTool("connections"); return; }
 
   const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
+
+  if (lazyNote instanceof HTMLDetailsElement && !lazyNote.open && clickTarget.closest("summary")) {
+    window.GestaltMemoryState?.record("note.expand", { index: Number(lazyNote.dataset.noteIndex) + 1 });
+  }
 
   if (lazyNote instanceof HTMLDetailsElement && lazyNote.dataset.noteLoaded !== "true") {
     const noteIndex = Number(lazyNote.dataset.noteIndex);
@@ -3303,7 +3384,7 @@ document.addEventListener("click", (event) => {
       state.bootDismissed = true;
     }
 
-    render();
+    completeBoot();
     return;
   }
 
@@ -3313,7 +3394,7 @@ document.addEventListener("click", (event) => {
 
     state.localMemory = "session";
     state.bootDismissed = true;
-    render();
+    completeBoot();
     return;
   }
 
@@ -3462,11 +3543,12 @@ document.addEventListener("click", (event) => {
   }
 
   if (contentKey) {
+    if (state.activeContent !== contentKey) window.GestaltMemoryState?.record("content.select", { view: contentKey });
     state.activeContent = contentKey;
     state.windowSteady = true;
     state.noteSearchQuery = "";
     state.updateHistoryOpen = false;
-    render();
+    if (!syncRecordWindow()) render();
     return;
   }
 
@@ -3484,6 +3566,7 @@ document.addEventListener("click", (event) => {
 
   if (windowAction === "maximize") {
     state.panelMaximized = !state.panelMaximized;
+    window.GestaltMemoryState?.record("record.resize", { state: state.panelMaximized ? "maximized" : "normal" });
     const node = root.querySelector(".record-window");
     node?.classList.toggle("is-maximized", state.panelMaximized);
     const name = node?.classList.contains("is-setup-record") ? "setup terminal" : "record";

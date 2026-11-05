@@ -9,5 +9,6 @@ for (const file of ["index.html", "static-app.js", "app/globals.css", "scripts/p
   assert.doesNotMatch(read(file), /GestaltXTerminal|x-terminal|x-embed|platform\.twitter\.com/, `${file} must not retain the retired feed`);
 }
 assert.match(read("static-app.js"), /function syncSearchPanel\(/, "Palette updates remain independent of dashboard rendering");
-assert.match(read("components/archive/dashboard.tsx"), /<MemoryLoop\s*\/>/, "Memory State remains mounted in React");
+assert.match(read("components/archive/dashboard.tsx"), /<MemoryState mode=\{memoryMode\}\s*\/>/, "Memory State remains mounted in React");
+assert.match(read("components/archive/memory-state.tsx"), /<MemoryLoop\s*\/>/, "Legacy moving visual remains available");
 console.log("Retired X integration is absent; Memory State and targeted palette updates remain.");

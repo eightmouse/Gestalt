@@ -1,17 +1,12 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "03 / 11 / 2026",
+  "updated": "05 / 11 / 2026",
   "groups": [
     {
       "id": "working",
       "title": "In progress",
-      "items": [
-        {
-          "title": "Memory State",
-          "detail": "Next: refine Memory State's composition and layered depth without a 3D rebuild. Keep reading quiet and motion optional, then explore distinct reactions for each section."
-        }
-      ]
+      "items": []
     },
     {
       "id": "ideas",
@@ -27,7 +22,7 @@
         },
         {
           "title": "Performance and display pass",
-          "detail": "After the visual and folder work, revisit Firefox and Chromium smoothness, real browser zoom and common display sizes. Check for regressions, unnecessary work, stale code and security issues. Existing background-work fixes are shipped; real-browser acceptance remains open."
+          "detail": "Chrome is the everyday testing baseline for now. After the visual and folder work, revisit the remaining Firefox/Edge differences, real browser zoom and common display sizes. Targeted transition fixes are in, but the deeper performance pass is not declared solved. Check for regressions, unnecessary work, stale code and security issues."
         },
         {
           "title": "Setup editing in place",
@@ -39,6 +34,30 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Memory State code surface",
+          "detail": "Short code-like sequences respond to actions, with quiet idle passages between them. The one-way stream drops hidden lines while its numbering continues. Legacy Visual stays on the left in Settings; Code Surface sits on the right.",
+          "version": "v1.72.0",
+          "releasedOn": "2026-11-05"
+        },
+        {
+          "title": "Timeline arrival",
+          "detail": "A brief register-line and reading-area arrival in both readers. Filtering keeps its place without replaying the entrance, and keyboard focus stays inside the timeline.",
+          "version": "v1.72.0",
+          "releasedOn": "2026-11-05"
+        },
+        {
+          "title": "Window control harmony",
+          "detail": "Entry and notebook edit gears sit beside the other window controls, matching Setup. The existing sizes, editing actions and public read-only boundaries stay intact.",
+          "version": "v1.72.0",
+          "releasedOn": "2026-11-05"
+        },
+        {
+          "title": "Quieter transition work",
+          "detail": "Opening and closing entries retain the Pages workspace instead of rebuilding it. Fewer overlapping masks and fades, paused hidden effects and safer close/minimize cleanup reduce unnecessary work. Remaining browser differences stay on the desk.",
+          "version": "v1.72.0",
+          "releasedOn": "2026-11-05"
+        },
         {
           "title": "Bounded notebook retrieval",
           "detail": "A stalled first request now reaches a retry state instead of waiting indefinitely. Late expired requests cannot overwrite newer notebook data.",

@@ -1,6 +1,6 @@
 export type StartupMode = "full" | "quick";
-export type PreferenceKey = "entry" | "startup" | "seasonal" | "navigation" | "appearance";
-export type PreferenceValues = { entry: "first" | "always" | "off"; startup: StartupMode; seasonal: "auto" | "off"; navigation: "fixed" | "terminal"; appearance?: "night" | "day" | "auto" };
+export type PreferenceKey = "entry" | "startup" | "seasonal" | "navigation" | "appearance" | "memory";
+export type PreferenceValues = { entry: "first" | "always" | "off"; startup: StartupMode; seasonal: "auto" | "off"; navigation: "fixed" | "terminal"; appearance?: "night" | "day" | "auto"; memory?: "trace" | "legacy" };
 export type PreferenceHandlers = { onChange(key: PreferenceKey, value: string): boolean | void; onClose(): void };
 export type OsBehaviourController = {
   open(values: PreferenceValues, handlers: PreferenceHandlers, remember: boolean): void;

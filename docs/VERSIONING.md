@@ -2,7 +2,25 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current release target: `v1.70.1`. Verified base release: `v1.70.0`.
+Current local target: `v1.72.0`. Verified published base: `v1.70.1`.
+
+5 November release review: owner authorized committing and pushing v1.72.0 with saved game notes and media. This supersedes the historical hold-publication notes below for this batch. The accepted Memory State, Timeline, window-control and transition work is filed in the public notebook; deeper browser performance remains open. Deployment verification follows the push.
+
+`v1.72.0` changes Memory State's event-list presentation into a bounded display-only pseudocode writer, combining real-action templates and quiet decorative idle passages. Settings puts Legacy Visual left and Code Surface right, keeping the newer default and existing saved values. A single cancellable scheduler pauses under visibility/coverage guards; reduced motion shows complete action blocks only. The one-way stream drops fully clipped rows while keeping advancing numbers, without manual scrollback or the visible PSEUDOCODE label. Original visual, permission boundaries, dependencies and owner content remain unchanged. Local review only; no new commit/push authorized.
+
+`v1.71.1` places normal entry and notebook edit gears beside the right-hand window controls, matching Setup's established placement. Gears retain their existing size, hover/focus states, labels and edit/read callbacks. Notebook Save/File/Reload controls stay on the same side, with its gear nearest Close. Header labels can ellipsize before crowding controls on small screens. Setup and public read-only boundaries are unchanged. No new commit/push authorized.
+
+`v1.71.0` turns Memory State into an optional session-action trace, while preserving the moving visual under Settings > Memory State > Legacy Visual. A shared dependency-free helper retains at most 32 allowlisted events per document, without record titles or IDs, draft text, queries, storage or network transmission. Only the selected variant is mounted; listeners detach when leaving Dashboard, while the bounded history survives section changes. Rows arrive once per real action and offscreen/hidden updates wait. The mode preference alone can be remembered under the existing permission. New helper/CSS assets have explicit packaging, cache-token and deployment checks. No dependency changes or new publication authorized.
+
+`v1.70.5` adds the same finite Timeline registration/reading-area arrival in both readers, without per-result animations or replay on filtering. Memory State has a centered square field, a clearer faceted core and five bounded fragments instead of seven competing full-panel layers. The shared span selector no longer overrides layer-specific insets; unused rain/ring/facet animation loops are removed. Pointer amplitudes, pause/reduced-motion guards, dashboard geometry, authoring and original media are unchanged. Includes the local performance fixes below; Chrome is the primary testing baseline and remaining Firefox/Edge work is deferred, not declared solved. Hold commit/push for the reviewed batch.
+
+Timeline verification also exposed a pre-existing local Escape mismatch. Both timelines now carry dialog semantics and reuse the existing bounded focus helper; the React window consumes plain Escape locally without also triggering a background shortcut. No global keyboard listener or loading timer was added.
+
+`v1.70.4` follows partial owner acceptance of v1.70.3. Remove overlapping animated entry/search masks, keep the drawn-frame/staggered reveal and its timings, and animate Terminal outline with transform/opacity only. Shared record/Terminal exits pause nested CSS effects and stop painting dissolved content before frame contraction; cancellation restores the original content. Existing geometry, close/minimize durations, authoring and settings stay unchanged. Firefox/Edge smoothness is still an acceptance item; no commit/push authorized.
+
+`v1.70.3` follows actual Firefox profiler evidence: Latest Log uses a transform-driven light track, NEW badges fade a pre-painted glow instead of repainting text/borders, and the Terminal background grows without clipping. Periods, geometry, authoring and the existing entry construction are preserved. Raw profiling data remains outside the repository; post-change Firefox acceptance is still required. Includes the unpushed v1.70.2 fixes below; no new commit/push authorized.
+
+`v1.70.2` addresses transition overhead without changing animation timings, geometry or artwork: cache static texture overlays, retain the Pages workspace through boot and ordinary record open/close/tab changes, and let the React entry use the same single CSS fade as Pages. Includes a loopback-only opt-in timing preview and lifecycle regression tests. Browser frame-cadence samples are diagnostic, not a certified FPS result; actual Firefox/Edge acceptance remains open. No new commit/push authorized.
 
 `v1.70.1` bounds lazy notebook retrieval: a stalled module/data request becomes the existing retry state rather than an endless loading message. Late expired requests cannot overwrite a retry, and settled/closed reads release their deadline. This small publication follow-up was identified in the live browser check; no layout or authored record changes.
 

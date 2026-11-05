@@ -1,11 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RecordEntry } from "@/lib/types";
 import { formatReadableDate } from "@/components/archive/record-utils";
 import type { ContentKey, TimelineItem } from "@/components/archive/types";
 import { groupTimelineItems, timelineItemTitle, timelineSources } from "@/components/archive/timeline-utils";
+import recordMotion from "@/public/record-motion.js";
 
 type TimelineWindowProps = {
   items: TimelineItem[];
@@ -16,20 +16,29 @@ type TimelineWindowProps = {
 export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowProps) {
   const [source, setSource] = useState("all");
   const bodyRef = useRef<HTMLDivElement>(null);
+  const windowRef = useRef<HTMLElement | null>(null);
+  useEffect(() => recordMotion.focusWithin(windowRef.current), []);
   const sources = timelineSources(items);
   const activeSource = source === "all" || sources.some((item) => item.id === source) ? source : "all";
   const groups = groupTimelineItems(items, activeSource);
   const visibleCount = groups.reduce((count, group) => count + group.items.length, 0);
 
   return (
-    <motion.article
+    <article
+      ref={windowRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
       className="timeline-window"
       aria-label="Archive timeline"
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 14 }}
-      transition={{ duration: 0.18 }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || event.defaultPrevented || event.repeat || event.nativeEvent.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }}
     >
+      <div className="timeline-registration" aria-hidden="true"><i /><i /><i /></div>
       <header className="window-bar">
         <span>// TIMELINE RECONSTRUCTION</span>
         <div className="window-actions">
@@ -74,7 +83,7 @@ export function TimelineWindow({ items, onClose, onOpenRecord }: TimelineWindowP
           )) : <p className="timeline-empty">No signals in this view.</p>}
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
 

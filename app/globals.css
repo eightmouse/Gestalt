@@ -194,6 +194,8 @@ button:focus-visible {
   inset: 0;
   pointer-events: none;
   z-index: 20;
+  /* Cache static full-screen textures instead of repainting them over moving windows. */
+  transform: translateZ(0);
 }
 
 .boot-screen {
@@ -1852,7 +1854,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .web-search-error { color: var(--text); font: 14px/1.5 var(--mono); }
 .web-search-dialog[data-search-ready] :is(.web-search-form, .web-search-heading, .web-search-row > *) { animation: none; }
 .web-search-dialog[data-search-ready] .web-search-access { display: none; }
-@keyframes web-search-surface { 0%, 30% { opacity: 0; clip-path: inset(50% 0); } 72%, 100% { opacity: 1; clip-path: inset(0); } }
+@keyframes web-search-surface { 0%, 30% { opacity: 0; } 72%, 100% { opacity: 1; } }
 @keyframes web-search-frame { 0% { opacity: 0; transform: scale(0.05, 0.015); } 8% { opacity: 0.85; transform: scale(0.15, 0.015); } 30% { opacity: 0.8; transform: scale(1, 0.015); } 56% { opacity: 0.65; transform: scale(1); } 72% { opacity: 0.4; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
 @keyframes web-search-query-line { 0% { opacity: 0; transform: scaleX(0.06); } 10% { opacity: 0.7; transform: scaleX(0.18); } 30% { opacity: 0.5; transform: scaleX(1); } 42%, 100% { opacity: 0; transform: scaleX(1); } }
 @keyframes web-search-field { from { opacity: 0; transform: translateX(3px); } to { opacity: 1; transform: translateX(0); } }
@@ -4118,18 +4120,25 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   overflow: hidden;
 }
 
-.latest-log::before {
-  content: "";
+.latest-log-signal {
   position: absolute;
   inset-inline-start: 0;
-  inset-block-start: var(--dashboard-log-tick-start);
+  inset-block: 0;
   inline-size: 2px;
-  block-size: var(--dashboard-log-tick-size);
+  pointer-events: none;
   opacity: 0;
+  animation: dashboard-log-tick 7.6s linear infinite;
+}
+
+/* Move a full-height track; its small painted light keeps the exact original path. */
+.latest-log-signal::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: var(--dashboard-log-tick-start);
+  block-size: var(--dashboard-log-tick-size);
   background: linear-gradient(180deg, transparent, rgba(var(--tone-strong, 236, 230, 211), 0.78), transparent);
   box-shadow: 0 0 12px rgba(var(--tone-ink, 217, 213, 193), 0.34);
-  will-change: inset-block-start, opacity;
-  animation: dashboard-log-tick 7.6s linear infinite;
 }
 
 .latest-log p {
@@ -4224,6 +4233,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .activity-badge {
+  position: relative;
   display: none;
   min-inline-size: 31px;
   block-size: 17px;
@@ -4242,9 +4252,23 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .activity-feed li[data-activity-age="new"] .activity-badge {
-  border-color: rgba(var(--tone-ink, 217, 213, 193), 0.32);
-  color: var(--text);
-  text-shadow: 0 0 8px rgba(var(--tone-strong, 236, 230, 211), 0.18);
+  border-color: rgba(var(--tone-ink, 217, 213, 193), 0.28);
+  color: rgba(var(--tone-strong, 236, 230, 211), 0.9);
+  text-shadow: 0 0 5px rgba(var(--tone-strong, 236, 230, 211), 0.14);
+}
+
+.activity-feed li[data-activity-age="new"] .activity-badge::after {
+  content: "new";
+  position: absolute;
+  inset: -1px;
+  display: grid;
+  place-items: center;
+  padding: inherit;
+  border: 1px solid rgba(var(--tone-strong, 236, 230, 211), 0.48);
+  color: var(--text-strong);
+  text-shadow: 0 0 9px rgba(var(--tone-strong, 236, 230, 211), 0.32), 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.12);
+  pointer-events: none;
+  opacity: 0;
   animation: dashboard-new-badge 5.8s ease-in-out infinite;
 }
 
@@ -4458,7 +4482,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry-title { font-size: calc(15px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window:not(.is-setup-record) .record-aside { max-block-size: none; padding: calc(24px * var(--desktop-size)) calc(18px * var(--desktop-size)); gap: calc(22px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window:not(.is-setup-record) .window-bar { block-size: var(--record-titlebar-size); padding: 0 calc(22px * var(--desktop-size)) 0 calc(28px * var(--desktop-size)); font-size: calc(16px * var(--desktop-size)); }
-  .archive-shell > .workspace > .record-window :is(.window-actions, .setup-prompt-actions) { gap: calc(8px * var(--desktop-size)); }
+  .archive-shell > .workspace > .record-window :is(.window-actions, .setup-prompt-actions, .window-control-group) { gap: calc(8px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window .window-title-group { gap: calc(9px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window .window-edit-action { inline-size: calc(26px * var(--desktop-size)); block-size: calc(26px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window .window-edit-action svg { inline-size: calc(14px * var(--desktop-size)); block-size: calc(14px * var(--desktop-size)); }
@@ -4797,90 +4821,85 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .memory-loop::before,
 .memory-loop::after,
-.memory-loop span {
+.memory-field > :where(span) {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
+.memory-field {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  inline-size: min(82%, calc(260px * var(--desktop-size, 1)));
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .memory-field { inline-size: min(82%, 210px); }
+}
+
 .memory-loop::before {
-  inset: -22%;
+  inset: 12%;
   background:
-    radial-gradient(circle at 50% 50%, transparent 0 16%, rgba(var(--tone-strong, 236, 230, 211), 0.08) 17% 18%, transparent 19% 33%, rgba(var(--tone-strong, 236, 230, 211), 0.05) 34% 35%, transparent 36%),
     radial-gradient(circle at 38% 42%, rgba(var(--tone-strong, 236, 230, 211), 0.24) 0 1px, transparent 2px),
     radial-gradient(circle at 67% 54%, rgba(var(--tone-strong, 236, 230, 211), 0.18) 0 1px, transparent 2px),
-    radial-gradient(circle at 44% 68%, rgba(var(--tone-strong, 236, 230, 211), 0.16) 0 1px, transparent 2px),
-    radial-gradient(circle at 50% 58%, rgba(var(--tone-accent, 200, 189, 159), 0.16), transparent 22%);
-  opacity: 0.74;
-  animation: memory-drift 9s ease-in-out infinite alternate;
+    radial-gradient(ellipse at 50% 52%, rgba(var(--tone-accent, 200, 189, 159), 0.2), transparent 50%);
+  opacity: 0.72;
+  animation: memory-drift 19s ease-in-out infinite alternate;
 }
 
 .memory-loop::after {
   opacity: 0.2;
   background:
-    linear-gradient(115deg, transparent 0 44%, rgba(var(--tone-ink, 217, 213, 193), 0.13) 45%, transparent 47% 100%),
     linear-gradient(90deg, rgba(var(--tone-base, 5, 6, 5), 0.72), transparent 42%, rgba(var(--tone-base, 5, 6, 5), 0.64)),
     repeating-linear-gradient(180deg, rgba(var(--tone-highlight, 255, 255, 255), 0.16) 0 1px, transparent 1px 9px);
-  animation: memory-scan 6.5s ease-in-out infinite;
 }
 
 .memory-core {
-  inset: 22% 24%;
+  inset: 13% 14%;
   border: 0;
   clip-path: polygon(20% 16%, 61% 8%, 86% 32%, 78% 68%, 49% 91%, 16% 74%, 8% 38%);
   background:
-    linear-gradient(90deg, transparent 0 23%, rgba(var(--tone-ink, 217, 213, 193), 0.1) 24% 25%, transparent 26% 72%, rgba(var(--tone-ink, 217, 213, 193), 0.08) 73% 74%, transparent 75%),
-    linear-gradient(147deg, transparent 0 44%, rgba(var(--tone-strong, 236, 230, 211), 0.16) 45% 46%, transparent 47% 100%),
-    linear-gradient(28deg, transparent 0 56%, rgba(var(--tone-ink, 217, 213, 193), 0.12) 57% 58%, transparent 59% 100%),
-    radial-gradient(circle at 34% 43%, rgba(var(--tone-strong, 236, 230, 211), 0.36) 0 2px, transparent 3px),
-    radial-gradient(circle at 62% 56%, rgba(var(--tone-strong, 236, 230, 211), 0.22) 0 1px, transparent 2px),
-    radial-gradient(circle at 50% 52%, rgba(var(--tone-ink, 217, 213, 193), 0.16), transparent 38%);
+    linear-gradient(147deg, transparent 0 43.5%, rgba(var(--tone-strong, 236, 230, 211), 0.58) 44% 44.5%, transparent 45% 100%),
+    linear-gradient(28deg, transparent 0 55.5%, rgba(var(--tone-ink, 217, 213, 193), 0.34) 56% 56.5%, transparent 57% 100%),
+    linear-gradient(93deg, transparent 0 46%, rgba(var(--tone-ink, 217, 213, 193), 0.28) 46.5% 47%, transparent 47.5%),
+    radial-gradient(circle at 48% 51%, rgba(var(--tone-strong, 236, 230, 211), 0.2), transparent 52%),
+    linear-gradient(147deg, rgba(var(--tone-ink, 217, 213, 193), 0.06), rgba(var(--tone-ink, 217, 213, 193), 0.24) 44%, rgba(var(--tone-ink, 217, 213, 193), 0.035) 45%);
   opacity: 0.78;
   transform: translate3d(0, 0, 0);
-  animation: memory-sphere 7.5s ease-in-out infinite;
+  animation: memory-sphere 13.6s ease-in-out infinite;
 }
 
 .memory-core::before,
 .memory-core::after {
   content: "";
   position: absolute;
-  inset: 12%;
-  background:
-    linear-gradient(118deg, transparent 0 39%, rgba(var(--tone-ink, 217, 213, 193), 0.12) 40% 42%, transparent 43% 100%),
-    linear-gradient(31deg, transparent 0 66%, rgba(var(--tone-ink, 217, 213, 193), 0.12) 67% 69%, transparent 70% 100%),
-    radial-gradient(circle at 43% 30%, rgba(var(--tone-strong, 236, 230, 211), 0.16) 0 1px, transparent 2px);
-  clip-path: polygon(8% 28%, 40% 6%, 89% 19%, 76% 58%, 51% 86%, 18% 70%);
+  inset: 0;
+  background: linear-gradient(140deg, rgba(var(--tone-strong, 236, 230, 211), 0.3), transparent 70%);
+  clip-path: polygon(20% 16%, 61% 8%, 47% 47%, 8% 38%);
 }
 
 .memory-core::before {
-  transform: rotate(-10deg);
-  animation: memory-shell-a 6.2s ease-in-out infinite;
+  opacity: 0.68;
 }
 
 .memory-core::after {
-  inset: 23%;
-  background:
-    linear-gradient(73deg, transparent 0 37%, rgba(var(--tone-ink, 217, 213, 193), 0.16) 38% 40%, transparent 41% 100%),
-    linear-gradient(154deg, transparent 0 53%, rgba(var(--tone-ink, 217, 213, 193), 0.1) 54% 56%, transparent 57% 100%);
-  clip-path: polygon(23% 12%, 75% 21%, 88% 62%, 48% 87%, 12% 54%);
-  transform: rotate(18deg);
-  animation: memory-shell-b 5.7s ease-in-out infinite;
+  background: linear-gradient(35deg, rgba(var(--tone-strong, 236, 230, 211), 0.24), transparent);
+  clip-path: polygon(47% 47%, 78% 68%, 49% 91%, 16% 74%);
 }
 
 .memory-orbit {
-  inset: 12% 10%;
+  inset: 1%;
   border-radius: 0;
   background:
-    linear-gradient(32deg, transparent 0 16%, rgba(var(--tone-ink, 217, 213, 193), 0.2) 17% 18%, transparent 19% 100%),
-    linear-gradient(145deg, transparent 0 28%, rgba(var(--tone-ink, 217, 213, 193), 0.16) 29% 30%, transparent 31% 100%),
-    linear-gradient(8deg, transparent 0 53%, rgba(var(--tone-ink, 217, 213, 193), 0.12) 54% 55%, transparent 56% 100%),
-    radial-gradient(circle at 31% 36%, rgba(var(--tone-ink, 217, 213, 193), 0.14) 0 2px, transparent 3px),
-    radial-gradient(circle at 80% 42%, rgba(var(--tone-ink, 217, 213, 193), 0.14) 0 1px, transparent 2px),
-    radial-gradient(circle at 61% 78%, rgba(var(--tone-ink, 217, 213, 193), 0.14) 0 2px, transparent 3px);
+    linear-gradient(145deg, transparent 0 28%, rgba(var(--tone-ink, 217, 213, 193), 0.2) 28.5% 29%, transparent 29.5%),
+    linear-gradient(8deg, transparent 0 68%, rgba(var(--tone-ink, 217, 213, 193), 0.16) 68.5% 69%, transparent 69.5%);
   clip-path: polygon(16% 28%, 42% 9%, 82% 20%, 91% 47%, 74% 73%, 39% 87%, 13% 61%);
   transform: rotate(-6deg);
-  animation: memory-orbit 10.5s steps(6, end) infinite;
+  animation: memory-orbit 18.4s ease-in-out infinite;
 }
 
 .memory-orbit::before,
@@ -4895,77 +4914,52 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .memory-orbit::before {
-  inline-size: 42px;
-  block-size: 12px;
-  inset-block-start: 27%;
-  inset-inline-start: 42%;
+  inline-size: 13%;
+  block-size: 5%;
+  inset-block-start: 18%;
+  inset-inline-start: 66%;
   transform: skewX(-18deg);
 }
 
 .memory-orbit::after {
-  inline-size: 30px;
-  block-size: 20px;
-  inset-block-end: 19%;
-  inset-inline-end: 18%;
+  inline-size: 9%;
+  block-size: 8%;
+  inset-block-end: 14%;
+  inset-inline-start: 18%;
   transform: skewX(14deg);
 }
 
 .memory-gate {
-  inset: 18% 18%;
+  inset: 2%;
   background:
-    linear-gradient(0deg, transparent 0 19%, rgba(var(--tone-ink, 217, 213, 193), 0.08) 20% 21%, transparent 22% 78%, rgba(var(--tone-ink, 217, 213, 193), 0.06) 79% 80%, transparent 81%),
-    linear-gradient(90deg, transparent 0 10%, rgba(var(--tone-ink, 217, 213, 193), 0.11) 11% 12%, transparent 13% 88%, rgba(var(--tone-ink, 217, 213, 193), 0.1) 89% 90%, transparent 91%),
-    linear-gradient(90deg, transparent, rgba(var(--tone-ink, 217, 213, 193), 0.16), transparent),
-    linear-gradient(180deg, transparent 0 45%, rgba(var(--tone-ink, 217, 213, 193), 0.26) 46% 47%, transparent 48% 100%);
-  opacity: 0.5;
-  transform: scaleX(0.72);
-  animation: memory-pulse 5.4s ease-in-out infinite;
+    linear-gradient(var(--line-strong), var(--line-strong)) left top / 12% 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left top / 1px 12% no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right bottom / 12% 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right bottom / 1px 12% no-repeat;
+  opacity: 0.4;
+  animation: memory-pulse 16.2s ease-in-out infinite;
 }
 
 .memory-shard {
-  inset: 19% 17%;
-  opacity: 0.58;
+  inset: 4% 8%;
+  opacity: 0.54;
   background:
-    linear-gradient(132deg, transparent 0 43%, rgba(var(--tone-strong, 236, 230, 211), 0.16) 44% 45%, transparent 46% 100%),
-    linear-gradient(28deg, transparent 0 62%, rgba(var(--tone-strong, 236, 230, 211), 0.1) 63% 64%, transparent 65% 100%),
-    radial-gradient(circle at 58% 47%, rgba(var(--tone-strong, 236, 230, 211), 0.12) 0 1px, transparent 2px);
+    linear-gradient(132deg, transparent 0 24%, rgba(var(--tone-strong, 236, 230, 211), 0.28) 24.5% 25%, transparent 25.5%),
+    linear-gradient(28deg, transparent 0 76%, rgba(var(--tone-strong, 236, 230, 211), 0.2) 76.5% 77%, transparent 77.5%);
   clip-path: polygon(9% 40%, 42% 11%, 88% 24%, 78% 65%, 54% 91%, 19% 75%);
-  animation: memory-shard 8.8s ease-in-out infinite;
-}
-
-.memory-rain {
-  background-image:
-    linear-gradient(90deg, transparent 0 15%, rgba(var(--tone-ink, 217, 213, 193), 0.14) 16%, transparent 17% 38%, rgba(var(--tone-ink, 217, 213, 193), 0.09) 39%, transparent 40% 100%);
-  background-size: 46px 100%;
-  opacity: 0.18;
-  transform: translateY(-12%);
-  animation: memory-fall 7s linear infinite;
-}
-
-.memory-axis {
-  inset: 10% 13%;
-  opacity: 0.44;
-  background:
-    linear-gradient(90deg, transparent 0 49%, rgba(var(--tone-ink, 217, 213, 193), 0.22) 50%, transparent 51%),
-    linear-gradient(180deg, transparent 0 49%, rgba(var(--tone-ink, 217, 213, 193), 0.18) 50%, transparent 51%),
-    radial-gradient(circle at 50% 50%, transparent 0 35%, rgba(var(--tone-ink, 217, 213, 193), 0.14) 36% 37%, transparent 38% 51%, rgba(var(--tone-ink, 217, 213, 193), 0.08) 52% 53%, transparent 54%);
-  transform: rotate(0deg);
-  animation: memory-axis 9.5s steps(7, end) infinite;
+  animation: memory-shard 21.8s ease-in-out infinite;
 }
 
 
 .memory-nodes {
-  inset: 18% 17%;
+  inset: 4%;
   opacity: 0.62;
   background:
     radial-gradient(circle at 34% 37%, rgba(var(--tone-strong, 236, 230, 211), 0.72) 0 2px, transparent 3px),
     radial-gradient(circle at 77% 31%, rgba(var(--tone-strong, 236, 230, 211), 0.52) 0 1px, transparent 2px),
     radial-gradient(circle at 70% 75%, rgba(var(--tone-strong, 236, 230, 211), 0.64) 0 2px, transparent 3px),
-    radial-gradient(circle at 30% 68%, rgba(var(--tone-strong, 236, 230, 211), 0.46) 0 1px, transparent 2px),
-    linear-gradient(28deg, transparent 0 31%, rgba(var(--tone-strong, 236, 230, 211), 0.08) 32% 33%, transparent 34% 100%),
-    linear-gradient(144deg, transparent 0 43%, rgba(var(--tone-strong, 236, 230, 211), 0.07) 44% 45%, transparent 46% 100%);
-  clip-path: polygon(24% 32%, 72% 22%, 84% 73%, 37% 84%);
-  animation: memory-nodes 6.8s ease-in-out infinite;
+    radial-gradient(circle at 30% 68%, rgba(var(--tone-strong, 236, 230, 211), 0.46) 0 1px, transparent 2px);
+  animation: memory-nodes 11.8s ease-in-out infinite;
 }
 
 .archive-shell.has-record .memory-loop::before,
@@ -4983,8 +4977,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .archive-shell.has-record .active-projects-panel .record-list button::after,
 .archive-shell.has-record .current-game[data-state] .game-cover,
 .archive-shell.has-record .current-game[data-state] .game-cover::before,
-.archive-shell.has-record .latest-log::before,
-.archive-shell.has-record .activity-feed li[data-activity-age="new"] .activity-badge,
+.archive-shell.has-record .latest-log-signal,
+.archive-shell.has-record .activity-feed li[data-activity-age="new"] .activity-badge::after,
 .archive-shell.has-record .weather-temp::after {
   animation-play-state: paused;
 }
@@ -5083,6 +5077,19 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .record-window[hidden] { display: none !important; }
 .record-window[data-record-retracting] { animation: none !important; pointer-events: none; will-change: transform, opacity; }
+
+/* Keep the current construction frame still while the shared exit moves it. */
+:is(.record-window, .desktop-nav-terminal)[data-record-retracting] *,
+:is(.record-window, .desktop-nav-terminal)[data-record-retracting]::before,
+:is(.record-window, .desktop-nav-terminal)[data-record-retracting]::after,
+:is(.record-window, .desktop-nav-terminal)[data-record-retracting] *::before,
+:is(.record-window, .desktop-nav-terminal)[data-record-retracting] *::after {
+  animation-play-state: paused !important;
+}
+
+:is(.record-window, .desktop-nav-terminal)[data-record-content-hidden] * {
+  visibility: hidden !important;
+}
 
 .record-window.is-access-pending {
   border-color: transparent;
@@ -5339,6 +5346,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   inset: 0;
   opacity: 0.018;
   background: repeating-linear-gradient(180deg, rgba(var(--tone-highlight, 255, 255, 255), 0.36) 0 1px, transparent 1px 10px);
+  transform: translateZ(0);
 }
 
 .record-window.is-maximized {
@@ -5371,6 +5379,47 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
     0 0 0 1px rgba(var(--tone-highlight, 255, 255, 255), 0.08);
   contain: layout paint style;
   transform: translateZ(0);
+  animation: timeline-arrive 180ms ease-out backwards;
+}
+
+/* The outer register opens once; replacing filtered results cannot replay it. */
+.timeline-registration { position: absolute; z-index: 2; inset: 8px; pointer-events: none; }
+.timeline-registration i { position: absolute; display: block; opacity: 0; background: var(--text); }
+.timeline-registration i:nth-child(1) { inset: 0 0 auto; block-size: 1px; transform-origin: left; animation: timeline-register-line 760ms cubic-bezier(0.2, 0.65, 0.3, 1) backwards; }
+.timeline-registration i:nth-child(2) { inset: 60px auto 8px 6px; inline-size: 1px; transform-origin: top; animation: timeline-register-spine 900ms 90ms ease-out backwards; }
+.timeline-registration i:nth-child(3) { inset: 60px auto 8px 6px; inline-size: 5px; background: repeating-linear-gradient(180deg, var(--text) 0 1px, transparent 1px 32px); animation: timeline-register-ticks 760ms 180ms ease-out backwards; }
+.timeline-window > .window-bar > span { animation: timeline-ink-arrive 320ms 120ms ease-out backwards; }
+.timeline-window > .timeline-toolbar { animation: timeline-ink-arrive 380ms 240ms ease-out backwards; }
+.timeline-window > .timeline-body { animation: timeline-ink-arrive 460ms 380ms ease-out backwards; }
+
+@keyframes timeline-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes timeline-register-line {
+  0% { opacity: 0; transform: scaleX(0); }
+  25% { opacity: 0.68; }
+  70% { opacity: 0.46; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(1); }
+}
+@keyframes timeline-register-spine {
+  0% { opacity: 0; transform: scaleY(0); }
+  22% { opacity: 0.58; }
+  72% { opacity: 0.4; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(1); }
+}
+@keyframes timeline-register-ticks {
+  0%, 10% { opacity: 0; }
+  44% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+@keyframes timeline-ink-arrive {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timeline-registration { display: none; }
+  .timeline-window,
+  .timeline-window > .window-bar > span,
+  .timeline-window > .timeline-toolbar,
+  .timeline-window > .timeline-body { animation: none; }
 }
 
 .timeline-window::before,
@@ -5706,6 +5755,9 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   gap: 9px;
   min-inline-size: 0;
 }
+
+.window-title-group > span { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.window-control-group { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
 
 .window-edit-action {
   inline-size: 26px;
@@ -7859,29 +7911,30 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 
 @keyframes record-content-header {
-  from { opacity: 0; clip-path: inset(0 100% 0 0); }
-  to { opacity: 1; clip-path: inset(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
+/* The access surface draws the frame; nested content does not need more masks. */
 @keyframes record-content-build {
-  from { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateY(4px); }
-  to { opacity: 1; clip-path: inset(0); transform: translateY(0); }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes record-banner-materialize {
-  from { opacity: 0; clip-path: inset(0 100% 0 0); transform: scale(calc(var(--header-image-scale, 1) * 1.035)); }
-  to { opacity: 0.52; clip-path: inset(0); transform: scale(var(--header-image-scale, 1)); }
+  from { opacity: 0; transform: scale(calc(var(--header-image-scale, 1) * 1.035)); }
+  to { opacity: 0.52; transform: scale(var(--header-image-scale, 1)); }
 }
 
 @keyframes record-label-materialize {
-  from { opacity: 0; clip-path: inset(0 0 55% 0); transform: translateY(8px); }
-  to { opacity: 1; clip-path: inset(0); transform: translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes record-title-materialize {
-  0% { opacity: 0; clip-path: inset(0 0 55% 0); transform: translateY(8px); text-shadow: none; }
-  58% { opacity: 1; clip-path: inset(0); transform: translateY(0); text-shadow: 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.3); }
-  100% { opacity: 1; clip-path: inset(0); transform: translateY(0); text-shadow: 0 0 0 rgba(var(--tone-ink, 217, 213, 193), 0); }
+  0% { opacity: 0; transform: translateY(8px); text-shadow: none; }
+  58% { opacity: 1; transform: translateY(0); text-shadow: 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.3); }
+  100% { opacity: 1; transform: translateY(0); text-shadow: 0 0 0 rgba(var(--tone-ink, 217, 213, 193), 0); }
 }
 
 @keyframes record-content-heading-bloom {
@@ -7891,18 +7944,18 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 
 @keyframes record-panel-populate {
-  from { opacity: 0; clip-path: inset(0 0 100% 0); transform: translateY(8px); }
-  to { opacity: 1; clip-path: inset(0); transform: translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes record-aside-materialize {
-  from { opacity: 0; clip-path: inset(0 0 0 100%); transform: translateX(8px); }
-  to { opacity: 1; clip-path: inset(0); transform: translateX(0); }
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes record-access-micro-in {
-  from { opacity: 0; clip-path: inset(0 100% 0 0); }
-  to { opacity: 0.78; clip-path: inset(0); }
+  from { opacity: 0; }
+  to { opacity: 0.78; }
 }
 
 @keyframes record-access-sweep {
@@ -7960,17 +8013,11 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 @keyframes dashboard-new-badge {
   0%,
   100% {
-    border-color: rgba(var(--tone-ink, 217, 213, 193), 0.28);
-    color: rgba(var(--tone-strong, 236, 230, 211), 0.9);
-    text-shadow: 0 0 5px rgba(var(--tone-strong, 236, 230, 211), 0.14);
+    opacity: 0;
   }
 
   52% {
-    border-color: rgba(var(--tone-strong, 236, 230, 211), 0.48);
-    color: var(--text-strong);
-    text-shadow:
-      0 0 9px rgba(var(--tone-strong, 236, 230, 211), 0.32),
-      0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.12);
+    opacity: 1;
   }
 }
 
@@ -7978,7 +8025,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   0%,
   52% {
     opacity: 0;
-    inset-block-start: var(--dashboard-log-tick-start, -24px);
+    transform: translateY(0);
   }
 
   60% {
@@ -7992,7 +8039,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   96%,
   100% {
     opacity: 0;
-    inset-block-start: calc(100% - var(--dashboard-log-tick-size, 24px));
+    transform: translateY(100%);
   }
 }
 
@@ -8158,53 +8205,29 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 @keyframes memory-sphere {
   0%,
+  16%,
   100% {
     opacity: 0.64;
     transform: translate3d(calc(var(--memory-core-x) - 1%), calc(var(--memory-core-y) + 1%), 0) rotate(-1deg);
   }
 
-  46% {
+  58% {
     opacity: 0.86;
     transform: translate3d(calc(var(--memory-core-x) + 2%), calc(var(--memory-core-y) - 1%), 0) rotate(2deg);
   }
 }
 
-@keyframes memory-shell-a {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: rotate(-10deg) translateX(-1%);
-  }
-
-  50% {
-    opacity: 0.58;
-    transform: rotate(13deg) translateX(2%);
-  }
-}
-
-@keyframes memory-shell-b {
-  0%,
-  100% {
-    opacity: 0.22;
-    transform: rotate(18deg) translateY(1%);
-  }
-
-  50% {
-    opacity: 0.46;
-    transform: rotate(-18deg) translateY(-2%);
-  }
-}
-
 @keyframes memory-pulse {
   0%,
+  28%,
   100% {
-    opacity: 0.38;
-    transform: scaleX(0.66);
+    opacity: 0.26;
+    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0);
   }
 
-  48% {
-    opacity: 0.62;
-    transform: scaleX(0.82);
+  68% {
+    opacity: 0.52;
+    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) scale(1.025);
   }
 }
 
@@ -8216,41 +8239,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
   50% {
     transform: translate3d(calc(var(--memory-shard-x) + 3%), calc(var(--memory-shard-y) - 2%), 0) rotate(5deg);
-  }
-}
-
-@keyframes memory-scan {
-  0%,
-  100% {
-    transform: translateX(-9%);
-  }
-
-  50% {
-    transform: translateX(9%);
-  }
-}
-
-@keyframes memory-fall {
-  to {
-    transform: translateY(12%);
-  }
-}
-
-@keyframes memory-axis {
-  0%,
-  100% {
-    opacity: 0.28;
-    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) rotate(-4deg) scale(0.96);
-  }
-
-  35% {
-    opacity: 0.52;
-    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) rotate(3deg) scale(1.02);
-  }
-
-  64% {
-    opacity: 0.38;
-    transform: translate3d(var(--memory-axis-x), var(--memory-axis-y), 0) rotate(-1deg) scale(0.99);
   }
 }
 
@@ -9525,11 +9513,11 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   .active-projects-panel .record-list button::after,
   .current-game[data-state] .game-cover,
   .current-game[data-state] .game-cover::before,
-  .activity-feed li[data-activity-age="new"] .activity-badge {
+  .activity-feed li[data-activity-age="new"] .activity-badge::after {
     animation: none;
   }
 
-  .latest-log::before,
+  .latest-log-signal,
   .weather-temp::after {
     display: none;
   }
@@ -9556,8 +9544,10 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     transition-duration: 0.001ms !important;
   }
 
-  .latest-log::before,
+  .latest-log-signal,
   .weather-temp::after {
     opacity: 0 !important;
   }
+
+  .activity-feed li[data-activity-age="new"] .activity-badge::after { display: none; }
 }

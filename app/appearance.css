@@ -87,7 +87,7 @@
 }
 /* Day signals are ink traces; Night retains its existing luminous treatment. */
 :root[data-appearance="day"] .active-projects-panel .record-list button::after,
-:root[data-appearance="day"] .latest-log::before { box-shadow: none; }
+:root[data-appearance="day"] .latest-log-signal::before { box-shadow: none; }
 :root[data-appearance="day"] .section-record:is(:hover, :focus-visible)::after { box-shadow: none; }
 :root[data-appearance="day"] .dashboard-panel h2.is-actionable:is(:hover, :focus-within) { text-shadow: none; }
 :root[data-appearance="day"] .dashboard-panel h2.is-actionable:is(:hover, :focus-within) .panel-title-action::after { box-shadow: none; background-color: rgba(107, 89, 60, 0.12); }
