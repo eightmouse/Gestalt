@@ -747,7 +747,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.72.2");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.73.0");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1494,7 +1494,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.72.2</span>
+        <span>v1.73.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1508,7 +1508,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.72.2</span>
+        <span class="version-label">v1.73.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1528,7 +1528,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.72.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.73.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1861,6 +1861,8 @@ function sectionPage(sectionId) {
 }
 
 const logArchiveAfterDays = 7;
+const archiveRootFileLimit = 24;
+const archiveRecentFileLimit = 12;
 
 function logArchiveDate(record) {
   if (record.section === "logs" && record.writtenAt) {
@@ -1904,30 +1906,15 @@ function isLogArchivedByAge(record, now = new Date()) {
 }
 
 function renderArchiveFolders(section, sectionRecords) {
-  const archivedLogs = sectionRecords.filter((record) => record.section === "logs" && isLogArchivedByAge(record));
-  const filedRecords = sectionRecords.filter((record) => record.section !== "logs");
-  const groups = new Map();
-
-  archivedLogs.forEach((record) => {
-    const year = logArchiveDate(record).slice(0, 4) || "Undated";
-    groups.set(year, [...(groups.get(year) || []), record]);
-  });
-
-  const folders = [...groups.entries()]
-    .sort(([left], [right]) => right.localeCompare(left))
-    .map(([title, groupRecords]) => ({ title, detail: "FIELD NOTES", records: sortArchiveRecords(groupRecords) }));
-
-  if (filedRecords.length) {
-    folders.push({ title: "FILED RECORDS", detail: "MANUAL ARCHIVE", records: sortArchiveRecords(filedRecords) });
-  }
-
-  const archiveDates = folders.flatMap((folder) => folder.records.map((record) => logArchiveDate(record))).sort();
-  const usesFolders = archiveUsesFolders(archiveDates.length);
-  if (!usesFolders) state.archiveFolderWindow = "";
+  const { archivedLogs, folders, looseGroups } = buildFieldArchive(sectionRecords);
+  const archiveDates = [...looseGroups, ...folders].flatMap((group) => group.records.map((record) => logArchiveDate(record))).sort();
+  const looseCount = looseGroups.reduce((count, group) => count + group.records.length, 0);
+  const usesFolders = folders.length > 0;
   const activeFolder = folders.find((folder) => folder.title === state.archiveFolderWindow);
+  if (!activeFolder) state.archiveFolderWindow = "";
   const folderButton = (folder, className = "archive-folder-tile") => `<button class="${className}" type="button" data-open-archive-folder="${escapeHtml(folder.title)}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>
-    <span><strong>${escapeHtml(folder.title)}</strong><small>${escapeHtml(folder.detail)}</small></span><i>${folder.records.length} ${folder.records.length === 1 ? "file" : "files"}</i>
+    ${className === "archive-tree-folder" ? `<span>${escapeHtml(folder.title)}</span><i>${folder.records.length}</i>` : `<span><strong>${escapeHtml(folder.title)}</strong><small>${escapeHtml(folder.detail)}</small></span><i>${folder.records.length} ${folder.records.length === 1 ? "file" : "files"}</i>`}
   </button>`;
   const folderWindow = activeFolder ? `<div class="archive-folder-overlay">
     <button class="archive-folder-backdrop" type="button" aria-label="Close folder window" data-close-archive-folder></button>
@@ -1955,12 +1942,14 @@ function renderArchiveFolders(section, sectionRecords) {
     </header>
     <div class="archive-manager">
       <aside class="archive-manager-side" aria-label="Archive locations and details"><div class="archive-manager-section"><p class="archive-manager-label">${usesFolders ? "LOCATIONS" : "DATE INDEX"}</p><div class="archive-manager-tree">
-        <div class="archive-tree-root"><span>▧</span><span>FIELD ARCHIVE</span></div>${folders.map((folder) => usesFolders ? folderButton(folder, "archive-tree-folder") : `<div class="archive-tree-date"><span>${escapeHtml(folder.title)}</span><i>${folder.records.length}</i></div>`).join("") || `<span class="archive-tree-empty">No files filed.</span>`}
+        <div class="archive-tree-root"><span>▧</span><span>FIELD ARCHIVE</span></div>${looseGroups.map((group) => `<div class="archive-tree-date"><span>${escapeHtml(group.title)}</span><i>${group.records.length}</i></div>`).join("")}${folders.map((folder) => folderButton(folder, "archive-tree-folder")).join("")}${archiveDates.length ? "" : `<span class="archive-tree-empty">No files filed.</span>`}
       </div></div><div class="archive-manager-section archive-manager-details"><p class="archive-manager-label">ARCHIVE STATUS</p><dl>
-        <div><dt>FOLDERS</dt><dd>${String(usesFolders ? folders.length : 0).padStart(2, "0")}</dd></div><div><dt>FILES</dt><dd>${String(archiveDates.length).padStart(2, "0")}</dd></div><div><dt>OLDEST</dt><dd>${archiveDates[0] ? readableDate(archiveDates[0]) : "-- / -- / ----"}</dd></div><div><dt>NEWEST</dt><dd>${archiveDates.length ? readableDate(archiveDates[archiveDates.length - 1]) : "-- / -- / ----"}</dd></div><div><dt>LOGS FILED AFTER</dt><dd>${logArchiveAfterDays} DAYS</dd></div>
+        <div><dt>FOLDERS</dt><dd>${String(folders.length).padStart(2, "0")}</dd></div><div><dt>FILES</dt><dd>${String(archiveDates.length).padStart(2, "0")}</dd></div><div><dt>OLDEST</dt><dd>${archiveDates[0] ? readableDate(archiveDates[0]) : "-- / -- / ----"}</dd></div><div><dt>NEWEST</dt><dd>${archiveDates.length ? readableDate(archiveDates[archiveDates.length - 1]) : "-- / -- / ----"}</dd></div><div><dt>LOGS FILED AFTER</dt><dd>${logArchiveAfterDays} DAYS</dd></div>
       </dl></div></aside>
-      <div class="archive-manager-main"><div class="archive-manager-toolbar"><span><span>▱</span> FIELD ARCHIVE</span><small>${usesFolders ? `${folders.length} ${folders.length === 1 ? "folder" : "folders"}` : `${archiveDates.length} ${archiveDates.length === 1 ? "file" : "files"}`}</small></div>
-        ${usesFolders ? `<div class="archive-folder-tiles">${folders.map((folder) => folderButton(folder)).join("")}</div>` : `<div class="archive-root-files">${folders.map((group) => `<section class="archive-root-group" aria-label="${escapeHtml(group.title)} files"><h3><span>${escapeHtml(group.title)}</span><small>${escapeHtml(group.detail)} / ${group.records.length} ${group.records.length === 1 ? "FILE" : "FILES"}</small></h3><div class="archive-file-grid">${group.records.map(renderArchiveFile).join("")}</div></section>`).join("") || `<p class="search-empty">No records have reached the archive threshold yet.</p>`}</div>`}
+      <div class="archive-manager-main"><div class="archive-manager-toolbar"><span><span>▱</span> FIELD ARCHIVE</span><small>${looseCount} ${looseCount === 1 ? "file" : "files"}${usesFolders ? ` / ${folders.length} ${folders.length === 1 ? "folder" : "folders"}` : ""}</small></div>
+        <div class="archive-root-files">${looseGroups.map((group) => `<section class="archive-root-group" aria-label="${escapeHtml(group.title)} files"><h3><span>${escapeHtml(group.title)}</span><small>${escapeHtml(group.detail)} / ${group.records.length} ${group.records.length === 1 ? "FILE" : "FILES"}</small></h3><div class="archive-file-grid">${group.records.map(renderArchiveFile).join("")}</div></section>`).join("")}
+          ${usesFolders ? `<section class="archive-root-group" aria-label="Monthly folders"><h3><span>MONTHLY FILES</span><small>${folders.length} ${folders.length === 1 ? "FOLDER" : "FOLDERS"}</small></h3><div class="archive-folder-tiles">${folders.map((folder) => folderButton(folder)).join("")}</div></section>` : ""}
+          ${archiveDates.length ? "" : `<p class="search-empty">No records have reached the archive threshold yet.</p>`}</div>
         <p class="archive-manager-footnote">LOGS ARE FILED HERE AFTER ${logArchiveAfterDays} DAYS . FOLDERS AND FILES ARE ORDERED NEWEST TO OLDEST</p>
       </div>
     </div>${folderWindow}
@@ -1972,7 +1961,46 @@ function sortArchiveRecords(groupRecords) {
 }
 
 function archiveUsesFolders(recordCount) {
-  return recordCount > 24;
+  return recordCount > archiveRootFileLimit;
+}
+
+function buildFieldArchive(records, now = new Date()) {
+  const archivedLogs = records.filter((record) => record.section === "logs" && isLogArchivedByAge(record, now)).sort(compareLogWritingOrder);
+  const filedRecords = records.filter((record) => record.section !== "logs");
+  const months = new Map();
+  for (const record of archivedLogs) {
+    const month = logArchiveDate(record).slice(0, 7);
+    if (!months.has(month)) months.set(month, []);
+    months.get(month).push(record);
+  }
+
+  const recentMonths = new Set(archivedLogs.slice(0, archiveRecentFileLimit).map((record) => logArchiveDate(record).slice(0, 7)));
+  const foldedMonths = new Set();
+  let rootItems = archivedLogs.length;
+  // Keep complete recent months together; only fold older months when it saves space.
+  for (const [month, monthRecords] of [...months.entries()].reverse()) {
+    if (!archiveUsesFolders(rootItems)) break;
+    if (recentMonths.has(month) || monthRecords.length < 2) continue;
+    foldedMonths.add(month);
+    rootItems -= monthRecords.length - 1;
+  }
+
+  const folders = [];
+  const years = new Map();
+  for (const [month, monthRecords] of months) {
+    if (foldedMonths.has(month)) {
+      folders.push({ title: `${month.slice(5, 7)}/${month.slice(0, 4)}`, detail: "FIELD NOTES", records: monthRecords });
+    } else {
+      const year = month.slice(0, 4);
+      if (!years.has(year)) years.set(year, []);
+      years.get(year).push(...monthRecords);
+    }
+  }
+  const looseGroups = [...years].map(([title, yearRecords]) => ({ title, detail: "FIELD NOTES", records: yearRecords }));
+  if (filedRecords.length) {
+    looseGroups.push({ title: "FILED RECORDS", detail: "MANUAL ARCHIVE", records: sortArchiveRecords(filedRecords) });
+  }
+  return { archivedLogs, folders, looseGroups };
 }
 
 function renderArchiveFile(record) {
@@ -2656,7 +2684,7 @@ function loadPublicRoadmap() {
   if (!roadmapLoadPromise) {
     let timer, expired = false;
     const deadline = new Promise((resolve) => { timer = setTimeout(() => { expired = true; resolve(null); }, 12000); });
-    const request = import("./public/roadmap.mjs?v=1.72.2")
+    const request = import("./public/roadmap.mjs?v=1.73.0")
       .then(async (module) => expired ? null : { module, data: await module.loadRoadmap(new URL("public/data/roadmap.json", document.baseURI)) });
     roadmapLoadPromise = Promise.race([request, deadline])
       .then((result) => { if (!result || expired) return null; buildRoadmapHistory = result.module.buildRoadmapHistory; roadmapData = result.data; return roadmapData; })
@@ -3011,7 +3039,7 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.72.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.73.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>

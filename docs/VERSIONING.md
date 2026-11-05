@@ -2,7 +2,11 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current release: `v1.72.2`. Previous published checkpoint: `v1.72.0` (65f0f858).
+Current release target: `v1.73.0`. Previous published code release: `v1.72.2` (515b82e2), followed by content commit 92a88bd6.
+
+5 November release review: owner approved publishing the folder batch before the stability pass, including the saved NIKKE note. This supersedes the local hold-publication note below for this batch only. File the accepted work, run release checks, stage explicit reviewed paths and verify Pages plus the isolated note-publishing path. Exclude generated development types and keep the active Studio server running.
+
+`v1.73.0` adds gradual month/year Field Archive presentation: loose recent notes and older month folders coexist, preserving complete months, original writing order and a minimum 12-file recent buffer. The 24-note threshold stays; only older multi-file months fold as needed. Manual archive records stay loose. Existing folder-window controls, themes and responsive geometry remain, with one root scrolling surface. No content migration, dependency, background scheduler or new publish authorization.
 
 5 November release review: owner accepted both motion passes and authorized commit/push before further note writing. This supersedes the local hold-publication notes below for this batch. File the ambient milestone, validate the public artifact, then verify deployment and the isolated content-publish path against the new commit. Exclude generated development-only types and leave the active Studio server alone.
 

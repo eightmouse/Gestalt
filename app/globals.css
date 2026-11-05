@@ -2567,6 +2567,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 .archive-root-files .archive-file > svg { margin-block-start: 2px; }
 .archive-root-files .archive-file strong { white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+.archive-root-files .archive-folder-tiles { padding: 10px 0 0; overflow: visible; }
 .archive-tree-date { display: flex; justify-content: space-between; gap: 8px; padding: 8px; color: var(--muted); font-size: 14px; }
 .archive-tree-date i { font-style: normal; }
 
@@ -4542,6 +4543,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .archive-shell > .workspace > .archive-folder-page .archive-file { min-block-size: calc(80px * var(--desktop-size)); padding: calc(11px * var(--desktop-size)) calc(9px * var(--desktop-size)); gap: calc(11px * var(--desktop-size)); }
   .archive-shell > .workspace > .archive-folder-page .archive-file > svg { inline-size: calc(18px * var(--desktop-size)); block-size: calc(18px * var(--desktop-size)); }
   .archive-shell > .workspace > .archive-folder-page .archive-folder-tiles { grid-template-columns: repeat(auto-fill, minmax(calc(190px * var(--desktop-size)), 1fr)); gap: calc(14px * var(--desktop-size)); padding: calc(22px * var(--desktop-size)); }
+  .archive-shell > .workspace > .archive-folder-page .archive-root-files .archive-folder-tiles { padding: calc(10px * var(--desktop-size)) 0 0; }
   .archive-shell > .workspace > .archive-folder-page .archive-folder-tile { min-block-size: calc(110px * var(--desktop-size)); grid-template-columns: calc(38px * var(--desktop-size)) minmax(0, 1fr); gap: calc(4px * var(--desktop-size)) calc(10px * var(--desktop-size)); padding: calc(11px * var(--desktop-size)); }
   .archive-shell > .workspace > .archive-folder-page .archive-folder-tile > svg { inline-size: calc(30px * var(--desktop-size)); block-size: calc(30px * var(--desktop-size)); }
   .archive-shell > .workspace > .archive-folder-page .archive-folder-tile strong { font-size: calc(18px * var(--desktop-size)); }

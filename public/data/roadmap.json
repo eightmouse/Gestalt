@@ -13,10 +13,6 @@
       "title": "On the desk",
       "items": [
         {
-          "title": "Month-by-month folders",
-          "detail": "Let older field notes settle into folders while newer ones stay within reach."
-        },
-        {
           "title": "Performance and display pass",
           "detail": "Chrome is the everyday testing baseline for now. After the visual and folder work, revisit the remaining Firefox/Edge differences, real browser zoom and common display sizes. Targeted transition fixes are in, but the deeper performance pass is not declared solved. Check for regressions, unnecessary work, stale code and security issues."
         },
@@ -30,6 +26,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Month-by-month folders",
+          "detail": "Recent field notes stay loose while complete older months settle into MM/YYYY folders when the archive grows past 24 notes. Keep at least 12 recent files and their complete months within reach. Same file-manager windows, original writing order and content files.",
+          "version": "v1.73.0",
+          "releasedOn": "2026-11-05"
+        },
         {
           "title": "Quieter ambient rhythms",
           "detail": "Project traces, log scans, cover glow, NEW chips, weather and seasonal details each have their own rhythm and quiet rests. Same artwork and layout, with text kept still. Hidden and covered effects pause reliably in either Memory State mode.",
