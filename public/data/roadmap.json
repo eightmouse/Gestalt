@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "05 / 11 / 2026",
+  "updated": "06 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -9,7 +9,7 @@
       "items": [
         {
           "title": "Performance and display pass",
-          "detail": "Checking repeated work, hidden effects and window transitions first. Then revisit Firefox/Edge differences, display sizes and zoom, accessibility and publication safety. Keep the accepted look and note-writing workflow intact."
+          "detail": "The first navigation and window changes are filed, with layout and keyboard checks in Firefox, Edge and Chrome. Real browser zoom, frame pacing and the wider accessibility review remain open."
         }
       ]
     },
@@ -22,6 +22,10 @@
           "detail": "An idea for a writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
         },
         {
+          "title": "Mobile rework",
+          "detail": "Rethink how Gestalt feels on a phone without losing the archive's identity or utilities. Start with finding, reading and returning to a record. Navigation and layout are still open for discussion."
+        },
+        {
           "title": "Setup editing in place",
           "detail": "Parked for later, when the device bay needs more attention. Keep Tools and Peripherals simple when bringing their editing into the reading view."
         }
@@ -31,6 +35,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Keep the archive in place",
+          "detail": "Switch sections and open Timeline, Roadmap or a month folder without rebuilding the page. Folder browsing preserves the index and its scroll. Escape closes reading entries after nested controls, without closing an inline editor.",
+          "version": "v1.73.2",
+          "releasedOn": "2026-11-06"
+        },
         {
           "title": "Less repeated workspace work",
           "detail": "Stable readouts reuse their results, closed search stays idle and Memory State avoids unchanged layout measurements. Settings keeps the workspace in place, and the palette stays usable above entries. The wider browser and display review continues.",

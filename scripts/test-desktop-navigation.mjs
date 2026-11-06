@@ -429,7 +429,8 @@ assert.match(css, /desktop-nav-terminal\s*\{[^}]+block-size: min\(calc\(600px/, 
 assert.ok(!css.includes("data-nav-minimized] > .desktop-nav-terminal"), "No minimized window floats over the page");
 for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
   const render = read(file);
-  assert.ok(render.includes("directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))"));
+  const ageCheck = file === "static-app.js" ? "isLogArchivedByAge(record, now)" : "isLogArchivedByAge(record)";
+  assert.ok(render.includes(`directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: ${ageCheck} }))`));
   assert.ok(render.includes('aria-label="Directory sections"'));
   assert.ok(render.includes("Eightmouse@Gestalt"));
   assert.ok(!render.includes("desktop-nav-edge") && !render.includes("data-desktop-nav-toggle"), "No side handle remains");
@@ -442,9 +443,12 @@ function staticFunction(name) {
   assert.ok(start >= 0);
   return staticSource.slice(start, staticSource.indexOf("\n}\n", start) + 2);
 }
-const renderContext = vm.createContext({ window: { GestaltDesktopNavigation: navigation }, records: entries,
-  activityDate: (record) => record.date, isLogArchivedByAge: (record) => record.archived, state: { activeSection: "games" } });
+const directoryDates = new Set();
+const renderContext = vm.createContext({ window: { GestaltDesktopNavigation: navigation }, records: entries, directoryArchiveDay: "",
+  activityDate: (record) => record.date, isLogArchivedByAge(record, now) { directoryDates.add(now); return record.archived; }, state: { activeSection: "games" } });
 vm.runInContext(`${staticFunction("readableDate")}\n${staticFunction("desktopDirectory")}\nvar markup = desktopDirectory();`, renderContext);
+assert.equal(directoryDates.size, 1, "The entire directory uses one archive cutoff instant");
+assert.equal(renderContext.directoryArchiveDay, [...directoryDates][0].toISOString().slice(0, 10));
 assert.equal((renderContext.markup.match(/data-directory-section/g) || []).length, 6);
 assert.ok(renderContext.markup.includes('datetime="2026-10-22">22 / 10 / 2026'));
 assert.ok(renderContext.markup.includes('data-open-section="games" aria-current="page"'));

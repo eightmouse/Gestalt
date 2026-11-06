@@ -310,6 +310,15 @@ for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) 
     assert.equal(context.state.searchOpen, false, "Held keys, composition and browser shortcuts are untouched");
   }
   if (react) {
+    let restoredEntry = false;
+    context.panelOpen = true;
+    context.state.searchOpen = true;
+    context.shellRef.current.querySelector = (selector) => {
+      assert.equal(selector, ".record-window:not([hidden]):not([inert])");
+      return { focus() { restoredEntry = true; } };
+    };
+    press({ key: "Escape", target: paletteInput });
+    assert.ok(restoredEntry, "After dismissing the palette, the next Escape can reach the active entry");
     context.inlineRecordId = "editing-note"; context.panelOpen = true;
     press();
     assert.equal(context.state.searchOpen, false, "Inline editing blocks the global palette shortcut even outside its text fields");

@@ -67,4 +67,64 @@ current = null; context.syncRecordFocus();
 assert.equal(releases, 1);
 assert.equal((source.match(/<article role="dialog" aria-modal="true" tabindex="-1" class="record-window/g) || []).length, 2);
 assert.equal((read("components/archive/record-window.tsx").match(/role="dialog"/g) || []).length, 2, "Standard and Setup record roots both carry dialog semantics");
-console.log("Record keyboard checks passed: initial focus, forward/reverse Tab boundaries, hidden controls, nested handlers, cleanup, restore and React/static parity.");
+
+const keydown = ast.statements.find((item) => ts.isExpressionStatement(item) && item.expression.expression?.getText(ast) === 'document.addEventListener' && item.expression.arguments[0]?.text === "keydown").expression.arguments[1];
+const actions = [];
+const state = { bootDismissed: true, localMemory: "session", panelOpen: true, searchOpen: true, expandedImage: { src: "fixture" }, updateHistoryOpen: true, noteSearchQuery: "filter" };
+const keyboard = vm.runInNewContext(keydown.getText(ast), {
+  state, HTMLInputElement: class {}, HTMLTextAreaElement: class {}, HTMLElement: class {},
+  document: { querySelector: () => null },
+  syncSearchPanel: () => actions.push("palette"), syncImageLightbox: () => actions.push("image"),
+  setUpdateHistory(value) { state.updateHistoryOpen = value; actions.push("history"); },
+  closeTimeline: () => actions.push("timeline"), closeRecord: () => actions.push("record")
+});
+const ignoredEscapes = [{ key: "Enter" }, { defaultPrevented: true }, { repeat: true }, { isComposing: true }, { ctrlKey: true }, { altKey: true }, { metaKey: true }];
+const press = (handler, override = {}) => {
+  let prevented = false, stopped = false;
+  handler({ key: "Escape", target: null, nativeEvent: {}, preventDefault() { prevented = true; }, stopPropagation() { stopped = true; }, ...override });
+  return { prevented, stopped };
+};
+for (const overrides of ignoredEscapes) assert.equal(press(keyboard, overrides).prevented, false);
+for (let index = 0; index < 4; index++) press(keyboard);
+assert.deepEqual(actions, ["palette", "image", "history"], "Nested UI and the note filter close before the entry");
+assert.equal(state.noteSearchQuery, "");
+assert.equal(press(keyboard, { shiftKey: true }).prevented, false);
+assert.deepEqual(press(keyboard), { prevented: true, stopped: true });
+assert.equal(actions.at(-1), "record");
+state.panelOpen = false; state.timelineOpen = true;
+assert.deepEqual(press(keyboard), { prevented: true, stopped: true });
+assert.equal(actions.at(-1), "timeline");
+
+const reactSource = read("components/archive/record-window.tsx");
+const reactAst = ts.createSourceFile("record-window.tsx", reactSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const findFunction = (name) => reactAst.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === name);
+for (const name of ["ArchiveRecordWindow", "SetupRecordWindow"]) {
+  let attribute;
+  ts.forEachChild(findFunction(name), function visit(item) {
+    if (ts.isJsxAttribute(item) && item.name.getText(reactAst) === "onKeyDown") attribute = item;
+    ts.forEachChild(item, visit);
+  });
+  assert.ok(attribute, `${name} handles Escape on its own dialog`);
+  const calls = [];
+  const route = vm.createContext({ minimized: false, escapeBlocked: false, editor: null, editorBusy: false, expandedImage: null,
+    updateHistoryOpen: false, noteSearchQuery: "", updateHistoryRef: { current: null },
+    setUpdateHistoryOpen: () => calls.push("history"), setNoteSearchQuery: () => calls.push("filter"), onClose: () => calls.push("record") });
+  const script = `${findFunction("handleRecordEscape").getText(reactAst)}\nconst handler = ${attribute.initializer.expression.getText(reactAst)}; handler;`;
+  const handler = vm.runInContext(ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, route);
+  for (const { isComposing, ...overrides } of [...ignoredEscapes, { shiftKey: true }]) assert.equal(press(handler, { ...overrides, nativeEvent: { isComposing } }).prevented, false);
+  for (const guard of ["minimized", "escapeBlocked", ...(name === "ArchiveRecordWindow" ? ["editor", "editorBusy"] : ["expandedImage"])]) {
+    route[guard] = true;
+    assert.equal(press(handler).prevented, false, `${name} leaves Escape to ${guard}`);
+    route[guard] = false;
+  }
+  assert.deepEqual(calls, []);
+  if (name === "ArchiveRecordWindow") {
+    route.updateHistoryOpen = true; route.noteSearchQuery = "filter";
+    press(handler); route.updateHistoryOpen = false;
+    press(handler); route.noteSearchQuery = "";
+    assert.deepEqual(calls, ["history", "filter"]);
+  }
+  assert.deepEqual(press(handler), { prevented: true, stopped: true });
+  assert.equal(calls.at(-1), "record");
+}
+console.log("Record keyboard checks passed: focus bounds, cleanup/restore, Escape close and nested/editor guards in both readers.");

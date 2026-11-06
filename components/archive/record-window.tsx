@@ -3,7 +3,7 @@
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { Maximize2, Minimize2, Settings, X } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import {
   contentOrdinal,
   getRecordContents,
@@ -31,17 +31,18 @@ type RecordWindowProps = {
   onEdit?: (content?: ContentKey) => void;
   editor?: ReactNode;
   editorBusy?: boolean;
+  escapeBlocked?: boolean;
   onClose: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
 };
 
-export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
 function useRecordFocus(minimized: boolean | undefined, id: string) {
@@ -52,7 +53,14 @@ function useRecordFocus(minimized: boolean | undefined, id: string) {
   return ref;
 }
 
-function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => void) {
+  if (event.key !== "Escape" || event.defaultPrevented || event.repeat || event.nativeEvent.isComposing || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
+  event.preventDefault();
+  event.stopPropagation();
+  dismiss();
+}
+
+function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
@@ -99,6 +107,16 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
       data-state={recordStateKey(record.status)}
       aria-label={`${record.title} archive entry`}
+      onKeyDown={(event) => {
+        if (minimized || escapeBlocked || editor || editorBusy) return;
+        handleRecordEscape(event, () => {
+          if (updateHistoryOpen) {
+            setUpdateHistoryOpen(false);
+            updateHistoryRef.current?.querySelector("button")?.focus({ preventScroll: true });
+          } else if (noteSearchQuery) setNoteSearchQuery("");
+          else onClose();
+        });
+      }}
     >
       <RecordAccessSurface />
       <header className="window-bar">
@@ -204,7 +222,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   );
 }
 
-function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized, record, onEdit, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized, record, onEdit, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const windowRef = useRecordFocus(minimized, record.id);
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
@@ -230,6 +248,9 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
       className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""} is-setup-record is-setup-record--${group}`}
       data-state={recordStateKey(record.status)}
       aria-label={`${record.title} setup terminal`}
+      onKeyDown={(event) => {
+        if (!minimized && !escapeBlocked && !expandedImage) handleRecordEscape(event, onClose);
+      }}
     >
       <RecordAccessSurface />
       <div className="setup-window-shell">

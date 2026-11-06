@@ -43,7 +43,7 @@ for (const [name, value] of [["archiveRootFileLimit", chronology.ARCHIVE_ROOT_FI
   assert.match(staticSource, new RegExp(`const ${name} = ${value};`), `${name} agrees with the local reader`);
 }
 const staticContext = compile(functions("static-app.js", [
-  "renderArchiveFolders", "renderArchiveFile", "buildFieldArchive", "sortArchiveRecords", "archiveUsesFolders", "logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "isLogArchivedByAge", "escapeHtml", "readableDate", "sectionReadout", "renderSectionReadout"
+  "renderArchiveFolders", "renderArchiveFolderWindow", "renderArchiveFile", "buildFieldArchive", "sortArchiveRecords", "archiveUsesFolders", "logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "isLogArchivedByAge", "escapeHtml", "readableDate", "sectionReadout", "renderSectionReadout"
 ]), {
   Date: ArchiveClock, logArchiveAfterDays: chronology.LOG_ARCHIVE_AFTER_DAYS,
   archiveRootFileLimit: chronology.ARCHIVE_ROOT_FILE_LIMIT, archiveRecentFileLimit: chronology.ARCHIVE_RECENT_FILE_LIMIT,
@@ -154,6 +154,8 @@ staticContext.records = gradual;
 staticContext.section = section;
 const active = vm.runInContext("renderArchiveFolders(section, records)", staticContext);
 assert.ok(active.includes('role="dialog"'), "Month folders retain the existing folder window");
+assert.ok(active.includes('tabindex="-1" aria-label="07/2026 folder"'), "The folder can take focus without native autofocus racing restoration");
+assert.equal(vm.runInContext("renderArchiveFolderWindow(buildFieldArchive(records).folders)", staticContext), active.slice(active.indexOf('<div class="archive-folder-overlay">'), -"\n  </section>".length), "In-place opening uses exactly the same markup as a full render");
 assert.ok(active.includes('aria-label="07/2026 folder"'));
 assert.ok(active.includes("Sorted by date . Newest first"));
 react.useState = () => ["07/2026", () => {}];

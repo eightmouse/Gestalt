@@ -290,6 +290,7 @@ let steamDisplayModule = null;
 let steamDisplaySnapshot = null;
 let steamDisplayStarted = false;
 let steamDisplayReady = false;
+let directoryArchiveDay = "";
 function recordsFor(sectionId) {
   return records.filter((record) => record.section === sectionId);
 }
@@ -351,10 +352,11 @@ function openSection(sectionId) {
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
-  render();
+  if (!syncSection()) render();
 }
 
 function openTimeline() {
+  if (state.timelineOpen) return;
   stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -367,7 +369,13 @@ function openTimeline() {
   state.timelineSource = "all";
   state.archiveFolderWindow = null;
   state.navOpen = false;
-  render();
+  if (!syncTimelineWindow()) render();
+}
+
+function closeTimeline() {
+  if (!state.timelineOpen) return;
+  state.timelineOpen = false;
+  if (!syncTimelineWindow()) render();
 }
 
 function openHome() {
@@ -389,7 +397,7 @@ function openHome() {
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.updateHistoryOpen = false;
-  render();
+  if (!syncSection()) render();
 }
 
 function escapeHtml(value) {
@@ -747,7 +755,7 @@ async function initializeSteamDisplay() {
   if (steamDisplayStarted) return;
   steamDisplayStarted = true;
   try {
-    steamDisplayModule = await import("./public/steam-display.mjs?v=1.73.1");
+    steamDisplayModule = await import("./public/steam-display.mjs?v=1.73.2");
     steamDisplaySnapshot = await steamDisplayModule.loadSteamSnapshot(new URL("public/data/steam-current.json", document.baseURI).href);
   } catch {
     // A failed lookup settles to authored content, never an endless loading state.
@@ -1494,7 +1502,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.73.1</span>
+        <span>v1.73.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1508,7 +1516,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.73.1</span>
+        <span class="version-label">v1.73.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1528,7 +1536,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.73.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.73.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1905,21 +1913,16 @@ function isLogArchivedByAge(record, now = new Date()) {
   return Math.floor((todayTime - entryTime) / 86400000) >= logArchiveAfterDays;
 }
 
-function renderArchiveFolders(section, sectionRecords) {
-  const { archivedLogs, folders, looseGroups } = buildFieldArchive(sectionRecords);
-  const archiveDates = [...looseGroups, ...folders].flatMap((group) => group.records.map((record) => logArchiveDate(record))).sort();
-  const looseCount = looseGroups.reduce((count, group) => count + group.records.length, 0);
-  const usesFolders = folders.length > 0;
+function renderArchiveFolderWindow(folders) {
   const activeFolder = folders.find((folder) => folder.title === state.archiveFolderWindow);
-  if (!activeFolder) state.archiveFolderWindow = "";
-  const folderButton = (folder, className = "archive-folder-tile") => `<button class="${className}" type="button" data-open-archive-folder="${escapeHtml(folder.title)}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>
-    ${className === "archive-tree-folder" ? `<span>${escapeHtml(folder.title)}</span><i>${folder.records.length}</i>` : `<span><strong>${escapeHtml(folder.title)}</strong><small>${escapeHtml(folder.detail)}</small></span><i>${folder.records.length} ${folder.records.length === 1 ? "file" : "files"}</i>`}
-  </button>`;
-  const folderWindow = activeFolder ? `<div class="archive-folder-overlay">
+  if (!activeFolder) {
+    state.archiveFolderWindow = "";
+    return "";
+  }
+  return `<div class="archive-folder-overlay">
     <button class="archive-folder-backdrop" type="button" aria-label="Close folder window" data-close-archive-folder></button>
-    <section class="archive-folder-window" role="dialog" aria-modal="true" aria-label="${escapeHtml(activeFolder.title)} folder">
-      <header class="archive-folder-titlebar"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>FIELD ARCHIVE / ${escapeHtml(activeFolder.title)}</span><button autofocus type="button" aria-label="Close folder window" title="Close folder" data-close-archive-folder><span aria-hidden="true">×</span></button></header>
+    <section class="archive-folder-window" role="dialog" aria-modal="true" tabindex="-1" aria-label="${escapeHtml(activeFolder.title)} folder">
+      <header class="archive-folder-titlebar"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>FIELD ARCHIVE / ${escapeHtml(activeFolder.title)}</span><button type="button" aria-label="Close folder window" title="Close folder" data-close-archive-folder><span aria-hidden="true">×</span></button></header>
       <div class="archive-folder-pathbar"><button type="button" aria-label="Up to Field Archive" data-close-archive-folder>↑</button><span><span>Field Archive</span><b>/</b><strong>${escapeHtml(activeFolder.title)}</strong></span><small>${activeFolder.records.length} ${activeFolder.records.length === 1 ? "file" : "files"}</small></div>
       <div class="archive-folder-window-body">
         <aside class="archive-window-side" aria-label="Archive folders"><p class="archive-manager-label">ARCHIVE</p><button class="archive-window-root" type="button" data-close-archive-folder><span>▧</span>Field Archive</button>
@@ -1932,9 +1935,21 @@ function renderArchiveFolders(section, sectionRecords) {
         </div>
       </div>
     </section>
-  </div>` : "";
+  </div>`;
+}
 
-  return `<section class="section-page section-page--archive archive-folder-page${activeFolder ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} files">
+function renderArchiveFolders(section, sectionRecords) {
+  const { archivedLogs, folders, looseGroups } = buildFieldArchive(sectionRecords);
+  const archiveDates = [...looseGroups, ...folders].flatMap((group) => group.records.map((record) => logArchiveDate(record))).sort();
+  const looseCount = looseGroups.reduce((count, group) => count + group.records.length, 0);
+  const usesFolders = folders.length > 0;
+  const folderWindow = renderArchiveFolderWindow(folders);
+  const folderButton = (folder, className = "archive-folder-tile") => `<button class="${className}" type="button" data-open-archive-folder="${escapeHtml(folder.title)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true"><path d="M2.5 5.5h7l2 2h10v11h-19z"/><path d="M2.5 8h19"/></svg>
+    ${className === "archive-tree-folder" ? `<span>${escapeHtml(folder.title)}</span><i>${folder.records.length}</i>` : `<span><strong>${escapeHtml(folder.title)}</strong><small>${escapeHtml(folder.detail)}</small></span><i>${folder.records.length} ${folder.records.length === 1 ? "file" : "files"}</i>`}
+  </button>`;
+
+  return `<section class="section-page section-page--archive archive-folder-page${folderWindow ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} files">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div><p>${escapeHtml(section.code)}</p><h2>${escapeHtml(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(sectionRecords))}</div>
@@ -2615,8 +2630,12 @@ function syncSearchPanel() {
   } else {
     panel?.remove();
     if (restoreFocus) {
-      for (const control of document.querySelectorAll("[data-search-toggle], .archive-menu-toggle")) {
-        if (control.getClientRects().length && !control.closest("[inert]")) { control.focus({ preventScroll: true }); break; }
+      const folder = state.archiveFolderWindow && root.querySelector(".archive-folder-window");
+      if (folder) folder.focus({ preventScroll: true });
+      else {
+        for (const control of document.querySelectorAll("[data-search-toggle], .archive-menu-toggle")) {
+          if (control.getClientRects().length && !control.closest("[inert]")) { control.focus({ preventScroll: true }); break; }
+        }
       }
     }
   }
@@ -2672,7 +2691,7 @@ function syncOsBehaviourDialog() {
       syncOsBehaviourDialog();
       syncWorkspaceFocus();
       syncDesktopNavigation();
-      root.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window")?.focus({ preventScroll: true });
+      root.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window, .archive-folder-window")?.focus({ preventScroll: true });
     },
     onChange(key, value) {
       if (key === "appearance") window.GestaltAppearance?.setMode(value, state.localMemory === "granted");
@@ -2694,7 +2713,7 @@ function loadPublicRoadmap() {
   if (!roadmapLoadPromise) {
     let timer, expired = false;
     const deadline = new Promise((resolve) => { timer = setTimeout(() => { expired = true; resolve(null); }, 12000); });
-    const request = import("./public/roadmap.mjs?v=1.73.1")
+    const request = import("./public/roadmap.mjs?v=1.73.2")
       .then(async (module) => expired ? null : { module, data: await module.loadRoadmap(new URL("public/data/roadmap.json", document.baseURI)) });
     roadmapLoadPromise = Promise.race([request, deadline])
       .then((result) => { if (!result || expired) return null; buildRoadmapHistory = result.module.buildRoadmapHistory; roadmapData = result.data; return roadmapData; })
@@ -2714,7 +2733,7 @@ async function refreshPublicRoadmap() {
 }
 
 function openRoadmap() {
-  if (state.roadmapOpen) return;
+  if (state.roadmapOpen || recordMotionController?.busy) return;
   stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -2726,13 +2745,26 @@ function openRoadmap() {
   state.roadmapOpen = true;
   roadmapChapterId = "working";
   roadmapReleaseIndex = null;
-  render();
+  if (!syncRoadmapWindow()) render();
   void refreshPublicRoadmap();
 }
 
 function closeRoadmap() {
+  if (!state.roadmapOpen) return;
   state.roadmapOpen = false;
-  render();
+  syncRoadmapDialog();
+  syncRecordWindowChrome();
+}
+
+function syncRoadmapWindow() {
+  const workspace = root.querySelector(".workspace");
+  if (!workspace || !state.bootDismissed) return false;
+  removeReadingWindows(workspace);
+  dismissArchiveMenu();
+  syncSearchPanel();
+  syncRecordWindowChrome();
+  syncRoadmapDialog();
+  return true;
 }
 
 function renderRoadmapContent(data, chapterId = roadmapChapterId, releaseIndex = roadmapReleaseIndex) {
@@ -2777,12 +2809,9 @@ function syncRoadmapDialog() {
     if (dialog) {
       if (dialog.open) dialog.close();
       dialog.remove();
-      if (roadmapTrigger instanceof HTMLElement && roadmapTrigger !== document.body && roadmapTrigger.isConnected) roadmapTrigger.focus({ preventScroll: true });
-      else {
-        for (const control of document.querySelectorAll("[data-search-toggle], .archive-menu-toggle")) {
-          if (control.getClientRects().length) { control.focus({ preventScroll: true }); break; }
-        }
-      }
+      const controls = [roadmapTrigger, ...document.querySelectorAll("[data-search-toggle], .archive-menu-toggle")];
+      const target = controls.find((control) => control instanceof HTMLElement && control !== document.body && control.isConnected && control.getClientRects().length && !control.closest("[inert], [hidden]"));
+      target?.focus({ preventScroll: true });
       roadmapTrigger = null;
     }
     return;
@@ -2915,7 +2944,7 @@ function mobileDock() {
     .filter(Boolean);
 
   return `<nav class="mobile-dock" aria-label="Mobile archive sections">
-    ${items.map((section) => `<button class="${state.activeSection === section.id ? "is-active" : ""} ${section.id === "system" ? "is-center" : ""}" type="button" ${section.id === "system" ? "data-home" : `data-open-section="${section.id}"`}>
+    ${items.map((section) => `<button class="${state.activeSection === section.id ? "is-active" : ""} ${section.id === "system" ? "is-center" : ""}" type="button" ${state.activeSection === section.id ? 'aria-current="page" ' : ""}${section.id === "system" ? "data-home" : `data-open-section="${section.id}"`}>
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <small>${escapeHtml(section.label)}</small>
     </button>`).join("")}
@@ -2971,23 +3000,85 @@ function syncWorkspaceFocus() {
 
 function syncRecordWindowChrome() {
   syncWorkspaceFocus();
-  const tray = root.querySelector(".workspace-window-tray");
-  if (tray) tray.outerHTML = workspaceWindowTray();
+  const restore = root.querySelector(".reopen-control");
+  if (restore) restore.hidden = state.panelOpen || !state.panelMinimized;
   syncDesktopNavigation();
   syncRecordFocus();
+}
+
+function removeReadingWindows(workspace) {
+  workspace.querySelectorAll(":scope > :is(.record-window, .timeline-window, [data-record-backdrop], [data-timeline-close])").forEach((node) => node.remove());
+  removeArchiveFolderWindow(workspace.querySelector(":scope > .archive-folder-page"));
+  minimizedRecordWindow = null;
+}
+
+function removeArchiveFolderWindow(page) {
+  page?.querySelector(":scope > .archive-folder-overlay")?.remove();
+  page?.classList.remove("has-folder-window");
+}
+
+function syncArchiveFolderWindow() {
+  const page = root.querySelector(".workspace > .archive-folder-page");
+  const now = new Date();
+  if (!page || !state.bootDismissed || directoryArchiveDay !== now.toISOString().slice(0, 10)) return false;
+  const markup = state.archiveFolderWindow ? renderArchiveFolderWindow(buildFieldArchive(recordsFor("logs"), now).folders) : "";
+  removeArchiveFolderWindow(page);
+  if (markup) {
+    page.insertAdjacentHTML("beforeend", markup);
+    page.classList.add("has-folder-window");
+  }
+  syncDesktopNavigation();
+  syncRecordFocus();
+  return true;
+}
+
+function openArchiveFolder(title) {
+  if (state.archiveFolderWindow === title || recordMotionController?.busy) return;
+  state.archiveFolderWindow = title;
+  if (!syncArchiveFolderWindow()) render();
+}
+
+function closeArchiveFolder() {
+  if (!state.archiveFolderWindow) return;
+  state.archiveFolderWindow = null;
+  if (!syncArchiveFolderWindow()) render();
+}
+
+function dismissArchiveMenu() {
+  const menu = root.querySelector(".archive-nav-panel");
+  const restoreFocus = menu?.contains(document.activeElement);
+  menu?.remove();
+  root.querySelector("[data-nav-backdrop]")?.remove();
+  const toggle = root.querySelector("[data-nav-toggle]");
+  toggle?.classList.remove("is-active");
+  toggle?.setAttribute("aria-expanded", "false");
+  if (restoreFocus) toggle?.focus({ preventScroll: true });
+  return toggle;
 }
 
 // A window change must not rebuild the scenery, dashboard, images or section scroll.
 function syncRecordWindow() {
   const workspace = root.querySelector(".workspace");
-  if (!workspace || !state.bootDismissed || root.querySelector(".archive-folder-window, .archive-nav-panel, .timeline-window")) return false;
-  root.querySelector(".record-window")?.remove();
-  root.querySelector("[data-record-backdrop]")?.remove();
-  minimizedRecordWindow = null;
+  if (!workspace || !state.bootDismissed || recordMotionController?.busy || root.querySelector(".archive-nav-panel")) return false;
+  removeReadingWindows(workspace);
   syncSearchPanel();
   syncRoadmapDialog();
   workspace.insertAdjacentHTML("beforeend", recordBackdrop() + recordWindow(selectedRecord()));
   state.windowSteady = false;
+  syncRecordWindowChrome();
+  return true;
+}
+
+function syncTimelineWindow() {
+  const workspace = root.querySelector(".workspace");
+  if (!workspace || !state.bootDismissed || recordMotionController?.busy) return false;
+  removeReadingWindows(workspace);
+  if (state.timelineOpen) {
+    dismissArchiveMenu();
+    syncSearchPanel();
+    syncRoadmapDialog();
+    workspace.insertAdjacentHTML("beforeend", timelineWindow());
+  }
   syncRecordWindowChrome();
   return true;
 }
@@ -3051,14 +3142,78 @@ function workspaceWindowTray() {
 }
 
 function desktopDirectory() {
-  const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))) || [];
+  const now = new Date();
+  directoryArchiveDay = now.toISOString().slice(0, 10);
+  const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.73.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.73.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
     </div>
   </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Notices"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Notices" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM NOTICES</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Notices">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>S</kbd></dt><dd>Web search</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
+}
+
+function workspaceHeading() {
+  const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
+  const dashboard = state.activeSection === "system";
+  const headline = dashboard ? greeting() : section.label;
+  const resolving = state.headlineAnimating || !state.bootDismissed;
+  return `<div>
+    <p class="route-label">// ${escapeHtml(dashboard ? "DASHBOARD" : section.code)}</p>
+    <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}">${renderHeadlineLetters(headline)}<span class="cursor headline-cursor${resolving ? " is-delayed" : ""}">_</span></h1>
+    <p class="subtle">${dashboard ? dashboardSubtext() : "Browse the records filed under this archive."}</p>
+  </div>`;
+}
+
+function syncSection() {
+  // Rebuild at the next UTC date boundary so archive-aged directory dates stay current.
+  if (!state.bootDismissed || recordMotionController?.busy || directoryArchiveDay !== new Date().toISOString().slice(0, 10)) return false;
+  const workspace = root.querySelector(".workspace");
+  const heading = workspace?.querySelector(".workspace-header")?.firstElementChild;
+  const content = workspace?.querySelector(":scope > :is(.dashboard-grid, .section-page)");
+  if (!heading || !content) return false;
+
+  const previousFocus = document.activeElement;
+  heading.outerHTML = workspaceHeading();
+  content.outerHTML = workspaceContent();
+  removeReadingWindows(workspace);
+  const menuToggle = dismissArchiveMenu();
+
+  const sectionIndex = Math.max(0, sections.findIndex((section) => section.id === state.activeSection));
+  const navStack = root.querySelector(".nav-stack--sidebar");
+  navStack?.classList.remove("is-sliding");
+  navStack?.style.setProperty("--active-nav-index", String(sectionIndex));
+  for (const button of root.querySelectorAll(".nav-stack--sidebar [data-open-section], .mobile-dock button, [data-directory-section]")) {
+    const active = (button.dataset.openSection || "system") === state.activeSection;
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+    const marker = button.querySelector(".desktop-directory-marker");
+    if (marker) marker.textContent = active ? ">" : "-";
+    else button.classList.toggle("is-active", active);
+  }
+  if (menuToggle) menuToggle.querySelector(".archive-menu-code").textContent = sections[sectionIndex].code;
+  const restore = workspace.querySelector(".reopen-control");
+  if (restore) restore.hidden = true;
+  window.clearTimeout(navMotionTimer);
+  navMotionTimer = 0;
+  state.previousActiveSection = state.activeSection;
+  state.headlineAnimating = false;
+  state.windowSteady = false;
+  syncRoadmapDialog();
+  syncWorkspaceFocus();
+  syncSearchPanel();
+  syncRecordFocus();
+  syncMemoryMotion();
+  syncMemoryTrace();
+  workspace.scrollTop = 0;
+  if (window.scrollY) window.scrollTo({ top: 0, behavior: "instant" });
+  if (document.activeElement === document.body && previousFocus && !previousFocus.isConnected) {
+    const title = workspace.querySelector(".workspace-header h1");
+    title?.setAttribute("tabindex", "-1");
+    title?.focus({ preventScroll: true });
+  }
+  return true;
 }
 
 function render() {
@@ -3079,11 +3234,6 @@ function render() {
   }
 
   const record = selectedRecord();
-  const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
-  const routeTitle = state.activeSection === "system" ? "DASHBOARD" : section.code;
-  const headline = state.activeSection === "system" ? greeting() : section.label;
-  const headlineClass = state.headlineAnimating || !state.bootDismissed ? "headline-decode-text is-resolving" : "headline-decode-text";
-  const cursorClass = state.headlineAnimating || !state.bootDismissed ? "cursor headline-cursor is-delayed" : "cursor headline-cursor";
 
   const hasFocusWindow = state.panelOpen || state.timelineOpen || state.roadmapOpen || state.osBehaviourOpen;
 
@@ -3110,11 +3260,7 @@ function render() {
     ${archiveNavigationMenu()}
     <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" aria-label="Gestalt dashboard">
       <header class="workspace-header">
-        <div>
-          <p class="route-label">// ${escapeHtml(routeTitle)}</p>
-          <h1 class="${headlineClass}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}">${renderHeadlineLetters(headline)}<span class="${cursorClass}">_</span></h1>
-          <p class="subtle">${state.activeSection === "system" ? dashboardSubtext() : escapeHtml("Browse the records filed under this archive.")}</p>
-        </div>
+        ${workspaceHeading()}
         <div class="time-block" aria-label="Local time">
           <span>◷</span>
           <span data-time-clock>${formatClock()}</span>
@@ -3357,7 +3503,7 @@ let memoryNode = null;
 let recordFocusNode = null;
 let recordFocusCleanup = null;
 function syncRecordFocus() {
-  const node = document.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window");
+  const node = document.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window, .archive-folder-window");
   if (node === recordFocusNode) return;
   recordFocusCleanup?.();
   recordFocusNode = node;
@@ -3491,20 +3637,17 @@ document.addEventListener("click", (event) => {
   if (target.dataset.openRoadmap !== undefined) { openRoadmap(); return; }
 
   if (target.dataset.timelineClose !== undefined) {
-    state.timelineOpen = false;
-    render();
+    closeTimeline();
     return;
   }
 
   if (target.dataset.closeArchiveFolder !== undefined) {
-    state.archiveFolderWindow = null;
-    render();
+    closeArchiveFolder();
     return;
   }
 
   if (target.dataset.openArchiveFolder) {
-    state.archiveFolderWindow = target.dataset.openArchiveFolder;
-    render();
+    openArchiveFolder(target.dataset.openArchiveFolder);
     return;
   }
 
@@ -3682,7 +3825,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (event.key !== "Escape" || event.metaKey || event.ctrlKey || event.altKey) {
+  if (event.key !== "Escape" || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
     return;
   }
 
@@ -3702,14 +3845,16 @@ document.addEventListener("keydown", (event) => {
   }
 
   if (state.timelineOpen) {
-    state.timelineOpen = false;
-    render();
+    event.preventDefault();
+    event.stopPropagation();
+    closeTimeline();
     return;
   }
 
   if (state.archiveFolderWindow) {
-    state.archiveFolderWindow = null;
-    render();
+    event.preventDefault();
+    event.stopPropagation();
+    closeArchiveFolder();
     return;
   }
 
@@ -3720,11 +3865,13 @@ document.addEventListener("keydown", (event) => {
   }
 
   if (state.updateHistoryOpen) {
+    event.preventDefault();
     setUpdateHistory(false);
     return;
   }
 
   if (state.noteSearchQuery) {
+    event.preventDefault();
     const notesPage = document.querySelector(".notes-page");
     const input = document.querySelector("[data-note-search-input]");
 
@@ -3741,6 +3888,11 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (state.panelOpen && !event.shiftKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeRecord();
+  }
 });
 
 document.addEventListener("error", (event) => {

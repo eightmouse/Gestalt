@@ -68,7 +68,7 @@ class Element {
   get innerHTML() { return this.html; }
   setAttribute(key, value) { this.attributes.set(key, value); }
   getAttribute(key) { return this.attributes.get(key) ?? null; }
-  closest(selector) { return this.ownerSelector === selector ? this : null; }
+  closest(selector) { return this.ownerSelector === selector || (selector === "[inert], [hidden]" && this.inert) ? this : null; }
   append(node) { node.parent = this; this.children.push(node); }
   remove() { this.parent.children = this.parent.children.filter((node) => node !== this); this.isConnected = false; }
   querySelector(selector) { this.lastSelector = selector; return this.body ??= new Element("div"); }
@@ -76,7 +76,7 @@ class Element {
   showModal() { this.open = true; this.shows++; }
   close() { this.open = false; }
   focus() { this.focused = true; }
-  getClientRects() { return [{}]; }
+  getClientRects() { return this.hidden ? [] : [{}]; }
 }
 const body = new Element("body");
 const trigger = new Element("button");
@@ -91,7 +91,9 @@ const clearDeadline = (id) => deadlines.delete(id);
 const context = vm.createContext({ URL, document, HTMLElement: Element, Element, state: {}, roadmapData: null, roadmapLoadPromise: null, roadmapFailed: false, roadmapTrigger: null, roadmapChapterId: "working", roadmapReleaseIndex: null, buildRoadmapHistory: null,
   setTimeout: setDeadline, clearTimeout: clearDeadline,
   readableDate: releaseDateLabel,
+  recordMotionController: { busy: false },
   stopRecordAccessSequence() {}, render() { shellRenders++; context.syncRoadmapDialog(); },
+  syncRoadmapWindow() { context.syncRoadmapDialog(); return true; }, syncRecordWindowChrome() {},
   loadFixture() { requested++; return new Promise((resolve, reject) => { resolveModule = resolve; rejectModule = reject; }); }
 });
 vm.runInContext(functions(["loadPublicRoadmap", "refreshPublicRoadmap", "openRoadmap", "closeRoadmap", "renderRoadmapContent", "navigateRoadmap", "syncRoadmapDialog", "escapeHtml"])
@@ -190,14 +192,18 @@ assert.equal(cancelled, 1);
 assert.equal(body.children.length, 0, "Escape/cancel dismisses the modal");
 
 const menu = new Element("button");
-document.activeElement = body;
+const hiddenSearch = new Element("button");
+hiddenSearch.hidden = true;
+document.activeElement = trigger;
 document.querySelectorAll = (selector) => {
   assert.equal(selector, "[data-search-toggle], .archive-menu-toggle", "Use the real handheld menu selector for focus recovery");
-  return [{ getClientRects: () => [] }, menu];
+  return [hiddenSearch, menu];
 };
 context.openRoadmap();
+trigger.inert = true;
 context.closeRoadmap();
-assert.equal(menu.focused, true, "Closing after palette removal returns focus to the visible handheld menu");
+assert.equal(menu.focused, true, "Closing skips an inert trigger and a hidden search control after a viewport change");
+trigger.inert = false;
 document.activeElement = trigger;
 
 context.roadmapData = null;
@@ -217,6 +223,7 @@ await afterTimeout;
 assert.ok(body.children[0].querySelector().innerHTML.includes("On the desk"));
 context.closeRoadmap();
 assert.equal(deadlines.size, 0, "Settled retrievals leave no timeout running");
+assert.equal(shellRenders, 0, "Normal opening, closing, retries and chapter changes never rebuild the shell");
 
 let stateData = publicRoadmap;
 let stateIndex = 0;

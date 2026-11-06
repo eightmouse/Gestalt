@@ -389,8 +389,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         setSearchOpen(!searchOpen);
         if (searchOpen) {
           setSearchQuery("");
-          for (const control of shellRef.current?.querySelectorAll<HTMLButtonElement>("[data-search-toggle], .archive-menu-toggle") || []) {
-            if (control.getClientRects().length && !control.closest("[inert]")) { control.focus({ preventScroll: true }); break; }
+          const record = panelOpen && shellRef.current?.querySelector<HTMLElement>(".record-window:not([hidden]):not([inert])");
+          if (record) record.focus({ preventScroll: true });
+          else {
+            for (const control of shellRef.current?.querySelectorAll<HTMLButtonElement>("[data-search-toggle], .archive-menu-toggle") || []) {
+              if (control.getClientRects().length && !control.closest("[inert]")) { control.focus({ preventScroll: true }); break; }
+            }
           }
         }
       }
@@ -897,6 +901,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 record={selectedRecord}
                 onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
                 editorBusy={inlineBusy}
+                escapeBlocked={searchOpen || navOpen || Boolean(studioRecordId)}
                 editor={process.env.NODE_ENV === "development" && editingInline ? (
                   <LocalStudioEditor embedded inline initialRecordId={unsavedInline ? undefined : selectedRecord.id}
                     initialSection={supportsInlineEditing(selectedRecord.section) ? selectedRecord.section : undefined}

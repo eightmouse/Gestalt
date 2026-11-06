@@ -2,7 +2,15 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current version: `v1.73.1`. Release base: `v1.73.0` (2afc93fa).
+Current version: `v1.73.2`. Release base: `v1.73.1` (0ecfa513).
+
+`v1.73.2` retains the static shell, navigation and window tray during ordinary section switches. Replace the heading and section content, synchronize active controls, and clean up outgoing windows/focus without rebuilding the background. Existing boot, busy-transition and date-rollover fallbacks stay intact. No authored records or dependencies changed; the wider stability review remains in progress.
+
+The same local patch retains the shell during Timeline open, close and result selection. Plain Escape closes reading entries in both readers while nested controls and inline editing keep priority. The notebook lists mobile rework as a future idea; no redesign is included.
+
+Static Roadmap open/close use the same retained reading-window lifecycle. The native dialog, lazy loading and chapter behavior stay unchanged, with focus recovery skipping hidden or inert triggers.
+
+Static Field Archive folder transitions retain the index and its scroll, reuse reading-window focus handling and remove the overlay during entry, Timeline or Roadmap handoff. The filing rules, content and visual layout remain unchanged.
 
 5 November release review: owner authorized committing and pushing v1.73.1, including the Archive Relay roadmap idea. File only this patch's completed fixes; the wider stability pass stays open. No new feature, dependency or credential integration is included. Exclude generated development types and verify Git, Pages and independent note publishing before reporting publication success. This supersedes the historical hold-publication notes below for this batch only.
 

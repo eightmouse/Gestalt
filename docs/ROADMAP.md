@@ -1,5 +1,13 @@
 # Gestalt Roadmap
 
+6 November release review: owner authorized the v1.73.2 stability batch for commit and push. File the section, Timeline, Roadmap, folder and Escape changes. Fresh headless Firefox, Edge and Chrome passed at desktop, compact and phone CSS widths. Keep actual zoom/frame pacing and broader accessibility review open; the existing mobile menu remains unchanged pending a future design discussion. Exclude generated files and verify Pages and independent publishing after push.
+
+6 November, local `v1.73.2`: ordinary public section switches retain the workspace shell and update only the heading, section content, navigation state and outgoing windows. Browser checks cover desktop and mobile section selection without root replacement. Mobile menu opening still rebuilds the shell, and Firefox/Edge timing, display/accessibility and broader security review remain open. Archive Relay remains an idea. No commit or push requested for this batch.
+
+Same-batch follow-up: retain the public workspace through Timeline open, close and entry handoff, and let Escape close reading entries in both readers after nested controls have handled it. No new motion or edit shortcut. Mobile rework is on the desk for discussion; leave its current design alone.
+
+Roadmap follow-up: keep the public workspace mounted when opening/closing the notebook, including handoff from Timeline. Preserve lazy loading, retries, chapter controls and visible focus recovery. Field Archive folder opening, switching and closing now update only the overlay, preserving the index, scroll and focus. Shared cleanup also removes the previous folder-to-entry/Timeline/Roadmap reset. No reader redesign or push requested.
+
 5 November release review: owner approved committing and pushing the scoped v1.73.1 stability batch and the Archive Relay roadmap idea. File only the completed repeated-work/Settings/palette fixes; keep the broader performance/display/security pass in progress and Relay under future ideas. No author records, media or dependencies changed. Exclude generated next-env.d.ts, use explicit staging, and verify deployment plus independent note publishing after push. This supersedes the hold-publication notes below for this batch only.
 
 5 November, local `v1.73.1`: stability work begins after the verified v1.73.0 release. Remove repeated readout/trace derivation, keep closed search idle, preserve immutable project inputs and avoid unnecessary Memory State geometry/scroll work. Use the existing blocked-state pointer guard. Measured public Settings root replacements now have an in-place dialog/focus path; palette hit-testing over entries needs only a scoped stacking correction, including mobile's in-flow layer. Preserve visual timings and owner content. See REVIEW_2026-11-05-RUNTIME.md. Broader route retention, actual Firefox/Edge, zoom/display/accessibility and security checks remain open; no new push requested.
@@ -175,6 +183,10 @@ Verification passed: TypeScript, 54-record validation, full static-shell suite, 
 Owner priority (28 October): finish smaller, well-defined tasks before complex redesigns. The subsequent owner request chose the web-search/Connections first pass described above; review it together with artwork before an authorized release. Winter/January decoration dressing using the existing seasonal system is the next smaller candidate; keep any falling-snow effect separately scoped and measured. Defer the field notebook until a proper page/history/editing design discussion. Remaining Setup/Archive inline management, Living archive prototypes, month/year folders and resolution/performance/accessibility/security work remain queued, with targeted safety/regression checks throughout. No push is authorized by the current implementation/design-preview requests.
 
 ## Tentative Ideas
+
+### Mobile Rework (Discuss Before Implementation)
+
+6 November: owner wants to revisit the phone experience after the accumulated changes. Keep Gestalt's identity and utilities, but design for the web and touch instead of copying desktop windows or assuming a native app. Start by mapping find/read/return, then discuss thumb-reachable navigation, reading space, focus and scroll restoration. No mobile redesign is approved yet. Keep the existing mobile menu optimization separate and only prioritize it if the current cost warrants a small fix before the redesign.
 
 ### Archive Relay (Discuss Before Implementation)
 
