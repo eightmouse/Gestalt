@@ -20,6 +20,7 @@ import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
 import recordMotion from "@/public/record-motion.js";
 import memoryState from "@/public/memory-state.js";
+import { steamBannerImage } from "@/public/steam-display.mjs";
 type RecordWindowProps = {
   minimized?: boolean;
   accessPending?: boolean;
@@ -68,7 +69,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   const [noteSearchQuery, setNoteSearchQuery] = useState(initialNoteQuery);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
-  const headerImage = recordHeaderImage(record);
+  const artwork = imageFraming.recordHeadingArtwork(record, steamBannerImage);
 
   useEffect(() => {
     setActiveContent(initialContent);
@@ -143,9 +144,14 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
         {editor ?? <>
         <div className="record-main">
           <div
-            className={`${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}`}
+            className={`${artwork ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}`}
           >
-            {headerImage ? <img className="heading-banner-image" src={headerImage} alt="" decoding="async" style={imageFraming.headerFrameStyle(record.meta)} /> : null}
+            {artwork ? <img key={artwork.src} className="heading-banner-image" src={artwork.src} alt="" decoding="async" referrerPolicy="no-referrer" style={imageFraming.headerFrameStyle(record.meta)} onError={artwork.coverFallback ? (event) => {
+              const image = event.currentTarget;
+              if (image.dataset.coverFallback) return;
+              image.dataset.coverFallback = "true";
+              image.src = artwork.coverFallback;
+            } : undefined} /> : null}
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>

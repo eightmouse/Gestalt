@@ -79,6 +79,13 @@ export function steamCoverUrl(appId) {
     ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/library_600x900.jpg` : null;
 }
 
+export function currentGameCover(record, appId) {
+  return text(field(record, "dashboardImage"))
+    || text(field(record, "banner"))
+    || text(field(record, "headerImage"))
+    || steamCoverUrl(appId ?? Number(field(record, "steamAppId")));
+}
+
 export function steamBannerImage(cover) {
   if (typeof cover !== "string") return null;
   const match = cover.match(/^https:\/\/shared\.fastly\.steamstatic\.com\/store_item_assets\/steam\/apps\/(\d+)\/library_600x900\.jpg$/);

@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { FilePlus2 } from "lucide-react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { activityFreshness, recordDashboardImage, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
+import { activityFreshness, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
-import { steamBannerImage, steamCoverUrl, type CurrentGameDisplay } from "@/public/steam-display.mjs";
+import { currentGameCover, steamBannerImage, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import { SeasonalAccent } from "@/components/archive/seasonal-accent";
 import type { SeasonalMode } from "@/public/seasonal.js";
 import { MemoryState } from "@/components/archive/memory-state";
@@ -176,7 +176,7 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
 }
 
 function CurrentGame({ display, record, onCreate }: { display: CurrentGameDisplay; record?: RecordEntry; onCreate?: () => void }) {
-  const image = record ? recordDashboardImage(record) : steamCoverUrl(display.coverAppId) || "/images/archive-banner.png";
+  const image = currentGameCover(record, display.coverAppId) || "/images/archive-banner.png";
   const hint = display.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : undefined;
   return (
     <div className="current-game" data-state={dashboardRecordStateKey(display.status)} title={hint}>

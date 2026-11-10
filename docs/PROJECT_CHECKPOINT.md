@@ -1,5 +1,13 @@
 # Gestalt Project Checkpoint
 
+## Display Release Review: v1.73.3, 10 November 2026
+
+Owner approved publishing the compact desktop, Day header, shared game artwork and Archive scrollbar batch. File it in the public notebook while keeping visible-browser frame pacing, physical display and accessibility acceptance open. The separately saved FFXIV update and generated record export remain pending for normal content publishing. Exclude generated next-env.d.ts and verify the Pages artifact and independent publisher.
+
+## Compact Display Review: Local v1.73.3, 10 November 2026
+
+Native page zoom exposed clipped dashboard rows at 200% and at some narrow desktop widths even at 100%. Compact desktop cards now size to their contents and scroll as one grid; normal desktop and phone layouts are unchanged. The local reader also no longer attempts a duplicate backdrop warmup at the wrong URL. See [display and timing review](REVIEW_2026-11-10-DISPLAY.md) for the browser matrix and its limits. Owner content commits are preserved; no release push requested.
+
 ## Stability Release Review: v1.73.2, 6 November 2026
 
 Owner authorized review, commit and push of the section/window stability batch, including Escape and the mobile rework idea. This supersedes the earlier local-only notes for this batch. File the completed behavior without closing the wider performance/display review. Leave mobile redesign, authored records, media, dependencies and generated next-env.d.ts untouched.

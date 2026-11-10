@@ -5045,30 +5045,30 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   margin-block-end: 2px;
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack) {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack, .archive-root-files, .archive-manager-side, .archive-window-side, .archive-folder-files, .archive-window-tree) {
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--tone-ink, 217, 213, 193), 0.34) rgba(var(--tone-highlight, 255, 255, 255), 0.035);
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack, .archive-root-files, .archive-manager-side, .archive-window-side, .archive-folder-files, .archive-window-tree)::-webkit-scrollbar {
   inline-size: 10px;
   block-size: 10px;
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-track {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack, .archive-root-files, .archive-manager-side, .archive-window-side, .archive-folder-files, .archive-window-tree)::-webkit-scrollbar-track {
   background:
     linear-gradient(90deg, transparent 0 4px, rgba(var(--tone-ink, 217, 213, 193), 0.08) 4px 5px, transparent 5px),
     rgba(var(--tone-highlight, 255, 255, 255), 0.02);
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-thumb {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack, .archive-root-files, .archive-manager-side, .archive-window-side, .archive-folder-files, .archive-window-tree)::-webkit-scrollbar-thumb {
   min-block-size: 44px;
   border: 2px solid transparent;
   background:
     linear-gradient(rgba(var(--tone-ink, 217, 213, 193), 0.48), rgba(var(--tone-muted, 130, 127, 116), 0.36)) padding-box;
 }
 
-:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack)::-webkit-scrollbar-thumb:hover {
+:where(.record-layout, .setup-window-shell, .timeline-body, .update-history-window ol, .section-record-grid, .setup-bay-grid, .setup-tile-grid, .archive-nav-panel .nav-stack, .archive-root-files, .archive-manager-side, .archive-window-side, .archive-folder-files, .archive-window-tree)::-webkit-scrollbar-thumb:hover {
   background:
     linear-gradient(rgba(var(--tone-strong, 236, 230, 211), 0.7), rgba(var(--tone-accent, 200, 189, 159), 0.46)) padding-box;
 }
@@ -6038,7 +6038,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   display: block;
   object-fit: cover;
   object-position: center 50%;
-  opacity: 0.52;
+  opacity: var(--heading-image-opacity, 0.52);
 }
 
 .record-heading.has-heading-banner > :not(.heading-banner-image) {
@@ -7952,7 +7952,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 @keyframes record-banner-materialize {
   from { opacity: 0; transform: scale(calc(var(--header-image-scale, 1) * 1.035)); }
-  to { opacity: 0.52; transform: scale(var(--header-image-scale, 1)); }
+  to { opacity: var(--heading-image-opacity, 0.52); transform: scale(var(--header-image-scale, 1)); }
 }
 
 @keyframes record-label-materialize {
@@ -8378,7 +8378,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
   .dashboard-grid {
     max-inline-size: 900px;
-    grid-template-columns: minmax(260px, 1fr) minmax(210px, 0.82fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
   }
 
   .weather-panel {
@@ -8508,6 +8508,23 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   .latest-log p {
     font-size: 13px;
     -webkit-line-clamp: 2;
+  }
+}
+
+@media (761px <= width <= 1180px), (min-width: 761px) and (max-height: 660px) {
+  /* Compact desktops scroll complete cards instead of clipping their rows. */
+  .dashboard-grid {
+    grid-template-rows: none;
+    grid-auto-rows: max-content;
+    align-content: start;
+    overflow-y: auto;
+    overscroll-behavior-block: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  .memory-panel {
+    min-block-size: 220px;
   }
 }
 

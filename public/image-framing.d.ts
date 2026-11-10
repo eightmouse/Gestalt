@@ -23,5 +23,6 @@ normalizeHeaderFrame(value: unknown): HeaderFrame;
 headerFrameFields(value: unknown): Partial<HeaderFrame>;
 headerFrameStyle(value: unknown): (NonNullable<ReturnType<typeof imageFraming.imageFrameStyle>> & { "--header-image-scale": string }) | undefined;
 headerFrameCss(value: unknown): string;
+recordHeadingArtwork(record: { section: string; banner?: string; meta?: Record<string, unknown> }, steamBannerImage?: (cover: string) => string | null): { src: string; coverFallback: string } | null;
 };
 export default imageFraming;

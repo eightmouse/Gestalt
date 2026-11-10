@@ -209,6 +209,8 @@ assert.equal(avatar.readUInt32BE(20), 256);
 assert.ok(avatar.length < 128 * 1024, "The profile image stays small");
 assert.match(read("index.html"), /rel="preload" as="image" href="public\/images\/eightmouse-avatar.png"/);
 assert.match(read("app/layout.tsx"), /rel="preload" as="image" href="\/images\/eightmouse-avatar.png"/);
+assert.match(read("app/layout.tsx"), /rel="preload" as="image" href="\/images\/archive-banner.png"/);
+assert.doesNotMatch(reactSource, /public\/images\/archive-banner\.png/, "The React reader must not request the static shell's backdrop URL");
 assert.ok(read("lib/publish-paths.mjs").includes('"public/images/eightmouse-avatar.png"'), "Content-only publishing cannot omit a changed profile asset");
 assert.match(reactSource, /if \(!bootComplete \|\| localMemory === "prompt"/);
 assert.match(staticSource, /if \(!state.bootDismissed \|\| state.localMemory === "prompt"\) return;/);

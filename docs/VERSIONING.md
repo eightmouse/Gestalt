@@ -2,7 +2,17 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Current version: `v1.73.2`. Release base: `v1.73.1` (0ecfa513).
+Release target: `v1.73.3`. Previous site-code release: `v1.73.2` (8d61d8ff).
+
+`v1.73.3` keeps dashboard cards intact at compact desktop widths or very short heights, including 200% page zoom on a 1080p window. The dashboard can scroll within its existing area, leaving the header, footer and navigation in place. Standard desktop and phone layouts are unchanged. Shared CSS applies to both readers. The local reader no longer tries to warm the already-preloaded backdrop at an incorrect URL. No author records, dependencies or publishing behavior changed.
+
+Current Game artwork now falls back from the saved thumbnail or banner to the saved entry header, then to Steam artwork when an App ID is available. This fixes the header-only Monster Hunter Wilds record in both readers without changing its notes or automatic game selection.
+
+Day entry headers keep more of the artwork's color with a single fade behind the text. Night, image framing and the opening sequence keep their existing treatment.
+
+Games with only legacy Overview artwork now use it in the shared entry header on every tab. Custom headers still take precedence, and note screenshots and saved records remain untouched.
+
+Field Archive file lists and folder panes use the existing theme-aware Gestalt scrollbars without changing their scrolling or layout rules.
 
 `v1.73.2` retains the static shell, navigation and window tray during ordinary section switches. Replace the heading and section content, synchronize active controls, and clean up outgoing windows/focus without rebuilding the background. Existing boot, busy-transition and date-rollover fallbacks stay intact. No authored records or dependencies changed; the wider stability review remains in progress.
 

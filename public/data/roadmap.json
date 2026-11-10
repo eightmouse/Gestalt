@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "06 / 11 / 2026",
+  "updated": "10 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -9,7 +9,7 @@
       "items": [
         {
           "title": "Performance and display pass",
-          "detail": "The first navigation and window changes are filed, with layout and keyboard checks in Firefox, Edge and Chrome. Real browser zoom, frame pacing and the wider accessibility review remain open."
+          "detail": "Navigation, compact layouts and real browser zoom have been checked in Firefox, Edge and Chrome. Visible-browser frame pacing, physical display checks and the wider accessibility review are still open."
         }
       ]
     },
@@ -35,6 +35,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Room to read",
+          "detail": "Dashboard cards scroll intact on compact desktops and at high zoom. Day headers reveal more of the artwork, older game covers stay visible across entry tabs, and Archive folders use the same scrollbars as the rest of Gestalt.",
+          "version": "v1.73.3",
+          "releasedOn": "2026-11-10"
+        },
         {
           "title": "Keep the archive in place",
           "detail": "Switch sections and open Timeline, Roadmap or a month folder without rebuilding the page. Folder browsing preserves the index and its scroll. Escape closes reading entries after nested controls, without closing an inline editor.",

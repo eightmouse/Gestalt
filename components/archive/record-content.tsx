@@ -8,7 +8,6 @@ import {
   metaText,
   noteEntries,
   recordDisplaySummary,
-  recordHeaderImage,
   splitUpdateIndex
 } from "@/components/archive/record-utils";
 import { setupHardwareSource } from "@/components/archive/setup-utils";
@@ -166,14 +165,14 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
 }
 
 function RecordOverviewPage({ record }: { record: RecordEntry }) {
-  const headerImage = recordHeaderImage(record);
+  const hasHeaderArtwork = Boolean(imageFraming.recordHeadingArtwork(record));
   const summary = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
   const latestNote = record.section === "logs" ? noteEntries(record.body)[0] : undefined;
   const noteHeading = latestNote?.title.match(/^\s*(\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4})\s*[-:–—]?\s*(.*)$/);
 
   return (
     <div className="overview-stack">
-      {headerImage ? null : <RecordBanner record={record} />}
+      {hasHeaderArtwork ? null : <RecordBanner record={record} />}
 
       {record.section === "logs" ? (
         <section className="log-entry-preview" aria-label="Field note preview">

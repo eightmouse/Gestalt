@@ -5,7 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { renderToStaticMarkup } from "react-dom/server";
 import imageFraming from "../public/image-framing.js";
-import { createSteamSnapshotLoader, publicSnapshot, resolveCurrentGame, steamBannerImage, steamCoverUrl, steamRecordSeed } from "../public/steam-display.mjs";
+import { createSteamSnapshotLoader, currentGameCover, publicSnapshot, resolveCurrentGame, steamBannerImage, steamCoverUrl, steamRecordSeed } from "../public/steam-display.mjs";
 
 const now = "2026-10-20T12:00:00.000Z";
 const snapshot = { schemaVersion: 1, updatedAt: now, game: { appId: 2, title: "Latest <Game>", playtimeMinutes: 123, lastPlayedAt: now, achievements: { unlocked: 1, total: 4 } } };
@@ -53,6 +53,14 @@ assert.equal(resolveCurrentGame(snapshot, falsePin).recordId, "matched", "Only a
 assert.equal(steamCoverUrl("../../elsewhere"), null);
 assert.equal(steamCoverUrl(0), null);
 assert.match(steamCoverUrl(2), /^https:\/\/shared\.fastly\.steamstatic\.com\//);
+const headerOnlyGame = { id: "matched", headerImage: "/media/entry-header.webp", steamAppId: 2 };
+assert.equal(currentGameCover(headerOnlyGame, 2), headerOnlyGame.headerImage, "A header-only game uses its saved artwork");
+assert.equal(currentGameCover({ meta: headerOnlyGame }, 2), headerOnlyGame.headerImage, "Nested local and flat public fields match");
+assert.equal(currentGameCover({ ...headerOnlyGame, banner: "/banner.webp" }, 2), "/banner.webp");
+assert.equal(currentGameCover({ ...headerOnlyGame, banner: "/banner.webp", dashboardImage: "/cover.webp" }, 2), "/cover.webp");
+assert.equal(currentGameCover({ meta: { steamAppId: "2" } }), steamCoverUrl(2), "An App ID can supply a portrait when no artwork was saved");
+assert.equal(currentGameCover(undefined, 2), steamCoverUrl(2));
+assert.equal(currentGameCover({ steamAppId: "../../elsewhere" }), null);
 assert.equal(steamBannerImage(steamCoverUrl(39210)), "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/39210/header.jpg");
 for (const cover of [undefined, "/media/custom-cover.webp", "https://example.test/library_600x900.jpg", steamCoverUrl(2) + "?custom=1", "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4294967296/library_600x900.jpg"]) {
   assert.equal(steamBannerImage(cover), null, "Only recognized automatic Steam portraits get alternate artwork");
@@ -92,24 +100,24 @@ function declaration(file, name) {
 
 const require = createRequire(import.meta.url);
 const component = ts.transpileModule(`export ${declaration("../components/archive/dashboard.tsx", "CurrentGame")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-const react = vm.createContext({ exports: {}, require, imageFraming, steamBannerImage, steamCoverUrl, FilePlus2: require("lucide-react").FilePlus2, recordDashboardImage: () => "/cover.webp", dashboardRecordStateKey: () => "playing" });
+const react = vm.createContext({ exports: {}, require, imageFraming, steamBannerImage, currentGameCover, FilePlus2: require("lucide-react").FilePlus2, dashboardRecordStateKey: () => "playing" });
 vm.runInContext(component, react);
 const staticContext = vm.createContext({
   window: { GestaltImageFraming: imageFraming },
-  steamDisplayModule: { steamBannerImage, steamCoverUrl },
+  steamDisplayModule: { steamBannerImage, currentGameCover },
   steamDisplayReady: true,
-  currentGameRecord: () => ({ id: "matched" }),
+  currentGameRecord: () => headerOnlyGame,
   currentGameDisplay: () => display,
-  recordImage: () => "/cover.webp",
   recordStateKey: () => "playing"
 });
 for (const name of ["escapeHtml", "dashboardPanel", "currentGamePanel"]) vm.runInContext(declaration("../static-app.js", name), staticContext);
 for (const model of [display, { ...display, completion: null, playtime: null, lastPlayed: null }]) {
   staticContext.currentGameDisplay = () => model;
-  const reactHtml = renderToStaticMarkup(react.exports.CurrentGame({ display: model, record: reactRecords[1] }));
+  const reactHtml = renderToStaticMarkup(react.exports.CurrentGame({ display: model, record: { ...reactRecords[1], meta: headerOnlyGame } }));
   const staticHtml = vm.runInContext("currentGamePanel()", staticContext);
   for (const html of [reactHtml, staticHtml]) {
     assert.ok(html.includes("Latest &lt;Game&gt;"), "Game titles are escaped");
+    assert.ok(html.includes(headerOnlyGame.headerImage), "Both dashboards render the existing header, not a generic placeholder");
     assert.equal(html.includes("25% Achievements"), Boolean(model.completion));
     assert.equal(html.includes("2.0h Play Time"), Boolean(model.playtime));
     assert.equal(html.includes("Last Played: 20 / 10 / 2026"), Boolean(model.lastPlayed));
@@ -117,6 +125,10 @@ for (const model of [display, { ...display, completion: null, playtime: null, la
     assert.equal(html.includes("Today"), false);
   }
 }
+assert.match(vm.runInContext("currentGamePanel()", staticContext), /data-open-record="matched" data-open-content="notes"/);
+staticContext.steamDisplayModule = { steamBannerImage };
+assert.ok(vm.runInContext("currentGamePanel()", staticContext).includes(headerOnlyGame.headerImage), "An older cached Steam helper cannot hide the cover");
+staticContext.steamDisplayModule = { steamBannerImage, currentGameCover };
 staticContext.currentGameRecord = () => undefined;
 assert.equal(vm.runInContext("currentGamePanel()", staticContext).includes("data-open-record"), false);
 staticContext.steamDisplayReady = false;
@@ -170,10 +182,18 @@ const framedStaticHtml = vm.runInContext("recordBanner(bannerRecord)", staticCon
 const framedReactHtml = renderToStaticMarkup(react.exports.RecordBanner({ record: { section: "games", banner: steamCoverUrl(39210), meta: frame } }));
 for (const html of [framedStaticHtml, framedReactHtml]) assert.ok(html.includes("object-fit:cover;object-position:40% 60%;transform:scale(1.25);transform-origin:40% 60%"), "Both readers use the same bounded frame");
 
+const steamCover = steamCoverUrl(39210);
+const landscape = steamBannerImage(steamCover);
+const legacyGame = { id: "legacy-game", title: "Legacy game", section: "games", type: "Play Log", status: "Active", priority: 1, updated: now, banner: steamCover, body: "", milestones: [], meta: {} };
+assert.deepEqual(imageFraming.recordHeadingArtwork(legacyGame, steamBannerImage), { src: landscape, coverFallback: steamCover });
+assert.deepEqual(imageFraming.recordHeadingArtwork({ ...legacyGame, banner: "/media/legacy.webp" }), { src: "/media/legacy.webp", coverFallback: "" });
+assert.deepEqual(imageFraming.recordHeadingArtwork({ ...legacyGame, meta: { headerImage: "/media/custom.webp" } }, steamBannerImage), { src: "/media/custom.webp", coverFallback: "" });
+assert.equal(imageFraming.recordHeadingArtwork({ ...legacyGame, section: "projects" }, steamBannerImage), null, "Only games promote legacy banners");
+
 Object.assign(react, {
   useState: (value) => [value, () => {}], useEffect() {}, useRef: () => ({ current: null }),
   motion: { article: ({ children }) => require("react").createElement("article", null, children) },
-  getRecordContents: () => [], recordHeaderImage: (record) => record.meta.headerImage || "",
+  getRecordContents: () => [],
   recordStateKey: () => "active", formatReadableDate: (value) => value,
   gameLogPlacement: () => "session", gameActivityValue: () => "",
   RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
@@ -217,8 +237,27 @@ for (const section of ["projects", "games", "logs"]) {
     assert.ok(html.includes("Header &lt;fixture&gt;"));
   }
 }
+const tabs = ["overview", "notes", "recommendation"];
+react.getRecordContents = staticContext.getRecordContents = () => tabs.map(key => ({ key, label: key }));
+react.contentOrdinal = staticContext.contentOrdinal = () => "01";
+react.NoteSearchBox = () => null;
+staticContext.renderNoteSearch = () => "";
+staticContext.normalizeContentKey = () => staticContext.state.activeContent;
+staticContext.headerRecord = { ...legacyGame, meta: undefined };
+for (const tab of tabs) {
+  staticContext.state.activeContent = tab;
+  const local = react.exports.ArchiveRecordWindow({ record: legacyGame, initialContent: tab, maximized: false });
+  const image = findHeaderElement(local, "heading-banner-image");
+  assert.equal(image?.props.src, landscape, `The React ${tab} tab keeps the shared header`);
+  const html = vm.runInContext("recordWindow(headerRecord)", staticContext);
+  assert.ok(html.includes(`class="heading-banner-image" src="${landscape}" data-steam-cover="${steamCover}"`), `The static ${tab} tab keeps the shared header`);
+  const failed = { src: landscape, dataset: {} };
+  image.props.onError({ currentTarget: failed });
+  assert.equal(failed.src, steamCover);
+  assert.equal(failed.dataset.coverFallback, "true");
+}
 const headerCss = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
-assert.match(headerCss, /to \{ opacity: 0\.52; transform: scale\(var\(--header-image-scale, 1\)\); \}/, "Mask-free access animation retains the selected header zoom");
+assert.match(headerCss, /@keyframes record-banner-materialize \{\s*from \{[^}]*\}\s*to \{[^}]*transform: scale\(var\(--header-image-scale, 1\)\);/, "Header access animation retains the selected zoom");
 console.log("Header framing passed: bounded independent metadata, original defaults, React/Pages parity and access-animation scale.");
 
 const studioContext = vm.createContext({});

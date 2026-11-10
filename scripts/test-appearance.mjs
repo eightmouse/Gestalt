@@ -169,21 +169,45 @@ assert.equal(panelEdges?.["border-block-end-color"], "var(--surface-edge-low)");
 for (const selector of [".note-entry-date", ".note-media figcaption", ".record-meta dt", ".system-status dt"]) {
   assert.ok([...dayRules].some(([rule, values]) => rule.includes(selector) && values.color === "var(--muted)"), `${selector} has a readable metadata treatment`);
 }
-const banner = dayRules.get(`${dayPrefix} .record-heading.has-heading-banner::before`).background;
-assert.ok(banner.includes("rgba(208, 212, 204, 0.72) 62%"));
-assert.ok(banner.includes("rgba(208, 212, 204, 0.96)"));
-assert.ok(!banner.includes("repeating-linear-gradient"), "No scanline over header words in Day");
+const heading = `${dayPrefix} .record-heading.has-heading-banner`;
+const banner = dayRules.get(`${heading}::before`).background;
+const imageOpacity = Number(dayRules.get(heading)["--heading-image-opacity"]);
+const fadeLimit = Number(dayRules.get(heading)["--heading-fade-size"].match(/calc\((\d+)px \* var\(--desktop-size, 1\)\)/)[1]);
+const ramp = [...banner.matchAll(/(?:transparent|rgba\(var\(--tone-surface\), ([\d.]+)\)) calc\(var\(--heading-fade-size\) \* ([\d.]+)\)/g)]
+  .map(([, opacity, position]) => ({ opacity: Number(opacity || 0), position: Number(position) * 100 }));
+const metadataStop = banner.match(/rgba\(var\(--tone-surface\), ([\d.]+)\) (\d+)%/);
+function fadeAt(position, height = fadeLimit) {
+  const ratio = Math.min(1, fadeLimit / height);
+  const fadeStops = [...ramp.map((stop) => ({ ...stop, position: stop.position * ratio })), { opacity: Number(metadataStop[1]), position: Number(metadataStop[2]) }];
+  const end = fadeStops.findIndex((stop) => stop.position >= position);
+  const [from, to] = fadeStops.slice(end - 1, end + 1);
+  return from.opacity + (to.opacity - from.opacity) * (position - from.position) / (to.position - from.position);
+}
+assert.equal((banner.match(/linear-gradient\(/g) || []).length, 1, "No second full-image wash in Day");
+assert.ok(imageOpacity * (1 - fadeAt(24)) >= 0.7, "The upper artwork retains most of its original color");
+for (const [index, stop] of ramp.slice(1).entries()) {
+  const previous = ramp[index];
+  assert.ok((stop.opacity - previous.opacity) / (stop.position - previous.position) < 0.035, "The fade builds without a sharp band");
+}
 for (const pixel of [0, 64, 128, 192, 255]) {
   const scenery = over([pixel, pixel, pixel], 0.18, rgb(variables.get("--bg")));
   const panel = over(rgb(variables.get("--surface-sheet")), 0.46, scenery);
-  const image = over([pixel, pixel, pixel], 0.52, rgb(variables.get("--bg")));
-  const header = over(rgb(variables.get("--surface-sheet")), 0.12, over(rgb(variables.get("--surface-sheet")), 0.72, image));
+  const image = over([pixel, pixel, pixel], imageOpacity, rgb(variables.get("--bg")));
+  const titleSurface = over(rgb(variables.get("--surface-sheet")), fadeAt(40), image);
+  const metadataSurface = over(rgb(variables.get("--surface-sheet")), fadeAt(76), image);
   for (const foreground of ["--text", "--text-strong", "--muted", "--muted-2"]) {
     assert.ok(contrast(variables.get(foreground), panel) >= 4.5, `${foreground}: modeled translucent panel contrast`);
-    assert.ok(contrast(variables.get(foreground), header) >= 4.5, `${foreground}: modeled light/dark artwork header contrast`);
+    assert.ok(contrast(variables.get(foreground), metadataSurface) >= 4.5, `${foreground}: modeled artwork metadata contrast`);
   }
+  assert.ok(contrast(variables.get("--text-strong"), titleSurface) >= 4.5, "Even a dark image leaves readable title ink");
+  const tallHeader = over(rgb(variables.get("--surface-sheet")), fadeAt(35, 390), image);
+  assert.ok(contrast(variables.get("--text-strong"), tallHeader) >= 4.5, "Wrapped titles do not pull their ID above the fade");
 }
 const archiveSheet = postcss.parse(read("app/globals.css"));
+const opacityRule = archiveSheet.nodes.find((node) => node.selector === ".heading-banner-image").nodes.find((node) => node.prop === "opacity");
+const opacityArrival = archiveSheet.nodes.find((node) => node.params === "record-banner-materialize").nodes.find((node) => node.selector === "to").nodes.find((node) => node.prop === "opacity");
+assert.equal(opacityRule.value, "var(--heading-image-opacity, 0.52)", "Night retains its original opacity");
+assert.equal(opacityArrival.value, opacityRule.value, "The animation finishes at the settled theme opacity");
 const entryRules = [];
 archiveSheet.walkRules((rule) => { if (rule.nodes.some((node) => node.prop === "--record-titlebar-size")) entryRules.push(rule); });
 assert.equal(entryRules.length, 3, "Entry titlebar has one default plus scaled-desktop and touch overrides");

@@ -21,8 +21,6 @@ import {
   getArchiveMetrics,
   noteEntries,
   recentActivity,
-  recordDashboardImage,
-  recordHeaderImage,
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
 import type { SetupGroupId } from "@/components/archive/setup-utils";
@@ -96,52 +94,6 @@ type ArchiveOSProps = {
 type LocalMemoryState = "checking" | "prompt" | "granted" | "session";
 
 const localMemoryKey = "gestalt.local-memory";
-
-function isLocalArchiveMediaSource(source: unknown): source is string {
-  return typeof source === "string" && /^(?:\.\/)?public\/(?:images|media)\//.test(source);
-}
-
-function setupWarmupGroup(record: RecordEntry): string {
-  const explicitGroup = [record.meta.setupGroup, record.meta.setupKind, record.meta.category]
-    .map((value) => (typeof value === "string" ? value.toLowerCase().trim() : ""))
-    .find(Boolean);
-
-  if (explicitGroup) {
-    if (/\b(tool|tools|app|apps|software|shortcut)\b/.test(explicitGroup)) {
-      return "tools";
-    }
-
-    if (/\b(peripheral|peripherals|device|hardware|gear|photo)\b/.test(explicitGroup)) {
-      return "peripherals";
-    }
-  }
-
-  return "";
-}
-
-function warmArchiveMedia(records: RecordEntry[], currentGame?: RecordEntry) {
-  const sources = new Set<string>(["public/images/archive-banner.png"]);
-
-  if (currentGame) {
-    sources.add(recordDashboardImage(currentGame));
-  }
-
-  for (const record of records) {
-    const group = setupWarmupGroup(record);
-
-    if (record.section === "setup" && (group === "tools" || group === "peripherals")) {
-      sources.add(typeof record.meta.iconImage === "string" ? record.meta.iconImage : "");
-      sources.add(recordHeaderImage(record));
-      sources.add(record.banner ?? "");
-    }
-  }
-
-  for (const source of [...sources].filter(isLocalArchiveMediaSource)) {
-    const image = new Image();
-    image.decoding = "async";
-    image.src = source;
-  }
-}
 
 export function ArchiveOS({ records }: ArchiveOSProps) {
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
@@ -312,10 +264,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   useEffect(() => {
     setArchiveRecords(records);
   }, [records]);
-
-  useEffect(() => {
-    warmArchiveMedia(archiveRecords, currentGame);
-  }, [archiveRecords, currentGame]);
 
   useEffect(() => {
     const updateClock = () => { if (!document.hidden) { const date = new Date(); appearance.sync(document, date); setNow(date); } };

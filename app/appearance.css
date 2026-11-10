@@ -80,10 +80,20 @@
 :root[data-appearance="day"] .notebook-binding { background: rgba(100, 116, 103, 0.13); }
 :root[data-appearance="day"] .note-entry--indexed > .note-entry-body { background: rgba(221, 224, 217, 0.3); }
 :root[data-appearance="day"] :is(.record-heading.has-heading-banner p, .record-heading.has-heading-banner .record-id) { color: var(--text-strong); }
+:root[data-appearance="day"] .record-heading.has-heading-banner {
+  --heading-image-opacity: 0.9;
+  --heading-fade-size: min(100%, calc(320px * var(--desktop-size, 1)));
+}
 :root[data-appearance="day"] .record-heading.has-heading-banner::before {
-  background:
-    linear-gradient(180deg, rgba(208, 212, 204, 0.12), rgba(208, 212, 204, 0.72) 45%, rgba(208, 212, 204, 0.96)),
-    linear-gradient(90deg, rgba(208, 212, 204, 0.92), rgba(208, 212, 204, 0.72) 62%, rgba(208, 212, 204, 0.74));
+  background: linear-gradient(180deg,
+    transparent calc(var(--heading-fade-size) * 0.07),
+    rgba(var(--tone-surface), 0.06) calc(var(--heading-fade-size) * 0.16),
+    rgba(var(--tone-surface), 0.2) calc(var(--heading-fade-size) * 0.24),
+    rgba(var(--tone-surface), 0.43) calc(var(--heading-fade-size) * 0.32),
+    rgba(var(--tone-surface), 0.65) calc(var(--heading-fade-size) * 0.39),
+    rgba(var(--tone-surface), 0.73) calc(var(--heading-fade-size) * 0.46),
+    rgba(var(--tone-surface), 0.84) 76%,
+    rgba(var(--tone-surface), 0.9));
 }
 /* Day signals are ink traces; Night retains its existing luminous treatment. */
 :root[data-appearance="day"] .active-projects-panel .record-list button::after,

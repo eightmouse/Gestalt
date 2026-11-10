@@ -75,5 +75,16 @@ function headerFrameCss(value) {
   const style = headerFrameStyle(value);
   return style ? `object-fit:${style.objectFit};object-position:${style.objectPosition};transform:${style.transform};transform-origin:${style.transformOrigin};--header-image-scale:${style["--header-image-scale"]}` : "";
 }
-return { normalizeImageFrame, imageFrameFields, imageFrameStyle, imageFrameCss, normalizeHeaderFrame, headerFrameFields, headerFrameStyle, headerFrameCss };
+function recordHeadingArtwork(record, steamBannerImage) {
+  const header = (record.meta ?? record).headerImage;
+  if (typeof header === "string" && header.trim()) return { src: header.trim(), coverFallback: "" };
+
+  const banner = record.banner;
+  if (record.section !== "games" || typeof banner !== "string" || !banner.trim()) return null;
+  const cover = banner.trim();
+  const landscape = steamBannerImage?.(cover);
+  return { src: landscape || cover, coverFallback: landscape ? cover : "" };
+}
+
+return { normalizeImageFrame, imageFrameFields, imageFrameStyle, imageFrameCss, normalizeHeaderFrame, headerFrameFields, headerFrameStyle, headerFrameCss, recordHeadingArtwork };
 });
