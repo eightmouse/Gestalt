@@ -176,7 +176,7 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
 }
 
 function CurrentGame({ display, record, onCreate }: { display: CurrentGameDisplay; record?: RecordEntry; onCreate?: () => void }) {
-  const image = currentGameCover(record, display.coverAppId) || "/images/archive-banner.png";
+  const image = currentGameCover(record, display.coverAppId) || "/images/archive-backdrop.webp";
   const hint = display.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : undefined;
   return (
     <div className="current-game" data-state={dashboardRecordStateKey(display.status)} title={hint}>
@@ -184,7 +184,7 @@ function CurrentGame({ display, record, onCreate }: { display: CurrentGameDispla
         <img key={image} src={image} alt="" decoding="async" fetchPriority="low" referrerPolicy="no-referrer" onError={(event) => {
           if (!event.currentTarget.dataset.coverFallback) {
             event.currentTarget.dataset.coverFallback = "true";
-            event.currentTarget.src = "/images/archive-banner.png";
+            event.currentTarget.src = "/images/archive-backdrop.webp";
           }
         }} />
       </div>

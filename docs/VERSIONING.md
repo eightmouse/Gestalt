@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.73.3`. Previous site-code release: `v1.73.2` (8d61d8ff).
+Release target: `v1.73.4`. Previous site-code release: `v1.73.3` (51dad600).
+
+`v1.73.4` preloads and draws one full-resolution WebP backdrop in both readers, down from 2.67 MiB to 231 KiB. The original PNG, framing, Day and Night treatments, boot timing and public publishing behavior are unchanged. The owner approved release together with the saved Wilds note and its screenshots.
 
 `v1.73.3` keeps dashboard cards intact at compact desktop widths or very short heights, including 200% page zoom on a 1080p window. The dashboard can scroll within its existing area, leaving the header, footer and navigation in place. Standard desktop and phone layouts are unchanged. Shared CSS applies to both readers. The local reader no longer tries to warm the already-preloaded backdrop at an incorrect URL. No author records, dependencies or publishing behavior changed.
 

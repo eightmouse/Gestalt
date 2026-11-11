@@ -27,7 +27,7 @@ const effectsCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-
 if (effectsCheck.status !== 0) errors.push(`Compositor effects regression failed: ${(effectsCheck.stderr || effectsCheck.stdout || "").trim()}`);
 
 const archiveImage = indexHtml.match(/--archive-image:\s*url\("([^"]+)"\)/)?.[1];
-if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-banner.png") {
+if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-backdrop.webp") {
   errors.push("The public background URL must resolve relative to its consuming app/globals.css stylesheet.");
 }
 
@@ -44,7 +44,7 @@ const cacheTokenCases = [
   ['src="public/note-inline.js?v=1.40.0"', 'src="public/note-inline.js?v=12345"'],
   ["src='static-app.js'", "src='static-app.js?v=12345'"],
   ['src="static-app.js?mode=preview&v=1.36.24#entry"', 'src="static-app.js?mode=preview&v=12345#entry"'],
-  ['src="public/images/archive-banner.png?v=1.36.24"', 'src="public/images/archive-banner.png?v=1.36.24"']
+  ['src="public/images/archive-backdrop.webp?v=1.73.4"', 'src="public/images/archive-backdrop.webp?v=1.73.4"']
 ];
 
 for (const [input, expected] of cacheTokenCases) {

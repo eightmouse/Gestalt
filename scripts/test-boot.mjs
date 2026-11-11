@@ -209,8 +209,17 @@ assert.equal(avatar.readUInt32BE(20), 256);
 assert.ok(avatar.length < 128 * 1024, "The profile image stays small");
 assert.match(read("index.html"), /rel="preload" as="image" href="public\/images\/eightmouse-avatar.png"/);
 assert.match(read("app/layout.tsx"), /rel="preload" as="image" href="\/images\/eightmouse-avatar.png"/);
-assert.match(read("app/layout.tsx"), /rel="preload" as="image" href="\/images\/archive-banner.png"/);
-assert.doesNotMatch(reactSource, /public\/images\/archive-banner\.png/, "The React reader must not request the static shell's backdrop URL");
+assert.match(read("app/layout.tsx"), /rel="preload" as="image" href="\/images\/archive-backdrop\.webp"/);
+assert.match(css, /--archive-image: url\("\/images\/archive-backdrop\.webp"\)/, "The launcher preload matches its rendered backdrop");
+assert.doesNotMatch(reactSource, /public\/images\/archive-(?:banner\.png|backdrop\.webp)/, "The React reader must not request the static shell's backdrop URL");
+for (const file of ["app/layout.tsx", "app/globals.css", "components/archive/dashboard.tsx", "index.html", "static-app.js"]) {
+  assert.doesNotMatch(read(file), /archive-banner\.png/, "The original artwork is not requested by either reader");
+}
+const backdrop = readFileSync(new URL("../public/images/archive-backdrop.webp", import.meta.url));
+const backdropOriginal = readFileSync(new URL("../public/images/archive-banner.png", import.meta.url));
+assert.equal(backdrop.toString("ascii", 0, 4) + backdrop.toString("ascii", 8, 12), "RIFFWEBP");
+assert.ok(backdrop.length < backdropOriginal.length / 8, "The display copy stays much smaller than the preserved PNG");
+assert.ok(read("lib/publish-paths.mjs").includes('"public/images/archive-backdrop.webp"'), "The backdrop belongs to the reviewed public runtime");
 assert.ok(read("lib/publish-paths.mjs").includes('"public/images/eightmouse-avatar.png"'), "Content-only publishing cannot omit a changed profile asset");
 assert.match(reactSource, /if \(!bootComplete \|\| localMemory === "prompt"/);
 assert.match(staticSource, /if \(!state.bootDismissed \|\| state.localMemory === "prompt"\) return;/);

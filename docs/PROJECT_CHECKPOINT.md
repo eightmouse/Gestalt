@@ -1,5 +1,13 @@
 # Gestalt Project Checkpoint
 
+## Startup Backdrop: v1.73.4, 11 November 2026
+
+Keep the original 1983x793 PNG and use a quality-94 WebP display copy made with the installed Sharp encoder. The backdrop payload falls from 2,796,585 to 236,252 bytes (91.6% smaller). Pages and the launcher each preload the same URL that their CSS draws; a failed game cover reuses that asset rather than requesting the original. No new dependency, timer, image framing, effect or content change.
+
+Cold Chromium checks used a disposable Pages artifact and an isolated Next launcher fixture with the same published records. Each reader transferred one image body; the local development server also produced a header-only cache validation. In the Pages preview at an emulated 5 Mbps, the image transfer fell from about 6.1-6.2 s to 1.8-1.9 s in Day and Night. In the unthrottled local launcher, the Night samples were 174 ms and 41 ms. These are backdrop resource timings, not total startup, live Pages results or evidence about animation frame pacing. The Day and Night screenshot comparisons kept the same composition; the compared backdrop region averaged under 0.12 levels of change per color channel out of 255. Test servers and disposable profiles were stopped.
+
+The owner accepted the backdrop comparison and approved release with the saved Monster Hunter Wilds note, four game screenshots, and their display copies. Preserve authored wording, exclude unrelated generated development types, verify the staged Pages artifact, and check independent content publishing after push.
+
 ## Display Release Review: v1.73.3, 10 November 2026
 
 Owner approved publishing the compact desktop, Day header, shared game artwork and Archive scrollbar batch. File it in the public notebook while keeping visible-browser frame pacing, physical display and accessibility acceptance open. The separately saved FFXIV update and generated record export remain pending for normal content publishing. Exclude generated next-env.d.ts and verify the Pages artifact and independent publisher.

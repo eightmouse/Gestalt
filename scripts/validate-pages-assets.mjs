@@ -70,8 +70,11 @@ export async function validatePagesAssets(destination) {
   if (!css.includes("var(--archive-image)")) throw new Error("The archive stylesheet no longer consumes the background variable.");
   const background = html.match(/--archive-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];
   if (!background) throw new Error("The static background override is missing.");
-  await asset(background, stylesheet.url);
+  const { url: backgroundUrl } = await asset(background, stylesheet.url);
   const preloads = links.filter((link) => link.rel === "preload" && link.as === "image");
+  if (!preloads.some((link) => new URL(link.href, base).href === backgroundUrl.href)) {
+    throw new Error("The backdrop preload must resolve to the image used by the archive stylesheet.");
+  }
   if (!preloads.some((link) => link.href === "public/images/eightmouse-avatar.png")) throw new Error("The local welcome portrait preload is missing.");
   for (const link of preloads) await asset(link.href);
   for (const icon of ["prev", "next", "index"]) await asset(`public/images/ui/notebook-${icon}.svg`);

@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "10 / 11 / 2026",
+  "updated": "11 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -35,6 +35,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Lighter first load",
+          "detail": "The same Day and Night backdrop now downloads as a full-resolution WebP, about 92% smaller. The original artwork and boot sequence stay intact.",
+          "version": "v1.73.4",
+          "releasedOn": "2026-11-11"
+        },
         {
           "title": "Room to read",
           "detail": "Dashboard cards scroll intact on compact desktops and at high zoom. Day headers reveal more of the artwork, older game covers stay visible across entry tabs, and Archive folders use the same scrollbars as the rest of Gestalt.",
