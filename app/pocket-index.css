@@ -1,0 +1,146 @@
+.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back,
+.os-preference[data-os-group="pocketBoot"] { display: none; }
+
+@media (max-width: 760px) {
+  .archive-shell:has(> .pocket-header) {
+    --pocket-paper: #171a1b;
+    --pocket-plate: #1f2624;
+    --pocket-ink: #f0eee6;
+    --pocket-muted: #b3bdb6;
+    --pocket-line: #414b47;
+    --pocket-signal: #aed0b7;
+    --pocket-grid: #5a7c6747;
+    --pocket-mono: ui-monospace, Consolas, monospace;
+    min-block-size: 100dvh;
+    background: var(--pocket-paper);
+    color: var(--pocket-ink);
+  }
+  :root[data-appearance="day"] .archive-shell:has(> .pocket-header) {
+    --pocket-paper: #eeefe9;
+    --pocket-plate: #e0e4db;
+    --pocket-ink: #242a28;
+    --pocket-muted: #4c5952;
+    --pocket-line: #b9c1b8;
+    --pocket-signal: #396451;
+    --pocket-grid: #9cae9f40;
+  }
+  body:has(#root, .pocket-header)::before,
+  .archive-shell:has(> .pocket-header)::before,
+  .archive-shell:has(> .pocket-header) > :is(.grain-layer, .scanline-layer, .sidebar, .boot-screen),
+  .archive-shell:has(> .pocket-header) > .workspace::before,
+  .archive-shell:has(> .pocket-header) > .workspace::after,
+  .archive-shell:has(> .pocket-header) > .workspace > :is(.dashboard-grid, .workspace-footer, .workspace-window-tray) { display: none; }
+
+  .pocket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-block-size: 66px;
+    padding: 9px 12px 9px 16px;
+    border-block-end: 1px solid var(--pocket-line);
+  }
+  .pocket-brand { display: grid; gap: 3px; }
+  .pocket-brand strong { font: 500 21px/1 var(--pocket-mono); }
+  :is(.pocket-brand small, .pocket-index small, .pocket-boot-face > div:first-child > span) { color: var(--pocket-muted); font: 500 11px/1.35 var(--pocket-mono); }
+  .pocket-tools { display: flex; align-items: center; }
+  :is(.pocket-tools, .pocket-context) button, .record-window .pocket-record-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-block-size: 44px;
+    min-inline-size: 44px;
+    padding: 0 6px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: 500 13px/1.2 system-ui, sans-serif;
+  }
+  .pocket-tools button[aria-expanded="true"], .pocket-context button { color: var(--pocket-signal); }
+  .pocket-tools svg, .pocket-index svg, .pocket-context svg, .pocket-record-back svg { flex: none; }
+  .archive-shell:has(> .pocket-header) > .workspace { min-block-size: 0; padding: 0 16px 24px; }
+  .archive-shell:has(> .pocket-header) > .workspace > .workspace-header { display: none; }
+  .archive-shell[data-search-open] > .workspace[data-pocket-section] > .workspace-header { display: block; margin: 12px 0 0; }
+  .archive-shell[data-search-open] .workspace[data-pocket-section] > :is(.section-page, .pocket-index, .pocket-context) { display: none; }
+  .workspace[data-pocket-section="system"] > .pocket-index { display: block; }
+  .workspace[data-pocket-section]:not([data-pocket-section="system"]) > .pocket-context { display: flex; margin-block: 4px 8px; }
+  .pocket-register { display: grid; grid-template-columns: minmax(0, 1fr) 50px; align-items: center; gap: 8px; margin-inline: -16px; padding: 24px 16px; border-block-end: 1px solid var(--pocket-line); background: linear-gradient(90deg, var(--pocket-plate) 48%, transparent), repeating-linear-gradient(90deg, var(--pocket-grid) 0 1px, transparent 1px 8px), var(--pocket-plate); }
+  .pocket-register h1 { margin: 8px 0 0; font: 500 28px/1.12 var(--pocket-mono); letter-spacing: 0; overflow-wrap: anywhere; }
+  :is(.pocket-register small, .pocket-dispatch small, .pocket-boot-face > div:first-child > span) { color: var(--pocket-signal); }
+  .pocket-stamp { position: relative; display: block; justify-self: end; inline-size: 50px; block-size: 45px; color: var(--pocket-signal); }
+  .pocket-stamp i { position: absolute; inset: calc(6px * var(--pocket-layer, 0)) auto auto calc(6px * var(--pocket-layer, 0)); inline-size: 33px; block-size: 29px; border: 1px solid currentColor; background: var(--pocket-plate); }
+  .pocket-stamp i:first-child { opacity: 0.42; }
+  .pocket-stamp i:nth-child(2) { --pocket-layer: 1; opacity: 0.62; }
+  .pocket-stamp i:last-child { --pocket-layer: 2; }
+  .pocket-stamp i:last-child::after { content: ""; position: absolute; inset: 8px 7px; border-block: 1px solid currentColor; }
+  .pocket-directory button, .pocket-dispatch { display: grid; align-items: center; gap: 10px; inline-size: 100%; min-block-size: 54px; padding: 7px 3px; border: 0; border-block-end: 1px solid var(--pocket-line); background: transparent; color: inherit; text-align: start; font: 500 15px/1.45 system-ui, sans-serif; }
+  .pocket-directory button { grid-template-columns: 20px 18px minmax(0, 1fr) 16px; }
+  .pocket-directory :is(svg, .pocket-chevron, .nav-mark) { color: var(--pocket-muted); }
+  .pocket-chevron { font: 400 20px/1 var(--pocket-mono); }
+  .pocket-directory strong, .pocket-dispatch strong { font-weight: 500; overflow-wrap: anywhere; }
+  .pocket-dispatch { grid-template-columns: minmax(0, 1fr) 16px; min-block-size: 58px; margin-block-start: 18px; padding: 8px 10px; border-block-end: 0; border-inline-start: 2px solid var(--pocket-signal); background: var(--pocket-plate); }
+  .pocket-dispatch > span:first-child { display: grid; gap: 4px; }
+  :is(.pocket-directory button, .pocket-dispatch):active { background: var(--pocket-plate); color: var(--pocket-signal); }
+
+  .workspace[data-pocket-section] .section-page { margin-block-start: 0; }
+  .workspace[data-pocket-section] :is(.section-page-readout, .section-note-preview) { display: none; }
+  .workspace[data-pocket-section] .section-record-column .section-record-grid { grid-auto-rows: auto; }
+  .workspace[data-pocket-section] .section-record { block-size: auto; min-block-size: 66px; padding: 10px 12px; grid-template-areas: "title" "date"; grid-template-rows: auto auto; row-gap: 5px; }
+  .workspace[data-pocket-section] .section-record > span { display: none; }
+  .workspace[data-pocket-section] .section-record > strong { font-size: 16px; overflow-wrap: anywhere; }
+  .workspace[data-pocket-section] .section-record > i { padding-block-start: 0; }
+  .workspace[data-pocket-section] .section-record-column { block-size: auto; max-block-size: none; }
+  .workspace[data-pocket-section] .section-record-grid { max-block-size: none; overflow: visible; }
+
+  .archive-shell:has(> .pocket-header) .record-window:not([hidden]) { inset: 0; inline-size: auto; max-block-size: 100dvh; border: 0; transform: none; animation: none; }
+  .record-window .window-actions, .record-window .window-title-group, .record-window > .window-bar > span { display: none; }
+  .record-window .window-bar { justify-content: space-between; }
+  .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
+  .record-window.is-maximized .record-layout:not(.is-editing-record) { grid-template-columns: minmax(0, 1fr); }
+  .record-window .window-edit-action { min-inline-size: 44px; min-block-size: 44px; }
+  .record-window .record-heading h2 { position: relative; font-family: var(--pocket-mono); font-size: 30px; letter-spacing: 0; }
+  .record-window .record-title-text { font-size: inherit; line-height: inherit; letter-spacing: 0; text-wrap: wrap; overflow-wrap: anywhere; }
+  .record-heading [data-pocket-resolving] .record-title-text:not(.pocket-title-cipher) { opacity: 0; }
+  .record-heading .pocket-title-cipher { position: absolute; inset: 0; pointer-events: none; color: var(--pocket-signal); }
+  .os-preference[data-os-group="pocketBoot"] { display: block; }
+  .os-preference:is([data-os-group="startup"], [data-os-group="entry"], [data-os-group="navigation"], [data-os-group="memory"], [data-os-group="seasonal"]) { display: none; }
+
+  .archive-shell.is-booting > .workspace > .workspace-header { animation: none; }
+  .archive-shell.is-booting { background: var(--pocket-paper); }
+  .archive-shell.is-booting .pocket-boot:not([hidden]) { position: fixed; inset: 0; z-index: 90; display: block; overflow: hidden; }
+  .archive-shell.is-booting:not([data-pocket-booting]) .pocket-boot-panel { visibility: hidden; }
+  .pocket-boot-screen { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: var(--pocket-paper); }
+  .pocket-boot-scan { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+  .pocket-boot-scan::before { content: ""; position: absolute; inset: 0 0 auto; block-size: 1px; background: color-mix(in srgb, var(--pocket-signal) 75%, var(--pocket-paper)); }
+  .pocket-boot-panel { inline-size: min(100%, 256px); }
+  .pocket-boot-ledger { padding-inline-start: 10px; border-inline-start: 1px solid var(--pocket-line); font: 12px/1.5 var(--pocket-mono); }
+  .pocket-boot-ledger p, .pocket-boot-ledger dd { margin: 0; }
+  .pocket-boot-ledger dl { display: grid; gap: 5px; margin: 9px 0 0; }
+  .pocket-boot-ledger dl div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; color: var(--pocket-muted); }
+  .pocket-boot-ledger dd { color: var(--pocket-signal); text-align: end; }
+  .pocket-boot-face { display: grid; grid-template-columns: minmax(0, 1fr) 50px; align-items: center; gap: 8px; margin-block-start: 25px; padding-block-start: 17px; border-block-start: 1px solid var(--pocket-line); }
+  .pocket-boot-face strong { display: block; font: 500 32px/1.1 var(--pocket-mono); }
+  .pocket-boot-face > div:first-child > span { display: block; margin-block-start: 7px; }
+  .pocket-boot-meter { grid-column: 1 / -1; block-size: 2px; margin-block-start: 8px; background: var(--pocket-line); }
+  .pocket-boot-meter i { display: block; block-size: 100%; background: var(--pocket-signal); transform-origin: left center; }
+}
+
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .archive-shell[data-pocket-booting] .pocket-boot-screen { animation: pocket-boot-wipe 740ms 3120ms cubic-bezier(0.38, 0, 0.28, 1) both; }
+  .archive-shell[data-pocket-booting] .pocket-boot-scan { animation: pocket-boot-scan 740ms 3120ms cubic-bezier(0.38, 0, 0.28, 1) forwards; }
+  .pocket-boot-ledger p { animation: pocket-boot-mark 150ms 80ms ease-out both; }
+  .pocket-boot-ledger dl div { animation: pocket-boot-mark 160ms var(--check-delay) ease-out both; }
+  .pocket-boot-ledger dl div:nth-child(1) { --check-delay: 360ms; }
+  .pocket-boot-ledger dl div:nth-child(2) { --check-delay: 590ms; }
+  .pocket-boot-ledger dl div:nth-child(3) { --check-delay: 910ms; }
+  .pocket-boot-face { animation: pocket-boot-mark 280ms 1290ms ease-out both; }
+  .pocket-boot-face > div:first-child > span { animation: pocket-boot-mark 230ms 1510ms ease-out both; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+  .archive-shell.is-booting .pocket-boot:not([hidden]) { display: none; }
+}
+@keyframes pocket-boot-wipe { from { clip-path: inset(0); } to { clip-path: inset(100% 0 0); } }
+@keyframes pocket-boot-scan { from { visibility: visible; transform: translateY(0); } to { visibility: visible; transform: translateY(100%); } }
+@keyframes pocket-boot-mark { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }

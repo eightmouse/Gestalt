@@ -61,6 +61,7 @@ collect(reactAst);
 assert.equal(declarations.length, 3);
 const reactLifecycle = harness(reactPolicySource);
 Object.assign(reactLifecycle.context, {
+  pocket: { isHandheld: () => false },
   recordAccessTimerRef: { current: null }, recordAccessPlayedRef: { current: false }, entryAccessModeRef: { current: "first" },
   pending: false, complete: false,
   setRecordAccessPending: (value) => { reactLifecycle.context.pending = value; },
@@ -97,7 +98,7 @@ assert.equal(staticLifecycle.context.state.accessPending, false);
 assert.equal(staticLifecycle.context.state.accessComplete, true);
 assert.equal(staticLifecycle.context.state.selectedId, "unchanged");
 assert.equal(staticLifecycle.context.state.activeContent, "notes");
-assert.match(staticSource, /state\.accessPending = shouldPlayEntryAccess\(state\.entryAccessMode/);
+assert.match(staticSource, /state\.accessPending = !handheld && shouldPlayEntryAccess\(state\.entryAccessMode/);
 assert.match(staticSource, /if \(event\.matches\) settleRecordAccessSequence\(\)/);
 assert.match(reactSource, /motionQuery\.removeEventListener\("change", onMotionChange\)/);
 

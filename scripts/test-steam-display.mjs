@@ -197,12 +197,13 @@ Object.assign(react, {
   recordStateKey: () => "active", formatReadableDate: (value) => value,
   gameLogPlacement: () => "session", gameActivityValue: () => "",
   RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
-  Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X, Settings: require("lucide-react").Settings
+  ArrowLeft: require("lucide-react").ArrowLeft, Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X, Settings: require("lucide-react").Settings
 });
 const headerComponent = ts.transpileModule(`${declaration("../components/archive/record-window.tsx", "useRecordFocus")}\nexport ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 vm.runInContext(`(() => { ${headerComponent} })()`, react);
 Object.assign(staticContext, {
   state: { panelOpen: true }, getRecordContents: () => [], normalizeContentKey: () => "overview",
+  pocketBack: () => "",
   recordHeaderImage: (record) => record.headerImage || "", recordAccessSurfaceMarkup: () => "", renderRecordContent: () => "",
   renderUpdateHistory: () => "", renderUpdateHistoryModal: () => "", readableDate: (value) => value,
   gameLogPlacement: () => "session", gameActivityValue: () => ""

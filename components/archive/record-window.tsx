@@ -2,7 +2,7 @@
 
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
-import { Maximize2, Minimize2, Settings, X } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import {
   contentOrdinal,
@@ -20,6 +20,7 @@ import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
 import recordMotion from "@/public/record-motion.js";
 import memoryState from "@/public/memory-state.js";
+import pocket from "@/public/pocket-index.js";
 import { steamBannerImage } from "@/public/steam-display.mjs";
 type RecordWindowProps = {
   minimized?: boolean;
@@ -69,7 +70,12 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   const [noteSearchQuery, setNoteSearchQuery] = useState(initialNoteQuery);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
+  const titleRef = useRef<HTMLSpanElement | null>(null);
   const artwork = imageFraming.recordHeadingArtwork(record, steamBannerImage);
+
+  useEffect(() => {
+    if (!minimized && !editor) return pocket.resolveTitle(titleRef.current);
+  }, [record.id, minimized, editor]);
 
   useEffect(() => {
     setActiveContent(initialContent);
@@ -121,6 +127,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
     >
       <RecordAccessSurface />
       <header className="window-bar">
+        <button className="pocket-record-back" type="button" disabled={editorBusy} onClick={onClose}><ArrowLeft size={16} aria-hidden="true" />Back</button>
         <div className="window-title-group">
           <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
         </div>
@@ -156,6 +163,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
               <span
+                ref={titleRef}
                 className={record.title.length > 26 ? "record-title-text is-long-title" : "record-title-text"}
                 style={{ "--record-title-chars": record.title.length } as CSSProperties}
               >
@@ -339,6 +347,7 @@ function SetupPrompt({
 }) {
   return (
     <div className="setup-console-prompt">
+      <button className="pocket-record-back" type="button" onClick={onClose}><ArrowLeft size={16} aria-hidden="true" />Back</button>
       <div className="setup-prompt-command">
         <span>eightmouse@gestalt</span>
         <i>:</i>

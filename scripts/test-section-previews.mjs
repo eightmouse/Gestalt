@@ -84,7 +84,7 @@ vm.runInContext(declaration("static-app.js", "renderSectionNotePreview"), render
 const html = render.renderSectionNotePreview([record('<unsafe"id>', "2026-10-23", '<script>alert("x")</script>')], "projects");
 assert.ok(!html.includes("<script>"));
 assert.ok(html.includes('data-open-content="notes"') && html.includes('data-open-record="&lt;unsafe&quot;id&gt;"'));
-const focused = vm.createContext({ records, state: {}, window: { matchMedia: () => ({ matches: false }) }, stopRecordAccessSequence() {}, shouldPlayEntryAccess: () => false, syncRecordWindow: () => false, render() {}, startRecordAccessSequence() {} });
+const focused = vm.createContext({ records, state: {}, pocket: undefined, window: { matchMedia: () => ({ matches: false }) }, stopRecordAccessSequence() {}, shouldPlayEntryAccess: () => false, syncRecordWindow: () => false, render() {}, startRecordAccessSequence() {} });
 vm.runInContext(declaration("static-app.js", "openRecord"), focused);
 focused.openRecord(records[0].id, "notes", "22 / 10 / 2026 - A session");
 assert.equal(focused.state.noteSearchQuery, "22 / 10 / 2026 - A session");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import pocket from "@/public/pocket-index.js";
 import { FilePlus2 } from "lucide-react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { activityFreshness, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
@@ -291,7 +292,7 @@ function WeatherPanel() {
     mountedRef.current = true;
     setWeather(cachedWeather);
 
-    if (!weatherLoaded && !cachedWeather.loading) {
+    if (!pocket.isHandheld() && !weatherLoaded && !cachedWeather.loading) {
       void requestWeather();
     }
 

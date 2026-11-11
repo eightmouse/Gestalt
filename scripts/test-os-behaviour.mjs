@@ -34,7 +34,7 @@ assert.ok(!behaviour.renderContent({ entry: '"><script>bad</script>', startup: "
 const once = behaviour.renderContent(values, false);
 assert.ok(once.includes("// SETTINGS") && once.includes('aria-label="Close Settings"'));
 assert.ok(!once.includes("OS BEHAVIOUR"));
-assert.equal((once.match(/ disabled/g) || []).length, 2, "Only the next-startup options need remembered storage");
+assert.equal((once.match(/ disabled/g) || []).length, 4, "Only the desktop and handheld startup options need remembered storage");
 assert.ok(once.includes("Local memory required."));
 const memoryGroup = once.match(/<fieldset[^>]*data-os-group="memory"[\s\S]*?<\/fieldset>/)[0];
 assert.ok(memoryGroup.indexOf('value="legacy"') < memoryGroup.indexOf('value="trace"'), "Memory matches navigation: legacy left, newer right");

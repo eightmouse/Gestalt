@@ -30,7 +30,7 @@ workspace.querySelectorAll = (selector) => {
 dashboard.scrollTop = 146;
 let renders = 0, focusSyncs = 0, navigationSyncs = 0, stopped = 0, completion;
 const context = vm.createContext({
-  window: {}, syncMemoryTrace() {},
+  window: {}, pocket: undefined, syncMemoryTrace() {},
   state: { bootDismissed: true, panelOpen: true, localMemory: "prompt", entryAccessMode: "first", windowSteady: true },
   minimizedRecordWindow: { id: "old" }, recordRenderPending: false,
   root: { querySelector: (selector) => nodes.get(selector) || null },
@@ -248,6 +248,7 @@ const home = element(), project = element(), directory = element(null, { ".deskt
 project.dataset.openSection = directory.dataset.openSection = "projects";
 let fallback = 0;
 const route = vm.createContext({
+  pocket: undefined,
   root: { querySelector: (key) => routeElements.get(key), querySelectorAll: () => [home, project, directory] }, document, sections,
   state: { activeSection: "system", bootDismissed: true, panelMinimized: true, searchOpen: true, searchQuery: "a", navOpen: true, archiveFolderWindow: "older", roadmapOpen: true },
   window: { GestaltMemoryState: { record: (name, data) => events.push([name, data.section]) }, clearTimeout() {}, scrollY: 92, scrollTo(options) { assert.equal(options.top, 0); this.scrollY = 0; } },
@@ -303,7 +304,7 @@ assert.match(css, /\.record-window::after\s*\{[^}]*transform: translateZ\(0\)/, 
 const react = read("components/archive/record-window.tsx");
 assert.ok(!react.includes("motion.article") && !react.includes('from "framer-motion"'), "React and Pages use the same CSS entry fade, not two competing opacity animations");
 assert.equal((react.match(/<article\s+ref=/g) || []).length, 2, "Standard and Setup dialogs retain their real roots");
-assert.match(source, /if \(!syncRecordWindow\(\)\) render\(\);\s*startRecordAccessSequence\(\)/);
+assert.match(source, /if \(!syncRecordWindow\(\)\) render\(\);\s*if \(handheld\) pocket\.resolveTitle[^\n]+\s*startRecordAccessSequence\(\)/);
 let contentBranch;
 function findContentBranch(node) {
   if (ts.isIfStatement(node) && node.expression.getText(ast) === "contentKey") contentBranch = node.thenStatement;
@@ -325,7 +326,7 @@ for (const name of ["closeRecord", "minimizeRecord"]) {
   for (const surface of [null, { hidden: true }, { hidden: false }]) {
     let started = 0;
     const motion = { close({ node }) { assert.equal(node, surface); started++; }, minimize({ node }) { assert.equal(node, surface); started++; } };
-    vm.runInNewContext(script, { inlineBusy: false, panelOpen: true, shellRef: { current: { querySelector: () => surface } }, recordMotionRef: { current: motion }, entryAccessModeRef: { current: "first" } });
+    vm.runInNewContext(script, { pocket: { isHandheld: () => false }, inlineBusy: false, panelOpen: true, shellRef: { current: { querySelector: () => surface } }, recordMotionRef: { current: motion }, entryAccessModeRef: { current: "first" } });
     assert.equal(started, surface && !surface.hidden ? 1 : 0, `${name} ignores missing/hidden DOM even before React commits its closed state`);
   }
 }

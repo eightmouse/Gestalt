@@ -31,6 +31,7 @@
     { key: "appearance", title: "APPEARANCE", options: [["night", "Night"], ["day", "Day"], ["auto", "Auto"]] },
     { key: "entry", title: "ENTRY ANIMATION", options: [["first", "First entry only"], ["always", "Every entry"], ["off", "Off"]] },
     { key: "startup", title: "NEXT STARTUP", options: [["full", "Full welcome"], ["quick", "Quick start"]] },
+    { key: "pocketBoot", title: "HANDHELD BOOT", options: [["once", "Play once"], ["always", "Always"]] },
     { key: "seasonal", title: "SEASONAL DETAILS", options: [["auto", "By calendar"], ["off", "Off"]] },
     { key: "navigation", title: "DESKTOP NAVIGATION", options: [["fixed", "Legacy Mode"], ["terminal", "Terminal"]] },
     { key: "memory", title: "MEMORY STATE", defaultValue: "trace", options: [["legacy", "Legacy Visual"], ["trace", "Code Surface"]] }
@@ -53,10 +54,11 @@
   function normalizeValues(values = {}) {
     return Object.fromEntries(groups.map((group) => [group.key, group.options.some(([value]) => value === values?.[group.key]) ? values[group.key] : group.defaultValue || group.options[0][0]]));
   }
+  function needsLocalMemory(key) { return key === "startup" || key === "pocketBoot"; }
   function renderContent(values, remember) {
     const selected = normalizeValues(values);
     return `<article class="os-behaviour-frame"><header class="window-bar"><span>// SETTINGS</span><div class="window-actions"><button type="button" data-window-action="close" data-os-close aria-label="Close Settings">close</button></div></header>
-      <div class="os-behaviour-body">${groups.map((group) => `<fieldset class="os-preference" data-os-group="${group.key}"><legend>${group.title}</legend><div class="os-preference-options" data-options="${group.options.length}">${group.options.map(([value, label]) => `<label><input type="radio" name="os-${group.key}" data-os-preference="${group.key}" value="${value}"${selected[group.key] === value ? " checked" : ""}${group.key === "startup" && !remember ? " disabled" : ""}><span>${label}</span></label>`).join("")}</div>${group.key === "startup" ? `<small data-os-startup-note>${remember ? "" : "Local memory required."}</small>` : ""}</fieldset>`).join("")}
+      <div class="os-behaviour-body">${groups.map((group) => `<fieldset class="os-preference" data-os-group="${group.key}"><legend>${group.title}</legend><div class="os-preference-options" data-options="${group.options.length}">${group.options.map(([value, label]) => `<label><input type="radio" name="os-${group.key}" data-os-preference="${group.key}" value="${value}"${selected[group.key] === value ? " checked" : ""}${needsLocalMemory(group.key) && !remember ? " disabled" : ""}><span>${label}</span></label>`).join("")}</div>${group.key === "startup" ? `<small data-os-startup-note>${remember ? "" : "Local memory required."}</small>` : group.key === "pocketBoot" ? `<small data-os-pocket-note>${remember ? "Play once per tab session." : "Local memory is required to remember this choice."}</small>` : ""}</fieldset>`).join("")}
       <footer class="os-behaviour-footnote">LOCAL MEMORY <span data-os-memory>${remember ? "ENABLED" : "SESSION ONLY"}</span></footer></div></article>`;
   }
   function createController(host = globalThis.window) {
@@ -70,10 +72,11 @@
       currentRemember = remember;
       for (const input of dialog.querySelectorAll("input[data-os-preference]")) {
         input.checked = selected[input.dataset.osPreference] === input.value;
-        input.disabled = input.dataset.osPreference === "startup" && !remember;
+        input.disabled = needsLocalMemory(input.dataset.osPreference) && !remember;
       }
       dialog.querySelector("[data-os-memory]").textContent = remember ? "ENABLED" : "SESSION ONLY";
       dialog.querySelector("[data-os-startup-note]").textContent = remember ? "" : "Local memory required.";
+      dialog.querySelector("[data-os-pocket-note]").textContent = remember ? "Play once per tab session." : "Local memory is required to remember this choice.";
     }
     function close() {
       if (!dialog) return;

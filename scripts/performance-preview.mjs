@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const publicRoot = await realpath(path.join(root, "public"));
 const port = Number(process.argv[2] || 4197);
-const fixed = new Set(["index.html", "static-app.js", "app/globals.css", "app/desktop-navigation.css", "app/appearance.css", "app/memory-state.css"]);
+const fixed = new Set(["index.html", "static-app.js", "app/globals.css", "app/desktop-navigation.css", "app/appearance.css", "app/memory-state.css", "app/pocket-index.css"]);
 const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff2": "font/woff2", ".mp4": "video/mp4" };
 const server = createServer(async (request, response) => {
   try {

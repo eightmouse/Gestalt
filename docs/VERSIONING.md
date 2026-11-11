@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.73.4`. Previous site-code release: `v1.73.3` (51dad600).
+Release target: `v1.74.0`. Previous site-code release: `v1.73.4` (2391e20a).
+
+`v1.74.0` brings the approved Pocket Index to both readers at 760 CSS pixels and below. It replaces the floating dock with an in-flow directory, direct Search and Settings, a full-screen reading surface with Back, and the handheld boot with a variable meter and scan handoff. Remembered boot preferences honor local-memory permission; reduced motion skips the boot and the brief record-title cipher. Desktop navigation, authored records, media and dependencies are unchanged. The owner approved filing the release and publishing it to Pages.
 
 `v1.73.4` preloads and draws one full-resolution WebP backdrop in both readers, down from 2.67 MiB to 231 KiB. The original PNG, framing, Day and Night treatments, boot timing and public publishing behavior are unchanged. The owner approved release together with the saved Wilds note and its screenshots.
 

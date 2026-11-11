@@ -1,5 +1,11 @@
 # Gestalt Project Checkpoint
 
+## Pocket Index: v1.74.0, 11 November 2026
+
+The approved handheld directory replaces the mobile dock at 760 CSS pixels and below. Both readers reuse the same boot, preference and title-cipher helper, with a separate mobile stylesheet. Search and Settings are exposed in the header; existing section lists, record contents and local authoring remain connected. The fictional status checks make no network or location requests. The handheld view omits the desktop dashboard and its backdrop and welcome portrait preloads.
+
+An isolated Chromium run checked the prepared Pages artifact and Next launcher at 320px and 390px, including Day/Night, reduced motion, all five sections, the startup preference, and record-to-search return. Desktop dashboard smoke checks passed at 1920px. The owner approved publication of this batch. No dependencies, authored records or media changed; physical phone and cross-browser checks remain separate.
+
 ## Startup Backdrop: v1.73.4, 11 November 2026
 
 Keep the original 1983x793 PNG and use a quality-94 WebP display copy made with the installed Sharp encoder. The backdrop payload falls from 2,796,585 to 236,252 bytes (91.6% smaller). Pages and the launcher each preload the same URL that their CSS draws; a failed game cover reuses that asset rather than requesting the original. No new dependency, timer, image framing, effect or content change.

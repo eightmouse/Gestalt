@@ -7720,10 +7720,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   backdrop-filter: blur(12px);
 }
 
-.mobile-dock {
-  display: none;
-}
-
 @keyframes cursor-blink {
   50% {
     opacity: 0;
@@ -9524,86 +9520,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     justify-content: center;
   }
 
-  .mobile-dock {
-    position: fixed;
-    z-index: 34;
-    inset-inline: 10px;
-    inset-block-end: 9px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1.22fr 1fr 1fr;
-    align-items: end;
-    gap: 7px;
-    padding: 8px 6px;
-    border-block-start: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.16);
-    background:
-      linear-gradient(180deg, rgba(var(--tone-base, 5, 6, 5), 0), rgba(var(--tone-base, 5, 6, 5), 0.92) 20%),
-      rgba(var(--tone-base, 5, 6, 5), 0.72);
-    backdrop-filter: blur(10px);
-  }
-
-  .mobile-dock button {
-    min-width: 0;
-    min-block-size: 58px;
-    display: grid;
-    place-items: center;
-    gap: 3px;
-    padding: 7px 3px 6px;
-    border: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.14);
-    background:
-      linear-gradient(180deg, rgba(var(--tone-highlight, 255, 255, 255), 0.026), transparent 68%),
-      rgba(var(--tone-highlight, 255, 255, 255), 0.018);
-    color: var(--muted);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-  }
-
-  .mobile-dock button.is-center {
-    min-block-size: 78px;
-    margin-block-start: -16px;
-    border-color: rgba(var(--tone-ink, 217, 213, 193), 0.28);
-    background:
-      linear-gradient(180deg, rgba(var(--tone-ink, 217, 213, 193), 0.09), transparent 68%),
-      rgba(var(--tone-highlight, 255, 255, 255), 0.035);
-  }
-
-  .mobile-dock .nav-mark {
-    inline-size: 22px;
-    block-size: 22px;
-  }
-
-  .mobile-dock button.is-center .nav-mark {
-    inline-size: 30px;
-    block-size: 30px;
-  }
-
-  .mobile-dock button small {
-    max-inline-size: 100%;
-    overflow: hidden;
-    color: inherit;
-    font-size: 9px;
-    font-weight: 400;
-    letter-spacing: 0.04em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .mobile-dock button:hover,
-  .mobile-dock button.is-active {
-    border-color: rgba(var(--tone-ink, 217, 213, 193), 0.3);
-    background: rgba(var(--tone-highlight, 255, 255, 255), 0.052);
-    color: var(--text);
-  }
-
-  .mobile-dock button:disabled {
-    opacity: 0.38;
-    cursor: default;
-  }
-
-  .archive-shell.has-record .mobile-dock {
-    display: none;
-  }
 }
 
 @media (max-width: 420px) {

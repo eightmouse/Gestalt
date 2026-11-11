@@ -1,6 +1,6 @@
 export function updateStaticCacheTokens(html, token) {
   return html.replace(
-    /\b(href|src)=(["'])((?:app\/(?:globals|desktop-navigation|appearance|memory-state)\.css|public\/memory-state\.js|public\/appearance\.js|public\/ambient-motion\.js|public\/data\/records\.js|public\/note-inline\.js|public\/image-framing\.js|public\/seasonal\.js|public\/desktop-navigation\.js|public\/os-behaviour\.js|public\/workspace-tools\.js|public\/record-motion\.js|static-app\.js)(?:[?#][^"']*)?)\2/g,
+    /\b(href|src)=(["'])((?:app\/(?:globals|desktop-navigation|appearance|memory-state|pocket-index)\.css|public\/(?:memory-state|appearance|ambient-motion|note-inline|image-framing|seasonal|desktop-navigation|os-behaviour|workspace-tools|record-motion|pocket-index)\.js|public\/data\/records\.js|static-app\.js)(?:[?#][^"']*)?)\2/g,
     (_, attribute, quote, asset) => {
       const url = new URL(asset, "https://gestalt.invalid/");
       url.searchParams.set("v", String(token));

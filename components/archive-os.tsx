@@ -7,13 +7,14 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
 import { ArchiveDashboard } from "@/components/archive/dashboard";
 import { renderHeadlineLetters } from "@/components/archive/headline-text";
-import { MobileDock } from "@/components/archive/mobile-dock";
+import { PocketBoot, PocketHeader, PocketIndex } from "@/components/archive/pocket-index";
+import pocket, { type PocketBootMode } from "@/public/pocket-index.js";
 import { RecordWindow } from "@/components/archive/record-window";
 import {
   formatClock,
@@ -95,7 +96,14 @@ type LocalMemoryState = "checking" | "prompt" | "granted" | "session";
 
 const localMemoryKey = "gestalt.local-memory";
 
+function subscribeHandheld(onChange: () => void) {
+  const media = window.matchMedia("(max-width: 760px)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
 export function ArchiveOS({ records }: ArchiveOSProps) {
+  const handheld = useSyncExternalStore(subscribeHandheld, () => pocket.isHandheld(), () => false);
   const { selectedId, activeSection, setSelectedId, setActiveSection } = useArchiveStore();
   const [archiveRecords, setArchiveRecords] = useState(records);
   const [steamSnapshot, setSteamSnapshot] = useState<SteamSnapshot | null>(null);
@@ -137,10 +145,22 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
   const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
   const [startupMode, setStartupMode] = useState<StartupMode>("full");
+  const [pocketBootMode, setPocketBootMode] = useState<PocketBootMode>("once");
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("night");
   const [memoryMode, setMemoryMode] = useState<MemoryStateMode>("trace");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
+  const pocketSearchReturn = useRef<string | null>(null);
+  const previousPocketSection = useRef(activeSection);
+
+  useEffect(() => {
+    const previous = previousPocketSection.current;
+    previousPocketSection.current = activeSection;
+    if (!handheld || previous === activeSection) return;
+    window.scrollTo({ top: 0, behavior: "instant" });
+    const target = activeSection === "system" ? `[data-pocket-section-link="${previous}"]` : ".pocket-context button";
+    shellRef.current?.querySelector<HTMLElement>(target)?.focus({ preventScroll: true });
+  }, [activeSection, handheld]);
 
   useEffect(() => { ambientMotion.initialize(); }, []);
 
@@ -167,6 +187,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     stopRecordAccess();
 
     if (
+      pocket.isHandheld() ||
       !shouldPlayEntryAccess(entryAccessModeRef.current, recordAccessPlayedRef.current,
         window.matchMedia("(prefers-reduced-motion: reduce)").matches)
     ) {
@@ -194,6 +215,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setSeasonalMode(seasonal.readMode());
     setDesktopNavigationMode(desktopNavigation.readMode());
     setStartupMode(behaviour.readStartupMode());
+    setPocketBootMode(pocket.readBootMode());
     setAppearanceMode(appearance.initialize(window));
     setMemoryMode(memoryState.readMode());
     entryAccessModeRef.current = mode;
@@ -294,8 +316,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       return;
     }
 
-    return scheduleBootCompletion(() => setBootComplete(true), 0, startupMode);
-  }, [bootComplete, localMemory, startupMode]);
+    const done = () => setBootComplete(true);
+    if (pocket.isHandheld()) return pocket.runBoot(shellRef.current, done, { mode: pocketBootMode, remember: localMemory === "granted" });
+    return scheduleBootCompletion(done, 0, startupMode);
+  }, [bootComplete, localMemory, startupMode, pocketBootMode]);
 
   useEffect(() => {
     if (!searchOpen) {
@@ -391,7 +415,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     const controller = recordMotionRef.current ??= recordMotion.createController();
     controller.close({
       node,
-      enabled: entryAccessModeRef.current !== "off",
+      enabled: !pocket.isHandheld() && entryAccessModeRef.current !== "off",
       onComplete: () => {
         memoryState.record("record.close");
         setInlineRecordId(null);
@@ -399,6 +423,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         setPanelOpen(false);
         setPanelMinimized(false);
         stopRecordAccess();
+        if (pocket.isHandheld() && pocketSearchReturn.current !== null) {
+          setSearchQuery(pocketSearchReturn.current);
+          setSearchOpen(true);
+        }
+        pocketSearchReturn.current = null;
       }
     });
   };
@@ -423,6 +452,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteQuery = "") => {
     if (inlineBusy) return;
+    pocketSearchReturn.current = pocket.isHandheld() && searchOpen ? searchQuery : null;
     memoryState.record("record.open", { section: record.section });
     setInlineRecordId(null);
     setInlineDraftWindow(null);
@@ -664,6 +694,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   ) : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen || osBehaviourOpen;
   const changeOsPreference = (key: PreferenceKey, value: string) => {
+    if (key === "pocketBoot") {
+      const mode = pocket.normalizeBootMode(value);
+      if (localMemory === "granted" && !pocket.saveBootMode(mode)) return false;
+      setPocketBootMode(mode);
+    }
     if (key === "memory") {
       const mode = memoryState.normalizeMode(value);
       setMemoryMode(mode);
@@ -690,6 +725,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const grantLocalMemory = () => {
     try {
       window.localStorage.setItem(localMemoryKey, "granted");
+      if (pocket.isHandheld()) pocket.markBootSeen();
       setLocalMemory("granted");
     } catch {
       setLocalMemory("session");
@@ -708,6 +744,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen /> : null}
+      {showBoot ? <PocketBoot /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
         if (!record || inlineBusy) return false;
@@ -716,7 +753,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       }} /> : null}
       {roadmapOpen ? <RoadmapWindow onClose={() => setRoadmapOpen(false)} /> : null}
       {webSearchOpen || connectionsOpen ? <WorkspaceToolWindow mode={connectionsOpen ? "connections" : "search"} remember={localMemory === "granted"} onClose={() => { setWebSearchOpen(false); setConnectionsOpen(false); }} /> : null}
-      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, seasonal: seasonalMode, navigation: desktopNavigationMode, appearance: appearanceMode, memory: memoryMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
+      {osBehaviourOpen ? <OsBehaviourWindow values={{ entry: entryAccessMode, startup: startupMode, pocketBoot: pocketBootMode, seasonal: seasonalMode, navigation: desktopNavigationMode, appearance: appearanceMode, memory: memoryMode }} remember={localMemory === "granted"} onChange={changeOsPreference} onClose={() => setOsBehaviourOpen(false)} /> : null}
       {localMemory === "prompt" && bootComplete ? <LocalMemoryPrompt onAllow={grantLocalMemory} onContinue={continueOnce} /> : null}
       <div className="grain-layer" />
       <div className="scanline-layer" />
@@ -748,7 +785,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         ) : null}
       </AnimatePresence>
 
-      <section className={hasFocusWindow ? "workspace has-record" : "workspace"} aria-label="Gestalt dashboard">
+      <PocketHeader searchOpen={searchOpen} onSearch={() => setSearchOpen((current) => !current)} onSettings={() => {
+        setSearchOpen(false);
+        setSearchQuery("");
+        setOsBehaviourOpen(true);
+      }} localReview={process.env.NODE_ENV === "development" ? <LocalReviewButton /> : undefined} />
+      <section className={hasFocusWindow ? "workspace has-record" : "workspace"} data-pocket-section={activeSection} aria-label={handheld ? "Gestalt Pocket Index" : "Gestalt dashboard"}>
+        <PocketIndex latest={latestLog} onSection={openSection} onRead={openRecord} onBack={openHome} />
         <header className="workspace-header">
           <div>
             <p className="route-label">// {routeTitle}</p>
@@ -793,7 +836,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           ) : null}
         </header>
 
-        {activeSection === "system" ? (
+        {activeSection === "system" ? !handheld && (
           <ArchiveDashboard
             memoryMode={memoryMode}
             now={now}
@@ -912,7 +955,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             </>
           ) : null}
         </AnimatePresence>
-        <MobileDock activeSection={activeSection} onHome={openHome} onOpenSection={openSection} />
       </section>
       <AnimatePresence>
         {studioRecordId ? (

@@ -100,6 +100,7 @@ function readLocalMemoryState() {
 }
 
 const initialLocalMemory = readLocalMemoryState();
+const pocket = window.GestaltPocketIndex;
 const bootStartedAt = performance.now();
 let bootCleanup = null;
 let osBehaviourController = null;
@@ -250,6 +251,8 @@ const state = {
   seasonalMode: window.GestaltSeasonal?.readMode() || "auto",
   desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "fixed",
   startupMode: window.GestaltOsBehaviour?.readStartupMode() || "full",
+  pocketBootMode: pocket?.readBootMode() || "once",
+  pocketSearchReturn: null,
   panelMinimized: false,
   panelMaximized: false,
   memoryStateEnabled: true,
@@ -309,7 +312,9 @@ function openRecord(recordId, contentKey = "overview", noteQuery = "") {
   window.GestaltMemoryState?.record("record.open", { section: record.section });
 
   stopRecordAccessSequence();
-  state.accessPending = shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const handheld = pocket?.isHandheld();
+  state.pocketSearchReturn = handheld && state.searchOpen ? state.searchQuery : null;
+  state.accessPending = !handheld && shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   if (state.accessPending) {
     state.recordAccessPlayed = true;
   }
@@ -329,6 +334,7 @@ function openRecord(recordId, contentKey = "overview", noteQuery = "") {
   state.noteSearchQuery = typeof noteQuery === "string" ? noteQuery : "";
   state.updateHistoryOpen = false;
   if (!syncRecordWindow()) render();
+  if (handheld) pocket.resolveTitle(root.querySelector(".record-window .record-title-text"));
   startRecordAccessSequence();
 }
 
@@ -1498,7 +1504,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.73.4</span>
+        <span>v1.74.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1512,7 +1518,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.73.4</span>
+        <span class="version-label">v1.74.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1532,7 +1538,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.73.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.74.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2312,7 +2318,8 @@ function splitSectionRecords(sectionId, sectionRecords) {
 }
 
 function workspaceContent() {
-  return state.activeSection === "system" ? dashboard() : sectionPage(state.activeSection);
+  if (state.activeSection !== "system") return sectionPage(state.activeSection);
+  return pocket?.isHandheld() ? '<div class="dashboard-grid" hidden></div>' : dashboard();
 }
 
 function recordAccessSurfaceMarkup() {
@@ -2380,6 +2387,7 @@ function setupRecordWindow(record) {
 
 function setupPrompt(record, command) {
   return `<div class="setup-console-prompt">
+    ${pocketBack()}
     <div class="setup-prompt-command">
       <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>${escapeHtml(command)}</strong>
     </div>
@@ -2494,6 +2502,7 @@ function recordWindow(record) {
   return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
     ${recordAccessSurfaceMarkup()}
     <header class="window-bar">
+      ${pocketBack()}
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-actions">
         <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
@@ -2637,7 +2646,10 @@ function syncSearchPanel() {
       }
     }
   }
-  document.querySelectorAll("[data-search-toggle]").forEach((button) => button.classList.toggle("is-active", state.searchOpen));
+  document.querySelectorAll("[data-search-toggle]").forEach((button) => {
+    button.classList.toggle("is-active", state.searchOpen);
+    if (button.closest(".pocket-header")) button.setAttribute("aria-expanded", String(state.searchOpen));
+  });
   syncDesktopNavigation();
 }
 
@@ -2683,7 +2695,7 @@ function syncOsBehaviourDialog() {
     return;
   }
   osBehaviourController ??= api.createController();
-  osBehaviourController.open({ entry: state.entryAccessMode, startup: state.startupMode, seasonal: state.seasonalMode, navigation: state.desktopNavigationMode, appearance: window.GestaltAppearance?.getMode() || "night", memory: state.memoryMode }, {
+  osBehaviourController.open({ entry: state.entryAccessMode, startup: state.startupMode, pocketBoot: state.pocketBootMode, seasonal: state.seasonalMode, navigation: state.desktopNavigationMode, appearance: window.GestaltAppearance?.getMode() || "night", memory: state.memoryMode }, {
     onClose() {
       state.osBehaviourOpen = false;
       syncOsBehaviourDialog();
@@ -2692,6 +2704,11 @@ function syncOsBehaviourDialog() {
       root.querySelector(".record-window:not([hidden]):not([inert]), .timeline-window, .archive-folder-window")?.focus({ preventScroll: true });
     },
     onChange(key, value) {
+      if (key === "pocketBoot" && pocket) {
+        const mode = pocket.normalizeBootMode(value);
+        if (state.localMemory === "granted" && !pocket.saveBootMode(mode)) return false;
+        state.pocketBootMode = mode;
+      }
       if (key === "appearance") window.GestaltAppearance?.setMode(value, state.localMemory === "granted");
       if (key === "entry") changeEntryAccessMode(value);
       if (key === "seasonal") changeSeasonalMode(value);
@@ -2936,17 +2953,29 @@ function timelineWindow() {
     </article>`;
 }
 
-function mobileDock() {
-  const items = ["setup", "logs", "system", "games", "projects"]
-    .map((id) => sections.find((section) => section.id === id))
-    .filter(Boolean);
+function pocketIcon(markup) {
+  return `<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${markup}</svg>`;
+}
 
-  return `<nav class="mobile-dock" aria-label="Mobile archive sections">
-    ${items.map((section) => `<button class="${state.activeSection === section.id ? "is-active" : ""} ${section.id === "system" ? "is-center" : ""}" type="button" ${state.activeSection === section.id ? 'aria-current="page" ' : ""}${section.id === "system" ? "data-home" : `data-open-section="${section.id}"`}>
-      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
-      <small>${escapeHtml(section.label)}</small>
-    </button>`).join("")}
-  </nav>`;
+function pocketBack() {
+  return `<button class="pocket-record-back" type="button" data-window-action="close">${pocketIcon('<path d="m12 19-7-7 7-7M5 12h14"/>')}Back</button>`;
+}
+
+function pocketHeader() {
+  if (!pocket) return "";
+  return `<header class="pocket-header"><div class="pocket-brand"><strong>GESTALT</strong><small>HANDHELD FIELD MODE</small></div><div class="pocket-tools">
+    <button type="button" data-search-toggle aria-expanded="${state.searchOpen}">${pocketIcon('<circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/>')}Search</button>
+    <button type="button" data-open-os-behaviour aria-haspopup="dialog">${pocketIcon('<path d="m9 3-1 3-3 1v3l-2 2 2 2v3l3 1 1 3h6l1-3 3-1v-3l2-2-2-2V7l-3-1-1-3z"/><circle cx="12" cy="12" r="3"/>')}Settings</button>
+    </div></header>`;
+}
+
+function pocketIndex() {
+  if (!pocket) return "";
+  const latest = latestLogRecord();
+  return `<div class="pocket-context"><button type="button" data-home>${pocketIcon('<path d="m12 19-7-7 7-7M5 12h14"/>')}Back to Index</button></div>
+    <div class="pocket-index"><div class="pocket-register"><div><small>// FIELD DIRECTORY</small><h1>Archive index</h1></div>${pocket.stamp}</div>
+    <nav class="pocket-directory" aria-label="Archive sections">${pocket.directory.map(([id, number, label]) => `<button type="button" data-open-section="${id}"><small aria-hidden="true">${number}</small><span class="nav-mark" data-icon="${id}" aria-hidden="true"></span><strong>${label}</strong>${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>`).join("")}</nav>
+    ${latest ? `<button class="pocket-dispatch" type="button" data-open-record="${escapeHtml(latest.id)}"><span><small>LATEST FIELD NOTE</small><strong>${escapeHtml(latest.title)}</strong></span>${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}</button>` : ""}</div>`;
 }
 
 function syncImageLightbox() {
@@ -3091,11 +3120,17 @@ function closeRecord() {
     minimizedRecordWindow = null;
     root.querySelector(".record-window")?.remove();
     root.querySelector("[data-record-backdrop]")?.remove();
+    if (pocket?.isHandheld() && state.pocketSearchReturn !== null) {
+      state.searchQuery = state.pocketSearchReturn;
+      state.searchOpen = true;
+      syncSearchPanel();
+    }
+    state.pocketSearchReturn = null;
     if (recordRenderPending) { recordRenderPending = false; render(); }
     else syncRecordWindowChrome();
   };
   if (recordMotionController) {
-    recordMotionController.close({ node: root.querySelector(".record-window"), enabled: state.entryAccessMode !== "off", onComplete: finish });
+    recordMotionController.close({ node: root.querySelector(".record-window"), enabled: !pocket?.isHandheld() && state.entryAccessMode !== "off", onComplete: finish });
   } else finish();
 }
 
@@ -3144,7 +3179,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.73.4</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.74.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3173,6 +3208,8 @@ function syncSection() {
   if (!heading || !content) return false;
 
   const previousFocus = document.activeElement;
+  const previousSection = workspace.dataset.pocketSection;
+  workspace.dataset.pocketSection = state.activeSection;
   heading.outerHTML = workspaceHeading();
   content.outerHTML = workspaceContent();
   removeReadingWindows(workspace);
@@ -3182,7 +3219,7 @@ function syncSection() {
   const navStack = root.querySelector(".nav-stack--sidebar");
   navStack?.classList.remove("is-sliding");
   navStack?.style.setProperty("--active-nav-index", String(sectionIndex));
-  for (const button of root.querySelectorAll(".nav-stack--sidebar [data-open-section], .mobile-dock button, [data-directory-section]")) {
+  for (const button of root.querySelectorAll(".nav-stack--sidebar [data-open-section], [data-directory-section]")) {
     const active = (button.dataset.openSection || "system") === state.activeSection;
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
@@ -3206,7 +3243,12 @@ function syncSection() {
   syncMemoryTrace();
   workspace.scrollTop = 0;
   if (window.scrollY) window.scrollTo({ top: 0, behavior: "instant" });
-  if (document.activeElement === document.body && previousFocus && !previousFocus.isConnected) {
+  if (pocket?.isHandheld()) {
+    const target = state.activeSection === "system"
+      ? `.pocket-directory [data-open-section="${CSS.escape(previousSection || "")}"]`
+      : ".pocket-context button";
+    workspace.querySelector(target)?.focus({ preventScroll: true });
+  } else if (document.activeElement === document.body && previousFocus && !previousFocus.isConnected) {
     const title = workspace.querySelector(".workspace-header h1");
     title?.setAttribute("tabindex", "-1");
     title?.focus({ preventScroll: true });
@@ -3238,6 +3280,7 @@ function render() {
   const markup = `<main class="archive-shell${hasFocusWindow ? " has-record" : ""}${state.bootDismissed ? "" : " is-booting"}${!state.bootDismissed && state.startupMode === "quick" ? " is-quick-boot" : ""}"${state.bootDismissed ? "" : ` inert aria-busy="true" style="--boot-elapsed: -${Math.max(0, performance.now() - bootStartedAt)}ms"`}>
     <button class="desktop-nav-backdrop" data-desktop-nav-dismiss type="button" aria-label="Close archive navigation" tabindex="-1"></button>
     ${desktopDirectory()}
+    ${!state.bootDismissed && pocket ? pocket.bootMarkup : ""}
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <div class="boot-loader">
         <span>GESTALT</span>
@@ -3246,7 +3289,7 @@ function render() {
       </div>
       <div class="boot-session">
         <span class="boot-session-label">// SESSION READY</span>
-        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="112" height="112" alt="" decoding="async">
+        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="112" height="112" alt="" decoding="async" loading="lazy">
         <span class="boot-session-user" aria-label="Eightmouse">${renderHeadlineLetters("Eightmouse")}</span>
         <span class="boot-session-detail">Opening the archive</span>
       </div>
@@ -3256,7 +3299,9 @@ function render() {
     <div class="scanline-layer"></div>
     ${sidebar()}
     ${archiveNavigationMenu()}
-    <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" aria-label="Gestalt dashboard">
+    ${pocketHeader()}
+    <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" data-pocket-section="${state.activeSection}" aria-label="Gestalt archive">
+      ${pocketIndex()}
       <header class="workspace-header">
         ${workspaceHeading()}
         <div class="time-block" aria-label="Local time">
@@ -3281,7 +3326,6 @@ function render() {
       ${recordWindow(record)}
       ${workspaceWindowTray()}
       ${timelineWindow()}
-      ${mobileDock()}
     </section>
   </main>`;
 
@@ -3305,9 +3349,9 @@ function render() {
   }
 
   if (!state.bootDismissed && !bootCleanup) {
-    bootCleanup = scheduleBootCompletion(() => {
-      completeBoot();
-    }, performance.now() - bootStartedAt, state.startupMode);
+    bootCleanup = pocket?.isHandheld()
+      ? pocket.runBoot(root.querySelector(".archive-shell"), completeBoot, { mode: state.pocketBootMode, remember: state.localMemory === "granted" })
+      : scheduleBootCompletion(completeBoot, performance.now() - bootStartedAt, state.startupMode);
   }
 
   if (state.windowSteady) {
@@ -3340,6 +3384,7 @@ function completeBoot() {
   shell.removeAttribute("aria-busy");
   shell.style.removeProperty("--boot-elapsed");
   root.querySelector(".boot-screen")?.remove();
+  root.querySelector(".pocket-boot")?.remove();
   const prompt = root.querySelector(".local-memory-consent");
   if (state.localMemory === "prompt") {
     if (!prompt) shell.insertAdjacentHTML("afterbegin", localMemoryPrompt());
@@ -3563,6 +3608,7 @@ document.addEventListener("click", (event) => {
 
     try {
       window.localStorage.setItem(localMemoryKey, "granted");
+      if (pocket?.isHandheld()) pocket.markBootSeen();
       state.localMemory = "granted";
       state.bootDismissed = true;
     } catch {
@@ -3925,5 +3971,16 @@ window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change",
 
 registerMediaCacheWorker();
 render();
-void requestWeather();
+let weatherStarted = !pocket?.isHandheld();
+if (weatherStarted) void requestWeather();
+window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
+  if (state.activeSection === "system") {
+    const grid = root.querySelector(".workspace > .dashboard-grid");
+    if (grid) grid.outerHTML = workspaceContent();
+    syncWeather();
+    syncMemoryMotion();
+    syncMemoryTrace();
+  }
+  if (!event.matches && !weatherStarted) { weatherStarted = true; void requestWeather(); }
+});
 window.setInterval(syncTime, 30_000);

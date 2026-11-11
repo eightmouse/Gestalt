@@ -33,15 +33,18 @@ export async function validatePagesAssets(destination) {
   let stylesheet;
   let appearanceStylesheet;
   let memoryStylesheet;
+  let pocketStylesheet;
   for (const link of links.filter((link) => link.rel === "stylesheet")) {
     const entry = await asset(link.href);
     if (entry.url.pathname.endsWith("/app/globals.css")) stylesheet = entry;
     if (entry.url.pathname.endsWith("/app/appearance.css") && link.at < headEnd) appearanceStylesheet = entry;
     if (entry.url.pathname.endsWith("/app/memory-state.css") && link.at < headEnd) memoryStylesheet = entry;
+    if (entry.url.pathname.endsWith("/app/pocket-index.css") && link.at < headEnd) pocketStylesheet = entry;
   }
   if (!stylesheet) throw new Error("The public archive stylesheet is missing from the static head.");
   if (!appearanceStylesheet) throw new Error("The Day stylesheet must be linked in the static head.");
   if (!memoryStylesheet) throw new Error("The Memory State stylesheet must be linked in the static head.");
+  if (!pocketStylesheet) throw new Error("The Pocket Index stylesheet must be linked in the static head.");
   let appearanceBootstrap;
   for (const match of html.slice(0, headEnd).matchAll(/<script\b[^>]*>/gi)) {
     const source = attribute(match[0], "src");
@@ -53,19 +56,21 @@ export async function validatePagesAssets(destination) {
   if (appearanceBootstrap === undefined || firstStyle === undefined || appearanceBootstrap > firstStyle) {
     throw new Error("The appearance bootstrap must run before the stylesheets in the static head.");
   }
-  let ambientAt, memoryAt, runtimeAt;
+  let ambientAt, memoryAt, pocketAt, runtimeAt;
   for (const match of html.matchAll(/<script\b[^>]*>/gi)) {
     const source = attribute(match[0], "src");
     if (!source) continue;
     const entry = await asset(source);
     if (entry.url.pathname.endsWith("/public/ambient-motion.js")) ambientAt = match.index;
     if (entry.url.pathname.endsWith("/public/memory-state.js")) memoryAt = match.index;
+    if (entry.url.pathname.endsWith("/public/pocket-index.js")) pocketAt = match.index;
     if (entry.url.pathname.endsWith("/static-app.js")) runtimeAt = match.index;
   }
   if (ambientAt === undefined || runtimeAt === undefined || ambientAt > runtimeAt) {
     throw new Error("The ambient helper must load before the static reader.");
   }
   if (memoryAt === undefined || memoryAt > runtimeAt) throw new Error("The Memory State helper must load before the static reader.");
+  if (pocketAt === undefined || pocketAt > runtimeAt) throw new Error("The Pocket Index helper must load before the static reader.");
   const css = await readFile(stylesheet.file, "utf8");
   if (!css.includes("var(--archive-image)")) throw new Error("The archive stylesheet no longer consumes the background variable.");
   const background = html.match(/--archive-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];

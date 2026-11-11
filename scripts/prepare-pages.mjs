@@ -8,6 +8,7 @@ class SteamPreparationError extends Error {}
 
 const publicFiles = [
   "app/memory-state.css", "public/memory-state.js",
+  "app/pocket-index.css", "public/pocket-index.js",
   "index.html", "static-app.js", "sw.js", "app/globals.css", "app/desktop-navigation.css", "app/appearance.css", "public/appearance.js", "public/desktop-navigation.js", "public/os-behaviour.js", "public/workspace-tools.js", "public/record-motion.js",
   "public/favicon.ico", "public/note-inline.js", "public/image-framing.js", "public/seasonal.js", "public/steam-display.mjs", "public/roadmap.mjs", "public/data/roadmap.json", "public/data/records.js", "public/ambient-motion.js"
 ];

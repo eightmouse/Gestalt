@@ -174,7 +174,8 @@ assert.match(css, /boot-loader-exit 420ms ease-in-out calc\(2220ms \+ var\(--boo
 assert.match(css, /boot-session 5200ms ease-in-out var\(--boot-elapsed, 0ms\)/);
 assert.match(css, /\.archive-shell\.is-quick-boot > \.boot-screen \{\s*animation-name: quick-boot-exit;\s*animation-duration: 2800ms;/);
 assert.match(css, /\.archive-shell\.is-quick-boot \.boot-session \{ display: none; \}/);
-assert.match(reactSource, /scheduleBootCompletion\(\(\) => setBootComplete\(true\), 0, startupMode\)/);
+assert.match(reactSource, /const done = \(\) => setBootComplete\(true\)/);
+assert.match(reactSource, /scheduleBootCompletion\(done, 0, startupMode\)/);
 assert.match(staticSource, /performance.now\(\) - bootStartedAt, state.startupMode/);
 assert.match(css, /\.boot-session \{\s*position: absolute;\s*grid-area: auto;\s*align-self: start;\s*inset-block-start: 38%;/, "Profile is anchored to the viewport, not the loader's centered grid cell");
 const sessionFrames = css.match(/@keyframes boot-session \{([\s\S]*?)\n\}/)?.[1];
