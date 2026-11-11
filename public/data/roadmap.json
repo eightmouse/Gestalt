@@ -32,6 +32,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Handheld edge fit",
+          "detail": "The Pocket Index fills the phone viewport while keeping controls clear of the notch and home indicator. Supported mobile browser bars follow Day and Night mode.",
+          "version": "v1.74.1",
+          "releasedOn": "2026-11-11"
+        },
+        {
           "title": "Pocket Index",
           "detail": "The handheld archive opens into a numbered directory instead of a floating dock. Search and Settings are up front, and Back returns you from a full-screen record to where you were. The short field boot has a variable progress bar, a scan-line handoff and a reduced-motion skip.",
           "version": "v1.74.0",

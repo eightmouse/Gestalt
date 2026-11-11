@@ -2,7 +2,7 @@
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
-  .archive-shell:has(> .pocket-header) {
+  :root {
     --pocket-paper: #171a1b;
     --pocket-plate: #1f2624;
     --pocket-ink: #f0eee6;
@@ -11,11 +11,12 @@
     --pocket-signal: #aed0b7;
     --pocket-grid: #5a7c6747;
     --pocket-mono: ui-monospace, Consolas, monospace;
-    min-block-size: 100dvh;
-    background: var(--pocket-paper);
-    color: var(--pocket-ink);
+    --pocket-safe-top: env(safe-area-inset-top, 0px);
+    --pocket-safe-right: env(safe-area-inset-right, 0px);
+    --pocket-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --pocket-safe-left: env(safe-area-inset-left, 0px);
   }
-  :root[data-appearance="day"] .archive-shell:has(> .pocket-header) {
+  :root[data-appearance="day"] {
     --pocket-paper: #eeefe9;
     --pocket-plate: #e0e4db;
     --pocket-ink: #242a28;
@@ -23,6 +24,13 @@
     --pocket-line: #b9c1b8;
     --pocket-signal: #396451;
     --pocket-grid: #9cae9f40;
+  }
+  :is(html, body):has(#root, .pocket-header),
+  :root .archive-shell:has(> .pocket-header) { background: var(--pocket-paper); }
+  .archive-shell:has(> .pocket-header) {
+    min-block-size: 100dvh;
+    padding-inline: var(--pocket-safe-left) var(--pocket-safe-right);
+    color: var(--pocket-ink);
   }
   body:has(#root, .pocket-header)::before,
   .archive-shell:has(> .pocket-header)::before,
@@ -37,8 +45,8 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 4px;
-    min-block-size: 66px;
-    padding: 9px 12px 9px 16px;
+    min-block-size: calc(66px + var(--pocket-safe-top));
+    padding: calc(9px + var(--pocket-safe-top)) 12px 9px 16px;
     border-block-end: 1px solid var(--pocket-line);
   }
   .pocket-brand { display: grid; gap: 3px; }
@@ -60,7 +68,7 @@
   }
   .pocket-tools button[aria-expanded="true"], .pocket-context button { color: var(--pocket-signal); }
   .pocket-tools svg, .pocket-index svg, .pocket-context svg, .pocket-record-back svg { flex: none; }
-  .archive-shell:has(> .pocket-header) > .workspace { min-block-size: 0; padding: 0 16px 24px; }
+  .archive-shell:has(> .pocket-header) > .workspace { min-block-size: 0; padding: 0 16px calc(24px + var(--pocket-safe-bottom)); }
   .archive-shell:has(> .pocket-header) > .workspace > .workspace-header { display: none; }
   .archive-shell[data-search-open] > .workspace[data-pocket-section] > .workspace-header { display: block; margin: 12px 0 0; }
   .archive-shell[data-search-open] .workspace[data-pocket-section] > :is(.section-page, .pocket-index, .pocket-context) { display: none; }
@@ -94,7 +102,12 @@
   .workspace[data-pocket-section] .section-record-column { block-size: auto; max-block-size: none; }
   .workspace[data-pocket-section] .section-record-grid { max-block-size: none; overflow: visible; }
 
-  .archive-shell:has(> .pocket-header) .record-window:not([hidden]) { inset: 0; inline-size: auto; max-block-size: 100dvh; border: 0; transform: none; animation: none; }
+  .archive-shell:has(> .pocket-header) .record-window:not([hidden]) { inset: 0; inline-size: auto; max-block-size: 100dvh; padding: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); border: 0; transform: none; animation: none; }
+  .archive-shell:has(> .pocket-header) .timeline-window { inset-block: var(--pocket-safe-top) var(--pocket-safe-bottom); }
+  :is(.os-behaviour-dialog, .roadmap-dialog, .connections-dialog, .web-search-dialog) {
+    padding-block-start: max(12px, var(--pocket-safe-top));
+    padding-block-end: max(12px, var(--pocket-safe-bottom));
+  }
   .record-window .window-actions, .record-window .window-title-group, .record-window > .window-bar > span { display: none; }
   .record-window .window-bar { justify-content: space-between; }
   .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
@@ -111,7 +124,7 @@
   .archive-shell.is-booting { background: var(--pocket-paper); }
   .archive-shell.is-booting .pocket-boot:not([hidden]) { position: fixed; inset: 0; z-index: 90; display: block; overflow: hidden; }
   .archive-shell.is-booting:not([data-pocket-booting]) .pocket-boot-panel { visibility: hidden; }
-  .pocket-boot-screen { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: var(--pocket-paper); }
+  .pocket-boot-screen { position: absolute; inset: 0; display: grid; place-items: center; padding: calc(20px + var(--pocket-safe-top)) calc(20px + var(--pocket-safe-right)) calc(20px + var(--pocket-safe-bottom)) calc(20px + var(--pocket-safe-left)); background: var(--pocket-paper); }
   .pocket-boot-scan { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
   .pocket-boot-scan::before { content: ""; position: absolute; inset: 0 0 auto; block-size: 1px; background: color-mix(in srgb, var(--pocket-signal) 75%, var(--pocket-paper)); }
   .pocket-boot-panel { inline-size: min(100%, 256px); }

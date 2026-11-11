@@ -22,6 +22,9 @@
     if (!element) return;
     const appearance = resolveMode(getMode(doc), date);
     if (element.getAttribute("data-appearance") !== appearance) element.setAttribute("data-appearance", appearance);
+    const chrome = doc.querySelector?.('meta[name="theme-color"][media="(max-width: 760px)"]');
+    const color = appearance === "day" ? "#eeefe9" : "#171a1b";
+    if (chrome && chrome.content !== color) chrome.content = color;
   }
   function scheduleBoundary(doc) {
     const state = observers.get(doc);

@@ -65,6 +65,12 @@ for (const mode of ["day", "night", "day", "night"]) {
 }
 assert.equal(switching.writes, 0, "Session theme switching writes no remembered preferences");
 assert.equal(switching.listeners.size, 1, "Switching themes cannot stack resume listeners");
+const chrome = { content: "#171a1b" };
+switching.document.querySelector = (selector) => selector === 'meta[name="theme-color"][media="(max-width: 760px)"]' ? chrome : null;
+appearance.setMode("day", false, switching);
+assert.equal(chrome.content, "#eeefe9", "The mobile browser chrome follows Day mode");
+appearance.setMode("night", false, switching);
+assert.equal(chrome.content, "#171a1b", "The mobile browser chrome returns to Night mode");
 
 const early = fixture(); early.stored.set("gestalt.local-memory", "granted"); early.stored.set("gestalt.appearance", "day");
 vm.runInNewContext(read("public/appearance.js"), early);

@@ -65,4 +65,11 @@ for (const curve of curves) {
 assert.deepEqual(pocket.directory.map(([id]) => id), ["projects", "games", "logs", "setup", "archive"]);
 assert.match(pocket.bootMarkup, /<dt>Server<\/dt><dd>Online<\/dd>/);
 assert.doesNotMatch(readFileSync(new URL("../public/pocket-index.js", import.meta.url), "utf8"), /fetch\(|navigator\.|setInterval\(/);
+const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+assert.match(read("index.html"), /name="viewport"[^>]+viewport-fit=cover/);
+assert.match(read("app/page.tsx"), /viewportFit:\s*"cover"/);
+const css = read("app/pocket-index.css");
+for (const side of ["top", "right", "bottom", "left"]) assert.ok(css.includes(`env(safe-area-inset-${side}, 0px)`));
+assert.match(css, /\.pocket-header \{[^}]*padding: calc\(9px \+ var\(--pocket-safe-top\)\)/);
+assert.match(css, /\.archive-shell:has\(> \.pocket-header\) > \.workspace \{[^}]*calc\(24px \+ var\(--pocket-safe-bottom\)\)/);
 console.log("Pocket Index preferences, boot lifecycle and progress curves passed.");
