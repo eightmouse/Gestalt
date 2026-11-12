@@ -63,6 +63,14 @@ for (const curve of curves) {
   for (let i = 1; i < curve.length; i++) assert.ok(curve[i].offset > curve[i - 1].offset && fills[i] > fills[i - 1]);
 }
 assert.deepEqual(pocket.directory.map(([id]) => id), ["projects", "games", "logs", "setup", "archive"]);
+const records = Array.from({ length: 13 }, (_, i) => `record-${i + 1}`);
+const first = pocket.recordPage(records);
+assert.deepEqual(first, { records: records.slice(0, 4), page: 0, pages: 4 });
+assert.deepEqual(Array.from({ length: first.pages }, (_, page) => pocket.recordPage(records, page).records).flat(), records);
+assert.deepEqual(pocket.recordPage(records, 99), { records: ["record-13"], page: 3, pages: 4 });
+assert.equal(pocket.recordPage(records, -1).page, 0);
+assert.equal(pocket.recordPage(records, 1.5).page, 0);
+assert.deepEqual(pocket.recordPage([]), { records: [], page: 0, pages: 1 });
 assert.match(pocket.bootMarkup, /<dt>Server<\/dt><dd>Online<\/dd>/);
 assert.doesNotMatch(readFileSync(new URL("../public/pocket-index.js", import.meta.url), "utf8"), /fetch\(|navigator\.|setInterval\(/);
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
@@ -72,4 +80,4 @@ const css = read("app/pocket-index.css");
 for (const side of ["top", "right", "bottom", "left"]) assert.ok(css.includes(`env(safe-area-inset-${side}, 0px)`));
 assert.match(css, /\.pocket-header \{[^}]*padding: calc\(9px \+ var\(--pocket-safe-top\)\)/);
 assert.match(css, /\.archive-shell:has\(> \.pocket-header\) > \.workspace \{[^}]*calc\(24px \+ var\(--pocket-safe-bottom\)\)/);
-console.log("Pocket Index preferences, boot lifecycle and progress curves passed.");
+console.log("Pocket Index preferences, boot lifecycle, progress curves and record paging passed.");

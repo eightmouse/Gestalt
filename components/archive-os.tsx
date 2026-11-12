@@ -855,6 +855,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           />
         ) : (
           <SectionPage
+            handheld={handheld}
             records={activeSection === "archive" ? archivePageRecords : recordsBySection[activeSection]}
             section={activeSectionConfig}
             onOpenRecord={openRecord}

@@ -3,9 +3,10 @@ import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
-import { ArrowUp, FileText, Folder, FolderOpen, HardDrive, Plus, X } from "lucide-react";
+import { ArrowUp, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Plus, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useState } from "react";
+import pocket from "@/public/pocket-index.js";
 
 type ArchiveSectionConfig = {
   id: RecordSection;
@@ -15,6 +16,7 @@ type ArchiveSectionConfig = {
 };
 
 type SectionPageProps = {
+  handheld: boolean;
   records: RecordEntry[];
   section: ArchiveSectionConfig;
   onOpenRecord: (record: RecordEntry, content?: ContentKey, noteQuery?: string) => void;
@@ -30,7 +32,7 @@ const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
   setup: "Setup Manifest"
 };
 
-export function SectionPage({ records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord }: SectionPageProps) {
+export function SectionPage({ handheld, records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord }: SectionPageProps) {
   const visibleRecords = section.id === "logs" ? records.filter((record) => !isLogArchivedByAge(record)) : records;
   const sortedRecords = [...visibleRecords].sort(compareSectionRecords);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
@@ -63,26 +65,7 @@ export function SectionPage({ records, section, onOpenRecord, onCreateRecord, on
 
         <div className="section-note-layout">
           <div className="section-split-grid">
-            {splitSection.map((group) => (
-              <section className="section-record-column" key={group.title} aria-label={group.title}>
-                <header>
-                  <div>
-                    <h3>{group.title}</h3>
-                    <small>{groupStatusLine(group.records)}</small>
-                  </div>
-                  <span>{group.records.length}</span>
-                </header>
-                <div className="section-record-grid">
-                  {group.records.length > 0 ? (
-                    group.records.map((record) => (
-                      <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />
-                    ))
-                  ) : (
-                    <p className="search-empty">No records filed here yet.</p>
-                  )}
-                </div>
-              </section>
-            ))}
+            {splitSection.map((group) => <SplitRecordColumn key={group.title} {...group} handheld={handheld} onOpenRecord={onOpenRecord} />)}
           </div>
           <SectionNotePreview records={sortedRecords} kind={section.id === "projects" ? "projects" : "games"} onOpenRecord={onOpenRecord} />
         </div>
@@ -119,6 +102,23 @@ export function SectionPage({ records, section, onOpenRecord, onCreateRecord, on
       </div>
     </section>
   );
+}
+
+function SplitRecordColumn({ title, records, handheld, onOpenRecord }: Pick<SectionPageProps, "records" | "handheld" | "onOpenRecord"> & { title: string }) {
+  const [requestedPage, setPage] = useState(0);
+  const paging = handheld ? pocket.recordPage(records, requestedPage) : null;
+  const visible = paging?.records ?? records;
+  return <section className="section-record-column" aria-label={title}>
+    <header><div><h3>{title}</h3><small>{groupStatusLine(records)}</small></div><span>{records.length}</span></header>
+    <div className="section-record-grid">
+      {visible.length ? visible.map((record) => <SectionRecordButton key={record.id} record={record} onOpenRecord={onOpenRecord} />) : <p className="search-empty">No records filed here yet.</p>}
+    </div>
+    {paging && paging.pages > 1 ? <nav className="pocket-record-pager" aria-label={`${title} pages`}>
+      <button type="button" aria-disabled={paging.page === 0} onClick={() => { if (paging.page > 0) setPage(paging.page - 1); }}><ChevronLeft size={16} aria-hidden="true" />Previous</button>
+      <span aria-live="polite" aria-atomic="true">{paging.page + 1} / {paging.pages}</span>
+      <button type="button" aria-disabled={paging.page + 1 === paging.pages} onClick={() => { if (paging.page + 1 < paging.pages) setPage(paging.page + 1); }}>Next<ChevronRight size={16} aria-hidden="true" /></button>
+    </nav> : null}
+  </section>;
 }
 
 function SectionNotePreview({ records, kind, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "projects" | "games" | "logs" }) {

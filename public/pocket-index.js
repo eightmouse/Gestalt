@@ -18,6 +18,12 @@
   function isHandheld(host = globalThis.window) {
     return Boolean(host?.matchMedia("(max-width: 760px)").matches);
   }
+  function recordPage(records, requestedPage = 0) {
+    const size = 4;
+    const pages = Math.max(1, Math.ceil(records.length / size));
+    const page = Math.max(0, Math.min(pages - 1, Number.isInteger(requestedPage) ? requestedPage : 0));
+    return { records: records.slice(page * size, (page + 1) * size), page, pages };
+  }
   function normalizeBootMode(value) { return value === "always" ? "always" : "once"; }
   function readBootMode(host = globalThis.window) {
     try {
@@ -122,5 +128,5 @@
     step();
     return stop;
   }
-  return { directory, stamp, bootMarkup, isHandheld, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot, resolveTitle };
+  return { directory, stamp, bootMarkup, isHandheld, recordPage, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot, resolveTitle };
 });

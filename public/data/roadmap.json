@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "11 / 11 / 2026",
+  "updated": "12 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Pocket browsing and a quieter Memory State",
+          "detail": "Handheld Games and Projects show four records per group at a time and keep your page when you close an entry. Memory State drops the inner filename and keeps a faint frame around its code lines.",
+          "version": "v1.74.2",
+          "releasedOn": "2026-11-12"
+        },
         {
           "title": "Handheld edge fit",
           "detail": "The Pocket Index fills the phone viewport while keeping controls clear of the notch and home indicator. Supported mobile browser bars follow Day and Night mode.",

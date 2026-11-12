@@ -78,7 +78,7 @@
     ['// waiting at the edge', 'const next = await signal.next();', 'yield workspace.resolve(next);']
   ];
   function renderShell() {
-    return '<header class="memory-trace-header"><span>workspace.gs</span></header><ol class="memory-trace-lines" aria-label="Workspace code stream" aria-live="off"></ol>';
+    return '<ol class="memory-trace-lines" aria-label="Workspace code stream" aria-live="off"></ol>';
   }
   function watchTrace(node, host = globalThis.window) {
     const state = session(host);

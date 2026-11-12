@@ -205,6 +205,8 @@ assert.ok(!/\b(fetch|XMLHttpRequest|sendBeacon|setInterval|requestAnimationFrame
 assert.equal((source.match(/host\.setTimeout\(/g) || []).length, 1, "One controlled scheduler, not independent timers per character or line");
 assert.ok(!/addEventListener\(["']scroll/.test(source), "The stream has no interactive scrollback listener");
 assert.ok(!memory.renderShell().includes("PSEUDOCODE") && !memory.renderShell().includes("tabindex"));
+assert.match(memory.renderShell(), /^<ol class="memory-trace-lines"[^>]*><\/ol>$/);
+assert.doesNotMatch(read("components/archive/memory-state.tsx"), /workspace\.gs|memory-trace-header/);
 assert.ok(!/addEventListener\(["'](?:input|keydown|click|pointermove)/.test(source), "No capture of raw input or browsing text");
 for (const file of ["scripts/prepare-pages.mjs", "lib/publish-paths.mjs"]) {
   for (const asset of ["public/memory-state.js", "app/memory-state.css"]) assert.ok(read(file).includes(`"${asset}"`));

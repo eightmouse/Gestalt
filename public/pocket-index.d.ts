@@ -5,6 +5,7 @@ declare const pocket: {
   stamp: string;
   bootMarkup: string;
   isHandheld(host?: Window): boolean;
+  recordPage<T>(records: readonly T[], requestedPage?: number): { records: T[]; page: number; pages: number };
   normalizeBootMode(value: unknown): PocketBootMode;
   readBootMode(host?: Window): PocketBootMode;
   saveBootMode(value: PocketBootMode, host?: Window): boolean;

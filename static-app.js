@@ -252,6 +252,7 @@ const state = {
   desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "fixed",
   startupMode: window.GestaltOsBehaviour?.readStartupMode() || "full",
   pocketBootMode: pocket?.readBootMode() || "once",
+  pocketPages: [],
   pocketSearchReturn: null,
   panelMinimized: false,
   panelMaximized: false,
@@ -348,6 +349,7 @@ function openSection(sectionId) {
   stopRecordAccessSequence();
   state.headlineAnimating = state.activeSection !== sectionId;
   state.activeSection = sectionId;
+  state.pocketPages = [];
   state.panelOpen = false;
   state.panelMinimized = false;
   state.searchOpen = false;
@@ -392,6 +394,7 @@ function openHome() {
   }
   state.headlineAnimating = state.activeSection !== "system";
   state.activeSection = "system";
+  state.pocketPages = [];
   state.panelOpen = false;
   state.panelMinimized = false;
   state.panelMaximized = false;
@@ -1504,7 +1507,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.74.1</span>
+        <span>v1.74.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1518,7 +1521,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.74.1</span>
+        <span class="version-label">v1.74.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1538,7 +1541,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.74.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.74.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1840,14 +1843,7 @@ function sectionPage(sectionId) {
       </header>
       <div class="section-note-layout">
       <div class="section-split-grid">
-        ${splitSection
-          .map(
-            (group) => `<section class="section-record-column" aria-label="${escapeHtml(group.title)}">
-              <header><div><h3>${escapeHtml(group.title)}</h3><small>${escapeHtml(groupStatusLine(group.records))}</small></div><span>${group.records.length}</span></header>
-              <div class="section-record-grid">${renderSectionRows(group.records)}</div>
-            </section>`
-          )
-          .join("")}
+        ${splitSection.map(renderSplitRecordColumn).join("")}
       </div>
       ${renderSectionNotePreview(visibleRecords, sectionId)}
       </div>
@@ -1869,6 +1865,39 @@ function sectionPage(sectionId) {
         ${sectionId === "logs" ? renderSectionNotePreview(visibleRecords, "logs") : ""}
       </div>
   </section>`;
+}
+
+function renderSplitRecordColumn(group, index) {
+  const paging = pocket?.isHandheld() ? pocket.recordPage(group.records, state.pocketPages[index]) : null;
+  return `<section class="section-record-column" aria-label="${escapeHtml(group.title)}" data-pocket-group="${index}">
+    <header><div><h3>${escapeHtml(group.title)}</h3><small>${escapeHtml(groupStatusLine(group.records))}</small></div><span>${group.records.length}</span></header>
+    <div class="section-record-grid">${renderSectionRows(paging?.records ?? group.records)}</div>
+    ${paging && paging.pages > 1 ? `<nav class="pocket-record-pager" aria-label="${escapeHtml(group.title)} pages">
+      <button type="button" data-pocket-page="-1" aria-disabled="${paging.page === 0}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}Previous</button>
+      <span aria-live="polite" aria-atomic="true">${paging.page + 1} / ${paging.pages}</span>
+      <button type="button" data-pocket-page="1" aria-disabled="${paging.page + 1 === paging.pages}">Next${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
+    </nav>` : ""}
+  </section>`;
+}
+
+function stepPocketRecordPage(button) {
+  if (!pocket?.isHandheld() || button.getAttribute("aria-disabled") === "true") return;
+  const column = button.closest("[data-pocket-group]");
+  const grid = column?.querySelector(".section-record-grid");
+  const pager = button.closest(".pocket-record-pager");
+  const direction = Number(button.dataset.pocketPage);
+  if (!grid || !pager || (direction !== -1 && direction !== 1)) return;
+  const index = Number(column.dataset.pocketGroup);
+  const group = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords))?.[index];
+  if (!group) return;
+  const current = pocket.recordPage(group.records, state.pocketPages[index]);
+  const next = pocket.recordPage(group.records, current.page + direction);
+  if (next.page === current.page) return;
+  state.pocketPages[index] = next.page;
+  grid.innerHTML = renderSectionRows(next.records);
+  pager.querySelector("span").textContent = `${next.page + 1} / ${next.pages}`;
+  pager.querySelector('[data-pocket-page="-1"]').setAttribute("aria-disabled", String(next.page === 0));
+  pager.querySelector('[data-pocket-page="1"]').setAttribute("aria-disabled", String(next.page + 1 === next.pages));
 }
 
 const logArchiveAfterDays = 7;
@@ -3179,7 +3208,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.74.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.74.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3668,6 +3697,11 @@ document.addEventListener("click", (event) => {
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
 
+  if (target.dataset.pocketPage !== undefined) {
+    stepPocketRecordPage(target);
+    return;
+  }
+
   if (target.dataset.home !== undefined) {
     openHome();
     return;
@@ -3980,6 +4014,9 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     syncWeather();
     syncMemoryMotion();
     syncMemoryTrace();
+  } else if (state.activeSection === "games" || state.activeSection === "projects") {
+    const page = root.querySelector(".workspace > .section-page--split");
+    if (page) page.outerHTML = sectionPage(state.activeSection);
   }
   if (!event.matches && !weatherStarted) { weatherStarted = true; void requestWeather(); }
 });

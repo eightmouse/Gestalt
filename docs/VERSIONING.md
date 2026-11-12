@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.74.1`. Previous site-code release: `v1.74.0` (76525244).
+Release target: `v1.74.2`. Previous site-code release: `v1.74.1` (0c883ded).
+
+`v1.74.2` gives handheld Games and Projects independent four-record pages per group and keeps your place when you close a record. Desktop lists and search still see the full archive. Memory State keeps a faint inset frame but drops the inner filename and header, leaving more room for the code stream. Both readers share the paging logic and trace styles. No record, media or dependency changes.
 
 `v1.74.1` extends the handheld canvas to the viewport edges and keeps reading controls clear of the notch and home indicator. Mobile browser bars follow the selected Day or Night appearance where supported. Verified with simulated safe-area insets in both readers; no desktop backdrop, record, media or dependency changes.
 

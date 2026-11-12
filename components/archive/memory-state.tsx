@@ -12,7 +12,6 @@ function SessionTrace() {
   const traceRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => memoryState.watchTrace(traceRef.current), []);
   return <div className="memory-trace" ref={traceRef}>
-    <header className="memory-trace-header"><span>workspace.gs</span></header>
     <ol className="memory-trace-lines" aria-label="Workspace code stream" aria-live="off" />
   </div>;
 }

@@ -1,4 +1,4 @@
-.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back,
+.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-pager,
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
@@ -101,6 +101,28 @@
   .workspace[data-pocket-section] .section-record > i { padding-block-start: 0; }
   .workspace[data-pocket-section] .section-record-column { block-size: auto; max-block-size: none; }
   .workspace[data-pocket-section] .section-record-grid { max-block-size: none; overflow: visible; }
+  .pocket-record-pager {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px;
+    border-block-start: 1px solid var(--pocket-line);
+    color: var(--pocket-muted);
+    font: 500 12px/1.2 var(--pocket-mono);
+  }
+  .pocket-record-pager button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-block-size: 44px;
+    padding-inline: 2px;
+    background: transparent;
+    color: var(--pocket-signal);
+    font: 500 13px/1.2 system-ui, sans-serif;
+  }
+  .pocket-record-pager button:last-child { justify-content: flex-end; }
+  .pocket-record-pager button[aria-disabled="true"] { color: var(--pocket-muted); opacity: 0.62; }
+  .pocket-record-pager svg { flex: none; }
 
   .archive-shell:has(> .pocket-header) .record-window:not([hidden]) { inset: 0; inline-size: auto; max-block-size: 100dvh; padding: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); border: 0; transform: none; animation: none; }
   .archive-shell:has(> .pocket-header) .timeline-window { inset-block: var(--pocket-safe-top) var(--pocket-safe-bottom); }
