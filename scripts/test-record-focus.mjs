@@ -89,8 +89,9 @@ for (let index = 0; index < 4; index++) press(keyboard);
 assert.deepEqual(actions, ["palette", "image", "history"], "Nested UI and the note filter close before the entry");
 assert.equal(state.noteSearchQuery, "");
 assert.equal(press(keyboard, { shiftKey: true }).prevented, false);
+state.focusedNoteIndex = 1;
 assert.deepEqual(press(keyboard), { prevented: true, stopped: true });
-assert.equal(actions.at(-1), "record");
+assert.equal(actions.at(-1), "record", "Escape closes a deep-linked note on the first press");
 state.panelOpen = false; state.timelineOpen = true;
 assert.deepEqual(press(keyboard), { prevented: true, stopped: true });
 assert.equal(actions.at(-1), "timeline");
@@ -123,6 +124,7 @@ for (const name of ["ArchiveRecordWindow", "SetupRecordWindow"]) {
     press(handler); route.updateHistoryOpen = false;
     press(handler); route.noteSearchQuery = "";
     assert.deepEqual(calls, ["history", "filter"]);
+    route.focusedNoteIndex = 1;
   }
   assert.deepEqual(press(handler), { prevented: true, stopped: true });
   assert.equal(calls.at(-1), "record");

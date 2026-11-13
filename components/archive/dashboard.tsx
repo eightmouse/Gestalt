@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import pocket from "@/public/pocket-index.js";
 import { FilePlus2 } from "lucide-react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { activityFreshness, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
+import { activityFreshness, cleanSummaryText, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
 import { currentGameCover, steamBannerImage, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import { SeasonalAccent } from "@/components/archive/seasonal-accent";
@@ -23,7 +23,7 @@ type DashboardProps = {
   latestLog?: RecordEntry;
   panelOpen: boolean;
   projectRecords: RecordEntry[];
-  onOpenRecord: (record: RecordEntry, content?: "notes") => void;
+  onOpenRecord: (record: RecordEntry, content?: "notes", noteIndex?: number) => void;
   onOpenSection: (section: RecordSection) => void;
   onOpenTimeline: () => void;
   onCreateCurrentGame?: () => void;
@@ -138,9 +138,9 @@ export function ArchiveDashboard({
         {activityRows.length > 0 ? (
           <ol className="activity-feed">
             {activityRows.map(({ freshness, item }) => (
-              <li data-activity-age={freshness} data-state={dashboardRecordStateKey(item.record.status)} key={item.record.id}>
+              <li data-activity-age={freshness} data-state={dashboardRecordStateKey(item.record.status)} key={item.id}>
                 <span>[{shortDate(item.date)}]</span>
-                <button type="button" onClick={() => onOpenRecord(item.record, item.content)}>
+                <button type="button" onClick={() => onOpenRecord(item.record, item.content, item.noteIndex)}>
                   <strong>{item.title}</strong>
                   <small>{item.detail}</small>
                 </button>
@@ -162,7 +162,7 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
 
   return (
     <article className={`dashboard-panel ${className}`}>
-      <h2 className={isActionable ? "is-actionable" : undefined}>
+      <h2>
         {isActionable ? (
           <button className="panel-title-action" type="button" onClick={onFooter} aria-label={footerLabel} title={footerLabel}>
             {title}
@@ -178,7 +178,8 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
 
 function CurrentGame({ display, record, onCreate }: { display: CurrentGameDisplay; record?: RecordEntry; onCreate?: () => void }) {
   const image = currentGameCover(record, display.coverAppId) || "/images/archive-backdrop.webp";
-  const hint = display.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : undefined;
+  const summary = cleanSummaryText(record?.summary);
+  const hint = display.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Not live presence.` : undefined;
   return (
     <div className="current-game" data-state={dashboardRecordStateKey(display.status)} title={hint}>
       <div className={steamBannerImage(image) ? "game-cover is-steam-artwork" : "game-cover"}>
@@ -191,7 +192,7 @@ function CurrentGame({ display, record, onCreate }: { display: CurrentGameDispla
       </div>
       <div>
         <strong>{display.title}</strong>
-        {display.completion ? <span>{display.completion}</span> : null}
+        {summary ? <span className="current-game-summary" title={summary}>{summary}</span> : null}
         {display.playtime ? <span>{display.playtime} Play Time</span> : null}
         {display.lastPlayed ? <span>Last Played: {display.lastPlayed}</span> : null}
         {onCreate ? <button className="current-game-create" type="button" onClick={onCreate}><FilePlus2 size={14} aria-hidden="true" />Create game record</button> : null}

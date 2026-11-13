@@ -10,7 +10,9 @@ export type ArchiveMetrics = {
 };
 
 export type ActivityEntry = {
+  id: string;
   content?: "notes";
+  noteIndex?: number;
   date: string;
   detail: string;
   record: RecordEntry;
@@ -130,6 +132,19 @@ export function noteEntries(body: string): Array<{ title: string; body: string }
   return notes;
 }
 
+export function notePage(notes: ReturnType<typeof noteEntries>, query: string, requestedPage?: number, focusedIndex?: number) {
+  const size = 5;
+  const search = query.trim().toLowerCase();
+  const matches = notes.map((note, index) => ({ ...note, index })).filter((note) => note.title.toLowerCase().includes(search));
+  const focused = !search && focusedIndex !== undefined && notes[focusedIndex] ? focusedIndex : undefined;
+  const pages = Math.max(1, Math.ceil(matches.length / size));
+  const initial = focused === undefined ? 0 : Math.floor(focused / size);
+  const page = Math.min(pages - 1, Math.max(0, requestedPage ?? initial));
+  const visible = matches.slice(page * size, (page + 1) * size);
+  const openIndex = focused !== undefined && page === initial ? focused : search || page === 0 ? visible[0]?.index : undefined;
+  return { notes: visible, page, pages, openIndex };
+}
+
 export function setupHardwareFallback(body: string): string {
   const notes = noteEntries(body);
 
@@ -159,17 +174,39 @@ export function decodeTextBlock(value: string): string {
 export function recentActivity(records: RecordEntry[], limit: number): ActivityEntry[] {
   return records
     .filter((record) => record.section !== "system" && !(record.section === "setup" && setupGroupForActivity(record) === "tools"))
-    .map((record) => {
-      const trace = activityTrace(record);
+    .flatMap<ActivityEntry>((record) => {
       const setupDetail = setupActivityDetail(record);
-
-      return {
-        content: trace && !setupDetail ? "notes" as const : undefined,
-        date: record.section === "logs" ? logArchiveDate(record) : trace?.date ?? record.updated,
-        detail: setupDetail ?? (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
+      const notes = setupDetail ? [] : datedNotes(record);
+      const recordItem: ActivityEntry = {
+        id: `${record.id}:record`,
+        date: record.section === "logs" ? logArchiveDate(record) : record.updated,
+        detail: setupDetail ?? record.type,
         record,
         title: record.title
       };
+
+      // A standalone field note keeps its writing date; Setup has its own reader.
+      if (record.section === "setup" || (record.section === "logs" && notes.length < 2)) {
+        const trace = latestActivityNote(notes, record.updated);
+        if (!trace || setupDetail) return [recordItem];
+        return [{
+          ...recordItem,
+          content: "notes",
+          date: record.section === "logs" ? recordItem.date : trace.date,
+          detail: `${record.type} / ${activityTraceTitle(trace.note.title)}`
+        }];
+      }
+
+      const items: ActivityEntry[] = notes.map(({ date, note, index }) => ({
+        ...recordItem,
+        id: `${record.id}:note:${index}`,
+        content: "notes",
+        date,
+        detail: `${record.type} / ${activityTraceTitle(note.title)}`,
+        noteIndex: index
+      }));
+      if (!items.some((item) => item.date >= recordItem.date)) items.push(recordItem);
+      return items;
     })
     .sort((a, b) => b.date.localeCompare(a.date)
       || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
@@ -192,9 +229,9 @@ export function recordDisplaySummary(record: RecordEntry): string {
 
 export function latestSectionNote(records: RecordEntry[], section: "projects" | "games" | "logs") {
   const updates = records.filter((record) => record.section === section).flatMap((record) =>
-    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note) => ({
+    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note, index) => ({
       record,
-      noteQuery: section === "games" ? note.title : "",
+      noteIndex: index,
       date: section === "logs" ? logArchiveDate(record) : noteTitleDate(note.title) ?? record.updated,
       title: activityTraceTitle(note.title),
       excerpt: excerptFromBody(note.body, section === "logs" ? 720 : section === "games" ? 240 : 180),
@@ -227,24 +264,24 @@ export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEnt
 
 export function activityDate(record: RecordEntry): string {
   if (record.section === "logs") return logArchiveDate(record);
-  return activityTrace(record)?.date ?? record.updated;
+  if (record.section === "setup" && setupGroupForActivity(record) !== "notes") return record.updated;
+  return recordLastUpdated(record);
 }
 
-function activityTrace(record: RecordEntry): { date: string; note: { title: string; body: string } } | null {
-  if (record.section === "setup" && setupGroupForActivity(record) !== "notes") {
-    return null;
-  }
+export function recordLastUpdated(record: RecordEntry): string {
+  return latestActivityNote(datedNotes(record), record.updated)?.date ?? record.updated;
+}
 
-  const latestNote = noteEntries(record.body)
-    .map((note) => ({ date: noteTitleDate(note.title), note }))
-    .filter((entry): entry is { date: string; note: { title: string; body: string } } => Boolean(entry.date))
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
+function datedNotes(record: RecordEntry) {
+  return noteEntries(record.body).flatMap((note, index) => {
+    const date = note.body && noteTitleDate(note.title);
+    return date ? [{ date, note, index }] : [];
+  });
+}
 
-  if (!latestNote || latestNote.date < record.updated) {
-    return null;
-  }
-
-  return latestNote;
+function latestActivityNote(notes: ReturnType<typeof datedNotes>, updated: string) {
+  return notes.reduce<(typeof notes)[number] | null>((latest, entry) =>
+    entry.date >= updated && (!latest || entry.date > latest.date) ? entry : latest, null);
 }
 
 function setupActivityDetail(record: RecordEntry): string | null {
@@ -331,8 +368,8 @@ function excerptFromBody(body: string, limit = 180): string {
   return clean.length > limit ? `${clean.slice(0, limit - 3).trim()}...` : clean;
 }
 
-function cleanSummaryText(value: string): string {
-  const clean = value.trim();
+export function cleanSummaryText(value?: string): string {
+  const clean = value?.trim() ?? "";
 
   return clean.toLowerCase() === "no summary recorded." ? "" : clean;
 }

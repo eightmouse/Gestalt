@@ -19,7 +19,7 @@ type SectionPageProps = {
   handheld: boolean;
   records: RecordEntry[];
   section: ArchiveSectionConfig;
-  onOpenRecord: (record: RecordEntry, content?: ContentKey, noteQuery?: string) => void;
+  onOpenRecord: (record: RecordEntry, content?: ContentKey, noteIndex?: number) => void;
   onCreateRecord?: () => void;
   onCreateSetupRecord?: (group: SetupGroupId) => void;
 };
@@ -128,7 +128,7 @@ function SectionNotePreview({ records, kind, onOpenRecord }: Pick<SectionPagePro
   const showTitle = update.title !== update.record.title && !/^(?:current note|new note|untitled note)$/i.test(update.title);
   return <aside className={`section-note-preview section-note-preview--${kind}`} aria-label={kind === "projects" ? "Latest project update" : kind === "games" ? "Latest written game session" : "Latest field note"}>
     <h3>// {label}</h3>
-    <button className="section-note-link" type="button" onClick={() => onOpenRecord(update.record, "notes", update.noteQuery)}>
+    <button className="section-note-link" type="button" onClick={() => onOpenRecord(update.record, "notes", update.noteIndex)}>
       <time dateTime={update.date}>{formatReadableDate(update.date)}</time>
       <strong>{update.record.title}</strong>
       {showTitle ? <span className="section-note-title">{update.title}</span> : null}

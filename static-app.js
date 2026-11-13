@@ -270,6 +270,9 @@ const state = {
   archiveFolderWindow: null,
   navOpen: false,
   noteSearchQuery: "",
+  focusedNoteIndex: null,
+  noteBrowsePage: undefined,
+  noteSearchPage: 0,
   updateHistoryOpen: false,
   localMemory: initialLocalMemory,
   bootDismissed: false,
@@ -303,7 +306,7 @@ function selectedRecord() {
   return records.find((record) => record.id === state.selectedId) || records[0];
 }
 
-function openRecord(recordId, contentKey = "overview", noteQuery = "") {
+function openRecord(recordId, contentKey = "overview", noteIndex = null) {
   const record = records.find((entry) => entry.id === recordId);
 
   if (!record) {
@@ -332,11 +335,15 @@ function openRecord(recordId, contentKey = "overview", noteQuery = "") {
   state.roadmapOpen = false;
   state.archiveFolderWindow = null;
   state.navOpen = false;
-  state.noteSearchQuery = typeof noteQuery === "string" ? noteQuery : "";
+  state.noteSearchQuery = "";
+  state.focusedNoteIndex = Number.isInteger(noteIndex) && noteIndex >= 0 ? noteIndex : null;
+  state.noteBrowsePage = undefined;
+  state.noteSearchPage = 0;
   state.updateHistoryOpen = false;
   if (!syncRecordWindow()) render();
   if (handheld) pocket.resolveTitle(root.querySelector(".record-window .record-title-text"));
   startRecordAccessSequence();
+  if (state.focusedNoteIndex > 0) revealFocusedNote();
 }
 
 function openSection(sectionId) {
@@ -359,6 +366,7 @@ function openSection(sectionId) {
   state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
+  state.focusedNoteIndex = null;
   state.updateHistoryOpen = false;
   if (!syncSection()) render();
 }
@@ -459,17 +467,38 @@ function activityFreshness(value, now = new Date()) {
 function recentActivity(limit) {
   return records
     .filter((record) => record.section !== "system" && !(record.section === "setup" && setupGroupForActivity(record) === "tools"))
-    .map((record) => {
-      const trace = activityTrace(record);
+    .flatMap((record) => {
       const setupDetail = setupActivityDetail(record);
-
-      return {
-        content: trace && !setupDetail ? "notes" : undefined,
-        date: record.section === "logs" ? logArchiveDate(record) : trace?.date || record.updated,
-        detail: setupDetail || (trace ? `${record.type} / ${activityTraceTitle(trace.note.title)}` : record.type),
+      const notes = setupDetail ? [] : datedNotes(record);
+      const recordItem = {
+        id: `${record.id}:record`,
+        date: record.section === "logs" ? logArchiveDate(record) : record.updated,
+        detail: setupDetail ?? record.type,
         record,
         title: record.title
       };
+
+      if (record.section === "setup" || (record.section === "logs" && notes.length < 2)) {
+        const trace = latestActivityNote(notes, record.updated);
+        if (!trace || setupDetail) return [recordItem];
+        return [{
+          ...recordItem,
+          content: "notes",
+          date: record.section === "logs" ? recordItem.date : trace.date,
+          detail: `${record.type} / ${activityTraceTitle(trace.note.title)}`
+        }];
+      }
+
+      const items = notes.map(({ date, note, index }) => ({
+        ...recordItem,
+        id: `${record.id}:note:${index}`,
+        content: "notes",
+        date,
+        detail: `${record.type} / ${activityTraceTitle(note.title)}`,
+        noteIndex: index
+      }));
+      if (!items.some((item) => item.date >= recordItem.date)) items.push(recordItem);
+      return items;
     })
     .sort((a, b) => b.date.localeCompare(a.date)
       || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
@@ -480,24 +509,24 @@ function recentActivity(limit) {
 
 function activityDate(record) {
   if (record.section === "logs") return logArchiveDate(record);
-  return activityTrace(record)?.date || record.updated;
+  if (record.section === "setup" && setupGroupForActivity(record) !== "notes") return record.updated;
+  return recordLastUpdated(record);
 }
 
-function activityTrace(record) {
-  if (record.section === "setup" && setupGroupForActivity(record) !== "notes") {
-    return null;
-  }
+function recordLastUpdated(record) {
+  return latestActivityNote(datedNotes(record), record.updated)?.date ?? record.updated;
+}
 
-  const latestNote = noteEntries(record.body)
-    .map((note) => ({ date: noteTitleDate(note.title), note }))
-    .filter((entry) => entry.date)
-    .sort((a, b) => b.date.localeCompare(a.date))[0];
+function datedNotes(record) {
+  return noteEntries(record.body).flatMap((note, index) => {
+    const date = note.body && noteTitleDate(note.title);
+    return date ? [{ date, note, index }] : [];
+  });
+}
 
-  if (!latestNote || latestNote.date < record.updated) {
-    return null;
-  }
-
-  return latestNote;
+function latestActivityNote(notes, updated) {
+  return notes.reduce((latest, entry) =>
+    entry.date >= updated && (!latest || entry.date > latest.date) ? entry : latest, null);
 }
 
 function setupActivityDetail(record) {
@@ -597,7 +626,7 @@ function excerptFromBody(body, limit = 180) {
 }
 
 function cleanSummaryText(value) {
-  const clean = value.trim();
+  const clean = value?.trim() ?? "";
 
   return clean.toLowerCase() === "no summary recorded." ? "" : clean;
 }
@@ -1304,35 +1333,54 @@ function recordMediaSources(record, key) {
   return cleanSources.slice(0, 6);
 }
 
-function renderNotesPage(record) {
-  const notes = noteEntries(record.body);
-  const cleanQuery = state.noteSearchQuery.trim().toLowerCase();
-  const indexedNotes = notes.map((note, index) => ({ ...note, index }));
-  const filteredNotes = cleanQuery ? indexedNotes.filter((note) => note.title.toLowerCase().includes(cleanQuery)) : indexedNotes;
-  const noteList = notes.length
-    ? filteredNotes
-        .map(
-          (note, visibleIndex) => {
-            const titleParts = splitNoteTitle(note.title);
-            return `<details class="note-entry note-entry--indexed" data-note-index="${note.index}" ${visibleIndex === 0 ? 'data-note-loaded="true" open' : ""}>
-            <summary>
-              <span class="note-entry-index">${String(note.index + 1).padStart(2, "0")}</span>
-              ${titleParts.date ? `<time class="note-entry-date" datetime="${titleParts.dateTime}">${escapeHtml(titleParts.date)}</time>` : '<span class="note-entry-date"></span>'}
-              <span class="note-entry-title">${escapeHtml(titleParts.title)}</span>
-              <i aria-hidden="true">open</i>
-            </summary>
-            <div class="note-entry-body" data-note-body>${visibleIndex === 0 ? `<div class="record-body">${markdownBody(note.body)}</div>` : ""}</div>
-          </details>`;
-          }
-        )
-        .join("")
-    : "";
+function notePage(notes, query, requestedPage, focusedIndex) {
+  const size = 5;
+  const search = query.trim().toLowerCase();
+  const matches = notes.map((note, index) => ({ ...note, index })).filter((note) => note.title.toLowerCase().includes(search));
+  const focused = !search && focusedIndex !== undefined && notes[focusedIndex] ? focusedIndex : undefined;
+  const pages = Math.max(1, Math.ceil(matches.length / size));
+  const initial = focused === undefined ? 0 : Math.floor(focused / size);
+  const page = Math.min(pages - 1, Math.max(0, requestedPage ?? initial));
+  const visible = matches.slice(page * size, (page + 1) * size);
+  const openIndex = focused !== undefined && page === initial ? focused : search || page === 0 ? visible[0]?.index : undefined;
+  return { notes: visible, page, pages, openIndex };
+}
 
+function currentNotePage(record) {
+  const searching = Boolean(state.noteSearchQuery.trim());
+  return notePage(noteEntries(record.body), state.noteSearchQuery, searching ? state.noteSearchPage : state.noteBrowsePage, state.focusedNoteIndex);
+}
+
+function renderNoteRows({ notes, openIndex }) {
+  if (!notes.length) return '<p class="notes-empty">No note matches that signal.</p>';
+  return notes.map((note) => {
+    const index = note.index;
+    const open = index === openIndex;
+    const titleParts = splitNoteTitle(note.title);
+    return `<details class="note-entry note-entry--indexed" data-note-index="${index}"${open ? ' data-note-loaded="true" open' : ""}>
+      <summary>
+        <span class="note-entry-index">${String(index + 1).padStart(2, "0")}</span>
+        ${titleParts.date ? `<time class="note-entry-date" datetime="${titleParts.dateTime}">${escapeHtml(titleParts.date)}</time>` : '<span class="note-entry-date"></span>'}
+        <span class="note-entry-title">${escapeHtml(titleParts.title)}</span>
+        <i aria-hidden="true">open</i>
+      </summary>
+      <div class="note-entry-body" data-note-body>${open ? `<div class="record-body">${markdownBody(note.body)}</div>` : ""}</div>
+    </details>`;
+  }).join("");
+}
+
+function renderNotesPage(record) {
+  const paging = currentNotePage(record);
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
       <div class="terminal-title">// NOTES PAGE</div>
+      <nav class="note-pager" aria-label="Note pages"${paging.pages < 2 ? " hidden" : ""}>
+        <button type="button" data-note-page="-1" aria-label="Previous note page" title="Previous note page" aria-disabled="${paging.page === 0}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
+        <span aria-live="polite" aria-atomic="true">${paging.page + 1} / ${paging.pages}</span>
+        <button type="button" data-note-page="1" aria-label="Next note page" title="Next note page" aria-disabled="${paging.page + 1 === paging.pages}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
+      </nav>
     </div>
-    <div class="note-stack">${noteList}<p class="notes-empty" ${filteredNotes.length ? "hidden" : ""}>No note matches that signal.</p></div>
+    <div class="note-stack">${renderNoteRows(paging)}</div>
   </section>`;
 }
 
@@ -1358,8 +1406,8 @@ function renderNoteSearch(record) {
     return "";
   }
 
-  const suggestions = notes
-    .map((note) => `<option value="${escapeHtml(note.title)}"></option>`)
+  const suggestions = [...new Set(notes.map((note) => note.title))]
+    .map((title) => `<option value="${escapeHtml(title)}"></option>`)
     .join("");
 
   return `<div class="note-search-panel">
@@ -1440,7 +1488,7 @@ function renderChangeLogPage(record) {
     <div class="terminal-title">// CHANGE LOG</div>
     <div class="status-grid">
       <div class="status-cell"><span>CREATED</span><strong>${record.started ? readableDate(record.started) : "Unknown"}</strong></div>
-      <div class="status-cell"><span>UPDATED</span><strong>${readableDate(record.updated)}</strong></div>
+      <div class="status-cell"><span>UPDATED</span><strong>${readableDate(recordLastUpdated(record))}</strong></div>
       <div class="status-cell"><span>STATE</span><strong>${escapeHtml(record.status)}</strong></div>
     </div>
   </section>`;
@@ -1507,7 +1555,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.74.2</span>
+        <span>v1.74.3</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1521,7 +1569,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.74.2</span>
+        <span class="version-label">v1.74.3</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1541,7 +1589,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.74.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.74.3</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1613,10 +1661,8 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
   const titleMarkup = footerLabel && action
     ? `<button class="panel-title-action" type="button" ${action} aria-label="${escapeHtml(footerLabel)}" title="${escapeHtml(footerLabel)}">${escapeHtml(title)}</button>`
     : escapeHtml(title);
-  const headingClass = footerLabel && action ? ` class="is-actionable"` : "";
-
   return `<article class="dashboard-panel ${className}">
-    <h2${headingClass}>${titleMarkup}</h2>
+    <h2>${titleMarkup}</h2>
     <div>${body}</div>
   </article>`;
 }
@@ -1701,13 +1747,14 @@ function changeMemoryMode(value) {
 function currentGamePanel() {
   const currentGame = currentGameRecord();
   const display = currentGameDisplay();
+  const summary = escapeHtml(cleanSummaryText(currentGame?.summary));
   const image = steamDisplayModule?.currentGameCover?.(currentGame, display?.coverAppId)
     || currentGame?.dashboardImage || currentGame?.banner || currentGame?.headerImage || "public/images/archive-backdrop.webp";
-  const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Achievement counts may be older. Not live presence.` : "";
+  const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Not live presence.` : "";
   const content = display ? `<div class="current-game" data-state="${recordStateKey(display.status)}" title="${escapeHtml(hint)}">
     <div class="game-cover${steamDisplayModule?.steamBannerImage(image) ? " is-steam-artwork" : ""}"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /></div>
     <div><strong>${escapeHtml(display.title)}</strong>
-      ${display.completion ? `<span>${escapeHtml(display.completion)}</span>` : ""}
+      ${summary ? `<span class="current-game-summary" title="${summary}">${summary}</span>` : ""}
       ${display.playtime ? `<span>${escapeHtml(display.playtime)} Play Time</span>` : ""}
       ${display.lastPlayed ? `<span>Last Played: ${escapeHtml(display.lastPlayed)}</span>` : ""}
     </div>
@@ -1749,7 +1796,7 @@ function dashboard() {
         .map(
           ({ freshness, item }) => `<li data-activity-age="${freshness}" data-state="${recordStateKey(item.record.status)}">
           <span>[${shortDate(item.date)}]</span>
-          <button type="button" data-open-record="${item.record.id}" ${item.content ? `data-open-content="${item.content}"` : ""}>
+          <button type="button" data-open-record="${escapeHtml(item.record.id)}"${item.content ? ` data-open-content="${item.content}"` : ""}${item.noteIndex !== undefined ? ` data-open-note-index="${item.noteIndex}"` : ""}>
             <strong>${escapeHtml(item.title)}</strong>
             <small>${escapeHtml(item.detail)}</small>
           </button>
@@ -1773,9 +1820,9 @@ function dashboard() {
 
 function latestSectionNote(records, section) {
   const updates = records.filter((record) => record.section === section).flatMap((record) =>
-    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note) => ({
+    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note, index) => ({
       record,
-      noteQuery: section === "games" ? note.title : "",
+      noteIndex: index,
       date: section === "logs" ? logArchiveDate(record) : noteTitleDate(note.title) ?? record.updated,
       title: activityTraceTitle(note.title),
       excerpt: excerptFromBody(note.body, section === "logs" ? 720 : section === "games" ? 240 : 180),
@@ -1800,7 +1847,7 @@ function renderSectionNotePreview(sectionRecords, section) {
   const showTitle = update.title !== update.record.title && !/^(?:current note|new note|untitled note)$/i.test(update.title);
   return `<aside class="section-note-preview section-note-preview--${section}" aria-label="${section === "projects" ? "Latest project update" : section === "games" ? "Latest written game session" : "Latest field note"}">
     <h3>// ${label}</h3>
-    <button class="section-note-link" type="button" data-open-record="${escapeHtml(update.record.id)}" data-open-content="notes" data-open-note="${escapeHtml(update.noteQuery)}">
+    <button class="section-note-link" type="button" data-open-record="${escapeHtml(update.record.id)}" data-open-content="notes" data-open-note-index="${update.noteIndex}">
       <time datetime="${escapeHtml(update.date)}">${escapeHtml(readableDate(update.date))}</time>
       <strong>${escapeHtml(update.record.title)}</strong>
       ${showTitle ? `<span class="section-note-title">${escapeHtml(update.title)}</span>` : ""}
@@ -2376,7 +2423,7 @@ function setupRecordWindow(record) {
     ? profile.specs
     : [
         { label: "STATUS", value: record.status },
-        { label: "UPDATED", value: readableDate(record.updated) },
+        { label: "UPDATED", value: readableDate(recordLastUpdated(record)) },
         { label: "PROGRESS", value: `${record.progress}%` }
       ];
 
@@ -2491,7 +2538,7 @@ function setupFetchDetails(record, profile, specs, command) {
     <dl>
       <div><dt>TYPE</dt><dd>${escapeHtml(profile.category)}</dd></div>
       <div><dt>STATE</dt><dd>${escapeHtml(record.status)}</dd></div>
-      <div><dt>UPDATED</dt><dd>${readableDate(record.updated)}</dd></div>
+      <div><dt>UPDATED</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
       ${externalUrl ? `<div><dt>LINK</dt><dd><a href="${escapeHtml(externalUrl)}" target="_blank" rel="noreferrer">open page</a></dd></div>` : ""}
       ${specs.map((spec) => `<div><dt>${escapeHtml(spec.label)}</dt><dd>${escapeHtml(spec.value)}</dd></div>`).join("")}
     </dl>
@@ -2575,7 +2622,7 @@ function recordWindow(record) {
 
         <dl class="record-meta">
           <div><dt>Created:</dt><dd>${record.started ? readableDate(record.started) : "Unknown"}</dd></div>
-          <div><dt>Last Updated:</dt><dd>${readableDate(record.updated)}</dd></div>
+          <div><dt>Last Updated:</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
         </dl>
 
         ${activeContent === "notes" ? renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
@@ -3200,7 +3247,7 @@ function restoreRecord() {
 }
 
 function workspaceWindowTray() {
-  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button><button class="reopen-control" type="button" data-window-action="open"${!state.panelOpen && state.panelMinimized ? "" : " hidden"}>Restore active record</button><button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Notices" aria-controls="system-notices" aria-expanded="false" title="System Notices" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button></div>`;
+  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button><button class="reopen-control" type="button" data-window-action="open"${!state.panelOpen && state.panelMinimized ? "" : " hidden"}>Restore active record</button><button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Tips" aria-controls="system-notices" aria-expanded="false" title="System Tips" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></div>`;
 }
 
 function desktopDirectory() {
@@ -3208,12 +3255,12 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.74.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.74.3</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
     </div>
-  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Notices"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Notices" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM NOTICES</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Notices">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>S</kbd></dt><dd>Web search</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
+  </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Tips"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Tips" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM TIPS</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Tips">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>S</kbd></dt><dd>Web search</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
 }
 
 function workspaceHeading() {
@@ -3484,29 +3531,38 @@ function syncWeather() {
   }
 }
 
-function filterNoteEntries(notesPage, query) {
-  const cleanQuery = query.trim().toLowerCase();
-  const entries = notesPage.querySelectorAll(".note-entry");
-  let visibleCount = 0;
+function revealFocusedNote() {
+  const layout = root.querySelector(".record-window .record-layout");
+  const summary = layout?.querySelector(`[data-note-index="${state.focusedNoteIndex}"] > summary`);
+  if (!layout || !summary) return;
+  const top = layout.getBoundingClientRect().top + layout.clientTop;
+  const bounds = summary.getBoundingClientRect();
+  if (bounds.bottom > top + layout.clientHeight) layout.scrollTop += bounds.top - top - 16;
+}
 
-  entries.forEach((entry) => {
-    const title = entry.querySelector("summary span")?.textContent?.toLowerCase() || "";
-    const isVisible = !cleanQuery || title.includes(cleanQuery);
+function syncNotePage(notesPage, paging = currentNotePage(selectedRecord())) {
+  const pager = notesPage.querySelector(".note-pager");
+  const stack = notesPage.querySelector(".note-stack");
+  if (!pager || !stack) return;
+  pager.hidden = paging.pages < 2;
+  pager.querySelector("span").textContent = `${paging.page + 1} / ${paging.pages}`;
+  pager.querySelector('[data-note-page="-1"]').setAttribute("aria-disabled", String(paging.page === 0));
+  pager.querySelector('[data-note-page="1"]').setAttribute("aria-disabled", String(paging.page + 1 === paging.pages));
+  stack.innerHTML = renderNoteRows(paging);
+}
 
-    if (entry instanceof HTMLElement) {
-      entry.hidden = !isVisible;
-    }
-
-    if (isVisible) {
-      visibleCount += 1;
-    }
-  });
-
-  const empty = notesPage.querySelector(".notes-empty");
-
-  if (empty instanceof HTMLElement) {
-    empty.hidden = visibleCount > 0;
-  }
+function stepNotePage(button) {
+  const notesPage = button.closest(".notes-page");
+  if (!notesPage || button.getAttribute("aria-disabled") === "true") return;
+  const direction = Number(button.dataset.notePage);
+  if (direction !== -1 && direction !== 1) return;
+  const record = selectedRecord();
+  const paging = currentNotePage(record);
+  const next = paging.page + direction;
+  if (next < 0 || next >= paging.pages) return;
+  if (state.noteSearchQuery.trim()) state.noteSearchPage = next;
+  else state.noteBrowsePage = next;
+  syncNotePage(notesPage, currentNotePage(record));
 }
 
 function setUpdateHistory(open) {
@@ -3697,6 +3753,11 @@ document.addEventListener("click", (event) => {
   const contentKey = target.dataset.contentKey;
   const windowAction = target.dataset.windowAction;
 
+  if (target.dataset.notePage !== undefined) {
+    stepNotePage(target);
+    return;
+  }
+
   if (target.dataset.pocketPage !== undefined) {
     stepPocketRecordPage(target);
     return;
@@ -3790,7 +3851,8 @@ document.addEventListener("click", (event) => {
   }
 
   if (recordId) {
-    openRecord(recordId, openContent || "overview", target.dataset.openNote || "");
+    const noteTarget = target.dataset.openNoteIndex === undefined ? null : Number(target.dataset.openNoteIndex);
+    openRecord(recordId, openContent || "overview", noteTarget);
     return;
   }
 
@@ -3810,6 +3872,9 @@ document.addEventListener("click", (event) => {
     state.activeContent = contentKey;
     state.windowSteady = true;
     state.noteSearchQuery = "";
+    state.focusedNoteIndex = null;
+    state.noteBrowsePage = undefined;
+    state.noteSearchPage = 0;
     state.updateHistoryOpen = false;
     if (!syncRecordWindow()) render();
     return;
@@ -3862,11 +3927,14 @@ document.addEventListener("input", (event) => {
   }
 
   if (target.dataset.noteSearchInput !== undefined) {
+    const changed = target.value.trim().toLowerCase() !== state.noteSearchQuery.trim().toLowerCase();
     state.noteSearchQuery = target.value;
+    if (!changed) return;
+    state.noteSearchPage = 0;
     const notesPage = document.querySelector(".notes-page");
 
     if (notesPage instanceof HTMLElement) {
-      filterNoteEntries(notesPage, target.value);
+      syncNotePage(notesPage);
     }
   }
 });
@@ -3953,15 +4021,13 @@ document.addEventListener("keydown", (event) => {
     const notesPage = document.querySelector(".notes-page");
     const input = document.querySelector("[data-note-search-input]");
 
-    if (notesPage instanceof HTMLElement) {
-      filterNoteEntries(notesPage, "");
-    }
+    state.noteSearchQuery = "";
+    state.noteSearchPage = 0;
+    if (notesPage instanceof HTMLElement) syncNotePage(notesPage);
 
     if (input instanceof HTMLInputElement) {
       input.value = "";
     }
-
-    state.noteSearchQuery = "";
 
     return;
   }

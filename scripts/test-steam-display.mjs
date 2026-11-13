@@ -101,24 +101,28 @@ function declaration(file, name) {
 const require = createRequire(import.meta.url);
 const component = ts.transpileModule(`export ${declaration("../components/archive/dashboard.tsx", "CurrentGame")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const react = vm.createContext({ exports: {}, require, imageFraming, steamBannerImage, currentGameCover, FilePlus2: require("lucide-react").FilePlus2, dashboardRecordStateKey: () => "playing" });
+const summaryHelper = declaration("../components/archive/record-utils.ts", "cleanSummaryText");
+vm.runInContext(ts.transpileModule(summaryHelper.replace(/^export /, ""), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, react);
 vm.runInContext(component, react);
+const authoredSummary = 'First look at <the arena> & "the controls".';
 const staticContext = vm.createContext({
   window: { GestaltImageFraming: imageFraming },
   steamDisplayModule: { steamBannerImage, currentGameCover },
   steamDisplayReady: true,
-  currentGameRecord: () => headerOnlyGame,
+  currentGameRecord: () => ({ ...headerOnlyGame, summary: authoredSummary }),
   currentGameDisplay: () => display,
   recordStateKey: () => "playing"
 });
-for (const name of ["escapeHtml", "dashboardPanel", "currentGamePanel"]) vm.runInContext(declaration("../static-app.js", name), staticContext);
+for (const name of ["escapeHtml", "cleanSummaryText", "dashboardPanel", "currentGamePanel"]) vm.runInContext(declaration("../static-app.js", name), staticContext);
 for (const model of [display, { ...display, completion: null, playtime: null, lastPlayed: null }]) {
   staticContext.currentGameDisplay = () => model;
-  const reactHtml = renderToStaticMarkup(react.exports.CurrentGame({ display: model, record: { ...reactRecords[1], meta: headerOnlyGame } }));
+  const reactHtml = renderToStaticMarkup(react.exports.CurrentGame({ display: model, record: { ...reactRecords[1], meta: headerOnlyGame, summary: authoredSummary } }));
   const staticHtml = vm.runInContext("currentGamePanel()", staticContext);
   for (const html of [reactHtml, staticHtml]) {
     assert.ok(html.includes("Latest &lt;Game&gt;"), "Game titles are escaped");
     assert.ok(html.includes(headerOnlyGame.headerImage), "Both dashboards render the existing header, not a generic placeholder");
-    assert.equal(html.includes("25% Achievements"), Boolean(model.completion));
+    assert.doesNotMatch(html, /25% Achievements/, "Completion is not shown in this card");
+    assert.match(html, /<\/strong>\s*<span class="current-game-summary"[^>]*>First look at &lt;the arena&gt; &amp; &quot;the controls&quot;\.<\/span>/);
     assert.equal(html.includes("2.0h Play Time"), Boolean(model.playtime));
     assert.equal(html.includes("Last Played: 20 / 10 / 2026"), Boolean(model.lastPlayed));
     assert.equal(html.includes("18.7h"), false);
@@ -129,8 +133,11 @@ assert.match(vm.runInContext("currentGamePanel()", staticContext), /data-open-re
 staticContext.steamDisplayModule = { steamBannerImage };
 assert.ok(vm.runInContext("currentGamePanel()", staticContext).includes(headerOnlyGame.headerImage), "An older cached Steam helper cannot hide the cover");
 staticContext.steamDisplayModule = { steamBannerImage, currentGameCover };
+staticContext.currentGameRecord = () => ({ ...headerOnlyGame, summary: "No summary recorded." });
+assert.doesNotMatch(vm.runInContext("currentGamePanel()", staticContext), /current-game-summary/);
+assert.doesNotMatch(renderToStaticMarkup(react.exports.CurrentGame({ display, record: { ...reactRecords[1], summary: "No summary recorded." } })), /current-game-summary/);
 staticContext.currentGameRecord = () => undefined;
-assert.equal(vm.runInContext("currentGamePanel()", staticContext).includes("data-open-record"), false);
+assert.doesNotMatch(vm.runInContext("currentGamePanel()", staticContext), /data-open-record|current-game-summary/);
 staticContext.steamDisplayReady = false;
 staticContext.currentGameDisplay = () => null;
 assert.match(vm.runInContext("currentGamePanel()", staticContext), /Reading Steam snapshot/);
@@ -195,6 +202,7 @@ Object.assign(react, {
   motion: { article: ({ children }) => require("react").createElement("article", null, children) },
   getRecordContents: () => [],
   recordStateKey: () => "active", formatReadableDate: (value) => value,
+  recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => "",
   RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
   ArrowLeft: require("lucide-react").ArrowLeft, Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X, Settings: require("lucide-react").Settings
@@ -206,6 +214,7 @@ Object.assign(staticContext, {
   pocketBack: () => "",
   recordHeaderImage: (record) => record.headerImage || "", recordAccessSurfaceMarkup: () => "", renderRecordContent: () => "",
   renderUpdateHistory: () => "", renderUpdateHistoryModal: () => "", readableDate: (value) => value,
+  recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => ""
 });
 vm.runInContext(declaration("../static-app.js", "recordWindow"), staticContext);

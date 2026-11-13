@@ -172,7 +172,7 @@ assert.equal(variables.get("--record-focus-scrim"), "rgba(49, 60, 52, 0.34)");
 const panelEdges = [...dayRules].find(([selector]) => selector.includes(".dashboard-panel,") && selector.includes(".setup-group"))?.[1];
 assert.equal(panelEdges?.["border-block-start-color"], "var(--surface-edge-light)");
 assert.equal(panelEdges?.["border-block-end-color"], "var(--surface-edge-low)");
-for (const selector of [".note-entry-date", ".note-media figcaption", ".record-meta dt", ".system-status dt"]) {
+for (const selector of [".note-media figcaption", ".record-meta dt", ".system-status dt"]) {
   assert.ok([...dayRules].some(([rule, values]) => rule.includes(selector) && values.color === "var(--muted)"), `${selector} has a readable metadata treatment`);
 }
 const heading = `${dayPrefix} .record-heading.has-heading-banner`;
@@ -268,10 +268,22 @@ assert.equal(night.get("--window-outline"), "rgba(226, 220, 196, 0.5)", "Night k
 assert.equal(variables.get("--window-outline"), "rgba(37, 44, 41, 0.42)", "Accepted Day frame stays unchanged");
 const readableNight = archiveSheet.nodes.find((node) => node.selector?.startsWith(':root:not([data-appearance="day"]) :is('));
 assert.deepEqual(decls(readableNight), { color: "var(--reading-muted)" }, "Night legibility tuning changes no geometry, background, focus or animation");
-for (const label of [".note-entry-date", ".note-media figcaption", ".record-meta dt", ".record-aside li:not(.is-active)", ".current-game span", ".activity-feed > li > span", ".section-record i", ".archive-file small"]) assert.ok(readableNight.selector.includes(label), `Night reading role covers ${label}`);
+for (const label of [".note-media figcaption", ".record-meta dt", ".record-aside li:not(.is-active)", ".current-game span", ".activity-feed > li > span", ".section-record i", ".archive-file small"]) assert.ok(readableNight.selector.includes(label), `Night reading role covers ${label}`);
 assert.equal(night.get("--muted"), "#827f74", "Decorative muted palette stays intact");
 assert.equal(night.get("--muted-2"), "#5f5e57");
 assert.ok(!variables.has("--reading-muted"), "The Night-only role cannot override the accepted Day text treatments");
+const actionCue = decls(archiveSheet.nodes.find((node) => node.selector === ".panel-title-action::after"));
+assert.equal(actionCue["border-inline-end"], "1px solid currentColor", "Only actionable headings have the directional cue");
+assert.equal(actionCue.transform, "translateY(-1px) rotate(45deg)", "Optically center the heading chevron without shifting layout");
+const openNote = decls(archiveSheet.nodes.find((node) => node.selector === ".note-entry--indexed[open] > summary"));
+assert.equal(openNote["box-shadow"], "inset 2px 0 0 var(--accent)", "An open note is marked without shifting its grid");
+assert.ok(!openNote.animation);
+const noteDate = decls(archiveSheet.nodes.find((node) => node.selector === ".note-entry--indexed > summary > .note-entry-date"));
+assert.equal(noteDate.color, "var(--subtle-text, var(--reading-muted))", "Closed note dates keep readable theme ink");
+assert.equal(decls(archiveSheet.nodes.find((node) => node.selector === ".note-entry--indexed[open] > summary > :is(.note-entry-title, .note-entry-date)")).color, "var(--text-strong)");
+const summary = decls(archiveSheet.nodes.find((node) => node.selector === ".current-game .current-game-summary"));
+assert.equal(summary.color, "var(--subtle-text, #a9a391)", "The game description stays quieter than the readout in both themes");
+assert.equal(summary["text-overflow"], "ellipsis");
 for (const pixel of [0, 64, 128, 192, 255]) {
   const filtered = Math.min(255, Math.max(0, ((pixel - 127.5) * 0.96 + 127.5) * 0.88));
   const scenery = over([filtered, filtered, filtered], 0.52, rgb(night.get("--bg")));

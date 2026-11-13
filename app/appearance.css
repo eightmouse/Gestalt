@@ -73,7 +73,7 @@
   border-block-end-color: var(--surface-edge-low);
 }
 :root[data-appearance="day"] :is(.dashboard-panel h2, .section-record-column h3, .record-aside h3) { color: var(--text-strong); }
-:root[data-appearance="day"] :is(.note-entry-date, .note-media figcaption, .record-id, .record-meta dt, .system-status dt) { color: var(--muted); }
+:root[data-appearance="day"] :is(.note-media figcaption, .record-id, .record-meta dt, .system-status dt) { color: var(--muted); }
 :root[data-appearance="day"] :is(.game-cover, .current-game[data-state] .game-cover) { box-shadow: 0 0 0 1px rgba(37, 44, 41, 0.075), 0 3px 7px -3px rgba(35, 43, 38, 0.12); }
 :root[data-appearance="day"] :is(.connections-dialog, .web-search-dialog, .roadmap-dialog, .os-behaviour-dialog, .studio-review-dialog)::backdrop { background: rgba(49, 60, 52, 0.4); }
 :root[data-appearance="day"] :is(.archive-folder-backdrop, .local-memory-consent, .archive-nav-backdrop) { background: rgba(49, 60, 52, 0.34); }
@@ -99,8 +99,6 @@
 :root[data-appearance="day"] .active-projects-panel .record-list button::after,
 :root[data-appearance="day"] .latest-log-signal::before { box-shadow: none; }
 :root[data-appearance="day"] .section-record:is(:hover, :focus-visible)::after { box-shadow: none; }
-:root[data-appearance="day"] .dashboard-panel h2.is-actionable:is(:hover, :focus-within) { text-shadow: none; }
-:root[data-appearance="day"] .dashboard-panel h2.is-actionable:is(:hover, :focus-within) .panel-title-action::after { box-shadow: none; background-color: rgba(107, 89, 60, 0.12); }
 :root[data-appearance="day"] :is(.notebook-pagination button img, .notebook-release-index button img) { filter: brightness(0.25); }
 
 /* Media viewers and labels laid directly on photographs keep their dark backing. */

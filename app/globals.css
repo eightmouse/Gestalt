@@ -3783,41 +3783,31 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   cursor: pointer;
   text-align: inherit;
   text-transform: inherit;
-  transition:
-    color 160ms ease,
-    text-shadow 160ms ease;
+  transition: color 160ms ease;
 }
 
 .panel-title-action::after {
   content: "";
-  inline-size: 5px;
-  block-size: 5px;
-  border: 1px solid currentColor;
-  opacity: 0.18;
-  background: transparent;
-  transform: rotate(45deg) scale(0.78);
-  transform-origin: center;
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease,
-    box-shadow 160ms ease;
+  flex: none;
+  inline-size: 6px;
+  block-size: 6px;
+  border-block-start: 1px solid currentColor;
+  border-inline-end: 1px solid currentColor;
+  opacity: 0.75;
+  transform: translateY(-1px) rotate(45deg);
+  transition: opacity 160ms ease;
 }
 
-.dashboard-panel h2.is-actionable:hover,
-.dashboard-panel h2.is-actionable:focus-within {
-  color: var(--text);
-  text-shadow: 0 0 6px rgba(var(--tone-ink, 217, 213, 193), 0.1);
+.panel-title-action:is(:hover, :focus-visible) {
+  color: var(--text-strong);
 }
 
-.dashboard-panel h2.is-actionable:hover .panel-title-action::after,
-.panel-title-action:focus-visible::after {
-  opacity: 0.48;
-  transform: rotate(45deg) scale(1);
-  box-shadow: 0 0 8px rgba(var(--tone-ink, 217, 213, 193), 0.12);
+.panel-title-action:is(:hover, :focus-visible)::after {
+  opacity: 1;
 }
 
 .panel-title-action:focus-visible {
-  outline: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.42);
+  outline: 1px solid var(--accent);
   outline-offset: 4px;
 }
 
@@ -4110,7 +4100,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .current-game strong {
   display: block;
-  margin-block-end: 9px;
+  margin-block-end: var(--current-game-title-gap, 9px);
   color: var(--text-strong);
   font-size: 17px;
   font-weight: 400;
@@ -4121,6 +4111,31 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   color: var(--muted);
   font-size: 14px;
   line-height: 1.58;
+}
+
+.current-game > :last-child {
+  min-inline-size: 0;
+}
+
+.current-game:has(.current-game-summary) {
+  --current-game-title-gap: 2px;
+}
+
+.current-game .current-game-summary {
+  color: var(--subtle-text, #a9a391);
+  font-size: calc(13px * var(--desktop-size, 1));
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-game:has(.current-game-summary) span:not(.current-game-summary) {
+  color: var(--text);
+}
+
+.current-game-summary:not(:last-child) {
+  margin-block-end: calc(6px * var(--desktop-size, 1));
 }
 
 .latest-log p,
@@ -4426,11 +4441,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .archive-shell > .workspace > .dashboard-grid .game-cover { inline-size: 100%; }
   .archive-shell > .workspace > .dashboard-grid .record-list strong { font-size: calc(16px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid :is(.current-game strong, .latest-log span) { font-size: calc(17px * var(--desktop-size)); }
-  .archive-shell > .workspace > .dashboard-grid :is(.record-list small, .record-list i, .current-game span) { font-size: calc(13px * var(--desktop-size)); }
-  .archive-shell > .workspace > .dashboard-grid .current-game span { font-size: calc(14px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid :is(.record-list small, .record-list i) { font-size: calc(13px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .current-game span:not(.current-game-summary) { font-size: calc(14px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .record-list button { padding-block: calc(6px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .record-list button > span { gap: calc(3px * var(--desktop-size)); }
-  .archive-shell > .workspace > .dashboard-grid .current-game strong { margin-block-end: calc(9px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .current-game strong { margin-block-end: calc(var(--current-game-title-gap, 9px) * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .latest-log { gap: calc(12px * var(--desktop-size)); padding-inline-start: calc(12px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .latest-log p { font-size: calc(14.5px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .activity-feed {
@@ -7180,6 +7195,37 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   margin-block-end: 0;
 }
 
+.note-pager {
+  flex: none;
+  display: grid;
+  grid-template-columns: 36px minmax(5ch, auto) 36px;
+  align-items: center;
+  gap: 4px;
+  color: var(--text);
+  font: 12px/1 var(--mono);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.note-pager[hidden] { display: none; }
+.note-pager button {
+  display: grid;
+  place-items: center;
+  min-block-size: 36px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+}
+.note-pager button[aria-disabled="true"] { color: var(--subtle-text, #a9a391); border-color: var(--line); cursor: default; }
+.note-pager button:not([aria-disabled="true"]):hover { border-color: var(--accent); }
+
+@media (max-width: 760px) {
+  .notes-page-header { gap: 8px; }
+  .note-pager { grid-template-columns: 44px minmax(5ch, auto) 44px; }
+  .note-pager button { min-block-size: 44px; }
+}
+
 .note-search-toggle {
   inline-size: 30px;
   min-block-size: 30px;
@@ -7239,7 +7285,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 
 .note-search-panel label {
-  color: var(--muted-2);
+  color: var(--subtle-text, var(--reading-muted));
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7252,6 +7298,10 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   background: transparent;
   color: var(--text);
   outline: 0;
+}
+
+.note-search-panel input:focus-visible {
+  border-block-end-color: var(--accent);
 }
 
 .note-search-panel[hidden],
@@ -7487,8 +7537,13 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   content: none;
 }
 
-.note-entry--indexed > summary:hover {
+.note-entry--indexed > summary:is(:hover, :focus-visible) {
   background: rgba(var(--tone-highlight, 255, 255, 255), 0.028);
+}
+
+.note-entry--indexed > summary:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
 }
 
 .note-entry--indexed > summary > .note-entry-index,
@@ -7504,6 +7559,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 
 .note-entry--indexed > summary > .note-entry-date {
+  color: var(--subtle-text, var(--reading-muted));
   white-space: nowrap;
 }
 
@@ -7515,7 +7571,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 .note-entry--indexed > summary > i {
   justify-self: end;
-  color: var(--muted-2);
+  color: var(--subtle-text, #a9a391);
 }
 
 .note-entry--indexed > summary > i::before {
@@ -7524,10 +7580,11 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 .note-entry--indexed[open] > summary {
   border: 0;
-  background: rgba(var(--tone-ink, 217, 213, 193), 0.035);
+  background: rgba(var(--tone-ink, 217, 213, 193), 0.055);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
-.note-entry--indexed[open] > summary > .note-entry-title {
+.note-entry--indexed[open] > summary > :is(.note-entry-title, .note-entry-date) {
   color: var(--text-strong);
 }
 
@@ -8484,13 +8541,15 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
   .current-game strong {
     font-size: 14px;
-    margin-block-end: 6px;
+    margin-block-end: var(--current-game-title-gap, 6px);
   }
 
   .current-game span {
     font-size: 12px;
     line-height: 1.48;
   }
+
+  .current-game .current-game-summary { font-size: 12px; }
 
   .latest-log p,
   .activity-feed {
@@ -9550,12 +9609,12 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 /* Reading labels need more contrast than ornamental counters and signal marks. */
 :root:not([data-appearance="day"]) :is(
-  .dashboard-panel h2, .record-list small, .record-list i, .current-game span,
+  .dashboard-panel h2, .record-list small, .record-list i, .current-game span:not(.current-game-summary),
   .activity-feed > li > span, .activity-feed small,
   .section-record-kind, .section-record-kind small, .section-record > span:not(.section-record-kind), .section-record i,
   .section-record-column > header small, .section-record-column > header span, .section-record-column h3,
   .record-meta dt, .record-heading p, .record-id, .record-aside h3, .record-aside li:not(.is-active),
-  .note-entry-date, .note-media figcaption, .system-status dt, .archive-file small, .archive-folder-rule
+  .note-media figcaption, .system-status dt, .archive-file small, .archive-folder-rule
 ) {
   color: var(--reading-muted);
 }

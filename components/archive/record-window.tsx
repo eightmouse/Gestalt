@@ -13,7 +13,7 @@ import {
   UpdateHistory,
   UpdateHistoryModal
 } from "@/components/archive/record-content";
-import { formatReadableDate, recordHeaderImage } from "@/components/archive/record-utils";
+import { formatReadableDate, recordHeaderImage, recordLastUpdated } from "@/components/archive/record-utils";
 import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
@@ -27,7 +27,7 @@ type RecordWindowProps = {
   accessPending?: boolean;
   accessComplete?: boolean;
   initialContent: ContentKey;
-  initialNoteQuery?: string;
+  initialNoteIndex?: number;
   maximized: boolean;
   record: RecordEntry;
   onEdit?: (content?: ContentKey) => void;
@@ -39,12 +39,12 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
     return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteQuery={initialNoteQuery} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
 function useRecordFocus(minimized: boolean | undefined, id: string) {
@@ -62,12 +62,13 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
   dismiss();
 }
 
-function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteQuery = "", maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteIndex, maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
-  const [noteSearchQuery, setNoteSearchQuery] = useState(initialNoteQuery);
+  const [noteSearchQuery, setNoteSearchQuery] = useState("");
+  const [focusedNoteIndex, setFocusedNoteIndex] = useState(initialNoteIndex);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
   const titleRef = useRef<HTMLSpanElement | null>(null);
@@ -79,9 +80,10 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
 
   useEffect(() => {
     setActiveContent(initialContent);
-    setNoteSearchQuery(initialNoteQuery);
+    setNoteSearchQuery("");
+    setFocusedNoteIndex(initialNoteIndex);
     setUpdateHistoryOpen(false);
-  }, [initialContent, initialNoteQuery, record.id]);
+  }, [initialContent, initialNoteIndex, record.id]);
 
   useEffect(() => {
     if (!updateHistoryOpen) {
@@ -184,7 +186,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
             </p>
           </div>
 
-          <RecordContentPanel activeContent={activeContent} noteSearchQuery={noteSearchQuery} record={record} />
+          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} />
         </div>
 
         <aside className="record-aside">
@@ -200,6 +202,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
                       setActiveContent(item.key);
                       if (item.key !== "notes") {
                         setNoteSearchQuery("");
+                        setFocusedNoteIndex(undefined);
                       }
                       setUpdateHistoryOpen(false);
                     }}
@@ -218,7 +221,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
             </div>
             <div>
               <dt>Last Updated:</dt>
-              <dd>{formatReadableDate(record.updated)}</dd>
+              <dd>{formatReadableDate(recordLastUpdated(record))}</dd>
             </div>
           </dl>
           {activeContent === "notes" ? (
@@ -247,7 +250,7 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
     ? profile.specs
     : [
         { label: "STATUS", value: record.status },
-        { label: "UPDATED", value: formatReadableDate(record.updated) },
+        { label: "UPDATED", value: formatReadableDate(recordLastUpdated(record)) },
         { label: "PROGRESS", value: `${record.progress}%` }
       ];
 
@@ -506,7 +509,7 @@ function SetupFetchDetails({
         </div>
         <div>
           <dt>UPDATED</dt>
-          <dd>{formatReadableDate(record.updated)}</dd>
+          <dd>{formatReadableDate(recordLastUpdated(record))}</dd>
         </div>
         {externalUrl ? (
           <div>

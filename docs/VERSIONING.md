@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.74.2`. Previous site-code release: `v1.74.1` (0c883ded).
+Release target: `v1.74.3`. Previous site-code release: `v1.74.2` (97d64d96).
+
+`v1.74.3` shows individual notes in Recent Activity and opens each on its five-note page. Note search spans the whole entry, Escape closes a directly opened note, and Last Updated reflects the newest dated note or saved update without changing field-log writing order. The dashboard gives Current Game a short authored summary in place of completion, adds clearer cues to clickable headings and open notes, and uses an info icon for System Tips. No authored records, media or dependencies changed.
 
 `v1.74.2` gives handheld Games and Projects independent four-record pages per group and keeps your place when you close a record. Desktop lists and search still see the full archive. Memory State keeps a faint inset frame but drops the inner filename and header, leaving more room for the code stream. Both readers share the paging logic and trace styles. No record, media or dependency changes.
 

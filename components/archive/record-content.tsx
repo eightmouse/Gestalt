@@ -1,13 +1,15 @@
 ﻿"use client";
 
-import { Cpu } from "lucide-react";
+import { ChevronLeft, ChevronRight, Cpu } from "lucide-react";
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   formatReadableDate,
   metaText,
   noteEntries,
+  notePage,
   recordDisplaySummary,
+  recordLastUpdated,
   splitUpdateIndex
 } from "@/components/archive/record-utils";
 import { setupHardwareSource } from "@/components/archive/setup-utils";
@@ -75,7 +77,7 @@ function getTextList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-export function RecordContentPanel({ activeContent, noteSearchQuery, record }: { activeContent: ContentKey; noteSearchQuery: string; record: RecordEntry }) {
+export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry }) {
   if (activeContent === "overview") {
     return <RecordOverviewPage record={record} />;
   }
@@ -89,7 +91,7 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
   }
 
   if (activeContent === "notes") {
-    return <NotesPage query={noteSearchQuery} record={record} />;
+    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} />;
   }
 
   if (activeContent === "technical") {
@@ -150,7 +152,7 @@ export function RecordContentPanel({ activeContent, noteSearchQuery, record }: {
           </div>
           <div className="status-cell">
             <span>UPDATED</span>
-            <strong>{formatReadableDate(record.updated)}</strong>
+            <strong>{formatReadableDate(recordLastUpdated(record))}</strong>
           </div>
           <div className="status-cell">
             <span>STATE</span>
@@ -344,29 +346,54 @@ export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange:
         value={query}
       />
       <datalist id={`${record.id}-note-suggestions`}>
-        {notes.map((note) => (
-          <option key={note.title} value={note.title} />
+        {[...new Set(notes.map((note) => note.title))].map((title) => (
+          <option key={title} value={title} />
         ))}
       </datalist>
     </div>
   );
 }
 
-function NotesPage({ query, record }: { query: string; record: RecordEntry }) {
-  const notes = noteEntries(record.body);
-  const indexedNotes = notes.map((note, index) => ({ ...note, index }));
-  const cleanQuery = query.trim().toLowerCase();
-  const filteredNotes = cleanQuery ? indexedNotes.filter((note) => note.title.toLowerCase().includes(cleanQuery)) : indexedNotes;
+function NotesPage({ focusedIndex, query, record }: { focusedIndex?: number; query: string; record: RecordEntry }) {
+  const pageRef = useRef<HTMLElement>(null);
+  const search = query.trim().toLowerCase();
+  const [browsePage, setBrowsePage] = useState<number>();
+  const [searchCursor, setSearchCursor] = useState({ query: search, page: 0 });
+  if (searchCursor.query !== search) setSearchCursor({ query: search, page: 0 });
+  const { notes, page, pages, openIndex } = notePage(noteEntries(record.body), search, search ? searchCursor.page : browsePage, focusedIndex);
+
+  const step = (delta: number) => {
+    const next = page + delta;
+    if (next < 0 || next >= pages) return;
+    if (search) setSearchCursor({ query: search, page: next });
+    else setBrowsePage(next);
+  };
+
+  useEffect(() => {
+    if (!focusedIndex) return;
+    const page = pageRef.current;
+    const layout = page?.closest<HTMLElement>(".record-layout");
+    const summary = page?.querySelector(`[data-note-index="${focusedIndex}"] > summary`);
+    if (!layout || !summary) return;
+    const top = layout.getBoundingClientRect().top + layout.clientTop;
+    const bounds = summary.getBoundingClientRect();
+    if (bounds.bottom > top + layout.clientHeight) layout.scrollTop += bounds.top - top - 16;
+  }, [focusedIndex]);
 
   return (
-    <section className="content-terminal notes-page" aria-label={`${record.title} notes`}>
+    <section ref={pageRef} className="content-terminal notes-page" aria-label={`${record.title} notes`}>
       <div className="notes-page-header">
         <div className="terminal-title">// NOTES PAGE</div>
+        {pages > 1 ? <nav className="note-pager" aria-label="Note pages">
+          <button type="button" aria-label="Previous note page" title="Previous note page" aria-disabled={page === 0} onClick={() => step(-1)}><ChevronLeft size={16} aria-hidden="true" /></button>
+          <span aria-live="polite" aria-atomic="true">{page + 1} / {pages}</span>
+          <button type="button" aria-label="Next note page" title="Next note page" aria-disabled={page + 1 === pages} onClick={() => step(1)}><ChevronRight size={16} aria-hidden="true" /></button>
+        </nav> : null}
       </div>
       <div className="note-stack">
-        {filteredNotes.length > 0 ? (
-          filteredNotes.map((note, visibleIndex) => (
-            <NoteEntry body={note.body} defaultOpen={visibleIndex === 0} index={note.index} key={note.title} title={note.title} />
+        {notes.length > 0 ? (
+          notes.map((note) => (
+            <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} />
           ))
         ) : (
           <p className="notes-empty">No note matches that signal.</p>
@@ -392,6 +419,7 @@ function NoteEntry({ body, defaultOpen, index, title }: { body: string; defaultO
   return (
     <details
       className={index === undefined ? "note-entry" : "note-entry note-entry--indexed"}
+      data-note-index={index}
       ref={detailsRef}
       onToggle={(event) => {
         if (event.currentTarget.open) setHasLoaded(true);

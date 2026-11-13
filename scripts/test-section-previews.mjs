@@ -47,7 +47,7 @@ for (const context of [react, pages]) {
   const session = context.latestSectionNote(games, "games");
   assert.equal(session.record.id, "latest-session", "Steam stats or metadata edits must not choose the written session");
   assert.equal(session.title, "In the ruins");
-  assert.equal(session.noteQuery, "22 / 10 / 2026 - In the ruins", "Open the selected session even when a historical note sits first");
+  assert.equal(session.noteIndex, 1, "Open the selected session even when a historical note sits first");
   assert.equal(session.image, "/media/session.webp", "Use the session's display image, not the original full= image or game cover");
   assert.equal(session.excerpt, "A session worth writing about.");
   const text = "A little more space to read a field note. ".repeat(35);
@@ -84,13 +84,14 @@ vm.runInContext(declaration("static-app.js", "renderSectionNotePreview"), render
 const html = render.renderSectionNotePreview([record('<unsafe"id>', "2026-10-23", '<script>alert("x")</script>')], "projects");
 assert.ok(!html.includes("<script>"));
 assert.ok(html.includes('data-open-content="notes"') && html.includes('data-open-record="&lt;unsafe&quot;id&gt;"'));
-const focused = vm.createContext({ records, state: {}, pocket: undefined, window: { matchMedia: () => ({ matches: false }) }, stopRecordAccessSequence() {}, shouldPlayEntryAccess: () => false, syncRecordWindow: () => false, render() {}, startRecordAccessSequence() {} });
+const focused = vm.createContext({ records, state: {}, pocket: undefined, window: { matchMedia: () => ({ matches: false }) }, stopRecordAccessSequence() {}, shouldPlayEntryAccess: () => false, syncRecordWindow: () => false, render() {}, startRecordAccessSequence() {}, revealFocusedNote() {} });
 vm.runInContext(declaration("static-app.js", "openRecord"), focused);
-focused.openRecord(records[0].id, "notes", "22 / 10 / 2026 - A session");
-assert.equal(focused.state.noteSearchQuery, "22 / 10 / 2026 - A session");
+focused.openRecord(records[0].id, "notes", 1);
+assert.equal(focused.state.focusedNoteIndex, 1);
+assert.equal(focused.state.noteSearchQuery, "", "Deep links don't start a search");
 focused.openRecord(records[1].id);
-assert.equal(focused.state.noteSearchQuery, "", "Normal record opening clears a previous session focus");
-assert.ok(read("components/archive/record-window.tsx").includes("setNoteSearchQuery(initialNoteQuery)"));
+assert.equal(focused.state.focusedNoteIndex, null, "Normal record opening clears a previous session focus");
+assert.ok(read("components/archive/record-window.tsx").includes("setFocusedNoteIndex(initialNoteIndex)"));
 const css = read("app/desktop-navigation.css");
 assert.match(css, /\.section-note-preview\s*\{ display: none; \}/, "Legacy/mobile keep their existing layout");
 assert.match(css, /min-width: 1600px/);

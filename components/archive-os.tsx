@@ -46,7 +46,7 @@ import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, sho
 import { newInlineRecord, supportsInlineEditing } from "@/lib/inline-editing";
 import seasonal, { type SeasonalMode } from "@/public/seasonal.js";
 import desktopNavigation, { type DesktopNavigationMode } from "@/public/desktop-navigation.js";
-import { DesktopNavigationChrome, DesktopTerminalRestore, SystemNoticesButton, useDesktopNavigation } from "@/components/archive/desktop-navigation";
+import { DesktopNavigationChrome, DesktopTerminalRestore, SystemTipsButton, useDesktopNavigation } from "@/components/archive/desktop-navigation";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -114,7 +114,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [panelMinimized, setPanelMinimized] = useState(false);
   const [panelMaximized, setPanelMaximized] = useState(false);
   const [initialContent, setInitialContent] = useState<ContentKey>("overview");
-  const [initialNoteQuery, setInitialNoteQuery] = useState("");
+  const [initialNoteIndex, setInitialNoteIndex] = useState<number>();
   const [now, setNow] = useState<Date | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -450,7 +450,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     });
   };
 
-  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteQuery = "") => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number) => {
     if (inlineBusy) return;
     pocketSearchReturn.current = pocket.isHandheld() && searchOpen ? searchQuery : null;
     memoryState.record("record.open", { section: record.section });
@@ -459,7 +459,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     startRecordAccess();
     setSelectedId(record.id);
     setInitialContent(content);
-    setInitialNoteQuery(noteQuery);
+    setInitialNoteIndex(noteIndex);
     setPanelOpen(true);
     setPanelMinimized(false);
     setPanelMaximized(false);
@@ -476,7 +476,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       stopRecordAccess();
       setRecordAccessComplete(true);
       setInitialContent(content);
-      setInitialNoteQuery("");
+      setInitialNoteIndex(undefined);
       if (editingInline) finishInlineEditing();
       else setInlineRecordId(recordWindowKey!);
       setSearchOpen(false);
@@ -509,7 +509,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       setSelectedId(draft.id);
       setInlineRecordId(draft.id);
       setInitialContent(section === "logs" ? "notes" : "overview");
-      setInitialNoteQuery("");
+      setInitialNoteIndex(undefined);
       setPanelOpen(true);
       setPanelMinimized(false);
       setPanelMaximized(false);
@@ -660,7 +660,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const searchResults = useMemo(() => searchOpen ? getSearchResults(archiveRecords, searchQuery, currentGame, latestLog) : [], [searchOpen, archiveRecords, searchQuery, currentGame, latestLog]);
   const applyStudioRecords = (updatedRecords: RecordEntry[], currentId?: string | null, options?: { keepEditorOpen?: boolean }) => {
-    setInitialNoteQuery("");
+    setInitialNoteIndex(undefined);
     setArchiveRecords((current) => [...current.filter((record) => record.section === "system"), ...updatedRecords]);
     if (currentId) {
       setSelectedId(currentId);
@@ -849,7 +849,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             latestLog={latestLog}
             panelOpen={panelOpen}
             projectRecords={projectDashboardRecords}
-            onOpenRecord={(record, content) => openRecord(record, content ?? "overview")}
+            onOpenRecord={openRecord}
             onOpenSection={openSection}
             onOpenTimeline={openTimeline}
           />
@@ -871,49 +871,47 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         </footer>
 
         <AnimatePresence>
-          {(panelOpen || panelMinimized) && selectedRecord ? (
-            <>
-              {panelOpen ? <motion.button
-                aria-label="Minimize active record"
-                className="record-backdrop"
-                type="button"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={minimizeRecord}
-              /> : null}
-              <RecordWindow
-                key={recordWindowKey}
-                minimized={!panelOpen}
-                accessPending={recordAccessPending}
-                accessComplete={recordAccessComplete}
-                maximized={panelMaximized}
-                initialContent={initialContent}
-                initialNoteQuery={initialNoteQuery}
-                record={selectedRecord}
-                onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
-                editorBusy={inlineBusy}
-                escapeBlocked={searchOpen || navOpen || Boolean(studioRecordId)}
-                editor={process.env.NODE_ENV === "development" && editingInline ? (
-                  <LocalStudioEditor embedded inline initialRecordId={unsavedInline ? undefined : selectedRecord.id}
-                    initialSection={supportsInlineEditing(selectedRecord.section) ? selectedRecord.section : undefined}
-                    initialSteamGame={unsavedInline ? studioSteamGame : undefined}
-                    initialContent={initialContent === "changelog" || initialContent === "hardware" ? "overview" : initialContent}
-                    records={archiveRecords.filter((record) => record.section !== "system")}
-                    onBusyChange={setInlineBusy} onContentChange={(content) => setInitialContent(content)}
-                    onExit={finishInlineEditing} onRecordsChange={applyStudioRecords} />
-                ) : undefined}
-                onClose={closeRecord}
-                onMinimize={minimizeRecord}
-                onMaximize={() => {
-                  const next = !panelMaximized;
-                  setPanelMaximized(next);
-                  memoryState.record("record.resize", { state: next ? "maximized" : "normal" });
-                }}
-              />
-            </>
-          ) : null}
+          {panelOpen && selectedRecord ? <motion.button
+            aria-label="Minimize active record"
+            className="record-backdrop"
+            type="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={minimizeRecord}
+          /> : null}
         </AnimatePresence>
+        {(panelOpen || panelMinimized) && selectedRecord ? (
+          <RecordWindow
+            key={recordWindowKey}
+            minimized={!panelOpen}
+            accessPending={recordAccessPending}
+            accessComplete={recordAccessComplete}
+            maximized={panelMaximized}
+            initialContent={initialContent}
+            initialNoteIndex={initialNoteIndex}
+            record={selectedRecord}
+            onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
+            editorBusy={inlineBusy}
+            escapeBlocked={searchOpen || navOpen || Boolean(studioRecordId)}
+            editor={process.env.NODE_ENV === "development" && editingInline ? (
+              <LocalStudioEditor embedded inline initialRecordId={unsavedInline ? undefined : selectedRecord.id}
+                initialSection={supportsInlineEditing(selectedRecord.section) ? selectedRecord.section : undefined}
+                initialSteamGame={unsavedInline ? studioSteamGame : undefined}
+                initialContent={initialContent === "changelog" || initialContent === "hardware" ? "overview" : initialContent}
+                records={archiveRecords.filter((record) => record.section !== "system")}
+                onBusyChange={setInlineBusy} onContentChange={(content) => setInitialContent(content)}
+                onExit={finishInlineEditing} onRecordsChange={applyStudioRecords} />
+            ) : undefined}
+            onClose={closeRecord}
+            onMinimize={minimizeRecord}
+            onMaximize={() => {
+              const next = !panelMaximized;
+              setPanelMaximized(next);
+              memoryState.record("record.resize", { state: next ? "maximized" : "normal" });
+            }}
+          />
+        ) : null}
 
         <div className="workspace-window-tray">
           <DesktopTerminalRestore />
@@ -930,7 +928,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <Square size={13} />
             Restore active record
           </button>
-          <SystemNoticesButton />
+          <SystemTipsButton />
         </div>
 
         <AnimatePresence>

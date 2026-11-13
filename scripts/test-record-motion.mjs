@@ -142,6 +142,7 @@ assert.equal(doc.listeners.size, 0); assert.equal(node.attributes.size, 0);
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const react = read("components/archive-os.tsx"), shell = read("static-app.js"), css = read("app/globals.css");
 assert.ok(react.includes("(panelOpen || panelMinimized) && selectedRecord"), "React retains the same keyed record/editor while minimized");
+assert.match(react, /<AnimatePresence>\s*\{panelOpen && selectedRecord \? <motion\.button[\s\S]*?<\/AnimatePresence>\s*\{\(panelOpen \|\| panelMinimized\) && selectedRecord \? \(\s*<RecordWindow/, "The backdrop may exit independently without retaining a hidden record across a quick reopen");
 assert.ok(react.includes("onMinimize={minimizeRecord}") && react.includes("onClick={minimizeRecord}"));
 assert.ok(react.includes("onClose={closeRecord}") && react.includes("controller.close({"), "Both normal and Setup React readers use the shared close controller");
 assert.ok(shell.includes("function closeRecord()") && shell.includes("recordMotionController.close({") && /if \(windowAction === "close"\) \{\s+closeRecord\(\);/.test(shell), "Pages close routes through the same effect");

@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "12 / 11 / 2026",
+  "updated": "13 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Find the right note",
+          "detail": "Recent Activity lists individual notes, even when two belong to the same entry. Long entries show five notes per page, with search across the whole record. A direct link opens the right note, and Escape closes it without changing the list first. Current Game shows an authored summary with playtime and last played, and System Tips has its own info icon.",
+          "version": "v1.74.3",
+          "releasedOn": "2026-11-13"
+        },
         {
           "title": "Pocket browsing and a quieter Memory State",
           "detail": "Handheld Games and Projects show four records per group at a time and keep your page when you close an entry. Memory State drops the inner filename and keeps a faint frame around its code lines.",

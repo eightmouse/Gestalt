@@ -241,7 +241,7 @@ for (const action of ["hidden", "busy", "dialog", "palette"]) {
 }
 {
   const f = fixture(); f.attach({ remember: true }); f.advance(1200); f.click(f.nodes.hintAction);
-  assert.ok(f.nodes.shell.hasAttribute("data-notices-open"), "Clicking the landing notification opens System Notices");
+  assert.ok(f.nodes.shell.hasAttribute("data-notices-open"), "Clicking the landing hint opens System Tips");
   assert.equal(f.doc.activeElement, f.nodes.notices);
   f.click(f.nodes.noticeClose);
   assert.ok(!f.nodes.shell.hasAttribute("data-terminal-hint")); assert.equal(f.saved.get("gestalt.shortcut-notices"), "seen-with-web-search", "Acknowledgement persists only with consent");
@@ -399,6 +399,8 @@ assert.ok(!/fetch\(|setInterval|requestAnimationFrame/.test(source));
 assert.ok(!/pointerenter|pointerleave/.test(source), "A real window needs no hover machinery");
 assert.equal((source.match(/host\.setTimeout\(/g) || []).length, 1, "One cancellable timer handles introduction and dismissal without polling");
 for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
+  assert.match(read(file), /data-system-notices-toggle aria-label="System Tips"/, "The shortcut reference has its own accessible name");
+  assert.ok(read(file).includes("// SYSTEM TIPS") && read(file).includes('title="Open System Tips"'));
   assert.ok(read(file).includes("data-system-notices-open"), "Both readers expose the clickable notification");
   assert.ok(read(file).includes("Press <kbd>S</kbd> to search the web") && read(file).includes("<dt><kbd>S</kbd></dt><dd>Web search</dd>"), "The existing introduction and notice reference teach S in both readers");
   assert.ok(!read(file).includes("data-desktop-terminal-hint-dismiss"), "No redundant close button remains on the landing notification");
