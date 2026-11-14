@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "13 / 11 / 2026",
+  "updated": "14 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Aligned reading panes",
+          "detail": "Projects, Games and Logs share one pane height in wide Terminal mode. The Reading Desk stays full height even with only a few logs, and longer lists scroll without moving the bottom edge.",
+          "version": "v1.74.4",
+          "releasedOn": "2026-11-14"
+        },
         {
           "title": "Find the right note",
           "detail": "Recent Activity lists individual notes, even when two belong to the same entry. Long entries show five notes per page, with search across the whole record. A direct link opens the right note, and Escape closes it without changing the list first. Current Game shows an authored summary with playtime and last played, and System Tips has its own info icon.",

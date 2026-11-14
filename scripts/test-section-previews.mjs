@@ -98,6 +98,12 @@ assert.match(css, /min-width: 1600px/);
 assert.match(css, /min-height: 850px/);
 assert.match(css, /grid-template-columns: minmax\(0, 1fr\) calc\(284px/, "Keep original lane widths beside the preview");
 assert.match(css, /section-page--logs \.section-note-layout[^}]+900px/, "Logs preserve their list width beside a wider reading desk");
+for (const section of ["split", "logs"]) {
+  assert.match(css, new RegExp(`section-page--${section} \\.section-note-layout[^}]+align-items: stretch`), "The side preview shares the registry bounds");
+}
+assert.match(css, /\[data-nav-wide\] \.section-note-preview\s*\{[^}]+contain: size;[^}]+align-content: start;[^}]+min-block-size: 0;[^}]+overflow: auto;/, "Preview content can scroll but cannot size the shared row");
+assert.match(css, /:is\(\.section-page--split, \.section-page--logs\) \.section-note-layout[^}]+block-size: calc\(518px \* var\(--desktop-size, 1\)\);[^}]+max-block-size: 100%;[^}]+grid-template-rows: minmax\(0, 1fr\)/, "Both split registries and the reading desk share one viewport-bounded size");
+assert.match(css, /\.section-note-layout:has\(> \.section-note-preview\) \.section-record-column \.section-record-grid\s*\{\s*block-size: auto;\s*\}/, "Record columns scroll inside their assigned height");
 assert.match(css, /--section-index-max-inline: var\(--dashboard-max-inline\)/, "Wide sections override the high-resolution legacy width cap through a token");
 assert.match(read("app/globals.css"), /max-inline-size: var\(--section-index-max-inline, calc\(900px/, "High-resolution Logs must not squeeze the reading desk");
 console.log("Section previews passed: written sessions, log chronology, bounded excerpts, safe still media, flattened Pages data, React parity, escaped output and isolated wide layout.");

@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.74.3`. Previous site-code release: `v1.74.2` (97d64d96).
+Release target: `v1.74.4`. Previous site-code release: `v1.74.3` (16119c8e).
+
+`v1.74.4` gives Projects, Games and Logs one shared pane height in wide Terminal mode. The list and preview edges align, and a sparse Logs list no longer cuts the Reading Desk short. Longer lists and excerpts scroll inside the panes without stretching individual cards. Compact desktop, handheld and Legacy layouts are unchanged. The saved FFXIV note and images remain local for a separate content publish.
 
 `v1.74.3` shows individual notes in Recent Activity and opens each on its five-note page. Note search spans the whole entry, Escape closes a directly opened note, and Last Updated reflects the newest dated note or saved update without changing field-log writing order. The dashboard gives Current Game a short authored summary in place of completion, adds clearer cues to clickable headings and open notes, and uses an info icon for System Tips. No authored records, media or dependencies changed.
 

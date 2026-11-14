@@ -250,25 +250,40 @@
   }
 }
 @media (min-width: 1600px) and (min-height: 850px) and (hover: hover) and (pointer: fine) {
+  .archive-shell[data-nav-wide] > .workspace > :is(.section-page--split, .section-page--logs) .section-note-layout:has(> .section-note-preview) {
+    /* Use the three-row registry height even when the Logs list is sparse. */
+    block-size: calc(518px * var(--desktop-size, 1));
+    max-block-size: 100%;
+    grid-template-rows: minmax(0, 1fr);
+  }
   .archive-shell[data-nav-wide] > .workspace > .section-page--split .section-note-layout:has(> .section-note-preview) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) calc(284px * var(--desktop-size, 1));
     gap: calc(16px * var(--desktop-size, 1));
     min-block-size: 0;
-    align-items: start;
+    align-items: stretch;
   }
   .archive-shell[data-nav-wide] > .workspace > .section-page--logs .section-note-layout:has(> .section-note-preview) {
     display: grid;
     grid-template-columns: minmax(0, calc(900px * var(--desktop-size, 1))) minmax(0, 1fr);
     gap: calc(16px * var(--desktop-size, 1));
     min-block-size: 0;
-    align-items: start;
+    align-items: stretch;
+  }
+  .archive-shell[data-nav-wide] .section-note-layout:has(> .section-note-preview) > .section-split-grid {
+    align-items: stretch;
+  }
+  .archive-shell[data-nav-wide] .section-note-layout:has(> .section-note-preview) .section-record-column .section-record-grid {
+    block-size: auto;
   }
   .archive-shell[data-nav-wide] .section-note-preview {
+    /* Keep longer excerpts inside the shared pane size. */
+    contain: size;
     display: grid;
+    align-content: start;
     gap: calc(18px * var(--desktop-size, 1));
     min-inline-size: 0;
-    max-block-size: 100%;
+    min-block-size: 0;
     overflow: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
