@@ -67,15 +67,21 @@ for (const input of [[session, project, peripheral, tool], [tool, peripheral, pr
   assert.deepEqual(snapshot(react.recentActivity(input, 2)), snapshot(result.slice(0, 2)), "Apply the limit after expanding and sorting notes");
 }
 
+const newerSession = {
+  ...session,
+  body: ":::note 14 / 11 / 2026 - Newer follow-up\nLater writing must take the first slot.\n:::\n" + session.body
+};
+staticContext.records = [newerSession, project];
+const refreshedFeed = react.recentActivity(staticContext.records, 3);
+assert.deepEqual(refreshedFeed.map((item) => item.detail), ["Play Log / Newer follow-up", "Play Log / Same title", "Play Log / Same title"]);
+assert.deepEqual(refreshedFeed.map((item) => item.noteIndex), [0, 1, 2], "Newer notes shift the feed without losing the older entries or targets");
+assert.deepEqual(snapshot(refreshedFeed), snapshot(vm.runInContext("recentActivity(3)", staticContext)));
+
 const publicContext = vm.createContext({ window: {} });
 vm.runInContext(readFileSync(new URL("../public/data/records.js", import.meta.url), "utf8"), publicContext);
 staticContext.records = publicContext.window.__GESTALT_RECORDS;
 const pagesFeed = vm.runInContext("recentActivity(6)", staticContext);
 assert.deepEqual(snapshot(react.recentActivity(realRecords, 6)), snapshot(pagesFeed), "Real archive data agrees in both readers");
-const maple = realRecords.find((record) => record.id === "maple-story");
-if (maple && react.noteEntries(maple.body).filter((note) => react.noteTitleDate(note.title) === "2026-11-13").length === 2) {
-  assert.deepEqual(react.recentActivity([maple], 2).map((item) => item.detail), ["Play Log / NXMaxxing", "Play Log / Winter Update"]);
-}
 for (const [record, expected] of [[session, "2026-11-13"], [project, "2026-11-12"], [records[2], "2027-01-01"], [{ ...session, body: "No dated notes." }, "2026-11-01"]]) {
   assert.equal(react.recordLastUpdated(record), expected);
   assert.equal(staticContext.recordLastUpdated(record), expected);
