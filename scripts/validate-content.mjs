@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import noteInline from "../public/note-inline.js";
 
 const root = process.cwd();
 const recordsDir = path.join(root, "content", "records");
@@ -112,6 +113,9 @@ for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".
     fail(filename, "missing frontmatter block");
     continue;
   }
+
+  const noteIds = noteInline.parseNotes(parsed.body).map((note) => note.id).filter(Boolean);
+  if (new Set(noteIds).size !== noteIds.length) fail(filename, "note identities must be unique within the record");
 
   for (const key of required) {
     if (parsed.data[key] === undefined || parsed.data[key] === "") {

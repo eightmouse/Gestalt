@@ -99,7 +99,7 @@ for (const text of ["plain", "**bold**", "*italic*", "***both***", "**bold *nest
 const mediaFunctions = ["parseNoteMediaOptions", "isNoteMediaToken", "noteMediaClassName"];
 const react = compile(functions("../components/archive/record-content.tsx", ["RecordBody", "renderNoteInline", ...mediaFunctions]), { useState, noteInline });
 const staticContext = compile(functions("../static-app.js", ["markdownBody", "renderNoteInline", "escapeHtml", ...mediaFunctions]), { window: { GestaltNoteInline: noteInline } });
-const studio = compile(`${functions("../components/studio-client.tsx", ["parseStudioNotes", "serializeStudioNotes", "splitStudioUpdateIndex"])}\nexports.parse = parseStudioNotes; exports.serialize = serializeStudioNotes;`);
+const studio = compile(`${functions("../components/studio-client.tsx", ["parseStudioNotes", "serializeStudioNotes", "splitStudioUpdateIndex"])}\nexports.parse = parseStudioNotes; exports.serialize = serializeStudioNotes;`, { noteInline });
 for (const action of ["bold", "italic", "code"]) {
   const formatted = formatNoteSelection("A thought", 0, 9, action).body;
   const source = studio.exports.serialize([{ title: "New note", body: formatted }, { title: "Older note", body: "Unchanged." }]);

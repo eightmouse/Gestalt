@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
+import noteInline from "../public/note-inline.js";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 function declaration(file, name) {
@@ -12,8 +13,8 @@ function declaration(file, name) {
   return node.getText(ast).replace(/^export\s+/, "");
 }
 const names = ["latestSectionNote", "noteEntries", "splitUpdateIndex", "noteTitleDate", "activityTraceTitle", "excerptFromBody", "cleanExcerptLine", "compareLogWritingOrder", "logArchiveDate"];
-const react = vm.createContext({});
-const pages = vm.createContext({});
+const react = vm.createContext({ noteInline });
+const pages = vm.createContext({ window: { GestaltNoteInline: noteInline } });
 vm.runInContext(ts.transpileModule(names.map((name) => declaration(["compareLogWritingOrder", "logArchiveDate"].includes(name) ? "lib/log-archive.ts" : "components/archive/record-utils.ts", name)).join("\n"), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, react);
 vm.runInContext(names.map((name) => declaration("static-app.js", name)).join("\n"), pages);
 const record = (id, date, body, samples = []) => ({ id, title: id, section: "projects", updated: date, body, meta: { samples } });
@@ -85,7 +86,8 @@ const html = render.renderSectionNotePreview([record('<unsafe"id>', "2026-10-23"
 assert.ok(!html.includes("<script>"));
 assert.ok(html.includes('data-open-content="notes"') && html.includes('data-open-record="&lt;unsafe&quot;id&gt;"'));
 const focused = vm.createContext({ records, state: {}, pocket: undefined, window: { matchMedia: () => ({ matches: false }) }, stopRecordAccessSequence() {}, shouldPlayEntryAccess: () => false, syncRecordWindow: () => false, render() {}, startRecordAccessSequence() {}, revealFocusedNote() {} });
-vm.runInContext(declaration("static-app.js", "openRecord"), focused);
+focused.root = { querySelector: () => null };
+vm.runInContext(declaration("static-app.js", "openRecord") + "\n" + declaration("static-app.js", "syncRecordLinkNotice"), focused);
 focused.openRecord(records[0].id, "notes", 1);
 assert.equal(focused.state.focusedNoteIndex, 1);
 assert.equal(focused.state.noteSearchQuery, "", "Deep links don't start a search");

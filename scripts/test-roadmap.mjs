@@ -88,7 +88,7 @@ let shellRenders = 0;
 const deadlines = new Map(); let deadlineId = 0;
 const setDeadline = (callback, delay) => { assert.equal(delay, 12000); deadlines.set(++deadlineId, callback); return deadlineId; };
 const clearDeadline = (id) => deadlines.delete(id);
-const context = vm.createContext({ URL, document, HTMLElement: Element, Element, state: {}, roadmapData: null, roadmapLoadPromise: null, roadmapFailed: false, roadmapTrigger: null, roadmapChapterId: "working", roadmapReleaseIndex: null, buildRoadmapHistory: null,
+const context = vm.createContext({ URL, window: {}, document, HTMLElement: Element, Element, state: {}, roadmapData: null, roadmapLoadPromise: null, roadmapFailed: false, roadmapTrigger: null, roadmapChapterId: "working", roadmapReleaseIndex: null, buildRoadmapHistory: null,
   setTimeout: setDeadline, clearTimeout: clearDeadline,
   readableDate: releaseDateLabel,
   recordMotionController: { busy: false },

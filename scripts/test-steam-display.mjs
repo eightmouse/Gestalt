@@ -217,7 +217,7 @@ Object.assign(staticContext, {
   recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => ""
 });
-vm.runInContext(declaration("../static-app.js", "recordWindow"), staticContext);
+vm.runInContext(["recordWindow", "recordLinkButton", "recordLinkFeedback", "pocketIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
 function findHeaderElement(node, className) {
   if (!node || typeof node !== "object") return null;
   if (node.props?.className === className) return node;

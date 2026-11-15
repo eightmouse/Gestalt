@@ -19,6 +19,8 @@ import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
 import recordMotion from "@/public/record-motion.js";
+import { NoteLinkControl, RecordLinkButton, RecordLinkFeedback } from "@/components/archive/record-link-control";
+import type { ArchiveNote } from "@/public/note-inline.js";
 import memoryState from "@/public/memory-state.js";
 import pocket from "@/public/pocket-index.js";
 import { steamBannerImage } from "@/public/steam-display.mjs";
@@ -28,8 +30,10 @@ type RecordWindowProps = {
   accessComplete?: boolean;
   initialContent: ContentKey;
   initialNoteIndex?: number;
+  linkedNoteId?: string;
   maximized: boolean;
   record: RecordEntry;
+  shareable?: boolean;
   onEdit?: (content?: ContentKey) => void;
   editor?: ReactNode;
   editorBusy?: boolean;
@@ -39,12 +43,12 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} shareable={shareable} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} maximized={maximized} record={record} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} maximized={maximized} record={record} shareable={shareable} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
 function useRecordFocus(minimized: boolean | undefined, id: string) {
@@ -62,7 +66,7 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
   dismiss();
 }
 
-function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteIndex, maximized, record, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
@@ -134,6 +138,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
           <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
         </div>
         <div className="window-control-group">
+          {shareable ? <RecordLinkButton id={record.id} /> : null}
           {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
           <div className="window-actions">
             <button type="button" disabled={editorBusy} data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
@@ -149,6 +154,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
         </div>
       </header>
 
+      {shareable ? <RecordLinkFeedback unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
       <div className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
         {editor ?? <>
         <div className="record-main">
@@ -186,7 +192,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
             </p>
           </div>
 
-          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} />
+          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} />
         </div>
 
         <aside className="record-aside">
@@ -239,13 +245,18 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   );
 }
 
-function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized, record, onEdit, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ minimized, accessPending, accessComplete, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const windowRef = useRecordFocus(minimized, record.id);
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
   const headerImage = setupRecordImage(record);
   const notes = setupNarrativeNotes(record);
   const [expandedImage, setExpandedImage] = useState<{ alt: string; src: string } | null>(null);
+  useEffect(() => {
+    if (!minimized && linkedNoteId && initialNoteIndex !== undefined) {
+      windowRef.current?.querySelector(`[data-setup-note-id="${CSS.escape(linkedNoteId)}"]`)?.scrollIntoView({ block: "nearest" });
+    }
+  }, [windowRef, initialNoteIndex, linkedNoteId, minimized]);
   const specs = profile.specs.length > 0
     ? profile.specs
     : [
@@ -270,12 +281,14 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
       }}
     >
       <RecordAccessSurface />
+      {shareable ? <RecordLinkFeedback unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
       <div className="setup-window-shell">
         <section className={`setup-console setup-console--${group}`} aria-label={`${record.title} setup profile`}>
           <SetupPrompt
             command={profile.command}
             maximized={maximized}
             record={record}
+            shareable={shareable}
             onClose={onClose}
             onEdit={onEdit}
             onMaximize={onMaximize}
@@ -287,13 +300,13 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, maximized
           ) : group === "peripherals" ? (
             <SetupPeripheralBody headerImage={headerImage} record={record} onExpandImage={setExpandedImage} />
           ) : group === "notes" ? (
-            <SetupNoteBody notes={notes} record={record} />
+            <SetupNoteBody notes={notes} record={record} shareable={shareable} />
           ) : (
             <SetupSystemBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
           )}
         </section>
 
-        {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} /> : null}
+        {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} shareable={shareable} /> : null}
       </div>
       {expandedImage ? (
         <ImageLightbox image={expandedImage} label="Close expanded setup image" onClose={() => setExpandedImage(null)} />
@@ -338,11 +351,13 @@ function SetupPrompt({
   onEdit,
   onMaximize,
   onMinimize,
-  record
+  record,
+  shareable
 }: {
   command: string;
   maximized: boolean;
   record: RecordEntry;
+  shareable?: boolean;
   onClose: () => void;
   onEdit?: () => void;
   onMaximize: () => void;
@@ -359,6 +374,7 @@ function SetupPrompt({
         <strong>{command}</strong>
       </div>
       <div className="setup-prompt-actions">
+        {shareable ? <RecordLinkButton id={record.id} /> : null}
         {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit} aria-label="Edit this record locally" title="Edit locally"><Settings size={15} aria-hidden="true" /></button> : null}
         <div className="window-actions setup-window-actions">
           <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
@@ -455,7 +471,7 @@ function SetupPeripheralBody({
   );
 }
 
-function SetupNoteBody({ notes, record }: { notes: Array<{ title: string; body: string }>; record: RecordEntry }) {
+function SetupNoteBody({ notes, record, shareable }: { notes: ArchiveNote[]; record: RecordEntry; shareable?: boolean }) {
   const noteFiles = notes.length > 0 ? notes : [{ title: record.title, body: record.body }];
 
   return (
@@ -468,14 +484,7 @@ function SetupNoteBody({ notes, record }: { notes: Array<{ title: string; body: 
         <h2>{record.title}</h2>
         {record.summary ? <p className="setup-motd">{record.summary}</p> : null}
       </div>
-      <div className="setup-note-stack">
-        {noteFiles.map((note) => (
-          <article className="setup-note" key={note.title}>
-            <h3>// {note.title}</h3>
-            <RecordBody body={note.body} />
-          </article>
-        ))}
-      </div>
+      <SetupNoteStack notes={noteFiles} recordId={shareable ? record.id : undefined} />
     </div>
   );
 }
@@ -528,7 +537,7 @@ function SetupFetchDetails({
   );
 }
 
-function SetupNotesTerminal({ notes, record }: { notes: Array<{ title: string; body: string }>; record: RecordEntry }) {
+function SetupNotesTerminal({ notes, record, shareable }: { notes: ArchiveNote[]; record: RecordEntry; shareable?: boolean }) {
   return (
     <section className="setup-console setup-notes-terminal" aria-label={`${record.title} setup notes`}>
       <div className="setup-console-prompt">
@@ -538,16 +547,19 @@ function SetupNotesTerminal({ notes, record }: { notes: Array<{ title: string; b
         <i>$</i>
         <strong>cat notes.log</strong>
       </div>
-      <div className="setup-note-stack">
-        {notes.map((note) => (
-          <article className="setup-note" key={note.title}>
-            <h3>// {note.title}</h3>
-            <RecordBody body={note.body} />
-          </article>
-        ))}
-      </div>
+      <SetupNoteStack notes={notes} recordId={shareable ? record.id : undefined} />
     </section>
   );
+}
+
+function SetupNoteStack({ notes, recordId }: { notes: ArchiveNote[]; recordId?: string }) {
+  return <div className="setup-note-stack">
+    {notes.map((note, index) => <article className="setup-note" data-setup-note-id={note.id} key={note.id ?? index}>
+      <h3>// {note.title}</h3>
+      {recordId && note.id ? <NoteLinkControl id={recordId} noteId={note.id} /> : null}
+      <RecordBody body={note.body} />
+    </article>)}
+  </div>;
 }
 
 function setupRecordImage(record: RecordEntry): string {

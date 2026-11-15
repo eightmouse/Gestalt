@@ -175,6 +175,7 @@ function publishContent(branch, base, remoteBase) {
   const tempGit = (...args) => execute(site, "git", args);
   tempGit("checkout", "--quiet", "--detach", base);
   if (original.has("public/data/roadmap.json") && !existsSync(path.join(site, "scripts/validate-notebook.mjs"))) throw new Error("Notebook publishing needs its first reviewed code release. Saved notes and notebook edits are unchanged.");
+  const noteLinksSupported = readFileSync(path.join(site, "static-app.js"), "utf8").includes("noteIndexById");
   tempGit("config", "core.hooksPath", path.join(temporary, "no-hooks"));
   const author = git("var", "GIT_AUTHOR_IDENT").match(/^(.*) <([^>]*)> \d+ [+-]\d+$/);
   if (!author) throw new Error("Configure your Git author before publishing.");
@@ -192,6 +193,9 @@ function publishContent(branch, base, remoteBase) {
     if (hash === null) continue;
     const bytes = readFileSync(safeFile(file));
     if (fingerprint(bytes) !== hash) throw new Error("Content changed while preparing the batch. Retry after saving.");
+    if (!noteLinksSupported && file.endsWith(".mdx") && /^:::(?:previous-note|note) (?:.* )?\{#(?:main|n-[a-f0-9]{32})\}[ \t]*\r?$/m.test(bytes.toString("utf8"))) {
+      throw new Error("Note links need their first reviewed code release before content-only publishing. Your saved records are unchanged.");
+    }
     const target = path.join(site, file);
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, bytes);

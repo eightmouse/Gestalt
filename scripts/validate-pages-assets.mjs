@@ -56,7 +56,7 @@ export async function validatePagesAssets(destination) {
   if (appearanceBootstrap === undefined || firstStyle === undefined || appearanceBootstrap > firstStyle) {
     throw new Error("The appearance bootstrap must run before the stylesheets in the static head.");
   }
-  let ambientAt, memoryAt, pocketAt, runtimeAt;
+  let ambientAt, memoryAt, pocketAt, recordLinksAt, runtimeAt;
   for (const match of html.matchAll(/<script\b[^>]*>/gi)) {
     const source = attribute(match[0], "src");
     if (!source) continue;
@@ -64,6 +64,7 @@ export async function validatePagesAssets(destination) {
     if (entry.url.pathname.endsWith("/public/ambient-motion.js")) ambientAt = match.index;
     if (entry.url.pathname.endsWith("/public/memory-state.js")) memoryAt = match.index;
     if (entry.url.pathname.endsWith("/public/pocket-index.js")) pocketAt = match.index;
+    if (entry.url.pathname.endsWith("/public/record-links.js")) recordLinksAt = match.index;
     if (entry.url.pathname.endsWith("/static-app.js")) runtimeAt = match.index;
   }
   if (ambientAt === undefined || runtimeAt === undefined || ambientAt > runtimeAt) {
@@ -71,6 +72,7 @@ export async function validatePagesAssets(destination) {
   }
   if (memoryAt === undefined || memoryAt > runtimeAt) throw new Error("The Memory State helper must load before the static reader.");
   if (pocketAt === undefined || pocketAt > runtimeAt) throw new Error("The Pocket Index helper must load before the static reader.");
+  if (recordLinksAt === undefined || recordLinksAt > runtimeAt) throw new Error("The record links helper must load before the static reader.");
   const css = await readFile(stylesheet.file, "utf8");
   if (!css.includes("var(--archive-image)")) throw new Error("The archive stylesheet no longer consumes the background variable.");
   const background = html.match(/--archive-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];

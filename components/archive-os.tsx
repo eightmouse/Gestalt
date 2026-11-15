@@ -7,7 +7,7 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
@@ -24,7 +24,7 @@ import {
   recentActivity,
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
-import type { SetupGroupId } from "@/components/archive/setup-utils";
+import { setupNarrativeNotes, type SetupGroupId } from "@/components/archive/setup-utils";
 import { compareLogWritingOrder, isLogArchivedByAge } from "@/lib/log-archive";
 import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
@@ -35,6 +35,8 @@ import { OsBehaviourWindow } from "@/components/archive/os-behaviour-window";
 import { WorkspaceToolWindow } from "@/components/archive/workspace-tool-window";
 import workspaceTools from "@/public/workspace-tools.js";
 import recordMotion from "@/public/record-motion.js";
+import recordLinks from "@/public/record-links.js";
+import noteInline from "@/public/note-inline.js";
 import memoryState, { type MemoryStateMode } from "@/public/memory-state.js";
 import ambientMotion from "@/public/ambient-motion.js";
 import behaviour, { type StartupMode, type PreferenceKey } from "@/public/os-behaviour.js";
@@ -95,6 +97,7 @@ type ArchiveOSProps = {
 type LocalMemoryState = "checking" | "prompt" | "granted" | "session";
 
 const localMemoryKey = "gestalt.local-memory";
+const publicReader = process.env.NODE_ENV !== "development";
 
 function subscribeHandheld(onChange: () => void) {
   const media = window.matchMedia("(max-width: 760px)");
@@ -109,6 +112,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [steamSnapshot, setSteamSnapshot] = useState<SteamSnapshot | null>(null);
   const [steamReady, setSteamReady] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [recordLinkMissing, setRecordLinkMissing] = useState(false);
+  const [linkedNoteId, setLinkedNoteId] = useState<string>();
   const [recordAccessPending, setRecordAccessPending] = useState(false);
   const [recordAccessComplete, setRecordAccessComplete] = useState(false);
   const [panelMinimized, setPanelMinimized] = useState(false);
@@ -409,6 +414,20 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
   }, [archiveRecords, selectedId, setSelectedId, inlineDraftWindow]);
 
+  const dismissRecordView = () => {
+    memoryState.record("record.close");
+    setInlineRecordId(null);
+    setInlineDraftWindow(null);
+    setPanelOpen(false);
+    setPanelMinimized(false);
+    stopRecordAccess();
+    if (pocket.isHandheld() && pocketSearchReturn.current !== null) {
+      setSearchQuery(pocketSearchReturn.current);
+      setSearchOpen(true);
+    }
+    pocketSearchReturn.current = null;
+  };
+
   const closeRecord = () => {
     const node = shellRef.current?.querySelector<HTMLElement>(".record-window");
     if (inlineBusy || !panelOpen || !node || node.hidden) return;
@@ -417,17 +436,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       node,
       enabled: !pocket.isHandheld() && entryAccessModeRef.current !== "off",
       onComplete: () => {
-        memoryState.record("record.close");
-        setInlineRecordId(null);
-        setInlineDraftWindow(null);
-        setPanelOpen(false);
-        setPanelMinimized(false);
-        stopRecordAccess();
-        if (pocket.isHandheld() && pocketSearchReturn.current !== null) {
-          setSearchQuery(pocketSearchReturn.current);
-          setSearchOpen(true);
-        }
-        pocketSearchReturn.current = null;
+        dismissRecordView();
+        if (publicReader) recordLinks.close(window);
       }
     });
   };
@@ -450,8 +460,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     });
   };
 
-  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number) => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string) => {
     if (inlineBusy) return;
+    if (publicReader && record.section !== "system") recordLinks.open(window, record.id, noteId);
+    setLinkedNoteId(noteId);
+    setRecordLinkMissing(false);
     pocketSearchReturn.current = pocket.isHandheld() && searchOpen ? searchQuery : null;
     memoryState.record("record.open", { section: record.section });
     setInlineRecordId(null);
@@ -469,6 +482,31 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setRoadmapOpen(false);
     setNavOpen(false);
   };
+
+  const syncRecordLocation = useEffectEvent(() => {
+    const hash = window.location.hash;
+    const target = recordLinks.target(hash);
+    const record = archiveRecords.find((entry) => entry.id === target?.recordId && entry.section !== "system");
+    if (record && panelOpen && selectedId === record.id && linkedNoteId === target?.noteId) return;
+    if (record || panelOpen || panelMinimized) recordMotionRef.current?.cancel();
+    if (record) {
+      const noteId = target?.noteId;
+      const index = noteId ? noteInline.noteIndexById(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) : -1;
+      openRecord(record, index >= 0 ? "notes" : "overview", index >= 0 ? index : undefined, noteId);
+    }
+    else {
+      if (panelOpen || panelMinimized) dismissRecordView();
+      setRecordLinkMissing(recordLinks.isRecordLink(hash));
+    }
+  });
+
+  useEffect(() => {
+    if (!publicReader || !bootComplete || localMemory === "prompt" || localMemory === "checking") return;
+    const onPopState = () => syncRecordLocation();
+    onPopState();
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [bootComplete, localMemory]);
 
   const openLocalEditor = (recordId: string, content: ContentKey = "overview") => {
     if (inlineBusy) return;
@@ -537,6 +575,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openSection = (section: RecordSection) => {
     if (inlineBusy) return;
+    if (publicReader) recordLinks.close(window);
+    setRecordLinkMissing(false);
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     const sectionChanged = activeSection !== section;
@@ -556,6 +596,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openTimeline = () => {
     if (inlineBusy) return;
+    if (publicReader) recordLinks.close(window);
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     stopRecordAccess();
@@ -570,6 +611,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openRoadmap = () => {
     if (inlineBusy) return;
+    if (publicReader) recordLinks.close(window);
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     stopRecordAccess();
@@ -584,6 +626,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openHome = () => {
     if (inlineBusy) return;
+    if (publicReader) recordLinks.close(window);
+    setRecordLinkMissing(false);
     setInlineRecordId(null);
     setInlineDraftWindow(null);
     const sectionChanged = activeSection !== "system";
@@ -791,6 +835,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         setOsBehaviourOpen(true);
       }} localReview={process.env.NODE_ENV === "development" ? <LocalReviewButton /> : undefined} />
       <section className={hasFocusWindow ? "workspace has-record" : "workspace"} data-pocket-section={activeSection} aria-label={handheld ? "Gestalt Pocket Index" : "Gestalt dashboard"}>
+        {publicReader ? <p className="record-link-notice" role="status">{recordLinkMissing ? "This record is not available in the archive." : ""}</p> : null}
         <PocketIndex latest={latestLog} onSection={openSection} onRead={openRecord} onBack={openHome} />
         <header className="workspace-header">
           <div>
@@ -890,7 +935,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             maximized={panelMaximized}
             initialContent={initialContent}
             initialNoteIndex={initialNoteIndex}
+            linkedNoteId={linkedNoteId}
             record={selectedRecord}
+            shareable={publicReader && selectedRecord.section !== "system"}
             onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
             editorBusy={inlineBusy}
             escapeBlocked={searchOpen || navOpen || Boolean(studioRecordId)}

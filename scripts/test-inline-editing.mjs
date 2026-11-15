@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
 import { renderToStaticMarkup } from "react-dom/server";
+import noteInline from "../public/note-inline.js";
 
 const require = createRequire(import.meta.url);
 const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
@@ -31,7 +33,7 @@ async function fixture({ fail = false, exported = true, inline = true, section =
   const states = [], refs = [], calls = [], changes = [];
   const other = { body: "Unrelated draft", form: { ...record, id: "other-record", originalId: "other-record", body: "Unrelated draft" }, updatedAt: 10 };
   let storage = JSON.stringify({ "record:other-record": other });
-  const context = vm.createContext({ exports: {}, require, console, Error, process: { env: { NODE_ENV: "development" } },
+  const context = vm.createContext({ exports: {}, require, console, Error, crypto: webcrypto, noteInline, process: { env: { NODE_ENV: "development" } },
     useState(initial) { const index = stateIndex++; if (!(index in states)) states[index] = typeof initial === "function" ? initial() : initial; return [states[index], (next) => { states[index] = typeof next === "function" ? next(states[index]) : next; }]; },
     useRef(initial) { const index = refIndex++; if (!(index in refs)) refs[index] = { current: initial }; return refs[index]; },
     memo: (component) => component, useMemo: (callback) => callback(), useCallback: (callback) => callback, useEffect() {}, useLayoutEffect() {},
@@ -81,6 +83,9 @@ assert.equal(writes.length, 1, "Inline Save Record writes only the open record, 
 assert.equal(writes[0].payload.originalId, record.id);
 assert.equal(writes[0].payload.title, "Edited in place");
 assert.match(writes[0].payload.body, /Updated body with \*\*formatting\*\* and a ~ character/);
+const persistedIdentity = noteInline.parseNotes(writes[0].payload.body)[0].id;
+assert.ok(noteInline.validNoteId(persistedIdentity));
+assert.equal(noteInline.parseNotes(saved.changes[0][0][0].body)[0].id, persistedIdentity, "The reader and saved source get the same assigned ID");
 assert.equal(saved.changes.length, 1);
 assert.equal(saved.changes[0][0][0].title, "Edited in place", "Saved data is sent back to the actual reader");
 assert.equal(saved.changes[0][0][0].writtenOrder, record.writtenOrder);
@@ -323,7 +328,7 @@ assert.equal(untitled.layout().props.record.title, "A quieter morning", "Accepte
 await untitled.layout().props.onSave();
 const titledWrite = untitled.calls.find((call) => call.url === "/api/studio/entry").payload;
 assert.equal(titledWrite.title, "A quieter morning");
-assert.equal(titledWrite.body, ":::note A changed heading\nUpdated note body.\n:::");
+assert.match(titledWrite.body, /^:::note A changed heading \{#n-[a-f0-9]{32}\}\nUpdated note body\.\n:::$/);
 commitNote(":::note Another heading\nAnother edit.\n:::");
 untitled.layout().props.onUpdate("title", "");
 assert.equal(untitled.layout().props.titleAction, null, "Saved logs are never automatically retitled, even if their title is cleared");

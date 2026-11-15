@@ -27,6 +27,8 @@ const effectsCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-
 if (effectsCheck.status !== 0) errors.push(`Compositor effects regression failed: ${(effectsCheck.stderr || effectsCheck.stdout || "").trim()}`);
 const pocketCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-pocket-index.mjs")], { encoding: "utf8" });
 if (pocketCheck.status !== 0) errors.push(`Pocket Index regression failed: ${(pocketCheck.stderr || pocketCheck.stdout || "").trim()}`);
+const recordLinkCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-record-links.mjs")], { encoding: "utf8" });
+if (recordLinkCheck.status !== 0) errors.push(`Record link regression failed: ${(recordLinkCheck.stderr || recordLinkCheck.stdout || "").trim()}`);
 
 const archiveImage = indexHtml.match(/--archive-image:\s*url\("([^"]+)"\)/)?.[1];
 if (!archiveImage || new URL(archiveImage, "https://gestalt.invalid/Gestalt/app/globals.css").pathname !== "/Gestalt/public/images/archive-backdrop.webp") {
@@ -37,6 +39,7 @@ const cacheTokenCases = [
   ['src="public/os-behaviour.js?v=1.59.0"', 'src="public/os-behaviour.js?v=12345"'],
   ['src="public/workspace-tools.js?v=1.62.0"', 'src="public/workspace-tools.js?v=12345"'],
   ['src="public/record-motion.js?v=1.64.0"', 'src="public/record-motion.js?v=12345"'],
+  ['src="public/record-links.js?v=1"', 'src="public/record-links.js?v=12345"'],
   ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],
   ['href="app/desktop-navigation.css?v=1.54.0"', 'href="app/desktop-navigation.css?v=12345"'],
   ['href="app/pocket-index.css?v=1.74.0"', 'href="app/pocket-index.css?v=12345"'],

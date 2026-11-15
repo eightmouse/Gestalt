@@ -115,5 +115,58 @@
     return tokens;
   }
 
-  return { safeNoteHref, tokenizeNoteInline };
+  const validNoteId = (id) => typeof id === "string" && /^(?:main|n-[a-f0-9]{32})$/.test(id);
+
+  function noteHeading(line, fallback = "Untitled note") {
+    const heading = /^:::(?:previous-note|note) (.*)$/.exec(line);
+    if (!heading) return null;
+    const text = heading[1].trim();
+    const identity = /(?:^| )\{#(main|n-[a-f0-9]{32})\}$/.exec(text);
+    return identity
+      ? { title: text.slice(0, identity.index).trim() || fallback, id: identity[1] }
+      : { title: text || fallback };
+  }
+
+  function parseNotes(body) {
+    const lines = body.split(/\r?\n/);
+    const notes = [];
+    for (let index = 0; index < lines.length; index++) {
+      const heading = noteHeading(lines[index]);
+      if (!heading) continue;
+      const start = ++index;
+      while (index < lines.length && lines[index].trim() !== ":::") index++;
+      notes.push({ ...heading, body: lines.slice(start, index).join("\n").trim() });
+    }
+    if (!notes.length && body.trim()) notes.push({ id: "main", title: "Current note", body: body.trim() });
+    return notes;
+  }
+
+  function addNoteIds(body, createId) {
+    const parts = body.split(/(\r?\n)/);
+    let inNote = false;
+    for (let index = 0; index < parts.length; index += 2) {
+      const line = parts[index];
+      if (inNote) {
+        if (line.trim() === ":::") inNote = false;
+        continue;
+      }
+      const heading = noteHeading(line);
+      if (!heading) continue;
+      inNote = true;
+      if (!heading.id) {
+        const id = createId();
+        if (!validNoteId(id)) throw new Error("Invalid generated note identity.");
+        parts[index] = `${line} {#${id}}`;
+      }
+    }
+    return parts.join("");
+  }
+
+  function noteIndexById(notes, id) {
+    if (!validNoteId(id)) return -1;
+    const index = notes.findIndex((note) => note.id === id);
+    return index >= 0 && !notes.slice(index + 1).some((note) => note.id === id) ? index : -1;
+  }
+
+  return { safeNoteHref, tokenizeNoteInline, validNoteId, noteHeading, parseNotes, addNoteIds, noteIndexById };
 });

@@ -14,6 +14,8 @@ Successful records in a batch save are reconciled as each request completes. If 
 
 The change-review route checks an in-memory export-needed flag plus source/output modification times, so a missing or older generated index can prompt recovery after a server restart or manual file edit. Modification times are a freshness hint, not a full content-equivalence check. Publishing still exports and validates actual saved data before committing content changes.
 
+Each note link uses an ID stored on its `:::note` heading as `{#n-...}`. Studio preserves that ID when the title or text changes and assigns one to new note blocks. Keep the marker with the note if you edit raw MDX; `node scripts/backfill-note-ids.mjs` previews additions and `--write` assigns only missing IDs. Records with a single unwrapped note use `main`. The first note-link release must ship reader code and migrated content together; the content-only publisher refuses to send those markers to an older reader.
+
 ## Publishing
 
 Since `v1.52.0`, the local reader also exposes change review through the bell beside the desktop clock or handheld menu. Save Record first, close the entry, then review individual saved records or publish the batch from that bell. Counts and results survive section/entry changes because this view and full Studio share one publishing controller. Refreshing the pending list is read-only; Refresh archive only rebuilds saved content. Neither action saves unsaved drafts. There is no background polling or automatic publishing, and public Pages has no editing controls.

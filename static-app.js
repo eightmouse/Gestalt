@@ -241,6 +241,9 @@ function startRecordAccessSequence() {
 
 const state = {
   selectedId: "dashboard",
+  recordLinkMissing: false,
+  linkedNoteId: null,
+  noteLinkMissing: false,
   activeSection: "system",
   previousActiveSection: "system",
   panelOpen: false,
@@ -306,13 +309,15 @@ function selectedRecord() {
   return records.find((record) => record.id === state.selectedId) || records[0];
 }
 
-function openRecord(recordId, contentKey = "overview", noteIndex = null) {
+function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId = null) {
   const record = records.find((entry) => entry.id === recordId);
 
   if (!record) {
     return;
   }
 
+  if (record.section !== "system") window.GestaltRecordLinks?.open(window, record.id, noteId);
+  syncRecordLinkNotice(false);
   window.GestaltMemoryState?.record("record.open", { section: record.section });
 
   stopRecordAccessSequence();
@@ -337,13 +342,17 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null) {
   state.navOpen = false;
   state.noteSearchQuery = "";
   state.focusedNoteIndex = Number.isInteger(noteIndex) && noteIndex >= 0 ? noteIndex : null;
+  state.linkedNoteId = noteId;
+  state.noteLinkMissing = Boolean(noteId && state.focusedNoteIndex === null);
   state.noteBrowsePage = undefined;
   state.noteSearchPage = 0;
   state.updateHistoryOpen = false;
   if (!syncRecordWindow()) render();
   if (handheld) pocket.resolveTitle(root.querySelector(".record-window .record-title-text"));
   startRecordAccessSequence();
-  if (state.focusedNoteIndex > 0) revealFocusedNote();
+  if (record.section === "setup" && noteId && !state.noteLinkMissing) {
+    root.querySelector(`.record-window [data-setup-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "nearest" });
+  } else if (state.focusedNoteIndex > 0) revealFocusedNote();
 }
 
 function openSection(sectionId) {
@@ -351,6 +360,8 @@ function openSection(sectionId) {
     return;
   }
 
+  window.GestaltRecordLinks?.close(window);
+  syncRecordLinkNotice(false);
   state.previousActiveSection = state.activeSection;
   window.GestaltMemoryState?.record("section.enter", { section: sectionId });
   stopRecordAccessSequence();
@@ -373,6 +384,7 @@ function openSection(sectionId) {
 
 function openTimeline() {
   if (state.timelineOpen) return;
+  window.GestaltRecordLinks?.close(window);
   stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -395,6 +407,8 @@ function closeTimeline() {
 }
 
 function openHome() {
+  window.GestaltRecordLinks?.close(window);
+  syncRecordLinkNotice(false);
   stopRecordAccessSequence();
   if (state.activeSection !== "system") {
     state.previousActiveSection = state.activeSection;
@@ -1049,35 +1063,7 @@ function splitUpdateIndex(body) {
 
 function noteEntries(body) {
   const { mainBody } = splitUpdateIndex(body);
-  const lines = mainBody.split(/\r?\n/);
-  const notes = [];
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
-
-    if (!line.startsWith(":::note ") && !line.startsWith(":::previous-note ")) {
-      continue;
-    }
-
-    const title = line.slice(notePrefix.length).trim() || "Untitled note";
-    const innerLines = [];
-
-    index += 1;
-
-    while (index < lines.length && lines[index].trim() !== ":::") {
-      innerLines.push(lines[index]);
-      index += 1;
-    }
-
-    notes.push({ title, body: innerLines.join("\n").trim() });
-  }
-
-  if (!notes.length && mainBody.trim()) {
-    notes.push({ title: "Current note", body: mainBody.trim() });
-  }
-
-  return notes;
+  return window.GestaltNoteInline?.parseNotes?.(mainBody) ?? (mainBody.trim() ? [{ title: "Current note", body: mainBody.trim() }] : []);
 }
 
 function setupHardwareFallback(body) {
@@ -1110,10 +1096,9 @@ function markdownBody(body) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const key = `data-line="${index}"`;
-    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
+    const heading = window.GestaltNoteInline?.noteHeading?.(line, "Previous note");
 
-    if (line.startsWith(":::note ") || line.startsWith(":::previous-note ")) {
-      const title = line.slice(notePrefix.length).trim();
+    if (heading) {
       const innerLines = [];
 
       index += 1;
@@ -1124,7 +1109,7 @@ function markdownBody(body) {
       }
 
       output.push(`<details class="note-entry" ${key}>
-        <summary><span>${escapeHtml(title || "Previous note")}</span><i>open</i></summary>
+        <summary><span>${escapeHtml(heading.title)}</span><i>open</i></summary>
         <div class="note-entry-body">${markdownBody(innerLines.join("\n"))}</div>
       </details>`);
       continue;
@@ -1364,6 +1349,7 @@ function renderNoteRows({ notes, openIndex }) {
         <span class="note-entry-title">${escapeHtml(titleParts.title)}</span>
         <i aria-hidden="true">open</i>
       </summary>
+      ${note.id ? renderNoteLink(note.id) : ""}
       <div class="note-entry-body" data-note-body>${open ? `<div class="record-body">${markdownBody(note.body)}</div>` : ""}</div>
     </details>`;
   }).join("");
@@ -1555,7 +1541,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.74.4</span>
+        <span>v1.75.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1569,7 +1555,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.74.4</span>
+        <span class="version-label">v1.75.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1589,7 +1575,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.74.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.75.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2437,6 +2423,7 @@ function setupRecordWindow(record) {
 
   return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} is-setup-record is-setup-record--${group}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} setup terminal">
     ${recordAccessSurfaceMarkup()}
+    ${recordLinkFeedback(false, state.noteLinkMissing)}
     <div class="setup-window-shell">
       <section class="setup-console setup-console--${group}" aria-label="${escapeHtml(record.title)} setup profile">
         ${setupPrompt(record, profile.command)}
@@ -2449,11 +2436,7 @@ function setupRecordWindow(record) {
               <div class="setup-console-prompt">
                 <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>cat notes.log</strong>
               </div>
-              <div class="setup-note-stack">
-                ${notes
-                  .map((note) => `<article class="setup-note"><h3>// ${escapeHtml(note.title)}</h3><div class="record-body">${markdownBody(note.body)}</div></article>`)
-                  .join("")}
-              </div>
+              ${renderSetupNotes(notes)}
             </section>`
           : ""
       }
@@ -2467,10 +2450,13 @@ function setupPrompt(record, command) {
     <div class="setup-prompt-command">
       <span>eightmouse@gestalt</span><i>:</i><span>${escapeHtml(setupPathFor(record))}</span><i>$</i><strong>${escapeHtml(command)}</strong>
     </div>
-    <div class="window-actions setup-window-actions">
-      <button type="button" data-window-action="minimize" aria-label="Minimize setup terminal">minimize</button>
-      <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore setup terminal" : "Maximize setup terminal"}">${state.panelMaximized ? "restore" : "maximize"}</button>
-      <button type="button" data-window-action="close" aria-label="Close setup terminal">close</button>
+    <div class="setup-prompt-actions">
+      ${recordLinkButton()}
+      <div class="window-actions setup-window-actions">
+        <button type="button" data-window-action="minimize" aria-label="Minimize setup terminal">minimize</button>
+        <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore setup terminal" : "Maximize setup terminal"}">${state.panelMaximized ? "restore" : "maximize"}</button>
+        <button type="button" data-window-action="close" aria-label="Close setup terminal">close</button>
+      </div>
     </div>
   </div>`;
 }
@@ -2520,12 +2506,12 @@ function setupNoteBody(record, notes) {
       <h2>${escapeHtml(record.title)}</h2>
       ${record.summary ? `<p class="setup-motd">${escapeHtml(record.summary)}</p>` : ""}
     </div>
-    <div class="setup-note-stack">
-      ${noteFiles
-        .map((note) => `<article class="setup-note"><h3>// ${escapeHtml(note.title)}</h3><div class="record-body">${markdownBody(note.body)}</div></article>`)
-        .join("")}
-    </div>
+    ${renderSetupNotes(noteFiles)}
   </div>`;
+}
+
+function renderSetupNotes(notes) {
+  return `<div class="setup-note-stack">${notes.map((note) => `<article class="setup-note"${note.id ? ` data-setup-note-id="${escapeHtml(note.id)}"` : ""}><h3>// ${escapeHtml(note.title)}</h3>${note.id ? renderNoteLink(note.id) : ""}<div class="record-body">${markdownBody(note.body)}</div></article>`).join("")}</div>`;
 }
 
 function setupFetchDetails(record, profile, specs, command) {
@@ -2580,13 +2566,17 @@ function recordWindow(record) {
     <header class="window-bar">
       ${pocketBack()}
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
-      <div class="window-actions">
-        <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
-        <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore record" : "Maximize record"}">${state.panelMaximized ? "restore" : "maximize"}</button>
-        <button type="button" data-window-action="close" aria-label="Close record">close</button>
+      <div class="window-control-group">
+        ${record.section !== "system" ? recordLinkButton() : ""}
+        <div class="window-actions">
+          <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
+          <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore record" : "Maximize record"}">${state.panelMaximized ? "restore" : "maximize"}</button>
+          <button type="button" data-window-action="close" aria-label="Close record">close</button>
+        </div>
       </div>
     </header>
 
+    ${record.section !== "system" ? recordLinkFeedback(false, state.noteLinkMissing) : ""}
     <div class="record-layout">
       <div class="record-main">
         <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}">
@@ -2825,6 +2815,7 @@ async function refreshPublicRoadmap() {
 
 function openRoadmap() {
   if (state.roadmapOpen || recordMotionController?.busy) return;
+  window.GestaltRecordLinks?.close(window);
   stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -3037,6 +3028,19 @@ function pocketBack() {
   return `<button class="pocket-record-back" type="button" data-window-action="close">${pocketIcon('<path d="m12 19-7-7 7-7M5 12h14"/>')}Back</button>`;
 }
 
+function recordLinkButton(noteId) {
+  const label = noteId ? "Copy note link" : "Copy record link";
+  return `<button class="record-link-button" type="button" ${noteId ? `data-copy-note-link="${escapeHtml(noteId)}"` : "data-copy-record-link"} aria-label="${label}" title="${label}">${pocketIcon('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>')}</button>`;
+}
+
+function recordLinkFeedback(note = false, unavailable = false) {
+  return `<div class="record-link-feedback"><span data-record-copy-status role="status">${unavailable ? "This note is not available in the record." : ""}</span><input aria-label="${note ? "Note" : "Record"} link" type="url" readonly hidden></div>`;
+}
+
+function renderNoteLink(noteId) {
+  return `<div class="note-link-tools">${recordLinkButton(noteId)}${recordLinkFeedback(true)}</div>`;
+}
+
 function pocketHeader() {
   if (!pocket) return "";
   return `<header class="pocket-header"><div class="pocket-brand"><strong>GESTALT</strong><small>HANDHELD FIELD MODE</small></div><div class="pocket-tools">
@@ -3188,26 +3192,53 @@ function syncTimelineWindow() {
 
 function closeRecord() {
   if (!state.panelOpen || recordMotionController?.busy) return;
-  const finish = () => {
-    window.GestaltMemoryState?.record("record.close");
-    stopRecordAccessSequence();
-    state.panelOpen = false;
-    state.panelMinimized = false;
-    minimizedRecordWindow = null;
-    root.querySelector(".record-window")?.remove();
-    root.querySelector("[data-record-backdrop]")?.remove();
-    if (pocket?.isHandheld() && state.pocketSearchReturn !== null) {
-      state.searchQuery = state.pocketSearchReturn;
-      state.searchOpen = true;
-      syncSearchPanel();
-    }
-    state.pocketSearchReturn = null;
-    if (recordRenderPending) { recordRenderPending = false; render(); }
-    else syncRecordWindowChrome();
-  };
+  const finish = () => { dismissRecordView(); window.GestaltRecordLinks?.close(window); };
   if (recordMotionController) {
     recordMotionController.close({ node: root.querySelector(".record-window"), enabled: !pocket?.isHandheld() && state.entryAccessMode !== "off", onComplete: finish });
   } else finish();
+}
+
+function dismissRecordView() {
+  window.GestaltMemoryState?.record("record.close");
+  stopRecordAccessSequence();
+  state.panelOpen = false;
+  state.panelMinimized = false;
+  minimizedRecordWindow = null;
+  root.querySelector(".record-window")?.remove();
+  root.querySelector("[data-record-backdrop]")?.remove();
+  if (pocket?.isHandheld() && state.pocketSearchReturn !== null) {
+    state.searchQuery = state.pocketSearchReturn;
+    state.searchOpen = true;
+    syncSearchPanel();
+  }
+  state.pocketSearchReturn = null;
+  if (recordRenderPending) { recordRenderPending = false; render(); }
+  else syncRecordWindowChrome();
+}
+
+function syncRecordLinkNotice(missing) {
+  state.recordLinkMissing = missing;
+  const notice = root.querySelector("[data-record-link-notice]");
+  if (notice) notice.textContent = missing ? "This record is not available in the archive." : "";
+}
+
+function syncRecordLocation() {
+  const links = window.GestaltRecordLinks;
+  if (!links || !state.bootDismissed || state.localMemory === "prompt") return;
+  const hash = window.location.hash;
+  const target = links.target(hash);
+  const record = target ? records.find((entry) => entry.id === target.recordId && entry.section !== "system") : null;
+  const noteId = target?.noteId ?? null;
+  if (record && state.panelOpen && state.selectedId === record.id && state.linkedNoteId === noteId) return;
+  if (record || state.panelOpen || state.panelMinimized) recordMotionController?.cancel();
+  if (record) {
+    const index = noteId ? window.GestaltNoteInline?.noteIndexById?.(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) ?? -1 : -1;
+    openRecord(record.id, index >= 0 ? "notes" : "overview", index >= 0 ? index : null, noteId);
+  }
+  else {
+    if (state.panelOpen || state.panelMinimized) dismissRecordView();
+    syncRecordLinkNotice(links.isRecordLink(hash));
+  }
 }
 
 function minimizeRecord() {
@@ -3255,7 +3286,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.74.4</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.75.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3377,6 +3408,7 @@ function render() {
     ${archiveNavigationMenu()}
     ${pocketHeader()}
     <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" data-pocket-section="${state.activeSection}" aria-label="Gestalt archive">
+      <p class="record-link-notice" data-record-link-notice role="status">${state.recordLinkMissing ? "This record is not available in the archive." : ""}</p>
       ${pocketIndex()}
       <header class="workspace-header">
         ${workspaceHeading()}
@@ -3467,6 +3499,7 @@ function completeBoot() {
   } else prompt?.remove();
   syncDesktopNavigation();
   syncMemoryTrace();
+  syncRecordLocation();
 }
 
 function syncDashboardGreeting(date = new Date()) {
@@ -3662,6 +3695,12 @@ document.addEventListener("click", (event) => {
   const clickTarget = event.target;
 
   if (!(clickTarget instanceof Element)) {
+    return;
+  }
+
+  const copyLink = clickTarget.closest("[data-copy-record-link], [data-copy-note-link]");
+  if (copyLink instanceof HTMLButtonElement) {
+    void window.GestaltRecordLinks?.copyFromControl(copyLink, state.selectedId, copyLink.dataset.copyNoteLink);
     return;
   }
 
@@ -4070,6 +4109,7 @@ window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change",
 });
 
 registerMediaCacheWorker();
+window.addEventListener("popstate", syncRecordLocation);
 render();
 let weatherStarted = !pocket?.isHandheld();
 if (weatherStarted) void requestWeather();

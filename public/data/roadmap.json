@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "14 / 11 / 2026",
+  "updated": "15 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Link directly to a record or note",
+          "detail": "Copy a record link from its window or a note link from the expanded note. Links open the right reading page, even for older notes and archived records. Back returns to the current browsing section.",
+          "version": "v1.75.0",
+          "releasedOn": "2026-11-15"
+        },
         {
           "title": "Aligned reading panes",
           "detail": "Projects, Games and Logs share one pane height in wide Terminal mode. The Reading Desk stays full height even with only a few logs, and longer lists scroll without moving the bottom edge.",

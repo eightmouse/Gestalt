@@ -12,7 +12,7 @@ function compile(source, globals = {}) {
   return context;
 }
 const chronology = compile(read("lib/log-archive.ts")).exports;
-const utils = compile(read("components/archive/record-utils.ts"), { require: (id) => id === "@/lib/log-archive" ? chronology : require(id) }).exports;
+const utils = compile(read("components/archive/record-utils.ts"), { require: (id) => id === "@/lib/log-archive" ? chronology : require(id === "@/public/note-inline.js" ? "../public/note-inline.js" : id) }).exports;
 const search = compile(read("components/archive/search-utils.ts"), { require: (id) => id === "@/components/archive/record-utils" ? utils : require(id) }).exports;
 const source = read("components/archive-os.tsx");
 const ast = ts.createSourceFile("archive-os.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

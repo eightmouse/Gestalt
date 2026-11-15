@@ -6,7 +6,7 @@ import ts from "typescript";
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const source = read("static-app.js");
 const ast = ts.createSourceFile("static-app.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-const functions = ["syncRecordWindow", "syncWorkspaceFocus", "syncRecordWindowChrome", "removeReadingWindows", "removeArchiveFolderWindow", "syncArchiveFolderWindow", "openArchiveFolder", "closeArchiveFolder", "dismissArchiveMenu", "syncTimelineWindow", "openTimeline", "closeTimeline", "syncRoadmapWindow", "openRoadmap", "closeRoadmap", "closeRecord", "completeBoot", "openOsBehaviour", "syncOsBehaviourDialog", "openSection", "openHome", "workspaceHeading", "syncSection"].map((name) => {
+const functions = ["syncRecordWindow", "syncWorkspaceFocus", "syncRecordWindowChrome", "removeReadingWindows", "removeArchiveFolderWindow", "syncArchiveFolderWindow", "openArchiveFolder", "closeArchiveFolder", "dismissArchiveMenu", "syncTimelineWindow", "openTimeline", "closeTimeline", "syncRoadmapWindow", "openRoadmap", "closeRoadmap", "closeRecord", "dismissRecordView", "syncRecordLocation", "syncRecordLinkNotice", "completeBoot", "openOsBehaviour", "syncOsBehaviourDialog", "openSection", "openHome", "workspaceHeading", "syncSection"].map((name) => {
   const node = ast.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === name);
   assert.ok(node, `${name} exists`);
   return node.getText(ast);

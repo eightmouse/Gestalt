@@ -135,6 +135,12 @@
   .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
   .record-window.is-maximized .record-layout:not(.is-editing-record) { grid-template-columns: minmax(0, 1fr); }
   .record-window .window-edit-action { min-inline-size: 44px; min-block-size: 44px; }
+  .record-window .record-link-button { inline-size: 44px; block-size: 44px; }
+  .record-window .setup-console-prompt:has(.record-link-button) { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .record-window .setup-console-prompt:has(.record-link-button) .setup-prompt-command { grid-column: 1 / -1; grid-row: 2; }
+  .record-window .setup-console-prompt:has(.record-link-button) .setup-prompt-actions { grid-column: 2; grid-row: 1; }
+  .record-window .record-link-feedback { inset-block-start: calc(var(--pocket-safe-top) + var(--record-titlebar-size) + 8px); inset-inline-end: max(12px, var(--pocket-safe-right)); }
+  .record-window .record-link-feedback input { font-size: 16px; }
   .record-window .record-heading h2 { position: relative; font-family: var(--pocket-mono); font-size: 30px; letter-spacing: 0; }
   .record-window .record-title-text { font-size: inherit; line-height: inherit; letter-spacing: 0; text-wrap: wrap; overflow-wrap: anywhere; }
   .record-heading [data-pocket-resolving] .record-title-text:not(.pocket-title-cipher) { opacity: 0; }

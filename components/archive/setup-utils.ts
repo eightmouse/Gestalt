@@ -87,7 +87,7 @@ export function setupPathFor(record: RecordEntry): string {
   return `${path}/${record.id}`;
 }
 
-export function setupNarrativeNotes(record: RecordEntry): Array<{ title: string; body: string }> {
+export function setupNarrativeNotes(record: RecordEntry): ReturnType<typeof noteEntries> {
   const hasExplicitNotes = /(^|\n):::(?:previous-note|note)\s+/i.test(record.body);
 
   if (setupGroupFor(record) !== "notes" && !hasExplicitNotes) {

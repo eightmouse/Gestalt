@@ -28,7 +28,7 @@ try {
   git("config", "user.name", "Publish fixture");
   git("config", "user.email", "fixture@example.invalid");
   git("config", "core.autocrlf", "false");
-  for (const file of ["scripts/publish-site.mjs", "scripts/static-cache.mjs", "scripts/export-static-records.mjs", "scripts/validate-content.mjs", "scripts/validate-notebook.mjs", "lib/publish-paths.mjs", "public/image-framing.js", "public/roadmap.mjs", "public/data/roadmap.json"]) {
+  for (const file of ["scripts/publish-site.mjs", "scripts/static-cache.mjs", "scripts/export-static-records.mjs", "scripts/validate-content.mjs", "scripts/validate-notebook.mjs", "lib/publish-paths.mjs", "public/image-framing.js", "public/note-inline.js", "public/roadmap.mjs", "public/data/roadmap.json"]) {
     mkdirSync(path.dirname(path.join(fixture, file)), { recursive: true });
     copyFileSync(path.join(root, file), path.join(fixture, file));
   }
@@ -47,6 +47,12 @@ try {
   git("remote", "add", "origin", origin); git("push", "origin", "main");
   const baseline = git("rev-parse", "HEAD");
   const baselineExporter = read("scripts/export-static-records.mjs");
+  const migratedNote = source.replace("Original content.", `:::note Example {#n-${"a".repeat(32)}}\nPrivate fixture note.\n:::`);
+  write("content/records/fixture.mdx", migratedNote);
+  exportLocal();
+  rejected(/Note links need their first reviewed code release/, "--dry-run");
+  assert.equal(read("content/records/fixture.mdx"), migratedNote);
+  assert.equal(git("rev-parse", "HEAD"), baseline);
   write("content/records/fixture.mdx", source.replace("Original content.", "Saved owner edit."));
   rmSync(path.join(fixture, "content/records/removed.mdx"));
   rmSync(path.join(fixture, "public/media/records/removed.jpg"));

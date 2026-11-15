@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
+import noteInline from "../public/note-inline.js";
 
 const names = ["recordDisplaySummary", "noteEntries", "splitUpdateIndex", "excerptFromBody", "cleanSummaryText", "cleanExcerptLine"];
 const contexts = ["../components/archive/record-utils.ts", "../static-app.js"].map((file) => {
@@ -12,7 +13,7 @@ const contexts = ["../components/archive/record-utils.ts", "../static-app.js"].m
     assert.ok(declaration, `${file}: missing ${name}`);
     return declaration.getText(ast).replace(/^export /, "");
   }).join("\n");
-  const context = vm.createContext({});
+  const context = vm.createContext({ noteInline, window: { GestaltNoteInline: noteInline } });
   vm.runInContext(ts.transpileModule(functions, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText, context);
   return context;
 });

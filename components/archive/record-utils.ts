@@ -1,5 +1,6 @@
 import type { RecordEntry } from "@/lib/types";
 import { compareLogWritingOrder, logArchiveDate } from "@/lib/log-archive";
+import noteInline from "@/public/note-inline.js";
 
 export type ArchiveMetrics = {
   activeGame?: Pick<RecordEntry, "title">;
@@ -99,37 +100,9 @@ export function splitUpdateIndex(body: string): { mainBody: string; updates: str
   return { mainBody, updates };
 }
 
-export function noteEntries(body: string): Array<{ title: string; body: string }> {
+export function noteEntries(body: string) {
   const { mainBody } = splitUpdateIndex(body);
-  const lines = mainBody.split(/\r?\n/);
-  const notes: Array<{ title: string; body: string }> = [];
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
-
-    if (!line.startsWith(":::note ") && !line.startsWith(":::previous-note ")) {
-      continue;
-    }
-
-    const title = line.slice(notePrefix.length).trim() || "Untitled note";
-    const innerLines: string[] = [];
-
-    index += 1;
-
-    while (index < lines.length && lines[index].trim() !== ":::") {
-      innerLines.push(lines[index]);
-      index += 1;
-    }
-
-    notes.push({ title, body: innerLines.join("\n").trim() });
-  }
-
-  if (!notes.length && mainBody.trim()) {
-    notes.push({ title: "Current note", body: mainBody.trim() });
-  }
-
-  return notes;
+  return noteInline.parseNotes(mainBody);
 }
 
 export function notePage(notes: ReturnType<typeof noteEntries>, query: string, requestedPage?: number, focusedIndex?: number) {

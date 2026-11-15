@@ -16,6 +16,7 @@ import { setupHardwareSource } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import noteInline, { type NoteInlineToken } from "@/public/note-inline.js";
+import { NoteLinkControl } from "@/components/archive/record-link-control";
 import { steamBannerImage } from "@/public/steam-display.mjs";
 import imageFraming from "@/public/image-framing.js";
 import memoryState from "@/public/memory-state.js";
@@ -77,7 +78,7 @@ function getTextList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry }) {
+export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record, shareable }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry; shareable?: boolean }) {
   if (activeContent === "overview") {
     return <RecordOverviewPage record={record} />;
   }
@@ -91,7 +92,7 @@ export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearch
   }
 
   if (activeContent === "notes") {
-    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} />;
+    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} shareable={shareable} />;
   }
 
   if (activeContent === "technical") {
@@ -354,7 +355,7 @@ export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange:
   );
 }
 
-function NotesPage({ focusedIndex, query, record }: { focusedIndex?: number; query: string; record: RecordEntry }) {
+function NotesPage({ focusedIndex, query, record, shareable }: { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean }) {
   const pageRef = useRef<HTMLElement>(null);
   const search = query.trim().toLowerCase();
   const [browsePage, setBrowsePage] = useState<number>();
@@ -393,7 +394,7 @@ function NotesPage({ focusedIndex, query, record }: { focusedIndex?: number; que
       <div className="note-stack">
         {notes.length > 0 ? (
           notes.map((note) => (
-            <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} />
+            <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} recordId={shareable && note.id ? record.id : undefined} noteId={note.id} />
           ))
         ) : (
           <p className="notes-empty">No note matches that signal.</p>
@@ -403,7 +404,7 @@ function NotesPage({ focusedIndex, query, record }: { focusedIndex?: number; que
   );
 }
 
-function NoteEntry({ body, defaultOpen, index, title }: { body: string; defaultOpen: boolean; index?: number; title: string }) {
+function NoteEntry({ body, defaultOpen, index, title, recordId, noteId }: { body: string; defaultOpen: boolean; index?: number; title: string; recordId?: string; noteId?: string }) {
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const initializedRef = useRef(false);
   const [hasLoaded, setHasLoaded] = useState(defaultOpen);
@@ -439,6 +440,7 @@ function NoteEntry({ body, defaultOpen, index, title }: { body: string; defaultO
         )}
         <i aria-hidden="true">open</i>
       </summary>
+      {recordId && noteId ? <NoteLinkControl id={recordId} noteId={noteId} /> : null}
       {hasLoaded ? <div className="note-entry-body"><RecordBody body={body} /></div> : null}
     </details>
   );
@@ -487,10 +489,9 @@ export function RecordBody({ body }: { body: string }) {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     const key = `${index}-${line}`;
-    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
+    const heading = noteInline.noteHeading(line, "Previous note");
 
-    if (line.startsWith(":::note ") || line.startsWith(":::previous-note ")) {
-      const title = line.slice(notePrefix.length).trim() || "Previous note";
+    if (heading) {
       const innerLines: string[] = [];
 
       index += 1;
@@ -500,7 +501,7 @@ export function RecordBody({ body }: { body: string }) {
         index += 1;
       }
 
-      nodes.push(<NoteEntry body={innerLines.join("\n")} defaultOpen={false} key={key} title={title} />);
+      nodes.push(<NoteEntry body={innerLines.join("\n")} defaultOpen={false} key={key} title={heading.title} />);
       continue;
     }
 

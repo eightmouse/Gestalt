@@ -7,6 +7,7 @@ import { recordDisplaySummary } from "@/components/archive/record-utils";
 import { compareSectionRecords } from "@/lib/log-archive";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { formatNoteSelection, insertNoteLink, type NoteFormat } from "@/lib/note-formatting";
+import noteInline, { type ArchiveNote } from "@/public/note-inline.js";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import type { SteamRecordSeed } from "@/public/steam-display.mjs";
 import imageFraming, { type HeaderFrame, type ImageFrame } from "@/public/image-framing.js";
@@ -451,14 +452,16 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
       let exportRequired = false;
 
       for (const item of writes) {
-        const data = await writeRecord(item.draft.form, item.draft.body);
-        const savedForm = { ...item.draft.form, body: item.draft.body, id: data.id, originalId: data.id, writtenAt: data.writtenAt, writtenOrder: data.writtenOrder };
+        const body = noteInline.addNoteIds(item.draft.body, newNoteId);
+        const data = await writeRecord(item.draft.form, body);
+        const savedForm = { ...item.draft.form, body, id: data.id, originalId: data.id, writtenAt: data.writtenAt, writtenOrder: data.writtenOrder };
         savedCount += 1;
         exportRequired = !data.staticExported;
         setArchiveRefreshRequired(exportRequired);
 
         if (item.current) {
           formRef.current = savedForm;
+          bodyDraftRef.current = body;
           selectedIdRef.current = data.id;
           setSelectedId(data.id);
           setForm(savedForm);
@@ -466,7 +469,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
           setBufferedDirty(false);
         }
 
-        nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(savedForm, item.draft.body), item.draft.form.originalId || item.draft.form.id);
+        nextRecords = upsertStudioRecord(nextRecords, toRecordPreview(savedForm, body), item.draft.form.originalId || item.draft.form.id);
         setStudioRecords(nextRecords);
         onRecordsChange?.(nextRecords, selectedIdRef.current, { keepEditorOpen: inline });
         storeDrafts((current) => {
@@ -1992,10 +1995,11 @@ function NoteStackEditor({
   }, [value]);
 
   const commitNotes = (nextNotes: StudioNote[]) => {
-    const serialized = serializeStudioNotes(nextNotes, updateIndex);
+    const identifiedNotes = nextNotes.map((note) => note.id ? note : { ...note, id: newNoteId() });
+    const serialized = serializeStudioNotes(identifiedNotes, updateIndex);
 
     lastSerializedRef.current = serialized;
-    setNotes(nextNotes);
+    setNotes(identifiedNotes);
     onCommit(serialized);
   };
 
@@ -2011,7 +2015,7 @@ function NoteStackEditor({
     setOpenIndex(0);
   };
 
-  const updateNote = (index: number, key: keyof StudioNote, nextValue: string) => {
+  const updateNote = (index: number, key: "title" | "body", nextValue: string) => {
     const nextNotes = [...notes];
     nextNotes[index] = { ...nextNotes[index], [key]: nextValue };
     commitNotes(nextNotes);
@@ -2580,7 +2584,7 @@ function defaultStudioBody(section: StudioSection, setupGroup = ""): string {
 
 function isGeneratedSetupBody(value: string): boolean {
   return (
-    /^:::note\s+\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s+-\s+New Note\s*\r?\nWrite the first (setup )?note here\.\s*\r?\n:::\s*$/i.test(value.trim()) ||
+    /^:::note\s+\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4}\s+-\s+New Note(?: \{#n-[a-f0-9]{32}\})?\s*\r?\nWrite the first (setup )?note here\.\s*\r?\n:::\s*$/i.test(value.trim()) ||
     ["System profile pending.", "Shortcut registered.", "Device capture registered."].includes(value.trim())
   );
 }
@@ -2814,10 +2818,11 @@ type MilestoneDraft = {
   status: string;
 };
 
-type StudioNote = {
-  title: string;
-  body: string;
-};
+type StudioNote = ArchiveNote;
+
+function newNoteId(): string {
+  return `n-${crypto.randomUUID().replaceAll("-", "")}`;
+}
 
 function suggestedLogTitle(form: Pick<StudioForm, "section" | "originalId" | "title" | "body">): string | null {
   if (form.section !== "logs" || form.originalId || form.title.trim()) return null;
@@ -2839,35 +2844,7 @@ function studioHasUnsavedChanges(form: StudioForm, saved: StudioForm | null): bo
 
 function parseStudioNotes(value: string): StudioNote[] {
   const { mainBody } = splitStudioUpdateIndex(value);
-  const lines = mainBody.split(/\r?\n/);
-  const notes: StudioNote[] = [];
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
-    const notePrefix = line.startsWith(":::previous-note ") ? ":::previous-note " : ":::note ";
-
-    if (!line.startsWith(":::note ") && !line.startsWith(":::previous-note ")) {
-      continue;
-    }
-
-    const title = line.slice(notePrefix.length).trim() || "Untitled note";
-    const innerLines: string[] = [];
-
-    index += 1;
-
-    while (index < lines.length && lines[index].trim() !== ":::") {
-      innerLines.push(lines[index]);
-      index += 1;
-    }
-
-    notes.push({ title, body: innerLines.join("\n").trim() });
-  }
-
-  if (!notes.length && mainBody.trim()) {
-    notes.push({ title: "Current note", body: mainBody.trim() });
-  }
-
-  return notes;
+  return noteInline.parseNotes(mainBody);
 }
 
 function setupHardwareFallback(body: string): string {
@@ -2883,7 +2860,7 @@ function setupHardwareFallback(body: string): string {
 function serializeStudioNotes(notes: StudioNote[], updateIndex = ""): string {
   const serializedNotes = notes
     .filter((note) => note.title.trim() || note.body.trim())
-    .map((note) => `:::note ${note.title.trim() || "Untitled note"}\n${note.body.trim()}\n:::`)
+    .map((note) => `:::note ${note.title.trim() || "Untitled note"}${note.id ? ` {#${note.id}}` : ""}\n${note.body.trim()}\n:::`)
     .join("\n\n");
   const preservedIndex = updateIndex.trim();
 

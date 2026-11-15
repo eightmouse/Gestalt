@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
+import noteInline from "../public/note-inline.js";
 
 const require = createRequire(import.meta.url);
 function compiled(file, dependencies = {}) {
@@ -12,12 +13,12 @@ function compiled(file, dependencies = {}) {
   return context.exports;
 }
 const chronology = compiled("../lib/log-archive.ts");
-const react = compiled("../components/archive/record-utils.ts", { "@/lib/log-archive": chronology });
+const react = compiled("../components/archive/record-utils.ts", { "@/lib/log-archive": chronology, "@/public/note-inline.js": noteInline });
 const realRecords = compiled("../lib/content.ts").getRecords();
 const staticSource = readFileSync(new URL("../static-app.js", import.meta.url), "utf8");
 const ast = ts.createSourceFile("static-app.js", staticSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-const staticContext = vm.createContext({});
-for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "splitNoteTitle", "escapeHtml", "pocketIcon"]) {
+const staticContext = vm.createContext({ window: { GestaltNoteInline: noteInline } });
+for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "splitNoteTitle", "escapeHtml", "pocketIcon", "renderNoteLink", "recordLinkButton", "recordLinkFeedback"]) {
   const declaration = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name);
   assert.ok(declaration, `Static function ${name} exists`);
   vm.runInContext(declaration.getText(ast), staticContext);

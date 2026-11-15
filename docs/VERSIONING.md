@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.74.4`. Previous site-code release: `v1.74.3` (16119c8e).
+Release target: `v1.75.0`. Previous site-code release: `v1.74.4` (e635c5d1).
+
+`v1.75.0` gives published records and individual notes shareable links on desktop and Pocket Index. Opening a note link resolves its persistent ID, selects the right page and expands the note. Existing note headings gain IDs without changing their wording, dates or bodies. Browser Back preserves the browsing section. The first release ships reader code and metadata together; Studio remains local and the Prism technical-stack edit is not part of this release.
 
 `v1.74.4` gives Projects, Games and Logs one shared pane height in wide Terminal mode. The list and preview edges align, and a sparse Logs list no longer cuts the Reading Desk short. Longer lists and excerpts scroll inside the panes without stretching individual cards. Compact desktop, handheld and Legacy layouts are unchanged. The saved FFXIV note and images remain local for a separate content publish.
 

@@ -232,7 +232,7 @@ assert.equal(archiveSheet.nodes.find((node) => node.selector === ".timeline-wind
 assert.equal(archiveSheet.nodes.find((node) => node.selector === ".setup-console-prompt").nodes.find((node) => node.prop === "min-block-size").value, "34px");
 const controlSize = (rule) => parseInt(rule.nodes.find((node) => node.prop === "block-size").value);
 const desktopControl = controlSize(archiveSheet.nodes.find((node) => node.selector === ".window-actions button"));
-const editControl = controlSize(archiveSheet.nodes.find((node) => node.selector === ".window-edit-action"));
+const editControl = controlSize(archiveSheet.nodes.find((node) => node.selectors?.includes(".window-edit-action")));
 assert.equal(editControl, desktopControl, "Desktop edit gears match the existing close/minimize/maximize control size");
 const mobileControls = [];
 archiveSheet.walkRules(".window-actions button", (rule) => { if (rule.parent.type === "atrule" && rule.parent.params.includes("max-width: 760px")) mobileControls.push(controlSize(rule)); });
