@@ -2054,7 +2054,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   background: rgba(var(--tone-ink, 217, 213, 193), 0.11);
 }
 
-.command-panel .search-suggestions small {
+.command-panel .search-suggestions small[data-cipher] {
   position: relative;
   inline-size: fit-content;
   max-inline-size: 100%;
@@ -2063,7 +2063,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   white-space: nowrap;
 }
 
-.command-panel .search-suggestions small::before {
+.command-panel .search-suggestions small[data-cipher]::before {
   content: attr(data-cipher);
   position: absolute;
   inset: 0;
@@ -2075,14 +2075,14 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   transition: opacity 160ms linear, clip-path 260ms steps(5, end);
 }
 
-.command-panel .search-suggestions button:hover small,
-.command-panel .search-suggestions button:focus-visible small {
+.command-panel .search-suggestions button:hover small[data-cipher],
+.command-panel .search-suggestions button:focus-visible small[data-cipher] {
   color: var(--muted);
   animation: glyph-resolve 460ms steps(5, end);
 }
 
-.command-panel .search-suggestions button:hover small::before,
-.command-panel .search-suggestions button:focus-visible small::before {
+.command-panel .search-suggestions button:hover small[data-cipher]::before,
+.command-panel .search-suggestions button:focus-visible small[data-cipher]::before {
   animation: glyph-decay 420ms steps(4, end) both;
 }
 
@@ -2098,6 +2098,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   min-inline-size: 44px;
   text-align: right;
 }
+
+.command-panel .search-suggestions small:not([data-cipher]) { overflow-wrap: anywhere; }
 
 .dashboard-grid {
   position: relative;

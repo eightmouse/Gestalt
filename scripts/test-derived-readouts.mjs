@@ -13,7 +13,13 @@ function compile(source, globals = {}) {
 }
 const chronology = compile(read("lib/log-archive.ts")).exports;
 const utils = compile(read("components/archive/record-utils.ts"), { require: (id) => id === "@/lib/log-archive" ? chronology : require(id === "@/public/note-inline.js" ? "../public/note-inline.js" : id) }).exports;
-const search = compile(read("components/archive/search-utils.ts"), { require: (id) => id === "@/components/archive/record-utils" ? utils : require(id) }).exports;
+const setup = compile(read("components/archive/setup-utils.ts"), { require: (id) => id === "@/components/archive/record-utils" ? utils : require(id) }).exports;
+const search = compile(read("components/archive/search-utils.ts"), { require: (id) => {
+  if (id === "@/components/archive/record-utils") return utils;
+  if (id === "@/components/archive/setup-utils") return setup;
+  if (id === "@/public/archive-search.js") return require("../public/archive-search.js");
+  return require(id);
+} }).exports;
 const source = read("components/archive-os.tsx");
 const ast = ts.createSourceFile("archive-os.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const component = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "ArchiveOS");
@@ -68,7 +74,8 @@ assert.ok(render().searchResults.some((item) => item.record?.id === "new-log"));
 assert.equal(calls.search, 2);
 context.searchOpen = false;
 render();
-const saved = records.map((record) => Object.freeze(record.id === "game" ? { ...record, updated: "2026-11-07", body: ":::note 07 / 11 / 2026 - Fresh session\nA fresh thought.\n:::" } : record));
+const noteId = "n-" + "f".repeat(32);
+const saved = records.map((record) => Object.freeze(record.id === "game" ? { ...record, updated: "2026-11-07", body: `:::note 07 / 11 / 2026 - Fresh session {#${noteId}}\nA fresh thought.\n:::` } : record));
 context.archiveRecords = saved;
 context.recordsBySection = bySection(saved);
 context.currentGame = saved.at(-1);
@@ -79,7 +86,7 @@ assert.equal(refreshed.archiveMetrics.latestActivityDate, "2026-11-07");
 assert.equal(refreshed.latestLog.id, "new-log", "Saving another record preserves original log writing order");
 context.searchOpen = true;
 context.searchQuery = "fresh session";
-assert.ok(render().searchResults.some((item) => item.record?.id === "game"), "A newly saved note title is searchable immediately");
+assert.ok(render().searchResults.some((item) => item.kind === "note" && item.noteId === noteId && item.record.id === "game"), "A newly saved note title is searchable immediately");
 context.currentGame = undefined;
 context.currentGameDisplay = null;
 const gameChanged = render();

@@ -3,39 +3,82 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
+import archiveSearch from "../public/archive-search.js";
+import noteInline from "../public/note-inline.js";
 
 function declaration(file, name) {
   const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
   const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith(".ts") ? ts.ScriptKind.TS : ts.ScriptKind.JS);
   return ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name).getText(ast).replace(/^export\s+/, "");
 }
+const firstId = "n-" + "a".repeat(32), secondId = "n-" + "b".repeat(32);
+const note = (title, id) => `:::note ${title}${id ? ` {#${id}}` : ""}\nUnindexed prose.\n:::`;
 const records = [
-  { id: "game", section: "games", title: "A game", type: "Play Log", status: "Playing", updated: "2026-10-23", summary: "A play log", body: "A distant place", priority: 0 },
-  { id: "log", section: "logs", title: "A field log", type: "Field Note", status: "Filed", updated: "2026-10-22", body: "A quiet evening", priority: 1 }
+  { id: "game", section: "games", title: "A game", type: "Play Log", status: "Playing", updated: "2026-10-23", summary: "A unique world", body: note("21 / 10 / 2026 - A distant place", firstId), priority: 0 },
+  { id: "log", section: "logs", title: "A field log", type: "Field Note", status: "Filed", updated: "2026-10-22", body: note("22 / 10 / 2026 - A distant place", secondId) + "\n" + note("A quiet evening"), priority: 1 },
+  { id: "setup", section: "setup", title: "Desktop", type: "Setup", status: "Filed", updated: "2026-10-23", body: note("Hidden hardware", firstId) + "\n" + note("By the window", secondId), priority: 0 },
+  { id: "plain", section: "logs", title: "Plain log", type: "Field Note", status: "Filed", updated: "2026-10-22", body: "One standalone body.", priority: 1 },
+  { id: "duplicate", section: "games", title: "Ambiguous entry", type: "Play Log", status: "Playing", updated: "2026-10-23", body: note("First duplicate", firstId) + "\n" + note("Second duplicate", firstId), priority: 0 }
 ];
 const original = JSON.stringify(records);
-const noteEntries = (body) => [{ title: body }];
-const react = vm.createContext({ records, noteEntries });
+let parsed = 0;
+const noteEntries = (body) => { parsed++; return noteInline.parseNotes(body); };
+const setupNarrativeNotes = (record) => noteEntries(record.body).filter(({ title }) => title !== "Hidden hardware");
+const react = vm.createContext({ records, noteEntries, setupNarrativeNotes, archiveSearch });
 vm.runInContext(ts.transpileModule(declaration("components/archive/search-utils.ts", "getSearchResults"), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, react);
-const pages = vm.createContext({ records, noteEntries, state: { searchQuery: "" }, currentGameRecord: () => records[0], latestLogRecord: () => records[1] });
+const pages = vm.createContext({ records: [...records], noteEntries, setupNarrativeNotes, window: { GestaltArchiveSearch: archiveSearch }, state: { searchQuery: "" }, currentGameRecord: () => records[0], latestLogRecord: () => records[1] });
 vm.runInContext(declaration("static-app.js", "searchResults"), pages);
 const keys = (items) => JSON.stringify(items.map((item) => [item.kind, item.id || item.record.id]));
-for (const query of ["", "   ", "settings", "behaviour", "startup", "game", "distant", "quiet", "no such entry"]) {
+for (const query of ["", "   ", "a", " g ", "s", "settings", "behaviour", "startup", "game", "distant", "quiet", "by the window", "hidden hardware", "current note", "duplicate", "unindexed prose", "no such entry"]) {
   pages.state.searchQuery = query;
   const a = react.getSearchResults(records, query, records[0], records[1]);
   const b = pages.searchResults();
   assert.equal(keys(a), keys(b), "React and Pages search remain in sync");
   if (!query.trim()) {
+    assert.equal(parsed, 0, "Opening the palette uses the command list without indexing the archive");
     assert.equal(a.length, 5);
     assert.deepEqual(Array.from(a, (item) => item.id).slice(2), ["cmd-roadmap", "cmd-connections", "cmd-os-behaviour"], "Connections is a normal command directly below Roadmap and above Settings");
     assert.ok(a.every((item) => item.kind === "command"), "No unsolicited record cards in the default palette");
     assert.ok(a.some((item) => item.action === "behaviour" && item.title === "Settings"), "Settings is reachable without typing");
-  } else if (["distant", "quiet"].includes(query)) {
-    assert.ok(a.some((item) => item.kind === "record"), "Note-title search is retained");
+  } else if (query === "a") {
+    assert.equal(a.length, 5);
+    assert.ok(a.every((item) => item.kind !== "command" && /^a/i.test(item.title ?? item.record.title)), "One letter only matches the start of record and note titles, not shortcut text");
+    assert.ok(a.some((item) => item.kind === "note"));
+  } else if ([" g ", "s"].includes(query)) {
+    assert.equal(a.length, 0, "One-letter searches ignore non-prefix title matches and metadata");
+  } else if (["settings", "startup"].includes(query)) {
+    assert.ok(a.some((item) => item.action === "behaviour"), "The normal Settings command and its description remain searchable");
+  } else if (query === "quiet") {
+    assert.equal(a[0].record.id, "log", "A legacy note without an ID is still discoverable through its parent");
+  } else if (query === "distant") {
+    assert.deepEqual(a.map(({ kind, record, noteId }) => [kind, record.id, noteId]), [["note", "log", secondId], ["note", "game", firstId]]);
+    assert.equal(a[0].title, "A distant place");
+    assert.equal(a[0].detail, "A field log \u00b7 22 / 10 / 2026");
+  } else if (query === "by the window") {
+    assert.equal(a[0].noteId, secondId, "Setup narrative notes are searchable");
+    assert.equal(a[0].detail, "Desktop", "Undated notes don't claim to have a writing date");
+  } else if (["hidden hardware", "current note", "duplicate", "unindexed prose"].includes(query)) {
+    assert.equal(a.length, 0, "Don't index invisible notes, synthetic headings, ambiguous IDs, or note prose");
   }
 }
+assert.equal(parsed, records.length * 2, "Each reader indexes once per unchanged record collection");
 assert.equal(JSON.stringify(records), original);
 assert.ok(react.getSearchResults(records, "connections").some((item) => item.action === "connections"), "Connections remains searchable");
+assert.equal(react.getSearchResults(records, "unique world")[0].record.id, "game", "Existing record summary matches are retained");
+const saved = records.map((record) => record.id === "game" ? { ...record, body: note("A renamed note", firstId) } : record);
+assert.equal(react.getSearchResults(saved, "a renamed note")[0].noteId, firstId, "An immutable save refreshes the index without changing the note identity");
+
+Object.assign(pages, {
+  escapeHtml: (value) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
+  cipherizeText: () => "GLYPHS", recordStateKey: () => "filed"
+});
+Object.assign(pages.state, { searchOpen: true, searchQuery: "distant" });
+vm.runInContext(declaration("static-app.js", "searchPanel"), pages);
+assert.match(pages.searchPanel(), new RegExp(`data-open-record="log" data-open-note-id="${secondId}"[^>]*>\\s*<span><strong>A distant place</strong><small>A field log . 22 / 10 / 2026</small></span>\\s*<i>NOTE</i>`));
+pages.state.searchQuery = "a";
+assert.doesNotMatch(pages.searchPanel(), /palette-settings-button|<i>CMD<\/i>/, "No shortcut rows are rendered underneath Settings for a single-letter query");
+pages.state.searchQuery = "";
+assert.equal(pages.searchPanel().match(/class="palette-settings-button"/g)?.length, 1, "Clearing the input restores exactly one Settings button");
 
 function findNode(file, predicate) {
   const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");

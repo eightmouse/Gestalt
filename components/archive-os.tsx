@@ -483,17 +483,18 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setNavOpen(false);
   };
 
+  const openAddressedRecord = (record: RecordEntry, noteId?: string) => {
+    const index = noteId ? noteInline.noteIndexById(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) : -1;
+    openRecord(record, index >= 0 ? "notes" : "overview", index >= 0 ? index : undefined, noteId);
+  };
+
   const syncRecordLocation = useEffectEvent(() => {
     const hash = window.location.hash;
     const target = recordLinks.target(hash);
     const record = archiveRecords.find((entry) => entry.id === target?.recordId && entry.section !== "system");
     if (record && panelOpen && selectedId === record.id && linkedNoteId === target?.noteId) return;
     if (record || panelOpen || panelMinimized) recordMotionRef.current?.cancel();
-    if (record) {
-      const noteId = target?.noteId;
-      const index = noteId ? noteInline.noteIndexById(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) : -1;
-      openRecord(record, index >= 0 ? "notes" : "overview", index >= 0 ? index : undefined, noteId);
-    }
+    if (record) openAddressedRecord(record, target?.noteId);
     else {
       if (panelOpen || panelMinimized) dismissRecordView();
       setRecordLinkMissing(recordLinks.isRecordLink(hash));
@@ -659,6 +660,11 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   };
 
   const openSearchResult = (result: SearchResult) => {
+    if (result.kind === "note") {
+      openAddressedRecord(result.record, result.noteId);
+      return;
+    }
+
     if (result.kind === "record") {
       openRecord(result.record);
       return;

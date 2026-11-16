@@ -22,6 +22,5 @@ export type TimelineItem = {
 
 export type SearchResult =
   | { kind: "command"; id: string; title: string; detail: string; action?: "timeline" | "roadmap" | "connections" | "behaviour"; section?: RecordSection; record?: RecordEntry; content?: ContentKey }
-  | { kind: "record"; record: RecordEntry; detail: string };
-
-export type SearchCommand = Extract<SearchResult, { kind: "command" }>;
+  | { kind: "record"; record: RecordEntry; detail: string }
+  | { kind: "note"; id: string; noteId: string; title: string; detail: string; record: RecordEntry };

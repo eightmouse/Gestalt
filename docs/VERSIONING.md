@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.75.0`. Previous site-code release: `v1.74.4` (e635c5d1).
+Release target: `v1.76.0`. Previous site-code release: `v1.75.0` (0a4645b0).
+
+`v1.76.0` finds individual notes in the command palette. Matches show their parent entry and date when available, open directly on the right Notes page, and restore the query on handheld Back. One-letter queries only match title prefixes; clearing the input restores the default shortcuts. Both readers share one local search index. No authored records, media or dependencies changed.
 
 `v1.75.0` gives published records and individual notes shareable links on desktop and Pocket Index. Opening a note link resolves its persistent ID, selects the right page and expands the note. Existing note headings gain IDs without changing their wording, dates or bodies. Browser Back preserves the browsing section. The first release ships reader code and metadata together; Studio remains local and the Prism technical-stack edit is not part of this release.
 

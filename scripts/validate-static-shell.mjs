@@ -40,6 +40,7 @@ const cacheTokenCases = [
   ['src="public/workspace-tools.js?v=1.62.0"', 'src="public/workspace-tools.js?v=12345"'],
   ['src="public/record-motion.js?v=1.64.0"', 'src="public/record-motion.js?v=12345"'],
   ['src="public/record-links.js?v=1"', 'src="public/record-links.js?v=12345"'],
+  ['src="public/archive-search.js?v=1"', 'src="public/archive-search.js?v=12345"'],
   ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],
   ['href="app/desktop-navigation.css?v=1.54.0"', 'href="app/desktop-navigation.css?v=12345"'],
   ['href="app/pocket-index.css?v=1.74.0"', 'href="app/pocket-index.css?v=12345"'],

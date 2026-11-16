@@ -928,50 +928,9 @@ function getTimelineItems(limit) {
 }
 
 function searchResults() {
-  const query = state.searchQuery.trim().toLowerCase();
-  const currentGame = currentGameRecord();
-  const latestLog = latestLogRecord();
-  const commands = [
-    { kind: "command", id: "cmd-dashboard", title: "Open dashboard", detail: "Jump to system snapshot", section: "system" },
-    { kind: "command", id: "cmd-timeline", title: "Open timeline", detail: "Reconstruct recent archive activity", action: "timeline" },
-    { kind: "command", id: "cmd-roadmap", title: "Open roadmap", detail: "Work in progress and filed milestones", action: "roadmap" },
-    { kind: "command", id: "cmd-connections", title: "Connections", detail: "External channels and social profiles", action: "connections" },
-    { kind: "command", id: "cmd-os-behaviour", title: "Settings", detail: "Startup, navigation and display settings", action: "behaviour" },
-    { kind: "command", id: "cmd-projects", title: "Open projects", detail: "Browse active and filed processes", section: "projects" },
-    { kind: "command", id: "cmd-games", title: "Open games", detail: "Browse session and past logs", section: "games" },
-    { kind: "command", id: "cmd-logs", title: "Open logs", detail: "Browse field notes", section: "logs" },
-    ...(currentGame ? [{ kind: "command", id: "cmd-active-game", title: "Open active game", detail: currentGame.title, record: currentGame, content: "notes" }] : []),
-    ...(latestLog ? [{ kind: "command", id: "cmd-latest-log", title: "Open latest log", detail: latestLog.title, record: latestLog }] : [])
-  ];
-
-  if (!query) {
-    return commands.slice(0, 5);
-  }
-
-  const commandResults = commands.filter((command) => `${command.title} ${command.detail}`.toLowerCase().includes(query));
-  const recordResults = records
-    .filter((record) => record.section !== "system")
-    .filter((record) => {
-      const searchable = [
-        record.title,
-        record.type,
-        record.status,
-        record.section,
-        record.summary,
-        noteEntries(record.body).map((note) => note.title).join(" ")
-      ].join(" ").toLowerCase();
-
-      return searchable.includes(query);
-    })
-    .sort((a, b) => {
-      const aStarts = a.title.toLowerCase().startsWith(query) ? 0 : 1;
-      const bStarts = b.title.toLowerCase().startsWith(query) ? 0 : 1;
-      return aStarts - bStarts || b.updated.localeCompare(a.updated) || a.priority - b.priority;
-    })
-    .slice(0, 6)
-    .map((record) => ({ kind: "record", record, detail: `${record.type} / ${record.status}` }));
-
-  return [...commandResults, ...recordResults].slice(0, 8);
+  return window.GestaltArchiveSearch?.search(records, state.searchQuery,
+    (record) => record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body),
+    currentGameRecord(), latestLogRecord()) ?? [];
 }
 
 function getRecordContents(record) {
@@ -1541,7 +1500,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.75.0</span>
+        <span>v1.76.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1555,7 +1514,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.75.0</span>
+        <span class="version-label">v1.76.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1575,7 +1534,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.75.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.76.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2659,14 +2618,17 @@ function searchPanel() {
               </button>`;
             }
 
-            return `<button type="button" data-open-record="${result.record.id}" data-state="${recordStateKey(result.record.status)}">
-            <span><strong>${escapeHtml(result.record.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
-            <i>${escapeHtml(result.record.section.toUpperCase())}</i>
+            const isNote = result.kind === "note";
+            const noteAttr = isNote ? ` data-open-note-id="${escapeHtml(result.noteId)}"` : "";
+            const cipher = isNote ? "" : ` data-cipher="${escapeHtml(cipherizeText(result.detail))}"`;
+            return `<button type="button" data-open-record="${escapeHtml(result.record.id)}"${noteAttr} data-state="${recordStateKey(result.record.status)}">
+            <span><strong>${escapeHtml(isNote ? result.title : result.record.title)}</strong><small${cipher}>${escapeHtml(result.detail)}</small></span>
+            <i>${isNote ? "NOTE" : escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
           }
         )
         .join("")
-    : `<p class="search-empty">No matching command or record.</p>`;
+    : `<p class="search-empty">No matching records, notes or commands.</p>`;
 
   return `<div class="search-panel command-panel" role="search">
     <label for="archive-search" data-cipher="${escapeHtml(cipherizeText("COMMAND PALETTE"))}">~ COMMAND PALETTE</label>
@@ -2674,7 +2636,7 @@ function searchPanel() {
       id="archive-search"
       type="search"
       value="${escapeHtml(state.searchQuery)}"
-      placeholder="Search records or type a command"
+      placeholder="Find a record, note or command"
       autocomplete="off"
       data-search-input
     />
@@ -3222,6 +3184,11 @@ function syncRecordLinkNotice(missing) {
   if (notice) notice.textContent = missing ? "This record is not available in the archive." : "";
 }
 
+function openAddressedRecord(record, noteId) {
+  const index = noteId ? window.GestaltNoteInline?.noteIndexById?.(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) ?? -1 : -1;
+  openRecord(record.id, index >= 0 ? "notes" : "overview", index >= 0 ? index : null, noteId);
+}
+
 function syncRecordLocation() {
   const links = window.GestaltRecordLinks;
   if (!links || !state.bootDismissed || state.localMemory === "prompt") return;
@@ -3231,10 +3198,7 @@ function syncRecordLocation() {
   const noteId = target?.noteId ?? null;
   if (record && state.panelOpen && state.selectedId === record.id && state.linkedNoteId === noteId) return;
   if (record || state.panelOpen || state.panelMinimized) recordMotionController?.cancel();
-  if (record) {
-    const index = noteId ? window.GestaltNoteInline?.noteIndexById?.(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) ?? -1 : -1;
-    openRecord(record.id, index >= 0 ? "notes" : "overview", index >= 0 ? index : null, noteId);
-  }
+  if (record) openAddressedRecord(record, noteId);
   else {
     if (state.panelOpen || state.panelMinimized) dismissRecordView();
     syncRecordLinkNotice(links.isRecordLink(hash));
@@ -3286,7 +3250,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.75.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.76.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3890,6 +3854,11 @@ document.addEventListener("click", (event) => {
   }
 
   if (recordId) {
+    if (target.dataset.openNoteId) {
+      const record = records.find((entry) => entry.id === recordId);
+      if (record) openAddressedRecord(record, target.dataset.openNoteId);
+      return;
+    }
     const noteTarget = target.dataset.openNoteIndex === undefined ? null : Number(target.dataset.openNoteIndex);
     openRecord(recordId, openContent || "overview", noteTarget);
     return;
@@ -3990,6 +3959,15 @@ document.addEventListener("keydown", (event) => {
   const target = event.target;
   const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('select, [role="textbox"]'))));
   const isPaletteInput = target instanceof HTMLInputElement && target.id === "archive-search";
+
+  if (event.key === "Enter" && isPaletteInput && target.value.trim() && !event.defaultPrevented && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    const firstResult = target.closest(".command-panel")?.querySelector(".search-suggestions button");
+    if (firstResult) {
+      event.preventDefault();
+      firstResult.click();
+      return;
+    }
+  }
 
   if (
     (event.key === "~" || event.key === "`") &&

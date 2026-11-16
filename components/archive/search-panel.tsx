@@ -22,7 +22,12 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
         autoFocus
         id="archive-search"
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="Search records or type a command"
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || event.defaultPrevented || event.nativeEvent.isComposing || event.repeat || event.metaKey || event.ctrlKey || event.altKey || !query.trim() || !results[0]) return;
+          event.preventDefault();
+          onOpenResult(results[0]);
+        }}
+        placeholder="Find a record, note or command"
         type="search"
         value={query}
       />
@@ -45,16 +50,16 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
                 <strong>
                   {result.kind === "record" ? result.record.title : result.title}
                 </strong>
-                <small data-cipher={cipherizeText(result.detail)}>
+                <small data-cipher={result.kind === "note" ? undefined : cipherizeText(result.detail)}>
                   {result.detail}
                 </small>
               </span>
-              <i>{result.kind === "record" ? result.record.section.toUpperCase() : "CMD"}</i>
+              <i>{result.kind === "record" ? result.record.section.toUpperCase() : result.kind === "note" ? "NOTE" : "CMD"}</i>
             </button>
             )
           ))
         ) : (
-          <p className="search-empty">No matching command or record.</p>
+          <p className="search-empty">No matching records, notes or commands.</p>
         )}
       </div>
     </div>
@@ -62,7 +67,7 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
 }
 
 function searchResultStateKey(result: SearchResult): string | undefined {
-  const status = result.kind === "record" ? result.record.status : result.record?.status;
+  const status = result.record?.status;
 
   return status ? status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown" : undefined;
 }

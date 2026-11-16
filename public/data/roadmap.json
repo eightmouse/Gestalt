@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "15 / 11 / 2026",
+  "updated": "16 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Search directly for a note",
+          "detail": "The Command Palette can find individual notes by title and open them on the right page. Each result shows its parent entry and the note date when available. One-letter searches match the start of titles, and handheld Back returns to the search.",
+          "version": "v1.76.0",
+          "releasedOn": "2026-11-16"
+        },
         {
           "title": "Link directly to a record or note",
           "detail": "Copy a record link from its window or a note link from the expanded note. Links open the right reading page, even for older notes and archived records. Back returns to the current browsing section.",

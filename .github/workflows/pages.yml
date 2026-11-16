@@ -52,6 +52,7 @@ jobs:
           node --check public/appearance.js
           node --check public/memory-state.js
           node --check public/pocket-index.js
+          node --check public/archive-search.js
           node scripts/test-pocket-index.mjs
           node scripts/test-memory-state.mjs
           node scripts/test-desktop-navigation.mjs
