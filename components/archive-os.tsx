@@ -7,7 +7,7 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
@@ -146,6 +146,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const recordAccessTimerRef = useRef<number | null>(null);
   const recordMotionRef = useRef<ReturnType<typeof recordMotion.createController> | null>(null);
   const recordAccessPlayedRef = useRef(false);
+  const pocketAccessSequence = useRef(0);
+  const [pocketAccessRun, setPocketAccessRun] = useState<number>();
   const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
   const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
@@ -186,13 +188,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
     setRecordAccessPending(false);
     setRecordAccessComplete(false);
+    setPocketAccessRun(undefined);
   };
 
   const startRecordAccess = () => {
     stopRecordAccess();
 
     if (
-      pocket.isHandheld() ||
       !shouldPlayEntryAccess(entryAccessModeRef.current, recordAccessPlayedRef.current,
         window.matchMedia("(prefers-reduced-motion: reduce)").matches)
     ) {
@@ -200,6 +202,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
 
     recordAccessPlayedRef.current = true;
+    if (pocket.isHandheld()) {
+      setPocketAccessRun(++pocketAccessSequence.current);
+      return;
+    }
     setRecordAccessPending(true);
     setRecordAccessComplete(false);
     recordAccessTimerRef.current = window.setTimeout(() => {
@@ -214,6 +220,17 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       window.clearTimeout(recordAccessTimerRef.current);
     }
   }, []);
+
+  useLayoutEffect(() => {
+    if (pocketAccessRun === undefined || !panelOpen) return;
+    return pocket.playEntryAccess(shellRef.current?.querySelector(".record-window") ?? null);
+  }, [pocketAccessRun, panelOpen]);
+
+  useLayoutEffect(() => {
+    if (!handheld || !recordAccessPending) return;
+    stopRecordAccess();
+    setRecordAccessComplete(true);
+  }, [handheld, recordAccessPending]);
 
   useEffect(() => {
     const mode = readEntryAccessMode();
@@ -274,6 +291,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const currentGame = recordsBySection.games.find((record) => record.id === currentGameDisplay?.recordId);
   const latestLog = useMemo(() => [...recordsBySection.logs].sort(compareLogWritingOrder)[0], [recordsBySection.logs]);
   const activity = useMemo(() => recentActivity(archiveRecords, 6), [archiveRecords]);
+  const pocketDispatches = useMemo(() => handheld ? pocket.recentDispatches(latestLog?.id, activity) : [], [activity, handheld, latestLog]);
   const archiveMetrics = useMemo(() => getArchiveMetrics(archiveRecords, currentGame), [archiveRecords, currentGame]);
   const metrics = { ...archiveMetrics, activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
 
@@ -645,6 +663,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setTimelineOpen(false);
     setRoadmapOpen(false);
     setNavOpen(false);
+    if (handheld && window.scrollY) window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   const openSearchFromNavigation = () => {
@@ -835,14 +854,17 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         ) : null}
       </AnimatePresence>
 
-      <PocketHeader searchOpen={searchOpen} onSearch={() => setSearchOpen((current) => !current)} onSettings={() => {
+      <PocketHeader searchOpen={searchOpen} onHome={openHome} onSearch={() => setSearchOpen((current) => !current)} onSettings={() => {
         setSearchOpen(false);
         setSearchQuery("");
         setOsBehaviourOpen(true);
       }} localReview={process.env.NODE_ENV === "development" ? <LocalReviewButton /> : undefined} />
       <section className={hasFocusWindow ? "workspace has-record" : "workspace"} data-pocket-section={activeSection} aria-label={handheld ? "Gestalt Pocket Index" : "Gestalt dashboard"}>
         {publicReader ? <p className="record-link-notice" role="status">{recordLinkMissing ? "This record is not available in the archive." : ""}</p> : null}
-        <PocketIndex latest={latestLog} onSection={openSection} onRead={openRecord} onBack={openHome} />
+        <PocketIndex latest={latestLog} dispatches={pocketDispatches} onSection={openSection} onBack={openHome} onRead={(record, dispatch) => {
+          if (dispatch?.noteId) openAddressedRecord(record, dispatch.noteId);
+          else openRecord(record, dispatch?.content, dispatch?.noteIndex);
+        }} />
         <header className="workspace-header">
           <div>
             <p className="route-label">// {routeTitle}</p>
@@ -935,6 +957,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         {(panelOpen || panelMinimized) && selectedRecord ? (
           <RecordWindow
             key={recordWindowKey}
+            handheld={handheld}
             minimized={!panelOpen}
             accessPending={recordAccessPending}
             accessComplete={recordAccessComplete}

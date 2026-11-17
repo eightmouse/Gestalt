@@ -14,6 +14,8 @@ export type ActivityEntry = {
   id: string;
   content?: "notes";
   noteIndex?: number;
+  noteId?: string;
+  noteTitle?: string;
   date: string;
   detail: string;
   record: RecordEntry;
@@ -165,19 +167,25 @@ export function recentActivity(records: RecordEntry[], limit: number): ActivityE
         return [{
           ...recordItem,
           content: "notes",
+          noteId: trace.note.id,
           date: record.section === "logs" ? recordItem.date : trace.date,
           detail: `${record.type} / ${activityTraceTitle(trace.note.title)}`
         }];
       }
 
-      const items: ActivityEntry[] = notes.map(({ date, note, index }) => ({
-        ...recordItem,
-        id: `${record.id}:note:${index}`,
-        content: "notes",
-        date,
-        detail: `${record.type} / ${activityTraceTitle(note.title)}`,
-        noteIndex: index
-      }));
+      const items: ActivityEntry[] = notes.map(({ date, note, index }) => {
+        const noteTitle = activityTraceTitle(note.title);
+        return {
+          ...recordItem,
+          id: `${record.id}:note:${index}`,
+          content: "notes",
+          date,
+          detail: `${record.type} / ${noteTitle}`,
+          noteIndex: index,
+          noteId: note.id,
+          noteTitle
+        };
+      });
       if (!items.some((item) => item.date >= recordItem.date)) items.push(recordItem);
       return items;
     })

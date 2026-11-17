@@ -66,6 +66,8 @@ Object.assign(reactLifecycle.context, {
   pending: false, complete: false,
   setRecordAccessPending: (value) => { reactLifecycle.context.pending = value; },
   setRecordAccessComplete: (value) => { reactLifecycle.context.complete = value; },
+  pocketAccessSequence: { current: 0 },
+  setPocketAccessRun: (value) => { reactLifecycle.context.pocketRun = value; },
   setEntryAccessMode: () => {}, localMemory: "granted"
 });
 vm.runInContext(ts.transpileModule(`${declarations.join("\n")}\nexports.start = startRecordAccess; exports.stop = stopRecordAccess; exports.change = changeEntryAccessMode;`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, reactLifecycle.context);
@@ -85,11 +87,21 @@ assert.equal(reactLifecycle.context.complete, true, "Changing modes settles the 
 assert.equal(reactLifecycle.timers.size, 0);
 api.start();
 assert.equal(reactLifecycle.context.pending, false);
+reactLifecycle.context.pocket.isHandheld = () => true;
+api.change("always");
+api.start();
+assert.equal(reactLifecycle.context.pocketRun, 1);
+assert.equal(reactLifecycle.timers.size, 0, "Handheld doesn't use the desktop timer");
+api.start();
+assert.equal(reactLifecycle.context.pocketRun, 2, "A second real open requests another handheld sequence");
+api.change("off");
+assert.equal(reactLifecycle.context.pocketRun, undefined, "Off settles any active handheld reveal");
 
 const staticLifecycle = harness(policyNames.map(staticFunction).join("\n"));
 Object.assign(staticLifecycle.context, {
   state: { accessPending: true, accessComplete: false, entryAccessMode: "first", selectedId: "unchanged", activeContent: "notes" },
-  recordAccessTimers: [], document: { querySelector: () => ({ classList: { remove() {}, add() {} } }) }
+  recordAccessTimers: [], pocketAccessCleanup: () => { staticLifecycle.context.pocketStopped = true; },
+  document: { querySelector: () => ({ classList: { remove() {}, add() {} } }) }
 });
 for (const name of ["stopRecordAccessSequence", "startRecordAccessSequence", "settleRecordAccessSequence", "changeEntryAccessMode"]) vm.runInContext(staticFunction(name), staticLifecycle.context);
 vm.runInContext('startRecordAccessSequence(); changeEntryAccessMode("off")', staticLifecycle.context);
@@ -98,7 +110,8 @@ assert.equal(staticLifecycle.context.state.accessPending, false);
 assert.equal(staticLifecycle.context.state.accessComplete, true);
 assert.equal(staticLifecycle.context.state.selectedId, "unchanged");
 assert.equal(staticLifecycle.context.state.activeContent, "notes");
-assert.match(staticSource, /state\.accessPending = !handheld && shouldPlayEntryAccess\(state\.entryAccessMode/);
+assert.equal(staticLifecycle.context.pocketStopped, true);
+assert.match(staticSource, /const playAccess = shouldPlayEntryAccess\(state\.entryAccessMode[^\n]+\n\s*state\.accessPending = !handheld && playAccess/);
 assert.match(staticSource, /if \(event\.matches\) settleRecordAccessSequence\(\)/);
 assert.match(reactSource, /motionQuery\.removeEventListener\("change", onMotionChange\)/);
 

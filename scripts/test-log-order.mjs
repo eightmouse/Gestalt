@@ -17,8 +17,8 @@ const react = compiled("../components/archive/record-utils.ts", { "@/lib/log-arc
 const realRecords = compiled("../lib/content.ts").getRecords();
 const staticSource = readFileSync(new URL("../static-app.js", import.meta.url), "utf8");
 const ast = ts.createSourceFile("static-app.js", staticSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-const staticContext = vm.createContext({ window: { GestaltNoteInline: noteInline } });
-for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "splitNoteTitle", "escapeHtml", "pocketIcon", "renderNoteLink", "recordLinkButton", "recordLinkFeedback"]) {
+const staticContext = vm.createContext({ window: { GestaltNoteInline: noteInline }, pocket: { isHandheld: () => false } });
+for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "renderSetupNotes", "splitNoteTitle", "escapeHtml", "pocketIcon", "renderNoteLink", "recordLinkButton", "recordLinkFeedback"]) {
   const declaration = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name);
   assert.ok(declaration, `Static function ${name} exists`);
   vm.runInContext(declaration.getText(ast), staticContext);
@@ -97,6 +97,16 @@ assert.match(targeted, /data-note-index="1"[^>]* open>/, "The selected note star
 assert.match(targeted, /First session\./);
 assert.doesNotMatch(targeted, /Second session\./, "Other note bodies stay lazy");
 assert.match(targeted, /class="note-pager"[^>]* hidden>/, "Short entries do not show navigation");
+
+const linkNote = { id: "main", index: 0, title: "A shareable note", body: "Read this first." };
+for (const handheld of [false, true]) {
+  staticContext.pocket.isHandheld = () => handheld;
+  for (const markup of [staticContext.renderNoteRows({ notes: [linkNote], openIndex: 0 }), staticContext.renderSetupNotes([linkNote])]) {
+    assert.equal(markup.match(/data-copy-note-link="main"/g)?.length, 1, "Each note keeps exactly one copy action");
+    assert.equal(markup.indexOf("Read this first.") < markup.indexOf("data-copy-note-link"), handheld, "Handheld DOM order puts the copy action after the prose; desktop retains its position");
+    assert.match(markup, /class="pocket-note-link-label" aria-hidden="true">Copy note link</);
+  }
+}
 
 const long = Array.from({ length: 13 }, (_, index) => ({
   title: index % 2 === 0 ? `07 / 11 / 2026 - Signal ${index}` : `06 / 11 / 2026 - Session ${index}`,

@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "16 / 11 / 2026",
+  "updated": "17 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Pocket Index: dispatches and a way home",
+          "detail": "Tap GESTALT to return to the index. Recent Dispatches open straight to the note. Share controls stay out of the prose, and the short ACCESSING sequence can play on the first entry, on every entry, or not at all.",
+          "version": "v1.77.0",
+          "releasedOn": "2026-11-17"
+        },
         {
           "title": "Search directly for a note",
           "detail": "The Command Palette can find individual notes by title and open them on the right page. Each result shows its parent entry and the note date when available. One-letter searches match the start of titles, and handheld Back returns to the search.",

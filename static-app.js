@@ -131,6 +131,7 @@ function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
 }
 let navMotionTimer = 0;
 let recordAccessTimers = [];
+let pocketAccessCleanup;
 
 function normalizeEntryAccessMode(value) {
   return value === "always" || value === "off" ? value : "first";
@@ -217,6 +218,8 @@ function changeDesktopNavigationMode(value) {
 }
 
 function stopRecordAccessSequence() {
+  pocketAccessCleanup?.();
+  pocketAccessCleanup = undefined;
   for (const timer of recordAccessTimers) {
     window.clearTimeout(timer);
   }
@@ -323,8 +326,9 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   stopRecordAccessSequence();
   const handheld = pocket?.isHandheld();
   state.pocketSearchReturn = handheld && state.searchOpen ? state.searchQuery : null;
-  state.accessPending = !handheld && shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  if (state.accessPending) {
+  const playAccess = shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  state.accessPending = !handheld && playAccess;
+  if (playAccess) {
     state.recordAccessPlayed = true;
   }
   state.accessComplete = false;
@@ -348,8 +352,8 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.noteSearchPage = 0;
   state.updateHistoryOpen = false;
   if (!syncRecordWindow()) render();
-  if (handheld) pocket.resolveTitle(root.querySelector(".record-window .record-title-text"));
-  startRecordAccessSequence();
+  if (handheld && playAccess) pocketAccessCleanup = pocket.playEntryAccess?.(root.querySelector(".record-window"));
+  else startRecordAccessSequence();
   if (record.section === "setup" && noteId && !state.noteLinkMissing) {
     root.querySelector(`.record-window [data-setup-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "nearest" });
   } else if (state.focusedNoteIndex > 0) revealFocusedNote();
@@ -498,19 +502,25 @@ function recentActivity(limit) {
         return [{
           ...recordItem,
           content: "notes",
+          noteId: trace.note.id,
           date: record.section === "logs" ? recordItem.date : trace.date,
           detail: `${record.type} / ${activityTraceTitle(trace.note.title)}`
         }];
       }
 
-      const items = notes.map(({ date, note, index }) => ({
-        ...recordItem,
-        id: `${record.id}:note:${index}`,
-        content: "notes",
-        date,
-        detail: `${record.type} / ${activityTraceTitle(note.title)}`,
-        noteIndex: index
-      }));
+      const items = notes.map(({ date, note, index }) => {
+        const noteTitle = activityTraceTitle(note.title);
+        return {
+          ...recordItem,
+          id: `${record.id}:note:${index}`,
+          content: "notes",
+          date,
+          detail: `${record.type} / ${noteTitle}`,
+          noteIndex: index,
+          noteId: note.id,
+          noteTitle
+        };
+      });
       if (!items.some((item) => item.date >= recordItem.date)) items.push(recordItem);
       return items;
     })
@@ -1297,10 +1307,12 @@ function currentNotePage(record) {
 
 function renderNoteRows({ notes, openIndex }) {
   if (!notes.length) return '<p class="notes-empty">No note matches that signal.</p>';
+  const handheld = pocket?.isHandheld();
   return notes.map((note) => {
     const index = note.index;
     const open = index === openIndex;
     const titleParts = splitNoteTitle(note.title);
+    const link = note.id ? renderNoteLink(note.id) : "";
     return `<details class="note-entry note-entry--indexed" data-note-index="${index}"${open ? ' data-note-loaded="true" open' : ""}>
       <summary>
         <span class="note-entry-index">${String(index + 1).padStart(2, "0")}</span>
@@ -1308,8 +1320,9 @@ function renderNoteRows({ notes, openIndex }) {
         <span class="note-entry-title">${escapeHtml(titleParts.title)}</span>
         <i aria-hidden="true">open</i>
       </summary>
-      ${note.id ? renderNoteLink(note.id) : ""}
+      ${handheld ? "" : link}
       <div class="note-entry-body" data-note-body>${open ? `<div class="record-body">${markdownBody(note.body)}</div>` : ""}</div>
+      ${handheld ? link : ""}
     </details>`;
   }).join("");
 }
@@ -1500,7 +1513,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.76.0</span>
+        <span>v1.77.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1514,7 +1527,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.76.0</span>
+        <span class="version-label">v1.77.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1534,7 +1547,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.76.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.77.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2470,7 +2483,11 @@ function setupNoteBody(record, notes) {
 }
 
 function renderSetupNotes(notes) {
-  return `<div class="setup-note-stack">${notes.map((note) => `<article class="setup-note"${note.id ? ` data-setup-note-id="${escapeHtml(note.id)}"` : ""}><h3>// ${escapeHtml(note.title)}</h3>${note.id ? renderNoteLink(note.id) : ""}<div class="record-body">${markdownBody(note.body)}</div></article>`).join("")}</div>`;
+  const handheld = pocket?.isHandheld();
+  return `<div class="setup-note-stack">${notes.map((note) => {
+    const link = note.id ? renderNoteLink(note.id) : "";
+    return `<article class="setup-note"${note.id ? ` data-setup-note-id="${escapeHtml(note.id)}"` : ""}><h3>// ${escapeHtml(note.title)}</h3>${handheld ? "" : link}<div class="record-body">${markdownBody(note.body)}</div>${handheld ? link : ""}</article>`;
+  }).join("")}</div>`;
 }
 
 function setupFetchDetails(record, profile, specs, command) {
@@ -2992,7 +3009,8 @@ function pocketBack() {
 
 function recordLinkButton(noteId) {
   const label = noteId ? "Copy note link" : "Copy record link";
-  return `<button class="record-link-button" type="button" ${noteId ? `data-copy-note-link="${escapeHtml(noteId)}"` : "data-copy-record-link"} aria-label="${label}" title="${label}">${pocketIcon('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>')}</button>`;
+  const caption = noteId ? `<span class="pocket-note-link-label" aria-hidden="true">${label}</span>` : "";
+  return `<button class="record-link-button" type="button" ${noteId ? `data-copy-note-link="${escapeHtml(noteId)}"` : "data-copy-record-link"} aria-label="${label}" title="${label}">${pocketIcon('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>')}${caption}</button>`;
 }
 
 function recordLinkFeedback(note = false, unavailable = false) {
@@ -3005,7 +3023,7 @@ function renderNoteLink(noteId) {
 
 function pocketHeader() {
   if (!pocket) return "";
-  return `<header class="pocket-header"><div class="pocket-brand"><strong>GESTALT</strong><small>HANDHELD FIELD MODE</small></div><div class="pocket-tools">
+  return `<header class="pocket-header"><button class="pocket-brand" type="button" aria-label="Gestalt home" data-home><strong>GESTALT</strong><small>HANDHELD FIELD MODE</small></button><div class="pocket-tools">
     <button type="button" data-search-toggle aria-expanded="${state.searchOpen}">${pocketIcon('<circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/>')}Search</button>
     <button type="button" data-open-os-behaviour aria-haspopup="dialog">${pocketIcon('<path d="m9 3-1 3-3 1v3l-2 2 2 2v3l3 1 1 3h6l1-3 3-1v-3l2-2-2-2V7l-3-1-1-3z"/><circle cx="12" cy="12" r="3"/>')}Settings</button>
     </div></header>`;
@@ -3013,11 +3031,26 @@ function pocketHeader() {
 
 function pocketIndex() {
   if (!pocket) return "";
-  const latest = latestLogRecord();
   return `<div class="pocket-context"><button type="button" data-home>${pocketIcon('<path d="m12 19-7-7 7-7M5 12h14"/>')}Back to Index</button></div>
     <div class="pocket-index"><div class="pocket-register"><div><small>// FIELD DIRECTORY</small><h1>Archive index</h1></div>${pocket.stamp}</div>
     <nav class="pocket-directory" aria-label="Archive sections">${pocket.directory.map(([id, number, label]) => `<button type="button" data-open-section="${id}"><small aria-hidden="true">${number}</small><span class="nav-mark" data-icon="${id}" aria-hidden="true"></span><strong>${label}</strong>${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>`).join("")}</nav>
-    ${latest ? `<button class="pocket-dispatch" type="button" data-open-record="${escapeHtml(latest.id)}"><span><small>LATEST FIELD NOTE</small><strong>${escapeHtml(latest.title)}</strong></span>${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}</button>` : ""}</div>`;
+    <section class="pocket-dispatches" aria-label="Recent dispatches">${pocket.isHandheld() ? pocketDispatchesMarkup() : ""}</section></div>`;
+}
+
+function pocketDispatchesMarkup() {
+  const latest = latestLogRecord();
+  const featured = latest ? `<button class="pocket-dispatch" type="button" data-open-record="${escapeHtml(latest.id)}"><span><small>LATEST FIELD NOTE</small><strong>${escapeHtml(latest.title)}</strong></span>${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}</button>` : "";
+  const dispatches = pocket.recentDispatches?.(latest?.id, recentActivity(6)) ?? [];
+  const rows = dispatches.map((dispatch) => {
+    const noteTarget = dispatch.noteId ? ` data-open-note-id="${escapeHtml(dispatch.noteId)}"` : Number.isInteger(dispatch.noteIndex) ? ` data-open-note-index="${dispatch.noteIndex}"` : "";
+    const parent = dispatch.noteTitle && dispatch.noteTitle !== dispatch.title ? `<small>${escapeHtml(dispatch.title)}</small>` : "";
+    return `<button class="pocket-dispatch-row" type="button" data-open-record="${escapeHtml(dispatch.record.id)}" data-open-content="${dispatch.content ?? "overview"}"${noteTarget}>
+      <time datetime="${escapeHtml(dispatch.date)}">${escapeHtml(shortDate(dispatch.date))}</time>
+      <span><strong>${escapeHtml(dispatch.noteTitle || dispatch.title)}</strong>${parent}</span>
+      ${pocketIcon('<path d="m9 18 6-6-6-6"/>')}
+    </button>`;
+  }).join("");
+  return featured + (rows ? `<div class="pocket-dispatch-list"><p>// RECENT DISPATCHES</p>${rows}</div>` : "");
 }
 
 function syncImageLightbox() {
@@ -3250,7 +3283,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.76.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.77.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3723,6 +3756,7 @@ document.addEventListener("click", (event) => {
     !clickTarget.closest(".search-panel") &&
     !clickTarget.closest("[data-directory-section]") &&
     !clickTarget.closest("[data-search-toggle]") &&
+    !clickTarget.closest(".pocket-brand") &&
     !clickTarget.closest(".archive-nav-search")
   ) {
     state.searchOpen = false;
@@ -4092,6 +4126,14 @@ render();
 let weatherStarted = !pocket?.isHandheld();
 if (weatherStarted) void requestWeather();
 window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
+  if (event.matches && state.accessPending) settleRecordAccessSequence();
+  const dispatches = root.querySelector(".pocket-dispatches");
+  if (dispatches && event.matches) dispatches.innerHTML = pocketDispatchesMarkup();
+  for (const tools of root.querySelectorAll(".record-window :is(.note-entry, .setup-note) > .note-link-tools")) {
+    const note = tools.parentElement;
+    if (event.matches) note.append(tools);
+    else note.firstElementChild?.after(tools);
+  }
   if (state.activeSection === "system") {
     const grid = root.querySelector(".workspace > .dashboard-grid");
     if (grid) grid.outerHTML = workspaceContent();

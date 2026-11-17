@@ -24,6 +24,23 @@
     const page = Math.max(0, Math.min(pages - 1, Number.isInteger(requestedPage) ? requestedPage : 0));
     return { records: records.slice(page * size, (page + 1) * size), page, pages };
   }
+  function recentDispatches(featuredId, activity, now = Date.now()) {
+    const day = 86_400_000;
+    const today = Math.floor(now / day) * day;
+    const seen = new Set();
+    const items = [];
+    for (const item of activity) {
+      const { id, section } = item.record;
+      if (id === featuredId || seen.has(item.id)) continue;
+      if (section !== "logs" && !((section === "games" || section === "projects") && item.content === "notes")) continue;
+      const filed = Date.parse(item.date);
+      if (!(filed >= today - 6 * day && filed < today + day)) continue;
+      seen.add(item.id);
+      items.push(item);
+      if (items.length === 2) break;
+    }
+    return items;
+  }
   function normalizeBootMode(value) { return value === "always" ? "always" : "once"; }
   function readBootMode(host = globalThis.window) {
     try {
@@ -128,5 +145,44 @@
     step();
     return stop;
   }
-  return { directory, stamp, bootMarkup, isHandheld, recordPage, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot, resolveTitle };
+  function playEntryAccess(surface, host = globalThis.window) {
+    if (!surface?.isConnected || !host) return;
+    const width = host.matchMedia("(max-width: 760px)");
+    const motion = host.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!width.matches || motion.matches || surface.hasAttribute("data-pocket-access")) return;
+
+    const signal = surface.ownerDocument.createElement("div");
+    signal.className = "pocket-entry-access";
+    signal.setAttribute("aria-hidden", "true");
+    const label = surface.ownerDocument.createElement("span");
+    label.textContent = "ACCESSING";
+    signal.append(label, surface.ownerDocument.createElement("i"));
+    surface.setAttribute("data-pocket-access", "");
+    surface.append(signal);
+
+    let stopTitle, stopped = false;
+    const handoff = host.setTimeout(() => {
+      if (!surface.isConnected) { stop(); return; }
+      stopTitle = resolveTitle(surface.querySelector(".record-title-text"), host);
+    }, 145);
+    const settle = host.setTimeout(stop, 680);
+
+    function stop() {
+      if (stopped) return;
+      stopped = true;
+      host.clearTimeout(handoff);
+      host.clearTimeout(settle);
+      motion.removeEventListener("change", onChange);
+      width.removeEventListener("change", onChange);
+      stopTitle?.();
+      surface.removeAttribute("data-pocket-access");
+      signal.remove();
+    }
+    function onChange() { if (motion.matches || !width.matches) stop(); }
+    motion.addEventListener("change", onChange);
+    width.addEventListener("change", onChange);
+    return stop;
+  }
+
+  return { directory, stamp, bootMarkup, isHandheld, recordPage, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot, resolveTitle, playEntryAccess };
 });

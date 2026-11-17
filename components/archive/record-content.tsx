@@ -78,7 +78,7 @@ function getTextList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record, shareable }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry; shareable?: boolean }) {
+export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record, shareable, handheld }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry; shareable?: boolean; handheld?: boolean }) {
   if (activeContent === "overview") {
     return <RecordOverviewPage record={record} />;
   }
@@ -92,7 +92,7 @@ export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearch
   }
 
   if (activeContent === "notes") {
-    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} shareable={shareable} />;
+    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} />;
   }
 
   if (activeContent === "technical") {
@@ -355,7 +355,7 @@ export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange:
   );
 }
 
-function NotesPage({ focusedIndex, query, record, shareable }: { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean }) {
+function NotesPage({ focusedIndex, query, record, shareable, handheld }: { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean }) {
   const pageRef = useRef<HTMLElement>(null);
   const search = query.trim().toLowerCase();
   const [browsePage, setBrowsePage] = useState<number>();
@@ -394,7 +394,7 @@ function NotesPage({ focusedIndex, query, record, shareable }: { focusedIndex?: 
       <div className="note-stack">
         {notes.length > 0 ? (
           notes.map((note) => (
-            <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} recordId={shareable && note.id ? record.id : undefined} noteId={note.id} />
+            <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} recordId={shareable && note.id ? record.id : undefined} noteId={note.id} handheld={handheld} />
           ))
         ) : (
           <p className="notes-empty">No note matches that signal.</p>
@@ -404,11 +404,12 @@ function NotesPage({ focusedIndex, query, record, shareable }: { focusedIndex?: 
   );
 }
 
-function NoteEntry({ body, defaultOpen, index, title, recordId, noteId }: { body: string; defaultOpen: boolean; index?: number; title: string; recordId?: string; noteId?: string }) {
+function NoteEntry({ body, defaultOpen, index, title, recordId, noteId, handheld }: { body: string; defaultOpen: boolean; index?: number; title: string; recordId?: string; noteId?: string; handheld?: boolean }) {
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const initializedRef = useRef(false);
   const [hasLoaded, setHasLoaded] = useState(defaultOpen);
   const titleParts = splitNoteTitle(title);
+  const link = recordId && noteId ? <NoteLinkControl id={recordId} noteId={noteId} /> : null;
 
   useEffect(() => {
     if (!initializedRef.current && detailsRef.current) {
@@ -440,8 +441,9 @@ function NoteEntry({ body, defaultOpen, index, title, recordId, noteId }: { body
         )}
         <i aria-hidden="true">open</i>
       </summary>
-      {recordId && noteId ? <NoteLinkControl id={recordId} noteId={noteId} /> : null}
+      {!handheld ? link : null}
       {hasLoaded ? <div className="note-entry-body"><RecordBody body={body} /></div> : null}
+      {handheld ? link : null}
     </details>
   );
 }

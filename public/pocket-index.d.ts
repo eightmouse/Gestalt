@@ -6,6 +6,7 @@ declare const pocket: {
   bootMarkup: string;
   isHandheld(host?: Window): boolean;
   recordPage<T>(records: readonly T[], requestedPage?: number): { records: T[]; page: number; pages: number };
+  recentDispatches<T extends { id: string; record: { id: string; section: string }; date: string; content?: string }>(featuredId: string | undefined, activity: readonly T[], now?: number): T[];
   normalizeBootMode(value: unknown): PocketBootMode;
   readBootMode(host?: Window): PocketBootMode;
   saveBootMode(value: PocketBootMode, host?: Window): boolean;
@@ -14,5 +15,6 @@ declare const pocket: {
   meterFrames(random?: () => number): Keyframe[];
   runBoot(shell: HTMLElement | null, onComplete: () => void, options: { mode: PocketBootMode; remember: boolean }, host?: Window): () => void;
   resolveTitle(title: HTMLElement | null, host?: Window): () => void;
+  playEntryAccess(surface: HTMLElement | null, host?: Window): (() => void) | undefined;
 };
 export default pocket;

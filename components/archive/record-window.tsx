@@ -22,9 +22,9 @@ import recordMotion from "@/public/record-motion.js";
 import { NoteLinkControl, RecordLinkButton, RecordLinkFeedback } from "@/components/archive/record-link-control";
 import type { ArchiveNote } from "@/public/note-inline.js";
 import memoryState from "@/public/memory-state.js";
-import pocket from "@/public/pocket-index.js";
 import { steamBannerImage } from "@/public/steam-display.mjs";
 type RecordWindowProps = {
+  handheld?: boolean;
   minimized?: boolean;
   accessPending?: boolean;
   accessComplete?: boolean;
@@ -43,12 +43,12 @@ type RecordWindowProps = {
   onMaximize: () => void;
 };
 
-export function RecordWindow({ minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ handheld, minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} shareable={shareable} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} shareable={shareable} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} maximized={maximized} record={record} shareable={shareable} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} maximized={maximized} record={record} shareable={shareable} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
 }
 
 function useRecordFocus(minimized: boolean | undefined, id: string) {
@@ -66,7 +66,7 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
   dismiss();
 }
 
-function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
@@ -75,12 +75,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   const [focusedNoteIndex, setFocusedNoteIndex] = useState(initialNoteIndex);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
-  const titleRef = useRef<HTMLSpanElement | null>(null);
   const artwork = imageFraming.recordHeadingArtwork(record, steamBannerImage);
-
-  useEffect(() => {
-    if (!minimized && !editor) return pocket.resolveTitle(titleRef.current);
-  }, [record.id, minimized, editor]);
 
   useEffect(() => {
     setActiveContent(initialContent);
@@ -171,7 +166,6 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
             <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
             <h2>
               <span
-                ref={titleRef}
                 className={record.title.length > 26 ? "record-title-text is-long-title" : "record-title-text"}
                 style={{ "--record-title-chars": record.title.length } as CSSProperties}
               >
@@ -192,7 +186,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
             </p>
           </div>
 
-          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} />
+          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} />
         </div>
 
         <aside className="record-aside">
@@ -245,7 +239,7 @@ function ArchiveRecordWindow({ minimized, accessPending, accessComplete, initial
   );
 }
 
-function SetupRecordWindow({ minimized, accessPending, accessComplete, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const windowRef = useRecordFocus(minimized, record.id);
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
@@ -300,13 +294,13 @@ function SetupRecordWindow({ minimized, accessPending, accessComplete, initialNo
           ) : group === "peripherals" ? (
             <SetupPeripheralBody headerImage={headerImage} record={record} onExpandImage={setExpandedImage} />
           ) : group === "notes" ? (
-            <SetupNoteBody notes={notes} record={record} shareable={shareable} />
+            <SetupNoteBody notes={notes} record={record} shareable={shareable} handheld={handheld} />
           ) : (
             <SetupSystemBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
           )}
         </section>
 
-        {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} shareable={shareable} /> : null}
+        {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} shareable={shareable} handheld={handheld} /> : null}
       </div>
       {expandedImage ? (
         <ImageLightbox image={expandedImage} label="Close expanded setup image" onClose={() => setExpandedImage(null)} />
@@ -471,7 +465,9 @@ function SetupPeripheralBody({
   );
 }
 
-function SetupNoteBody({ notes, record, shareable }: { notes: ArchiveNote[]; record: RecordEntry; shareable?: boolean }) {
+type SetupNoteProps = { notes: ArchiveNote[]; record: RecordEntry; shareable?: boolean; handheld?: boolean };
+
+function SetupNoteBody({ notes, record, shareable, handheld }: SetupNoteProps) {
   const noteFiles = notes.length > 0 ? notes : [{ title: record.title, body: record.body }];
 
   return (
@@ -484,7 +480,7 @@ function SetupNoteBody({ notes, record, shareable }: { notes: ArchiveNote[]; rec
         <h2>{record.title}</h2>
         {record.summary ? <p className="setup-motd">{record.summary}</p> : null}
       </div>
-      <SetupNoteStack notes={noteFiles} recordId={shareable ? record.id : undefined} />
+      <SetupNoteStack notes={noteFiles} recordId={shareable ? record.id : undefined} handheld={handheld} />
     </div>
   );
 }
@@ -537,7 +533,7 @@ function SetupFetchDetails({
   );
 }
 
-function SetupNotesTerminal({ notes, record, shareable }: { notes: ArchiveNote[]; record: RecordEntry; shareable?: boolean }) {
+function SetupNotesTerminal({ notes, record, shareable, handheld }: SetupNoteProps) {
   return (
     <section className="setup-console setup-notes-terminal" aria-label={`${record.title} setup notes`}>
       <div className="setup-console-prompt">
@@ -547,18 +543,22 @@ function SetupNotesTerminal({ notes, record, shareable }: { notes: ArchiveNote[]
         <i>$</i>
         <strong>cat notes.log</strong>
       </div>
-      <SetupNoteStack notes={notes} recordId={shareable ? record.id : undefined} />
+      <SetupNoteStack notes={notes} recordId={shareable ? record.id : undefined} handheld={handheld} />
     </section>
   );
 }
 
-function SetupNoteStack({ notes, recordId }: { notes: ArchiveNote[]; recordId?: string }) {
+function SetupNoteStack({ notes, recordId, handheld }: { notes: ArchiveNote[]; recordId?: string; handheld?: boolean }) {
   return <div className="setup-note-stack">
-    {notes.map((note, index) => <article className="setup-note" data-setup-note-id={note.id} key={note.id ?? index}>
-      <h3>// {note.title}</h3>
-      {recordId && note.id ? <NoteLinkControl id={recordId} noteId={note.id} /> : null}
-      <RecordBody body={note.body} />
-    </article>)}
+    {notes.map((note, index) => {
+      const link = recordId && note.id ? <NoteLinkControl id={recordId} noteId={note.id} /> : null;
+      return <article className="setup-note" data-setup-note-id={note.id} key={note.id ?? index}>
+        <h3>// {note.title}</h3>
+        {!handheld ? link : null}
+        <RecordBody body={note.body} />
+        {handheld ? link : null}
+      </article>;
+    })}
   </div>;
 }
 

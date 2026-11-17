@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.76.0`. Previous site-code release: `v1.75.0` (0a4645b0).
+Release target: `v1.77.0`. Previous site-code release: `v1.76.0` (276931a4).
+
+`v1.77.0` makes the handheld wordmark a Home shortcut and keeps copying links clear of note prose. Pocket Index keeps the latest field note featured and shows up to two other notes from the past week. A compact ACCESSING cue flows into the title cipher, using the existing entry-animation preference and honoring reduced motion. Desktop keeps its own entry sequence. Studio pins Next.js 16.4.6 with the existing install safeguards; GitHub Pages still runs the static reader. No authored records or media changed.
 
 `v1.76.0` finds individual notes in the command palette. Matches show their parent entry and date when available, open directly on the right Notes page, and restore the query on handheld Back. One-letter queries only match title prefixes; clearing the input restores the default shortcuts. Both readers share one local search index. No authored records, media or dependencies changed.
 

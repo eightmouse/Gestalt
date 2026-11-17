@@ -1,4 +1,4 @@
-.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-pager,
+.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-pager, .pocket-note-link-label, .pocket-entry-access,
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
@@ -49,7 +49,9 @@
     padding: calc(9px + var(--pocket-safe-top)) 12px 9px 16px;
     border-block-end: 1px solid var(--pocket-line);
   }
-  .pocket-brand { display: grid; gap: 3px; }
+  .pocket-brand { display: grid; align-content: center; gap: 3px; min-block-size: 44px; padding: 0; border: 0; background: none; color: inherit; text-align: start; cursor: pointer; }
+  .pocket-brand:active { color: var(--pocket-signal); }
+  .pocket-brand:focus-visible { outline: 1px solid var(--pocket-signal); outline-offset: 3px; }
   .pocket-brand strong { font: 500 21px/1 var(--pocket-mono); }
   :is(.pocket-brand small, .pocket-index small, .pocket-boot-face > div:first-child > span) { color: var(--pocket-muted); font: 500 11px/1.35 var(--pocket-mono); }
   .pocket-tools { display: flex; align-items: center; }
@@ -90,7 +92,29 @@
   .pocket-directory strong, .pocket-dispatch strong { font-weight: 500; overflow-wrap: anywhere; }
   .pocket-dispatch { grid-template-columns: minmax(0, 1fr) 16px; min-block-size: 58px; margin-block-start: 18px; padding: 8px 10px; border-block-end: 0; border-inline-start: 2px solid var(--pocket-signal); background: var(--pocket-plate); }
   .pocket-dispatch > span:first-child { display: grid; gap: 4px; }
-  :is(.pocket-directory button, .pocket-dispatch):active { background: var(--pocket-plate); color: var(--pocket-signal); }
+  .pocket-dispatches:empty { display: none; }
+  .pocket-dispatch-list { margin-block-start: 16px; }
+  .pocket-dispatch-list > p { margin: 0 0 4px; color: var(--pocket-muted); font: 500 11px/1.35 var(--pocket-mono); }
+  .pocket-dispatch-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 8px;
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: 6px 3px;
+    border: 0;
+    border-block-end: 1px solid var(--pocket-line);
+    background: transparent;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+  .pocket-dispatch-row :is(time, svg) { color: var(--pocket-muted); }
+  .pocket-dispatch-row time { font: 500 11px/1.35 var(--pocket-mono); }
+  .pocket-dispatch-row > span { display: grid; gap: 2px; min-inline-size: 0; overflow-wrap: anywhere; }
+  .pocket-dispatch-row strong { font: 500 14px/1.3 system-ui, sans-serif; }
+  :is(.pocket-directory button, .pocket-dispatch, .pocket-dispatch-row):active { background: var(--pocket-plate); color: var(--pocket-signal); }
 
   .workspace[data-pocket-section] .section-page { margin-block-start: 0; }
   .workspace[data-pocket-section] :is(.section-page-readout, .section-note-preview) { display: none; }
@@ -135,7 +159,29 @@
   .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
   .record-window.is-maximized .record-layout:not(.is-editing-record) { grid-template-columns: minmax(0, 1fr); }
   .record-window .window-edit-action { min-inline-size: 44px; min-block-size: 44px; }
-  .record-window .record-link-button { inline-size: 44px; block-size: 44px; }
+  .record-window .record-link-button {
+    inline-size: 44px;
+    block-size: 44px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--pocket-muted);
+  }
+  .record-window .record-link-button:is(:active, :focus-visible) { color: var(--pocket-signal); }
+  .record-window .record-link-button:focus-visible { outline-offset: -2px; }
+  .record-window .note-link-tools { margin-block: 0 4px; }
+  .record-window .note-link-tools .record-link-button {
+    display: inline-flex;
+    justify-content: end;
+    align-items: center;
+    gap: 6px;
+    inline-size: auto;
+    min-inline-size: 44px;
+    padding-inline: 8px;
+    font: 500 13px/1.3 system-ui, sans-serif;
+    letter-spacing: 0;
+  }
+  .pocket-note-link-label { display: inline; }
   .record-window .setup-console-prompt:has(.record-link-button) { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
   .record-window .setup-console-prompt:has(.record-link-button) .setup-prompt-command { grid-column: 1 / -1; grid-row: 2; }
   .record-window .setup-console-prompt:has(.record-link-button) .setup-prompt-actions { grid-column: 2; grid-row: 1; }
@@ -146,7 +192,7 @@
   .record-heading [data-pocket-resolving] .record-title-text:not(.pocket-title-cipher) { opacity: 0; }
   .record-heading .pocket-title-cipher { position: absolute; inset: 0; pointer-events: none; color: var(--pocket-signal); }
   .os-preference[data-os-group="pocketBoot"] { display: block; }
-  .os-preference:is([data-os-group="startup"], [data-os-group="entry"], [data-os-group="navigation"], [data-os-group="memory"], [data-os-group="seasonal"]) { display: none; }
+  .os-preference:is([data-os-group="startup"], [data-os-group="navigation"], [data-os-group="memory"], [data-os-group="seasonal"]) { display: none; }
 
   .archive-shell.is-booting > .workspace > .workspace-header { animation: none; }
   .archive-shell.is-booting { background: var(--pocket-paper); }
@@ -169,6 +215,34 @@
 }
 
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .record-window[data-pocket-access] > .pocket-entry-access {
+    position: absolute;
+    z-index: 5;
+    inset-block-start: calc(var(--pocket-safe-top) + 46px);
+    inset-inline: calc(var(--pocket-safe-left) + 16px) calc(var(--pocket-safe-right) + 16px);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    block-size: 30px;
+    padding-inline: 8px;
+    background: var(--pocket-paper);
+    color: var(--pocket-signal);
+    font: 500 11px/1 var(--pocket-mono);
+    pointer-events: none;
+    animation: pocket-entry-readout 450ms ease-out both;
+  }
+  .pocket-entry-access i {
+    flex: 1;
+    block-size: 1px;
+    background: currentColor;
+    transform-origin: left center;
+    animation: pocket-entry-line 245ms cubic-bezier(0.26, 0.63, 0.35, 1) both;
+  }
+  .record-window[data-pocket-access] > .record-layout,
+  .record-window[data-pocket-access] .setup-console-body,
+  .record-window[data-pocket-access] .setup-notes-terminal {
+    animation: pocket-entry-populate 420ms 130ms ease-out both;
+  }
   .archive-shell[data-pocket-booting] .pocket-boot-screen { animation: pocket-boot-wipe 740ms 3120ms cubic-bezier(0.38, 0, 0.28, 1) both; }
   .archive-shell[data-pocket-booting] .pocket-boot-scan { animation: pocket-boot-scan 740ms 3120ms cubic-bezier(0.38, 0, 0.28, 1) forwards; }
   .pocket-boot-ledger p { animation: pocket-boot-mark 150ms 80ms ease-out both; }
@@ -185,3 +259,6 @@
 @keyframes pocket-boot-wipe { from { clip-path: inset(0); } to { clip-path: inset(100% 0 0); } }
 @keyframes pocket-boot-scan { from { visibility: visible; transform: translateY(0); } to { visibility: visible; transform: translateY(100%); } }
 @keyframes pocket-boot-mark { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pocket-entry-readout { 0%, 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-3px); } }
+@keyframes pocket-entry-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes pocket-entry-populate { from { opacity: 0; } to { opacity: 1; } }
