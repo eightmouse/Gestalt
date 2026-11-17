@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.77.0`. Previous site-code release: `v1.76.0` (276931a4).
+Release target: `v1.77.1`. Previous site-code release: `v1.77.0` (f4b04e72).
+
+`v1.77.1` replaces the short handheld flash with the full desktop ACCESSING sequence. Handheld Back remains available while unrevealed controls stay out of the tab order. Closing a search result restores its query and focuses the same result; closing a dispatch returns to that dispatch. Settings identifies when the device has reduced motion active. No authored records, media or dependencies changed.
 
 `v1.77.0` makes the handheld wordmark a Home shortcut and keeps copying links clear of note prose. Pocket Index keeps the latest field note featured and shows up to two other notes from the past week. A compact ACCESSING cue flows into the title cipher, using the existing entry-animation preference and honoring reduced motion. Desktop keeps its own entry sequence. Studio pins Next.js 16.4.6 with the existing install safeguards; GitHub Pages still runs the static reader. No authored records or media changed.
 

@@ -3,15 +3,43 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.GestaltRecordMotion = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  function guardEntryReveal(node, host) {
+    if (!node.matches?.(".record-window") || !host.MutationObserver) return () => {};
+    const guarded = new Set();
+    const release = () => {
+      for (const region of guarded) region.removeAttribute("inert");
+      guarded.clear();
+    };
+    const sync = () => {
+      if (!node.classList.contains("is-access-pending")) { release(); return; }
+      // Gate the reading controls, not the window itself or handheld Back.
+      for (const region of node.querySelectorAll(":scope > :is(.record-layout, .record-link-feedback), :scope > .window-bar .window-control-group, :scope > .setup-window-shell :is(.setup-prompt-actions, .setup-console-body, .setup-note-file-shell, .setup-notes-terminal)")) {
+        if (region.hasAttribute("inert")) continue;
+        region.setAttribute("inert", "");
+        guarded.add(region);
+      }
+    };
+    const observer = new host.MutationObserver(sync);
+    sync();
+    observer.observe(node, { attributes: true, attributeFilter: ["class"] });
+    return () => { observer.disconnect(); release(); };
+  }
+
   function focusWithin(node, host = globalThis.window) {
     if (!node) return () => {};
     const doc = host.document;
     const previous = doc.activeElement;
+    const releaseReveal = guardEntryReveal(node, host);
     const tabbable = () => [...node.querySelectorAll("button, a[href], input, select, textarea, summary, [tabindex]")]
       .filter((control) => control.tabIndex >= 0 && !control.disabled && control.getClientRects().length && !control.closest("[inert], [hidden]"));
     const onKey = (event) => {
       if (event.key !== "Tab" || event.defaultPrevented) return;
       const controls = tabbable();
+      if (node.classList?.contains("is-access-pending")) {
+        event.preventDefault();
+        (controls.find((control) => control.matches(".pocket-record-back")) || node).focus({ preventScroll: true });
+        return;
+      }
       const current = controls.indexOf(doc.activeElement);
       if (!controls.length || current === -1 || event.shiftKey && current === 0 || !event.shiftKey && current === controls.length - 1) {
         event.preventDefault();
@@ -22,6 +50,7 @@
     node.focus({ preventScroll: true });
     return () => {
       node.removeEventListener("keydown", onKey);
+      releaseReveal();
       // Do not steal focus from a restore button or a nested window.
       if (doc.activeElement !== doc.body && !node.contains(doc.activeElement)) return;
       const target = previous !== doc.body && previous?.isConnected && previous.getClientRects().length && !previous.closest("[inert], [hidden]")

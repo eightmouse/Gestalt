@@ -75,6 +75,7 @@ Object.assign(pages, {
 Object.assign(pages.state, { searchOpen: true, searchQuery: "distant" });
 vm.runInContext(declaration("static-app.js", "searchPanel"), pages);
 assert.match(pages.searchPanel(), new RegExp(`data-open-record="log" data-open-note-id="${secondId}"[^>]*>\\s*<span><strong>A distant place</strong><small>A field log . 22 / 10 / 2026</small></span>\\s*<i>NOTE</i>`));
+assert.ok(pages.searchPanel().includes(`data-search-result="note:log:${secondId}"`), "The selected note can receive focus even after rebuilding the result list");
 pages.state.searchQuery = "a";
 assert.doesNotMatch(pages.searchPanel(), /palette-settings-button|<i>CMD<\/i>/, "No shortcut rows are rendered underneath Settings for a single-letter query");
 pages.state.searchQuery = "";

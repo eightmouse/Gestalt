@@ -20,7 +20,7 @@ function harness(source) {
   const window = {
     localStorage: { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) },
     matchMedia: () => ({ matches: false }),
-    setTimeout: (fn) => { timers.set(++timerId, fn); return timerId; },
+    setTimeout: (fn, delay) => { timers.set(++timerId, { fn, delay }); return timerId; },
     clearTimeout: (id) => timers.delete(id)
   };
   const context = vm.createContext({ window, exports: {}, timers });
@@ -61,19 +61,17 @@ collect(reactAst);
 assert.equal(declarations.length, 3);
 const reactLifecycle = harness(reactPolicySource);
 Object.assign(reactLifecycle.context, {
-  pocket: { isHandheld: () => false },
   recordAccessTimerRef: { current: null }, recordAccessPlayedRef: { current: false }, entryAccessModeRef: { current: "first" },
   pending: false, complete: false,
   setRecordAccessPending: (value) => { reactLifecycle.context.pending = value; },
   setRecordAccessComplete: (value) => { reactLifecycle.context.complete = value; },
-  pocketAccessSequence: { current: 0 },
-  setPocketAccessRun: (value) => { reactLifecycle.context.pocketRun = value; },
   setEntryAccessMode: () => {}, localMemory: "granted"
 });
 vm.runInContext(ts.transpileModule(`${declarations.join("\n")}\nexports.start = startRecordAccess; exports.stop = stopRecordAccess; exports.change = changeEntryAccessMode;`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, reactLifecycle.context);
 const api = reactLifecycle.context.exports;
 api.start();
 assert.equal(reactLifecycle.context.pending, true);
+assert.deepEqual([...reactLifecycle.timers.values()].map(({ delay }) => delay), [3250], "React uses one full-length access timeline");
 api.stop();
 assert.equal(reactLifecycle.timers.size, 0, "Closing/minimizing cancels pending work");
 api.start();
@@ -87,20 +85,11 @@ assert.equal(reactLifecycle.context.complete, true, "Changing modes settles the 
 assert.equal(reactLifecycle.timers.size, 0);
 api.start();
 assert.equal(reactLifecycle.context.pending, false);
-reactLifecycle.context.pocket.isHandheld = () => true;
-api.change("always");
-api.start();
-assert.equal(reactLifecycle.context.pocketRun, 1);
-assert.equal(reactLifecycle.timers.size, 0, "Handheld doesn't use the desktop timer");
-api.start();
-assert.equal(reactLifecycle.context.pocketRun, 2, "A second real open requests another handheld sequence");
-api.change("off");
-assert.equal(reactLifecycle.context.pocketRun, undefined, "Off settles any active handheld reveal");
 
 const staticLifecycle = harness(policyNames.map(staticFunction).join("\n"));
 Object.assign(staticLifecycle.context, {
   state: { accessPending: true, accessComplete: false, entryAccessMode: "first", selectedId: "unchanged", activeContent: "notes" },
-  recordAccessTimers: [], pocketAccessCleanup: () => { staticLifecycle.context.pocketStopped = true; },
+  recordAccessTimers: [],
   document: { querySelector: () => ({ classList: { remove() {}, add() {} } }) }
 });
 for (const name of ["stopRecordAccessSequence", "startRecordAccessSequence", "settleRecordAccessSequence", "changeEntryAccessMode"]) vm.runInContext(staticFunction(name), staticLifecycle.context);
@@ -110,8 +99,22 @@ assert.equal(staticLifecycle.context.state.accessPending, false);
 assert.equal(staticLifecycle.context.state.accessComplete, true);
 assert.equal(staticLifecycle.context.state.selectedId, "unchanged");
 assert.equal(staticLifecycle.context.state.activeContent, "notes");
-assert.equal(staticLifecycle.context.pocketStopped, true);
-assert.match(staticSource, /const playAccess = shouldPlayEntryAccess\(state\.entryAccessMode[^\n]+\n\s*state\.accessPending = !handheld && playAccess/);
+Object.assign(staticLifecycle.context, {
+  records: [{ id: "fixture", section: "logs" }],
+  syncRecordLinkNotice() {}, syncRecordWindow: () => true
+});
+vm.runInContext(staticFunction("openRecord"), staticLifecycle.context);
+for (const handheld of [true, false]) {
+  const { context, timers } = staticLifecycle;
+  Object.assign(context.state, { recordAccessPlayed: false, entryAccessMode: "first" });
+  context.pocket = { isHandheld: () => handheld };
+  vm.runInContext('openRecord("fixture")', context);
+  assert.equal(context.state.accessPending, true, "The same access overlay starts at either viewport");
+  assert.deepEqual([...timers.values()].map(({ delay }) => delay), [3250], "Pages uses one full-length access timeline");
+  vm.runInContext('openRecord("fixture")', context);
+  assert.equal(context.state.accessPending, false, "First only is shared across both sizes");
+  assert.equal(timers.size, 0);
+}
 assert.match(staticSource, /if \(event\.matches\) settleRecordAccessSequence\(\)/);
 assert.match(reactSource, /motionQuery\.removeEventListener\("change", onMotionChange\)/);
 

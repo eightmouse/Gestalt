@@ -1,4 +1,4 @@
-.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-pager, .pocket-note-link-label, .pocket-entry-access,
+.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-pager, .pocket-note-link-label,
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
@@ -149,6 +149,8 @@
   .pocket-record-pager svg { flex: none; }
 
   .archive-shell:has(> .pocket-header) .record-window:not([hidden]) { inset: 0; inline-size: auto; max-block-size: 100dvh; padding: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); border: 0; transform: none; animation: none; }
+  .record-window > .record-access-surface { inset: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); }
+  .record-window:not(.is-setup-record) > .record-access-surface { inset-block-start: calc(var(--pocket-safe-top) + var(--record-titlebar-size)); }
   .archive-shell:has(> .pocket-header) .timeline-window { inset-block: var(--pocket-safe-top) var(--pocket-safe-bottom); }
   :is(.os-behaviour-dialog, .roadmap-dialog, .connections-dialog, .web-search-dialog) {
     padding-block-start: max(12px, var(--pocket-safe-top));
@@ -189,8 +191,6 @@
   .record-window .record-link-feedback input { font-size: 16px; }
   .record-window .record-heading h2 { position: relative; font-family: var(--pocket-mono); font-size: 30px; letter-spacing: 0; }
   .record-window .record-title-text { font-size: inherit; line-height: inherit; letter-spacing: 0; text-wrap: wrap; overflow-wrap: anywhere; }
-  .record-heading [data-pocket-resolving] .record-title-text:not(.pocket-title-cipher) { opacity: 0; }
-  .record-heading .pocket-title-cipher { position: absolute; inset: 0; pointer-events: none; color: var(--pocket-signal); }
   .os-preference[data-os-group="pocketBoot"] { display: block; }
   .os-preference:is([data-os-group="startup"], [data-os-group="navigation"], [data-os-group="memory"], [data-os-group="seasonal"]) { display: none; }
 
@@ -215,33 +215,16 @@
 }
 
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
-  .record-window[data-pocket-access] > .pocket-entry-access {
-    position: absolute;
-    z-index: 5;
-    inset-block-start: calc(var(--pocket-safe-top) + 46px);
-    inset-inline: calc(var(--pocket-safe-left) + 16px) calc(var(--pocket-safe-right) + 16px);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    block-size: 30px;
-    padding-inline: 8px;
-    background: var(--pocket-paper);
-    color: var(--pocket-signal);
-    font: 500 11px/1 var(--pocket-mono);
-    pointer-events: none;
-    animation: pocket-entry-readout 450ms ease-out both;
+  /* Keep the only exit reachable while the archive surface builds behind it. */
+  .record-window.is-access-pending > :is(.window-bar, .setup-window-shell),
+  .record-window.is-access-pending .setup-console-prompt {
+    opacity: 1;
+    animation: none;
   }
-  .pocket-entry-access i {
-    flex: 1;
-    block-size: 1px;
-    background: currentColor;
-    transform-origin: left center;
-    animation: pocket-entry-line 245ms cubic-bezier(0.26, 0.63, 0.35, 1) both;
-  }
-  .record-window[data-pocket-access] > .record-layout,
-  .record-window[data-pocket-access] .setup-console-body,
-  .record-window[data-pocket-access] .setup-notes-terminal {
-    animation: pocket-entry-populate 420ms 130ms ease-out both;
+  .record-window.is-access-pending > .window-bar,
+  .record-window.is-access-pending .setup-console-prompt { z-index: 21; }
+  .record-window.is-access-pending :is(.window-control-group, .setup-prompt-command, .setup-prompt-actions) {
+    animation: record-content-header 820ms cubic-bezier(0.2, 0.7, 0.25, 1) 1600ms both;
   }
   .archive-shell[data-pocket-booting] .pocket-boot-screen { animation: pocket-boot-wipe 740ms 3120ms cubic-bezier(0.38, 0, 0.28, 1) both; }
   .archive-shell[data-pocket-booting] .pocket-boot-scan { animation: pocket-boot-scan 740ms 3120ms cubic-bezier(0.38, 0, 0.28, 1) forwards; }
@@ -259,6 +242,3 @@
 @keyframes pocket-boot-wipe { from { clip-path: inset(0); } to { clip-path: inset(100% 0 0); } }
 @keyframes pocket-boot-scan { from { visibility: visible; transform: translateY(0); } to { visibility: visible; transform: translateY(100%); } }
 @keyframes pocket-boot-mark { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pocket-entry-readout { 0%, 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-3px); } }
-@keyframes pocket-entry-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes pocket-entry-populate { from { opacity: 0; } to { opacity: 1; } }

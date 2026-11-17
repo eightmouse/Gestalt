@@ -7,7 +7,7 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
@@ -146,8 +146,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const recordAccessTimerRef = useRef<number | null>(null);
   const recordMotionRef = useRef<ReturnType<typeof recordMotion.createController> | null>(null);
   const recordAccessPlayedRef = useRef(false);
-  const pocketAccessSequence = useRef(0);
-  const [pocketAccessRun, setPocketAccessRun] = useState<number>();
   const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
   const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
@@ -157,7 +155,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [memoryMode, setMemoryMode] = useState<MemoryStateMode>("trace");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
-  const pocketSearchReturn = useRef<string | null>(null);
+  const recordSearchReturn = useRef<{ query: string; key?: string } | null>(null);
+  const searchReturnFocus = useRef<string | undefined>(undefined);
   const previousPocketSection = useRef(activeSection);
 
   useEffect(() => {
@@ -188,7 +187,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
     setRecordAccessPending(false);
     setRecordAccessComplete(false);
-    setPocketAccessRun(undefined);
   };
 
   const startRecordAccess = () => {
@@ -202,10 +200,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
 
     recordAccessPlayedRef.current = true;
-    if (pocket.isHandheld()) {
-      setPocketAccessRun(++pocketAccessSequence.current);
-      return;
-    }
     setRecordAccessPending(true);
     setRecordAccessComplete(false);
     recordAccessTimerRef.current = window.setTimeout(() => {
@@ -220,17 +214,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       window.clearTimeout(recordAccessTimerRef.current);
     }
   }, []);
-
-  useLayoutEffect(() => {
-    if (pocketAccessRun === undefined || !panelOpen) return;
-    return pocket.playEntryAccess(shellRef.current?.querySelector(".record-window") ?? null);
-  }, [pocketAccessRun, panelOpen]);
-
-  useLayoutEffect(() => {
-    if (!handheld || !recordAccessPending) return;
-    stopRecordAccess();
-    setRecordAccessComplete(true);
-  }, [handheld, recordAccessPending]);
 
   useEffect(() => {
     const mode = readEntryAccessMode();
@@ -345,6 +328,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [bootComplete, localMemory, startupMode, pocketBootMode]);
 
   useEffect(() => {
+    const key = searchReturnFocus.current;
+    if (!searchOpen || panelOpen || !key) return;
+    searchReturnFocus.current = undefined;
+    searchRef.current?.querySelector<HTMLButtonElement>(`[data-search-result="${CSS.escape(key)}"]`)?.focus();
+  }, [searchOpen, panelOpen]);
+
+  useEffect(() => {
     if (!searchOpen) {
       return;
     }
@@ -439,11 +429,13 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setPanelOpen(false);
     setPanelMinimized(false);
     stopRecordAccess();
-    if (pocket.isHandheld() && pocketSearchReturn.current !== null) {
-      setSearchQuery(pocketSearchReturn.current);
+    const priorSearch = recordSearchReturn.current;
+    if (priorSearch) {
+      setSearchQuery(priorSearch.query);
+      searchReturnFocus.current = priorSearch.key;
       setSearchOpen(true);
     }
-    pocketSearchReturn.current = null;
+    recordSearchReturn.current = null;
   };
 
   const closeRecord = () => {
@@ -478,12 +470,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     });
   };
 
-  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string) => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string, searchKey?: string) => {
     if (inlineBusy) return;
     if (publicReader && record.section !== "system") recordLinks.open(window, record.id, noteId);
     setLinkedNoteId(noteId);
     setRecordLinkMissing(false);
-    pocketSearchReturn.current = pocket.isHandheld() && searchOpen ? searchQuery : null;
+    recordSearchReturn.current = searchOpen && (searchKey || handheld) ? { query: searchQuery, key: searchKey } : null;
     memoryState.record("record.open", { section: record.section });
     setInlineRecordId(null);
     setInlineDraftWindow(null);
@@ -501,9 +493,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setNavOpen(false);
   };
 
-  const openAddressedRecord = (record: RecordEntry, noteId?: string) => {
+  const openAddressedRecord = (record: RecordEntry, noteId?: string, searchKey?: string) => {
     const index = noteId ? noteInline.noteIndexById(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) : -1;
-    openRecord(record, index >= 0 ? "notes" : "overview", index >= 0 ? index : undefined, noteId);
+    openRecord(record, index >= 0 ? "notes" : "overview", index >= 0 ? index : undefined, noteId, searchKey);
   };
 
   const syncRecordLocation = useEffectEvent(() => {
@@ -678,14 +670,14 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (hasQuery) setNavOpen(false);
   };
 
-  const openSearchResult = (result: SearchResult) => {
+  const openSearchResult = (result: SearchResult, searchKey?: string) => {
     if (result.kind === "note") {
-      openAddressedRecord(result.record, result.noteId);
+      openAddressedRecord(result.record, result.noteId, searchKey);
       return;
     }
 
     if (result.kind === "record") {
-      openRecord(result.record);
+      openRecord(result.record, undefined, undefined, undefined, searchKey);
       return;
     }
 
@@ -718,7 +710,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     }
 
     if (result.record) {
-      openRecord(result.record, result.content ?? "overview");
+      openRecord(result.record, result.content ?? "overview", undefined, undefined, searchKey);
       return;
     }
 

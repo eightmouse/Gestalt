@@ -5642,6 +5642,11 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 .os-preference small { display: block; margin-block-start: 8px; color: var(--muted); font-size: calc(12px * var(--os-size)); }
 .os-preference small:empty { display: none; }
+.os-preference small[data-os-reduced-motion] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .os-preference small[data-os-reduced-motion] { display: block; }
+}
 .os-behaviour-footnote { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; border-block-start: 1px solid var(--line); padding-block-start: 12px; color: var(--muted); font-size: calc(12px * var(--os-size)); }
 .os-behaviour-footnote span { color: var(--text); }
 @media (min-width: 2200px) and (min-height: 1100px) { .os-behaviour-dialog { --os-size: 1.25; } }

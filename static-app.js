@@ -131,7 +131,6 @@ function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
 }
 let navMotionTimer = 0;
 let recordAccessTimers = [];
-let pocketAccessCleanup;
 
 function normalizeEntryAccessMode(value) {
   return value === "always" || value === "off" ? value : "first";
@@ -218,8 +217,6 @@ function changeDesktopNavigationMode(value) {
 }
 
 function stopRecordAccessSequence() {
-  pocketAccessCleanup?.();
-  pocketAccessCleanup = undefined;
   for (const timer of recordAccessTimers) {
     window.clearTimeout(timer);
   }
@@ -259,7 +256,7 @@ const state = {
   startupMode: window.GestaltOsBehaviour?.readStartupMode() || "full",
   pocketBootMode: pocket?.readBootMode() || "once",
   pocketPages: [],
-  pocketSearchReturn: null,
+  recordSearchReturn: null,
   panelMinimized: false,
   panelMaximized: false,
   memoryStateEnabled: true,
@@ -312,7 +309,7 @@ function selectedRecord() {
   return records.find((record) => record.id === state.selectedId) || records[0];
 }
 
-function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId = null) {
+function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId = null, searchKey) {
   const record = records.find((entry) => entry.id === recordId);
 
   if (!record) {
@@ -325,10 +322,9 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
 
   stopRecordAccessSequence();
   const handheld = pocket?.isHandheld();
-  state.pocketSearchReturn = handheld && state.searchOpen ? state.searchQuery : null;
-  const playAccess = shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  state.accessPending = !handheld && playAccess;
-  if (playAccess) {
+  state.recordSearchReturn = state.searchOpen && (searchKey || handheld) ? { query: state.searchQuery, key: searchKey } : null;
+  state.accessPending = shouldPlayEntryAccess(state.entryAccessMode, state.recordAccessPlayed, window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  if (state.accessPending) {
     state.recordAccessPlayed = true;
   }
   state.accessComplete = false;
@@ -352,8 +348,7 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.noteSearchPage = 0;
   state.updateHistoryOpen = false;
   if (!syncRecordWindow()) render();
-  if (handheld && playAccess) pocketAccessCleanup = pocket.playEntryAccess?.(root.querySelector(".record-window"));
-  else startRecordAccessSequence();
+  startRecordAccessSequence();
   if (record.section === "setup" && noteId && !state.noteLinkMissing) {
     root.querySelector(`.record-window [data-setup-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "nearest" });
   } else if (state.focusedNoteIndex > 0) revealFocusedNote();
@@ -1513,7 +1508,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.77.0</span>
+        <span>v1.77.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1527,7 +1522,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.77.0</span>
+        <span class="version-label">v1.77.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1547,7 +1542,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.77.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.77.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2614,6 +2609,8 @@ function searchPanel() {
     ? results
         .map(
           (result) => {
+            const returnKey = result.record && window.GestaltArchiveSearch?.resultKey?.(result);
+            const returnAttr = returnKey ? ` data-search-result="${escapeHtml(returnKey)}"` : "";
             if (result.kind === "command") {
               if (result.action === "behaviour") {
                 return `<button type="button" class="palette-settings-button" data-open-os-behaviour aria-haspopup="dialog"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><strong>Settings</strong></button>`;
@@ -2629,7 +2626,7 @@ function searchPanel() {
                     : `data-open-section="${result.section}"`;
               const stateAttr = result.record ? ` data-state="${recordStateKey(result.record.status)}"` : "";
 
-              return `<button type="button" ${commandAttrs}${stateAttr}>
+              return `<button type="button" ${commandAttrs}${stateAttr}${returnAttr}>
                 <span><strong>${escapeHtml(result.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
                 <i>CMD</i>
               </button>`;
@@ -2638,7 +2635,7 @@ function searchPanel() {
             const isNote = result.kind === "note";
             const noteAttr = isNote ? ` data-open-note-id="${escapeHtml(result.noteId)}"` : "";
             const cipher = isNote ? "" : ` data-cipher="${escapeHtml(cipherizeText(result.detail))}"`;
-            return `<button type="button" data-open-record="${escapeHtml(result.record.id)}"${noteAttr} data-state="${recordStateKey(result.record.status)}">
+            return `<button type="button" data-open-record="${escapeHtml(result.record.id)}"${noteAttr} data-state="${recordStateKey(result.record.status)}"${returnAttr}>
             <span><strong>${escapeHtml(isNote ? result.title : result.record.title)}</strong><small${cipher}>${escapeHtml(result.detail)}</small></span>
             <i>${isNote ? "NOTE" : escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
@@ -2661,7 +2658,7 @@ function searchPanel() {
   </div>`;
 }
 
-function syncSearchPanel() {
+function syncSearchPanel(returnKey) {
   document.querySelector(".archive-shell")?.toggleAttribute("data-search-open", state.searchOpen);
   const header = document.querySelector(".workspace-header");
   if (!header) return;
@@ -2677,8 +2674,11 @@ function syncSearchPanel() {
       if (input.value !== state.searchQuery) input.value = state.searchQuery;
     } else {
       header.append(next);
-      next.querySelector("[data-search-input]")?.focus();
     }
+    if (returnKey) {
+      const target = (panel || next).querySelector(`[data-search-result="${CSS.escape(returnKey)}"]`);
+      (target || (panel || next).querySelector("[data-search-input]"))?.focus();
+    } else if (!panel) next.querySelector("[data-search-input]")?.focus();
   } else {
     panel?.remove();
     if (restoreFocus) {
@@ -3201,14 +3201,20 @@ function dismissRecordView() {
   minimizedRecordWindow = null;
   root.querySelector(".record-window")?.remove();
   root.querySelector("[data-record-backdrop]")?.remove();
-  if (pocket?.isHandheld() && state.pocketSearchReturn !== null) {
-    state.searchQuery = state.pocketSearchReturn;
+  const priorSearch = state.recordSearchReturn;
+  state.recordSearchReturn = null;
+  if (priorSearch) {
+    state.searchQuery = priorSearch.query;
     state.searchOpen = true;
-    syncSearchPanel();
   }
-  state.pocketSearchReturn = null;
-  if (recordRenderPending) { recordRenderPending = false; render(); }
-  else syncRecordWindowChrome();
+  if (recordRenderPending) {
+    recordRenderPending = false;
+    render();
+    if (priorSearch?.key) syncSearchPanel(priorSearch.key);
+  } else {
+    if (priorSearch) syncSearchPanel(priorSearch.key);
+    syncRecordWindowChrome();
+  }
 }
 
 function syncRecordLinkNotice(missing) {
@@ -3217,9 +3223,9 @@ function syncRecordLinkNotice(missing) {
   if (notice) notice.textContent = missing ? "This record is not available in the archive." : "";
 }
 
-function openAddressedRecord(record, noteId) {
+function openAddressedRecord(record, noteId, searchKey) {
   const index = noteId ? window.GestaltNoteInline?.noteIndexById?.(record.section === "setup" ? setupNarrativeNotes(record) : noteEntries(record.body), noteId) ?? -1 : -1;
-  openRecord(record.id, index >= 0 ? "notes" : "overview", index >= 0 ? index : null, noteId);
+  openRecord(record.id, index >= 0 ? "notes" : "overview", index >= 0 ? index : null, noteId, searchKey);
 }
 
 function syncRecordLocation() {
@@ -3283,7 +3289,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.77.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.77.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3888,13 +3894,15 @@ document.addEventListener("click", (event) => {
   }
 
   if (recordId) {
+    if (target.closest(".pocket-dispatches")) target.focus({ preventScroll: true });
+    const searchKey = target.dataset.searchResult;
     if (target.dataset.openNoteId) {
       const record = records.find((entry) => entry.id === recordId);
-      if (record) openAddressedRecord(record, target.dataset.openNoteId);
+      if (record) openAddressedRecord(record, target.dataset.openNoteId, searchKey);
       return;
     }
     const noteTarget = target.dataset.openNoteIndex === undefined ? null : Number(target.dataset.openNoteIndex);
-    openRecord(recordId, openContent || "overview", noteTarget);
+    openRecord(recordId, openContent || "overview", noteTarget, null, searchKey);
     return;
   }
 
@@ -4126,7 +4134,6 @@ render();
 let weatherStarted = !pocket?.isHandheld();
 if (weatherStarted) void requestWeather();
 window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
-  if (event.matches && state.accessPending) settleRecordAccessSequence();
   const dispatches = root.querySelector(".pocket-dispatches");
   if (dispatches && event.matches) dispatches.innerHTML = pocketDispatchesMarkup();
   for (const tools of root.querySelectorAll(".record-window :is(.note-entry, .setup-note) > .note-link-tools")) {

@@ -54,6 +54,46 @@ assert.equal(tab(), true);
 assert.equal(doc.activeElement, node);
 empty();
 
+const inertRegion = (inert = false) => ({
+  inert,
+  hasAttribute(name) { return name === "inert" && this.inert; },
+  setAttribute() { this.inert = true; },
+  removeAttribute() { this.inert = false; }
+});
+const body = inertRegion(), secondary = inertRegion(), alreadyInert = inertRegion(true);
+const back = { ...control(), matches: (selector) => selector === ".pocket-record-back" };
+const behindReveal = { ...control(), matches: () => false, closest: () => body.inert ? body : null };
+let pending = true, notify, disconnected = false;
+node.matches = (selector) => selector === ".record-window";
+node.classList = { contains: (name) => name === "is-access-pending" && pending };
+node.querySelectorAll = (selector) => selector.startsWith(":scope") ? [body, secondary, alreadyInert] : controls;
+controls = [behindReveal];
+trigger.isConnected = true;
+doc.activeElement = trigger;
+const release = motion.focusWithin(node, {
+  document: doc,
+  MutationObserver: class {
+    constructor(callback) { notify = callback; }
+    observe(_node, options) { assert.deepEqual(options, { attributes: true, attributeFilter: ["class"] }); }
+    disconnect() { disconnected = true; }
+  }
+});
+assert.ok(body.inert && secondary.inert, "Hidden entry controls are inert until the reveal ends");
+assert.equal(tab(), true);
+assert.equal(doc.activeElement, node, "Desktop retains focus on the unrevealed dialog");
+controls = [back, behindReveal];
+assert.equal(tab(true), true);
+assert.equal(doc.activeElement, back, "Handheld Back remains keyboard-reachable");
+assert.equal(tab(), true);
+assert.equal(doc.activeElement, back, "Tab cannot enter unrevealed controls from Back");
+pending = false; notify();
+assert.ok(!body.inert && !secondary.inert && alreadyInert.inert, "Only temporary entry guards are released");
+assert.equal(tab(), false, "Settled entry resumes ordinary tab order");
+pending = true; notify();
+release();
+assert.ok(disconnected && !body.inert && !secondary.inert && alreadyInert.inert);
+assert.equal(doc.activeElement, trigger);
+
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const source = read("static-app.js");
 const ast = ts.createSourceFile("static-app.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);

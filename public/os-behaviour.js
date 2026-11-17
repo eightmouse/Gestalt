@@ -55,10 +55,16 @@
     return Object.fromEntries(groups.map((group) => [group.key, group.options.some(([value]) => value === values?.[group.key]) ? values[group.key] : group.defaultValue || group.options[0][0]]));
   }
   function needsLocalMemory(key) { return key === "startup" || key === "pocketBoot"; }
+  function preferenceNote(key, remember) {
+    if (key === "entry") return '<small data-os-reduced-motion>Device reduced motion is active.</small>';
+    if (key === "startup") return `<small data-os-startup-note>${remember ? "" : "Local memory required."}</small>`;
+    if (key === "pocketBoot") return `<small data-os-pocket-note>${remember ? "Play once per tab session." : "Local memory is required to remember this choice."}</small>`;
+    return "";
+  }
   function renderContent(values, remember) {
     const selected = normalizeValues(values);
     return `<article class="os-behaviour-frame"><header class="window-bar"><span>// SETTINGS</span><div class="window-actions"><button type="button" data-window-action="close" data-os-close aria-label="Close Settings">close</button></div></header>
-      <div class="os-behaviour-body">${groups.map((group) => `<fieldset class="os-preference" data-os-group="${group.key}"><legend>${group.title}</legend><div class="os-preference-options" data-options="${group.options.length}">${group.options.map(([value, label]) => `<label><input type="radio" name="os-${group.key}" data-os-preference="${group.key}" value="${value}"${selected[group.key] === value ? " checked" : ""}${needsLocalMemory(group.key) && !remember ? " disabled" : ""}><span>${label}</span></label>`).join("")}</div>${group.key === "startup" ? `<small data-os-startup-note>${remember ? "" : "Local memory required."}</small>` : group.key === "pocketBoot" ? `<small data-os-pocket-note>${remember ? "Play once per tab session." : "Local memory is required to remember this choice."}</small>` : ""}</fieldset>`).join("")}
+      <div class="os-behaviour-body">${groups.map((group) => `<fieldset class="os-preference" data-os-group="${group.key}"><legend>${group.title}</legend><div class="os-preference-options" data-options="${group.options.length}">${group.options.map(([value, label]) => `<label><input type="radio" name="os-${group.key}" data-os-preference="${group.key}" value="${value}"${selected[group.key] === value ? " checked" : ""}${needsLocalMemory(group.key) && !remember ? " disabled" : ""}><span>${label}</span></label>`).join("")}</div>${preferenceNote(group.key, remember)}</fieldset>`).join("")}
       <footer class="os-behaviour-footnote">LOCAL MEMORY <span data-os-memory>${remember ? "ENABLED" : "SESSION ONLY"}</span></footer></div></article>`;
   }
   function createController(host = globalThis.window) {

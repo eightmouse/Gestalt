@@ -14,7 +14,5 @@ declare const pocket: {
   shouldPlayBoot(mode: PocketBootMode, remember: boolean, host?: Window): boolean;
   meterFrames(random?: () => number): Keyframe[];
   runBoot(shell: HTMLElement | null, onComplete: () => void, options: { mode: PocketBootMode; remember: boolean }, host?: Window): () => void;
-  resolveTitle(title: HTMLElement | null, host?: Window): () => void;
-  playEntryAccess(surface: HTMLElement | null, host?: Window): (() => void) | undefined;
 };
 export default pocket;

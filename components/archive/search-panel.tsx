@@ -4,16 +4,18 @@ import type { RefObject } from "react";
 import { Settings } from "lucide-react";
 import { cipherizeText } from "@/components/archive/cipher";
 import type { SearchResult } from "@/components/archive/types";
+import archiveSearch from "@/public/archive-search.js";
 
 type SearchPanelProps = {
   panelRef: RefObject<HTMLDivElement | null>;
   query: string;
   results: SearchResult[];
-  onOpenResult: (result: SearchResult) => void;
+  onOpenResult: (result: SearchResult, returnKey?: string) => void;
   onQueryChange: (query: string) => void;
 };
 
 export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryChange }: SearchPanelProps) {
+  const open = (result: SearchResult) => onOpenResult(result, result.record ? archiveSearch.resultKey(result) : undefined);
   return (
     <div className="search-panel command-panel" ref={panelRef} role="search">
       <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>~ COMMAND PALETTE</label>
@@ -25,7 +27,7 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
         onKeyDown={(event) => {
           if (event.key !== "Enter" || event.defaultPrevented || event.nativeEvent.isComposing || event.repeat || event.metaKey || event.ctrlKey || event.altKey || !query.trim() || !results[0]) return;
           event.preventDefault();
-          onOpenResult(results[0]);
+          open(results[0]);
         }}
         placeholder="Find a record, note or command"
         type="search"
@@ -35,16 +37,17 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
         {results.length > 0 ? (
           results.map((result) => (
             result.kind === "command" && result.action === "behaviour" ? (
-              <button className="palette-settings-button" key={result.id} type="button" aria-haspopup="dialog" onClick={() => onOpenResult(result)}>
+              <button className="palette-settings-button" key={result.id} type="button" aria-haspopup="dialog" onClick={() => open(result)}>
                 <Settings size={18} aria-hidden="true" /><strong>Settings</strong>
               </button>
             ) : (
             <button
               data-state={searchResultStateKey(result)}
+              data-search-result={result.record ? archiveSearch.resultKey(result) : undefined}
               key={result.kind === "record" ? result.record.id : result.id}
               type="button"
               aria-haspopup={result.kind === "command" && result.action === "connections" ? "dialog" : undefined}
-              onClick={() => onOpenResult(result)}
+              onClick={() => open(result)}
             >
               <span>
                 <strong>

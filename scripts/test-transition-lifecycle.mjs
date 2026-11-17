@@ -304,7 +304,7 @@ assert.match(css, /\.record-window::after\s*\{[^}]*transform: translateZ\(0\)/, 
 const react = read("components/archive/record-window.tsx");
 assert.ok(!react.includes("motion.article") && !react.includes('from "framer-motion"'), "React and Pages use the same CSS entry fade, not two competing opacity animations");
 assert.equal((react.match(/<article\s+ref=/g) || []).length, 2, "Standard and Setup dialogs retain their real roots");
-assert.match(source, /if \(!syncRecordWindow\(\)\) render\(\);\s*if \(handheld && playAccess\) pocketAccessCleanup = pocket\.playEntryAccess[^\n]+\s*else startRecordAccessSequence\(\)/);
+assert.match(source, /if \(!syncRecordWindow\(\)\) render\(\);\s*startRecordAccessSequence\(\)/);
 let contentBranch;
 function findContentBranch(node) {
   if (ts.isIfStatement(node) && node.expression.getText(ast) === "contentKey") contentBranch = node.thenStatement;

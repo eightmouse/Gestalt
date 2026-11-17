@@ -22,6 +22,10 @@ export function PocketIndex({ latest, dispatches, onSection, onRead, onBack }: {
   onRead: (record: RecordEntry, dispatch?: ActivityEntry) => void;
   onBack: () => void;
 }) {
+  const read = (button: HTMLButtonElement, record: RecordEntry, dispatch?: ActivityEntry) => {
+    button.focus({ preventScroll: true });
+    onRead(record, dispatch);
+  };
   return <>
     <div className="pocket-context"><button type="button" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" />Back to Index</button></div>
     <div className="pocket-index">
@@ -32,10 +36,10 @@ export function PocketIndex({ latest, dispatches, onSection, onRead, onBack }: {
         </button>)}
       </nav>
       {latest || dispatches.length ? <section className="pocket-dispatches" aria-label="Recent dispatches">
-        {latest ? <button className="pocket-dispatch" type="button" onClick={() => onRead(latest)}><span><small>LATEST FIELD NOTE</small><strong>{latest.title}</strong></span><ArrowUpRight size={16} aria-hidden="true" /></button> : null}
+        {latest ? <button className="pocket-dispatch" type="button" onClick={(event) => read(event.currentTarget, latest)}><span><small>LATEST FIELD NOTE</small><strong>{latest.title}</strong></span><ArrowUpRight size={16} aria-hidden="true" /></button> : null}
         {dispatches.length ? <div className="pocket-dispatch-list">
           <p>// RECENT DISPATCHES</p>
-          {dispatches.map((dispatch) => <button className="pocket-dispatch-row" type="button" key={dispatch.id} onClick={() => onRead(dispatch.record, dispatch)}>
+          {dispatches.map((dispatch) => <button className="pocket-dispatch-row" type="button" key={dispatch.id} onClick={(event) => read(event.currentTarget, dispatch.record, dispatch)}>
             <time dateTime={dispatch.date}>{shortDate(dispatch.date)}</time>
             <span><strong>{dispatch.noteTitle || dispatch.title}</strong>{dispatch.noteTitle && dispatch.noteTitle !== dispatch.title ? <small>{dispatch.title}</small> : null}</span>
             <ChevronRight size={16} aria-hidden="true" />

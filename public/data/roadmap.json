@@ -32,6 +32,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "A consistent entry opening",
+          "detail": "Handheld now has the full ACCESSING sequence, including the frame and sweep. Back stays available while the entry builds. Closing returns you to the same search result or dispatch.",
+          "version": "v1.77.1",
+          "releasedOn": "2026-11-17"
+        },
+        {
           "title": "Pocket Index: dispatches and a way home",
           "detail": "Tap GESTALT to return to the index. Recent Dispatches open straight to the note. Share controls stay out of the prose, and the short ACCESSING sequence can play on the first entry, on every entry, or not at all.",
           "version": "v1.77.0",

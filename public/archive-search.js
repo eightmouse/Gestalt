@@ -76,5 +76,9 @@
     return [...matchedCommands, ...matches.slice(0, 6).map(({ result }) => result)].slice(0, 8);
   }
 
-  return Object.freeze({ search });
+  function resultKey(result) {
+    return `${result.kind}:${result.kind === "record" ? result.record.id : result.id}`;
+  }
+
+  return Object.freeze({ search, resultKey });
 });
