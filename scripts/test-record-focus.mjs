@@ -66,7 +66,12 @@ const behindReveal = { ...control(), matches: () => false, closest: () => body.i
 let pending = true, notify, disconnected = false;
 node.matches = (selector) => selector === ".record-window";
 node.classList = { contains: (name) => name === "is-access-pending" && pending };
-node.querySelectorAll = (selector) => selector.startsWith(":scope") ? [body, secondary, alreadyInert] : controls;
+node.querySelectorAll = (selector) => {
+  if (!selector.startsWith(":scope")) return controls;
+  assert.match(selector, /:scope > \.record-layout > \*/, "Guard the reading content, not the scrolling region");
+  assert.doesNotMatch(selector, /\.record-layout\s*[,)]/);
+  return [body, secondary, alreadyInert];
+};
 controls = [behindReveal];
 trigger.isConnected = true;
 doc.activeElement = trigger;

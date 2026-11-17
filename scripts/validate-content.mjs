@@ -1,12 +1,14 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import noteInline from "../public/note-inline.js";
+import recordLinks from "../public/record-links.js";
 
 const root = process.cwd();
 const recordsDir = path.join(root, "content", "records");
 const validSections = new Set(["system", "projects", "games", "logs", "setup", "archive"]);
 const required = ["title", "section", "type", "status", "updated", "summary", "progress", "priority"];
 const seen = new Set();
+const traceIds = new Map();
 const errors = [];
 
 function parseScalar(rawValue) {
@@ -125,6 +127,11 @@ for (const filename of readdirSync(recordsDir).filter((file) => file.endsWith(".
 
   if (!validSections.has(parsed.data.section)) {
     fail(filename, `invalid section "${parsed.data.section}"`);
+  } else {
+    const traceId = recordLinks.traceId(id, parsed.data.section);
+    const previous = traceIds.get(traceId);
+    if (previous) fail(filename, `display reference ${traceId} is also used by ${previous}`);
+    traceIds.set(traceId, filename);
   }
 
   if (parsed.data.gamePlacement !== undefined && !["session", "past"].includes(parsed.data.gamePlacement)) {

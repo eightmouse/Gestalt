@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { renderToStaticMarkup } from "react-dom/server";
 import imageFraming from "../public/image-framing.js";
+import recordLinks from "../public/record-links.js";
 import { createSteamSnapshotLoader, currentGameCover, publicSnapshot, resolveCurrentGame, steamBannerImage, steamCoverUrl, steamRecordSeed } from "../public/steam-display.mjs";
 
 const now = "2026-10-20T12:00:00.000Z";
@@ -106,7 +107,7 @@ vm.runInContext(ts.transpileModule(summaryHelper.replace(/^export /, ""), { comp
 vm.runInContext(component, react);
 const authoredSummary = 'First look at <the arena> & "the controls".';
 const staticContext = vm.createContext({
-  window: { GestaltImageFraming: imageFraming },
+  window: { GestaltImageFraming: imageFraming, GestaltRecordLinks: recordLinks },
   steamDisplayModule: { steamBannerImage, currentGameCover },
   steamDisplayReady: true,
   currentGameRecord: () => ({ ...headerOnlyGame, summary: authoredSummary }),
@@ -198,6 +199,7 @@ assert.deepEqual(imageFraming.recordHeadingArtwork({ ...legacyGame, meta: { head
 assert.equal(imageFraming.recordHeadingArtwork({ ...legacyGame, section: "projects" }, steamBannerImage), null, "Only games promote legacy banners");
 
 Object.assign(react, {
+  recordLinks,
   useState: (value) => [value, () => {}], useEffect() {}, useRef: () => ({ current: null }),
   motion: { article: ({ children }) => require("react").createElement("article", null, children) },
   getRecordContents: () => [],
@@ -217,7 +219,7 @@ Object.assign(staticContext, {
   recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => ""
 });
-vm.runInContext(["recordWindow", "recordLinkButton", "recordLinkFeedback", "pocketIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
+vm.runInContext(["recordWindow", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
 function findHeaderElement(node, className) {
   if (!node || typeof node !== "object") return null;
   if (node.props?.className === className) return node;
@@ -245,6 +247,7 @@ for (const section of ["projects", "games", "logs"]) {
   for (const html of [reactHeader, staticHeader]) {
     assert.ok(html.includes(imageFraming.headerFrameCss(headerFrame)), "React and Pages render the saved header crop, not overview framing");
     assert.ok(html.includes("Header &lt;fixture&gt;"));
+    assert.ok(html.includes(recordLinks.traceId(record.id, section)), "Both readers show the same reference in the entry header");
   }
 }
 const tabs = ["overview", "notes", "recommendation"];

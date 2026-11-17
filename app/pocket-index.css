@@ -149,7 +149,7 @@
   .pocket-record-pager svg { flex: none; }
 
   .archive-shell:has(> .pocket-header) .record-window:not([hidden]) { inset: 0; inline-size: auto; max-block-size: 100dvh; padding: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); border: 0; transform: none; animation: none; }
-  .record-window > .record-access-surface { inset: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); }
+  .record-window > .record-access-surface { inset: var(--pocket-safe-top) var(--pocket-safe-right) var(--pocket-safe-bottom) var(--pocket-safe-left); pointer-events: none; }
   .record-window:not(.is-setup-record) > .record-access-surface { inset-block-start: calc(var(--pocket-safe-top) + var(--record-titlebar-size)); }
   .archive-shell:has(> .pocket-header) .timeline-window { inset-block: var(--pocket-safe-top) var(--pocket-safe-bottom); }
   :is(.os-behaviour-dialog, .roadmap-dialog, .connections-dialog, .web-search-dialog) {

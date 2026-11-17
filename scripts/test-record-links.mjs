@@ -12,6 +12,11 @@ for (const hash of ["", "#other=a-record", "#record=../a-record", "#record=%3Csc
   assert.equal(links.recordId(hash), null, hash);
 }
 assert.equal(links.recordId("#record=a-record"), "a-record");
+const games = ["persona-5-royal", "maple-story", "monster-hunter-world"];
+const gameLabels = games.map((id) => links.traceId(id, "games"));
+assert.equal(new Set(gameLabels).size, games.length, "Game labels distinguish records with the same sort priority");
+gameLabels.forEach((label) => assert.match(label, /^#GAM-[0-9A-Z]{7}$/));
+assert.equal(links.traceId(games[1], "games"), gameLabels[1], "Record labels do not depend on list position");
 const noteId = "n-" + "a".repeat(32);
 const newerId = "n-" + "b".repeat(32);
 const exactLink = `${archive}#record=a-record&note=${noteId}`;

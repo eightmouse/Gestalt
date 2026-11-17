@@ -18,6 +18,7 @@ import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
+import recordLinks from "@/public/record-links.js";
 import recordMotion from "@/public/record-motion.js";
 import { NoteLinkControl, RecordLinkButton, RecordLinkFeedback } from "@/components/archive/record-link-control";
 import type { ArchiveNote } from "@/public/note-inline.js";
@@ -163,7 +164,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
               image.src = artwork.coverFallback;
             } : undefined} /> : null}
             <span className="record-kind">{record.type.toUpperCase()}</span>
-            <span className="record-id">#{record.section.slice(0, 3).toUpperCase()}-{record.priority.toString().padStart(3, "0")}</span>
+            <span className="record-id">{recordLinks.traceId(record.id, record.section)}</span>
             <h2>
               <span
                 className={record.title.length > 26 ? "record-title-text is-long-title" : "record-title-text"}

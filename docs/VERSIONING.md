@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.77.1`. Previous site-code release: `v1.77.0` (f4b04e72).
+Release target: `v1.77.2`. Previous site-code release: `v1.77.1` (129e42ed).
+
+`v1.77.2` keeps handheld entry scrolling active during the ACCESSING sequence without exposing unrevealed controls. Archive badges use stable references derived from record IDs instead of shared sort priorities. Record URLs, notes, media and dependencies are unchanged.
 
 `v1.77.1` replaces the short handheld flash with the full desktop ACCESSING sequence. Handheld Back remains available while unrevealed controls stay out of the tab order. Closing a search result restores its query and focuses the same result; closing a dispatch returns to that dispatch. Settings identifies when the device has reduced motion active. No authored records, media or dependencies changed.
 

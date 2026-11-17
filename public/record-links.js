@@ -16,6 +16,13 @@
   const recordId = (hash) => target(hash)?.recordId ?? null;
   const recordHash = (id, noteId) => prefix + id + (noteId && /^(?:main|n-[a-f0-9]{32})$/.test(noteId) ? `&note=${noteId}` : "");
 
+  function traceId(id, section) {
+    // FNV-1a keeps the display label compact and independent of title, dates, and sort priority.
+    let hash = 0x811c9dc5;
+    for (let index = 0; index < id.length; index++) hash = Math.imul(hash ^ id.charCodeAt(index), 0x01000193);
+    return `#${section.slice(0, 3).toUpperCase()}-${(hash >>> 0).toString(36).toUpperCase().padStart(7, "0")}`;
+  }
+
   function shareUrl(href, id, noteId) {
     if (!validId(id)) return null;
     const url = new URL(href);
@@ -88,5 +95,5 @@
     feedbackTimers.set(feedback, browser.setTimeout(() => { status.textContent = ""; }, 2600));
   }
 
-  return Object.freeze({ isRecordLink, recordId, target, shareUrl, open, close, copyFromControl });
+  return Object.freeze({ isRecordLink, recordId, traceId, target, shareUrl, open, close, copyFromControl });
 });

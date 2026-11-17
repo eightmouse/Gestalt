@@ -7,6 +7,7 @@ import { ArrowUp, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardD
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useState } from "react";
 import pocket from "@/public/pocket-index.js";
+import recordLinks from "@/public/record-links.js";
 
 type ArchiveSectionConfig = {
   id: RecordSection;
@@ -308,7 +309,7 @@ function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: 
     <button className="section-record" data-state={recordStateKey(gameActivityLabel(record))} type="button" onClick={() => onOpenRecord(record)}>
       <span className="section-record-kind">
         <span>{record.type}</span>
-        <small>{recordTraceId(record)}</small>
+        <small>{recordLinks.traceId(record.id, record.section)}</small>
       </span>
       <strong>{record.title}</strong>
       <span>{record.section === "logs" ? recordDisplaySummary(record) : record.summary}</span>
@@ -321,10 +322,6 @@ function SectionRecordButton({ onOpenRecord, record }: { onOpenRecord: (record: 
 
 function recordStateKey(status: string): string {
   return status.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unknown";
-}
-
-function recordTraceId(record: RecordEntry): string {
-  return `#${record.section.slice(0, 3).toUpperCase()}-${record.priority.toString().padStart(3, "0")}`;
 }
 
 function SectionReadout({ items }: { items: Array<{ label: string; value: string }> }) {

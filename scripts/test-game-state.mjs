@@ -6,6 +6,7 @@ import ts from "typescript";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import imageFraming from "../public/image-framing.js";
+import recordLinks from "../public/record-links.js";
 
 const require = createRequire(import.meta.url);
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
@@ -27,8 +28,8 @@ function compile(source, globals = {}) {
 }
 const policy = compile(read("lib/game-state.ts")).exports;
 const names = ["gameLogPlacement", "gameActivityValue", "gameActivityLabel"];
-const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "groupStatusLine", "renderSectionRows", "recordStateKey", "recordTraceId", "readableDate", "escapeHtml"]));
-const react = compile(`${functions("components/archive/record-utils.ts", ["formatReadableDate"])}\n${functions("components/archive/section-page.tsx", ["splitSectionRecords", "groupStatusLine", "SectionRecordButton", "recordStateKey", "recordTraceId"])}\nexports.split = splitSectionRecords; exports.Card = SectionRecordButton;`, policy);
+const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "groupStatusLine", "renderSectionRows", "recordStateKey", "recordTraceId", "readableDate", "escapeHtml"]), { window: { GestaltRecordLinks: recordLinks } });
+const react = compile(`${functions("components/archive/record-utils.ts", ["formatReadableDate"])}\n${functions("components/archive/section-page.tsx", ["splitSectionRecords", "groupStatusLine", "SectionRecordButton", "recordStateKey"])}\nexports.split = splitSectionRecords; exports.Card = SectionRecordButton;`, { ...policy, recordLinks });
 const studio = compile(`${functions("components/studio-client.tsx", ["splitStudioSectionRecords", "toRecordPreview", "readStudioDrafts"])}\nexports.split = splitStudioSectionRecords; exports.preview = toRecordPreview; exports.drafts = readStudioDrafts;`, {
   ...policy, imageFraming, studioDraftStorageKey: "fixture-drafts", mediaListFromText: () => []
 });
@@ -70,6 +71,7 @@ for (const html of [renderToStaticMarkup(createElement(react.exports.Card, { rec
   assert.ok(html.includes('data-state="inactive"'));
   assert.ok(html.includes("Inactive"));
   assert.ok(!html.includes("Playing"), "An inactive Session card displays the authored activity");
+  assert.ok(html.includes(recordLinks.traceId(inactiveCard.id, "games")), "Reader cards share the same stable display reference");
 }
 const form = { id: "fixture", section: "games", status: "Completed", gamePlacement: "session", gameActivity: "inactive" };
 const preview = studio.exports.preview(form, "Unchanged note");

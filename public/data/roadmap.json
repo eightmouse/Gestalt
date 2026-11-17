@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "17 / 11 / 2026",
+  "updated": "18 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Handheld scrolling and record references",
+          "detail": "Entries are ready to scroll as the opening sequence finishes. Record badges no longer repeat the sort priority, and shared links still lead to the same entries and notes.",
+          "version": "v1.77.2",
+          "releasedOn": "2026-11-18"
+        },
         {
           "title": "A consistent entry opening",
           "detail": "Handheld now has the full ACCESSING sequence, including the frame and sweep. Back stays available while the entry builds. Closing returns you to the same search result or dispatch.",

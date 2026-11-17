@@ -12,8 +12,8 @@
     };
     const sync = () => {
       if (!node.classList.contains("is-access-pending")) { release(); return; }
-      // Gate the reading controls, not the window itself or handheld Back.
-      for (const region of node.querySelectorAll(":scope > :is(.record-layout, .record-link-feedback), :scope > .window-bar .window-control-group, :scope > .setup-window-shell :is(.setup-prompt-actions, .setup-console-body, .setup-note-file-shell, .setup-notes-terminal)")) {
+      // Keep the scroll containers active while their contents are gated.
+      for (const region of node.querySelectorAll(":scope > .record-layout > *, :scope > .record-link-feedback, :scope > .window-bar .window-control-group, :scope > .setup-window-shell :is(.setup-prompt-actions, .setup-console-body, .setup-note-file-shell, .setup-notes-terminal)")) {
         if (region.hasAttribute("inert")) continue;
         region.setAttribute("inert", "");
         guarded.add(region);

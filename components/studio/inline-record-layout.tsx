@@ -6,6 +6,7 @@ import { recordHeaderImage } from "@/components/archive/record-utils";
 import type { RecordEntry } from "@/lib/types";
 import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
 import imageFraming from "@/public/image-framing.js";
+import recordLinks from "@/public/record-links.js";
 
 type InlineContent = "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation";
 
@@ -36,7 +37,7 @@ export function InlineRecordLayout({ record, content, controls, contents, active
       <div className={header ? "record-heading has-heading-banner" : "record-heading"}>
         {header ? <img className="heading-banner-image" src={header} alt="" decoding="async" style={imageFraming.headerFrameStyle(record.meta)} /> : null}
         <span className="record-kind">{record.type.toUpperCase()}</span>
-        <span className="record-id">{isNew ? "UNSAVED" : `#${record.section.slice(0, 3).toUpperCase()}-${record.priority.toString().padStart(3, "0")}`}</span>
+        <span className="record-id">{isNew ? "UNSAVED" : recordLinks.traceId(record.id, record.section)}</span>
         <h2><input className="inline-record-title" aria-label="Record title" placeholder={record.section === "logs" ? "New Note" : record.section === "games" ? "New Game" : "New Project"} value={record.title} onChange={(event) => onUpdate("title", event.target.value)} /></h2>
         {titleAction}
         <p className="inline-record-status">Status: <input aria-label="Record status" value={record.status} onChange={(event) => onUpdate("status", event.target.value)} /><span>.</span>Type: {record.type}</p>
