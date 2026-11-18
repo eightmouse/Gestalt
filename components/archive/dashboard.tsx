@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import pocket from "@/public/pocket-index.js";
+import osBehaviour from "@/public/os-behaviour.js";
 import { FilePlus2 } from "lucide-react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { activityFreshness, cleanSummaryText, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
@@ -24,6 +25,7 @@ type DashboardProps = {
   panelOpen: boolean;
   projectRecords: RecordEntry[];
   onOpenRecord: (record: RecordEntry, content?: "notes", noteIndex?: number) => void;
+  onOpenNote: (record: RecordEntry, noteIndex: number) => void;
   onOpenSection: (section: RecordSection) => void;
   onOpenTimeline: () => void;
   onCreateCurrentGame?: () => void;
@@ -78,6 +80,7 @@ export function ArchiveDashboard({
   panelOpen,
   projectRecords,
   onOpenRecord,
+  onOpenNote,
   onOpenSection,
   onOpenTimeline,
   onCreateCurrentGame
@@ -122,7 +125,7 @@ export function ArchiveDashboard({
         </DashboardPanel>
       ) : null}
 
-      <DashboardPanel title="LATEST LOG" className="latest-log-panel" footerLabel="Read log" onFooter={() => latestLog && onOpenRecord(latestLog)}>
+      <DashboardPanel title="LATEST LOG" className="latest-log-panel" footerLabel="Read log" onFooter={() => latestLog && onOpenNote(latestLog, 0)}>
         {latestLog ? (
           <div className="latest-log" data-state={dashboardRecordStateKey(latestLog.status)}>
             <i className="latest-log-signal" aria-hidden="true" />
@@ -140,7 +143,10 @@ export function ArchiveDashboard({
             {activityRows.map(({ freshness, item }) => (
               <li data-activity-age={freshness} data-state={dashboardRecordStateKey(item.record.status)} key={item.id}>
                 <span>[{shortDate(item.date)}]</span>
-                <button type="button" onClick={() => onOpenRecord(item.record, item.content, item.noteIndex)}>
+                <button type="button" onClick={() => {
+                  if (item.record.section !== "setup" && item.content === "notes" && item.noteIndex !== undefined) onOpenNote(item.record, item.noteIndex);
+                  else onOpenRecord(item.record, item.content, item.noteIndex);
+                }}>
                   <strong>{item.title}</strong>
                   <small>{item.detail}</small>
                 </button>
@@ -159,9 +165,10 @@ export function ArchiveDashboard({
 
 function DashboardPanel({ title, children, footerLabel, className = "", onFooter }: DashboardPanelProps) {
   const isActionable = Boolean(footerLabel && onFooter);
+  const module = osBehaviour.bootModules[title];
 
   return (
-    <article className={`dashboard-panel ${className}`}>
+    <article className={`dashboard-panel ${className}`} data-boot-module={module?.id} style={module ? { "--boot-module-order": module.order } as CSSProperties : undefined}>
       <h2>
         {isActionable ? (
           <button className="panel-title-action" type="button" onClick={onFooter} aria-label={footerLabel} title={footerLabel}>
@@ -172,6 +179,7 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
         )}
       </h2>
       <div>{children}</div>
+      {module ? <span className="dashboard-boot-readout" aria-hidden="true"><i />{module.label}</span> : null}
     </article>
   );
 }

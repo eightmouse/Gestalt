@@ -25,11 +25,34 @@
     return section === "logs" ? contents.filter(({ key }) => key !== "overview")
       .map((item) => item.key === "notes" ? { ...item, label: "Notes" } : item) : contents;
   }
-  function recordPage(records, requestedPage = 0) {
-    const size = 4;
+  function recordPage(records, requestedPage = 0, handheld = true) {
+    const size = handheld ? 4 : 6;
     const pages = Math.max(1, Math.ceil(records.length / size));
     const page = Math.max(0, Math.min(pages - 1, Number.isInteger(requestedPage) ? requestedPage : 0));
     return { records: records.slice(page * size, (page + 1) * size), page, pages };
+  }
+  const shelfSearchMin = 8;
+  function filterShelfGames(records, query) {
+    const key = (value) => value.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
+    const term = key(query);
+    return term ? records.filter(({ title }) => key(title).includes(term)) : records;
+  }
+  function projectWorkbench(records, selectedId) {
+    const index = Math.max(0, records.findIndex((record) => record.id === selectedId));
+    const record = records[index];
+    if (!record) return null;
+    const percent = (value) => Math.round(Math.min(100, Math.max(0, Number(value) || 0)));
+    const stops = (record.milestones || []).filter((item) => item.label?.trim()).map((item) => {
+      const label = item.label.trim();
+      const status = item.status?.trim() || "Queued";
+      const progress = percent(item.progress);
+      const state = /^blocked$/i.test(status) ? "blocked" : progress === 100 ? "ready" : /active|in progress/i.test(status) ? "working" : "queued";
+      return { label, state, value: state === "working" && progress > 0 ? `${progress}%` : status };
+    });
+    const visible = stops.slice(0, 4);
+    const blocker = stops.find((item) => item.state === "blocked");
+    if (blocker && !visible.includes(blocker)) visible[3] = blocker;
+    return { record, index, progress: percent(record.progress), brief: record.summary?.trim() || "", stops: visible, more: stops.length - visible.length };
   }
   function recentDispatches(featuredId, activity, now = Date.now()) {
     const day = 86_400_000;
@@ -121,5 +144,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, projectWorkbench, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

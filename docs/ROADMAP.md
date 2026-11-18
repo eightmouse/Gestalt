@@ -1,5 +1,25 @@
 # Gestalt Roadmap
 
+19 November, v1.79.0 preview: Projects and Games have new browsing surfaces, with rotating project plates and draggable game disks. Game entries keep a shared title and artwork across tabs, and Notes opens individual files in the focused reader. The Full Welcome handoff no longer moves or clips the dashboard plates. Visual polish remains open.
+
+19 November, local reading review: Dashboard notes open in a focused reader with the same window controls and an action to open the full record at the same note. The full Notes view retracts its artwork; direct Notes opens compact. Dashboard startup plates now seat within the grid and hold their module readouts a little longer.
+
+19 November, boot tune: The operator portrait and plain-text name are slightly larger, and the profile clears sooner. The six module cues now arrive after the welcome screen clears and finish before each plate's real content is revealed. Quick Start and handheld behavior are unchanged.
+
+19 November, local review: Full Welcome now prints seventeen lines, cuts to a longer operator hold, and brings the six dashboard modules online at their final positions. Each module has a short startup status and mark; Quick Start and handheld startup are unchanged. Restored the joined Games and Projects frames. A more expressive layout within those frames remains open for discussion.
+
+18 November, local review: Full Welcome now has a three-phase startup, with a staggered thirteen-line console pass between the Gestalt meter and the operator profile. Session Logs and Active Processes retain their archive names and use open instrument layouts with independent disks and workplates. Past Logs eases wheel scrolling. Standby cues, Prism's milestone trace and the underlying entries are unchanged; Logs and Dashboard remain separate design passes.
+
+18 November, Games and Projects local review: The Media Cabinet powers its shelves up in sequence; the Process Reader seats the active plate with a separate registration cue. Both use more solid materials and inset edges without backdrop blur. Games search expands from its header slot without changing the layout, and clicking a disk no longer leaves it selected. Both cues respect Reduced Motion; entry windows and the dashboard are unchanged.
+
+18 November, window tray local review: Desktop minimized records and the terminal align with the active content's right rail, above the footer. The tips button and its popups share that alignment. Existing restore targets and handheld behavior are unchanged. The larger dashboard refresh remains separate.
+
+18 November, local Games shelf: The unboxed Media Cabinet replaces paging with a horizontal shelf that uses native touch and trackpad scrolling, mouse drag, and keyboard navigation. Hover and focus reveal titles without hiding the underlying labels, and a short entrance runs only when entering the section. Search is available in groups with at least eight entries. The launcher and Pages implementation are ready for review; the dashboard and entry windows are unchanged.
+
+18 November, Dashboard backlog: Give the top chrome a hologram-like digital time and date, and try distinct, occasional cipher and glitch resolves in the Dashboard and footer. Keep the text readable between resolves and honor Reduced Motion. Replace the public System Tips button with a permanent bell in the matching local publish-bell position, so tips remain discoverable after a missed welcome hint. Keep the local Pending Changes and Publish actions unchanged.
+
+18 November, local review: Projects now uses a Process Reader with authored milestones and a mechanical plate turn. Games uses a Media Cabinet with art-led sleeves, a pinned hover tilt on fine pointers, and brief press feedback. Desktop uses the extra width for a horizontal trace and six sleeves across when they fit; handheld stacks the trace and shows two sleeves across. Existing groups, entry windows and dashboard are unchanged. Art selection and fine tuning are open for review before publishing.
+
 18 November, v1.78.0: Setup now opens its editor in the device bay's existing windows. Systems have editable spec rows, Peripherals accept photos and optional descriptions, Notes use the shared editor, and Tools have a shortcut edit mode separate from launching links. Each group can add records and keep its own drafts. The publish bell is unchanged, and full Studio remains a fallback. Archive Relay is next for discussion. The owner authorized publishing the reviewed batch after verification.
 
 18 November desktop closeout, local: the [desktop review](REVIEW_2026-11-18-DESKTOP.md) closes the scoped performance and display pass. Do not infer FPS or screen-reader acceptance from headless measurements.

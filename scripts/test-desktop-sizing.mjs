@@ -41,7 +41,8 @@ assert.match(policy, /\.record-window:not\(\.is-setup-record\) \{\s*--record-tit
 assert.match(policy, /\.record-window:not\(\.is-setup-record\) \.window-bar \{ block-size: var\(--record-titlebar-size\)/, "Titlebar and grid must consume the same scaled height");
 assert.match(policy, /\.window-edit-action \{ inline-size: calc\(26px \* var\(--desktop-size\)\); block-size: calc\(26px \* var\(--desktop-size\)\)/, "Large-desktop gears use the same control size multiplier as close");
 assert.match(policy, /\.setup-bay \{ inline-size: min\(100%, var\(--dashboard-max-inline\)\)/, "Setup must not retain its baseline inline-size cap");
-assert.match(policy, /\.archive-folder-page \{ inline-size: min\(100%, calc\(1320px \* var\(--desktop-size\)\)\)/, "Archive root grows, not only the focused folder");
+assert.match(css, /--archive-content-max-inline: calc\(1320px \* var\(--desktop-size, 1\)\)/, "Archive root width follows the desktop tier");
+assert.match(css, /\.archive-folder-page \{[^}]*inline-size: min\(100%, var\(--archive-content-max-inline\)\);\s*max-inline-size: var\(--archive-content-max-inline\)/, "Archive root uses the same rail as the tray");
 for (const [group, width] of [["tools", 96], ["peripherals", 154]]) {
   assert.ok(policy.includes(`.setup-group--${group} .setup-tile-grid { grid-auto-columns: calc(${width}px * var(--desktop-size))`), `${group} tracks grow with their tiles`);
 }

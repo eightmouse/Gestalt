@@ -114,6 +114,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [recordLinkMissing, setRecordLinkMissing] = useState(false);
   const [linkedNoteId, setLinkedNoteId] = useState<string>();
+  const [dashboardNoteReader, setDashboardNoteReader] = useState(false);
   const [recordAccessPending, setRecordAccessPending] = useState(false);
   const [recordAccessComplete, setRecordAccessComplete] = useState(false);
   const [panelMinimized, setPanelMinimized] = useState(false);
@@ -426,6 +427,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     memoryState.record("record.close");
     setInlineRecordId(null);
     setInlineDraftWindow(null);
+    setDashboardNoteReader(false);
     setPanelOpen(false);
     setPanelMinimized(false);
     stopRecordAccess();
@@ -470,16 +472,17 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     });
   };
 
-  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string, searchKey?: string, editSetupTool = false) => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string, searchKey?: string, options: { editSetupTool?: boolean; dashboardNote?: boolean } = {}) => {
     if (inlineBusy) return;
     if (publicReader && record.section !== "system") recordLinks.open(window, record.id, noteId);
     setLinkedNoteId(noteId);
     setRecordLinkMissing(false);
     recordSearchReturn.current = searchOpen && (searchKey || handheld) ? { query: searchQuery, key: searchKey } : null;
     memoryState.record("record.open", { section: record.section });
-    setInlineRecordId(editSetupTool ? record.id : null);
+    setDashboardNoteReader(Boolean(options.dashboardNote));
+    setInlineRecordId(options.editSetupTool ? record.id : null);
     setInlineDraftWindow(null);
-    if (editSetupTool) {
+    if (options.editSetupTool) {
       stopRecordAccess();
       setRecordAccessComplete(true);
     } else startRecordAccess();
@@ -494,6 +497,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setTimelineOpen(false);
     setRoadmapOpen(false);
     setNavOpen(false);
+  };
+
+  const openDashboardNote = (record: RecordEntry, index: number) => {
+    const note = noteEntries(record.body)[index];
+    if (note?.body.trim()) openRecord(record, "notes", index, note.id, undefined, { dashboardNote: true });
+    else openRecord(record);
   };
 
   const openAddressedRecord = (record: RecordEntry, noteId?: string, searchKey?: string) => {
@@ -559,6 +568,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       setRecordAccessComplete(true);
       setInlineDraftWindow(draft);
       setSelectedId(draft.id);
+      setDashboardNoteReader(false);
       setInlineRecordId(draft.id);
       setInitialContent(section === "logs" ? "notes" : "overview");
       setInitialNoteIndex(undefined);
@@ -755,7 +765,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         <small>{saying.meaning}</small>
       </span>
     </span>
-  ) : "Browse the records filed under this archive.";
+  ) : activeSection === "games" || activeSection === "projects" ? null : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen || osBehaviourOpen;
   const changeOsPreference = (key: PreferenceKey, value: string) => {
     if (key === "pocketBoot") {
@@ -807,7 +817,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   return (
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
-      {showBoot ? <BootScreen /> : null}
+      {showBoot ? <BootScreen startupMode={startupMode} /> : null}
       {showBoot ? <PocketBoot /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
@@ -918,6 +928,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             panelOpen={panelOpen}
             projectRecords={projectDashboardRecords}
             onOpenRecord={openRecord}
+            onOpenNote={openDashboardNote}
             onOpenSection={openSection}
             onOpenTimeline={openTimeline}
           />
@@ -929,7 +940,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onOpenRecord={openRecord}
             onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}
             onCreateSetupRecord={process.env.NODE_ENV === "development" ? (group) => createLocalRecord("setup", group) : undefined}
-            onEditSetupTool={process.env.NODE_ENV === "development" ? (record) => openRecord(record, "overview", undefined, undefined, undefined, true) : undefined}
+            onEditSetupTool={process.env.NODE_ENV === "development" ? (record) => openRecord(record, "overview", undefined, undefined, undefined, { editSetupTool: true }) : undefined}
           />
         )}
 
@@ -961,6 +972,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             initialContent={initialContent}
             initialNoteIndex={initialNoteIndex}
             linkedNoteId={linkedNoteId}
+            onOpenFullEntry={dashboardNoteReader ? () => setDashboardNoteReader(false) : undefined}
             record={selectedRecord}
             shareable={publicReader && selectedRecord.section !== "system"}
             onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}

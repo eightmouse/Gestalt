@@ -5,6 +5,40 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   const startupKey = "gestalt.startup";
   const bootProfiles = Object.freeze(["staged", "probe", "stream", "verify"]);
+  const bootProcesses = Object.freeze([
+    [60, "Attach bootstrap console"],
+    [106, "Verify startup signature"],
+    [168, "Load Gestalt system image"],
+    [236, "Reserve workspace memory"],
+    [292, "Start archive volume driver"],
+    [380, "Read volume signature"],
+    [488, "Mount archive volume"],
+    [834, "Read record tables"],
+    [905, "Check record references"],
+    [987, "Verify record index"],
+    [1122, "Map device directory"],
+    [1210, "Stage note renderer"],
+    [1275, "Register reading desk"],
+    [1330, "Link media cabinet"],
+    [1507, "Attach process reader"],
+    [1880, "Register command channels"],
+    [1945, "Attach input dispatcher"],
+    [2018, "Initialize workspace surfaces"],
+    [2124, "Bind window controls"],
+    [2255, "Load operator environment"],
+    [2338, "Restore appearance preferences"],
+    [2420, "Resolve operator identity"],
+    [2525, "Check workspace readiness"],
+    [2760, "Reach operator session target"]
+  ].map(([at, label]) => Object.freeze({ at, label, stamp: (at / 1000).toFixed(3) })));
+  const bootModules = Object.freeze({
+    PROJECTS: Object.freeze({ id: "projects", order: 0, label: "Mounting process table" }),
+    "LOCAL WEATHER": Object.freeze({ id: "weather", order: 1, label: "Checking local sensors" }),
+    "CURRENT GAME": Object.freeze({ id: "game", order: 2, label: "Reading session slot" }),
+    "LATEST LOG": Object.freeze({ id: "log", order: 3, label: "Unsealing field log" }),
+    "MEMORY STATE": Object.freeze({ id: "memory", order: 4, label: "Checking memory banks" }),
+    "RECENT ACTIVITY": Object.freeze({ id: "activity", order: 5, label: "Indexing recent signals" })
+  });
   function initializeBootPresentation(doc = globalThis.document, random = Math.random) {
     const element = doc?.documentElement;
     if (!element) return bootProfiles[0];
@@ -12,18 +46,10 @@
     if (bootProfiles.includes(existing)) return existing;
     const sample = random();
     const index = Number.isFinite(sample) ? Math.max(0, Math.min(bootProfiles.length - 1, Math.floor(sample * bootProfiles.length))) : 0;
-    // One visit's entropy also varies signal details, without a running randomizer.
+    // One visit's entropy varies the loader signal without a running randomizer.
     const detail = Math.floor((Number.isFinite(sample) ? Math.max(0, Math.min(1, sample)) : 0) * 0xffffffff) >>> 0;
-    element.setAttribute("data-boot-interference", String((detail >>> 7) % 3));
-    const variations = {
-      "--boot-signal-start": `${90 + (detail >>> 2) % 301}ms`,
-      "--boot-signal-span": `${760 + (detail >>> 11) % 401}ms`,
-      "--boot-user-jitter": `${(detail >>> 19) % 81 - 40}ms`,
-      "--boot-user-offset-a": `${30 + (detail >>> 5) % 151}ms`,
-      "--boot-user-offset-b": `${(detail >>> 13) % 91}ms`,
-      "--boot-user-offset-c": `${100 + (detail >>> 8) % 141}ms`
-    };
-    for (const [name, value] of Object.entries(variations)) element.style?.setProperty(name, value);
+    element.style?.setProperty("--boot-signal-start", `${90 + (detail >>> 2) % 301}ms`);
+    element.style?.setProperty("--boot-signal-span", `${760 + (detail >>> 11) % 401}ms`);
     element.setAttribute("data-boot-profile", bootProfiles[index]);
     return bootProfiles[index];
   }
@@ -132,5 +158,5 @@
     }
     return { open, update, close, destroy: close };
   }
-  return { bootProfiles, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
+  return { bootProfiles, bootProcesses, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
 });

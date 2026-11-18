@@ -406,6 +406,8 @@ for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"
   assert.ok(!read(file).includes("data-desktop-terminal-hint-dismiss"), "No redundant close button remains on the landing notification");
 }
 assert.match(css, /desktop-terminal-hint\s*\{[^}]+inset-inline-end:/, "Hint sits at the right edge, not the middle");
+assert.match(css, /--window-tray-inline: max\(var\(--window-rail-pad\), calc\(100vw - var\(--window-rail-start\) - var\(--window-rail-max-inline\)\)\)/, "Tray uses the active content rail, not a viewport corner offset");
+assert.match(css, /padding-block-end: max\([^;]+var\(--window-tray-clearance\)\)/, "Content leaves room for the tray");
 for (const selector of ["workspace-window-tray", "system-notices-panel", "desktop-terminal-hint"]) {
   assert.match(css, new RegExp(`${selector}\\s*\\{[^}]+inset-inline-end: var\\(--window-tray-inline\\)`), "Tray and both notification surfaces share one right edge");
 }
@@ -424,7 +426,7 @@ assert.match(css, /section-page--logs \.section-record-grid\s*\{[^}]+900px/);
 assert.match(css, /archive-manager\s*\{[^}]+240px/);
 assert.match(css, /workspace > \.workspace-footer\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/);
 assert.ok(!css.includes("desktop-nav-shutter"));
-assert.match(css, /\.workspace-window-tray\s*\{ display: contents; \}/, "Legacy/mobile retain original restore positioning");
+assert.match(css, /\.workspace-window-tray\s*\{ display: contents; \}/, "Handheld retains original restore positioning");
 assert.match(css, /workspace-window-tray\s*\{[^}]+display: flex;/, "Minimized controls share one row instead of overlapping fixed coordinates");
 assert.match(css, /desktop-terminal-bar\s*\{[^}]+38px/, "Keep the terminal titlebar compact");
 assert.match(css, /desktop-nav-terminal\s*\{[^}]+block-size: min\(calc\(600px/, "The normal terminal has room below its directory, with a viewport height cap");

@@ -208,7 +208,7 @@ Object.assign(react, {
   recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => "",
   RecordAccessSurface: () => null, RecordContentPanel: () => null, UpdateHistory: () => null,
-  ArrowLeft: require("lucide-react").ArrowLeft, Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X, Settings: require("lucide-react").Settings
+  ArrowLeft: require("lucide-react").ArrowLeft, Maximize2: require("lucide-react").Maximize2, Minimize2: require("lucide-react").Minimize2, X: require("lucide-react").X, Settings: require("lucide-react").Settings, Search: require("lucide-react").Search
 });
 const headerComponent = ts.transpileModule(`${declaration("../components/archive/record-window.tsx", "useRecordFocus")}\nexport ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 vm.runInContext(`(() => { ${headerComponent} })()`, react);
@@ -218,9 +218,10 @@ Object.assign(staticContext, {
   recordHeaderImage: (record) => record.headerImage || "", recordAccessSurfaceMarkup: () => "", renderRecordContent: () => "",
   renderUpdateHistory: () => "", renderUpdateHistoryModal: () => "", readableDate: (value) => value,
   recordLastUpdated: (record) => record.updated,
-  gameLogPlacement: () => "session", gameActivityValue: () => ""
+  gameLogPlacement: () => "session", gameActivityValue: () => "", noteEntries: () => []
 });
-vm.runInContext(["recordWindow", "recordAsideContent", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
+vm.runInContext(["recordWindow", "recordArtwork", "renderHeadingImage", "recordAsideContent", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon", "renderGameNoteSearch", "gameNoteSearchIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
+react.noteEntries = () => [];
 function findHeaderElement(node, className) {
   if (!node || typeof node !== "object") return null;
   if (node.props?.className === className) return node;
@@ -255,15 +256,24 @@ const tabs = ["overview", "notes", "recommendation"];
 react.getRecordContents = staticContext.getRecordContents = () => tabs.map(key => ({ key, label: key }));
 react.contentOrdinal = staticContext.contentOrdinal = () => "01";
 react.NoteSearchBox = () => null;
+react.NotesPage = () => null;
 staticContext.renderNoteSearch = () => "";
+react.noteEntries = staticContext.noteEntries = () => [{ title: "First" }, { title: "Second" }];
+staticContext.state.noteSearchQuery = "";
 staticContext.normalizeContentKey = () => staticContext.state.activeContent;
 staticContext.headerRecord = { ...legacyGame, meta: undefined };
 for (const tab of tabs) {
   staticContext.state.activeContent = tab;
   const local = react.exports.ArchiveRecordWindow({ record: legacyGame, initialContent: tab, maximized: false });
   const image = findHeaderElement(local, "heading-banner-image");
-  assert.equal(image?.props.src, landscape, `The React ${tab} tab keeps the shared header`);
   const html = vm.runInContext("recordWindow(headerRecord)", staticContext);
+  assert.doesNotMatch(html, /is-notes-heading/, "Game artwork remains visible in the file browser");
+  assert.equal(findHeaderElement(local, "record-window-caption").props.children, `// ${legacyGame.title}`);
+  assert.ok(html.includes(`class="record-window-caption">// ${legacyGame.title}</span>`));
+  assert.ok(html.includes('class="game-record-tabs"') && findHeaderElement(local, "game-record-tabs"));
+  assert.ok(findHeaderElement(local, "game-note-search"), `React keeps search on the ${tab} tab`);
+  assert.ok(html.includes('aria-expanded="false" aria-controls="game-note-search-input"'), `Pages keeps search on the ${tab} tab`);
+  assert.equal(image?.props.src, landscape, `The React ${tab} tab keeps the shared header`);
   assert.ok(html.includes(`class="heading-banner-image" src="${landscape}" data-steam-cover="${steamCover}"`), `The static ${tab} tab keeps the shared header`);
   const failed = { src: landscape, dataset: {} };
   image.props.onError({ currentTarget: failed });

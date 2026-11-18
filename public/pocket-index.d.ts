@@ -1,5 +1,6 @@
 export type PocketBootMode = "once" | "always";
 type PocketSection = "projects" | "games" | "logs" | "setup" | "archive";
+type WorkbenchProject = { id: string; summary?: string; progress: number; milestones?: readonly { label: string; progress: number; status: string }[] };
 declare const pocket: {
   directory: ReadonlyArray<readonly [PocketSection, string, string]>;
   stamp: string;
@@ -7,7 +8,10 @@ declare const pocket: {
   isHandheld(host?: Window): boolean;
   readingView<T extends string>(section: string, view: T): T | "notes";
   readingContents<T extends string>(section: string, contents: Array<{ key: T; label: string }>): Array<{ key: T; label: string }>;
-  recordPage<T>(records: readonly T[], requestedPage?: number): { records: T[]; page: number; pages: number };
+  recordPage<T>(records: readonly T[], requestedPage?: number, handheld?: boolean): { records: T[]; page: number; pages: number };
+  shelfSearchMin: number;
+  filterShelfGames<T extends { title: string }>(records: T[], query: string): T[];
+  projectWorkbench<T extends WorkbenchProject>(records: readonly T[], selectedId?: string): { record: T; index: number; progress: number; brief: string; stops: { label: string; state: "blocked" | "ready" | "working" | "queued"; value: string }[]; more: number } | null;
   recentDispatches<T extends { id: string; record: { id: string; section: string }; date: string; content?: string }>(featuredId: string | undefined, activity: readonly T[], now?: number): T[];
   normalizeBootMode(value: unknown): PocketBootMode;
   readBootMode(host?: Window): PocketBootMode;

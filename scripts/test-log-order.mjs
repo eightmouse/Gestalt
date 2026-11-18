@@ -90,13 +90,18 @@ for (const [record, expected] of [[session, "2026-11-13"], [project, "2026-11-12
 assert.equal(react.activityDate(records[2]), "2026-05-01", "Field-log ordering uses writing date, not display freshness");
 staticContext.state = { noteSearchQuery: "", focusedNoteIndex: 1 };
 staticContext.markdownBody = staticContext.escapeHtml;
-const targeted = staticContext.renderNotesPage(session);
+const targeted = staticContext.renderNotesPage({ ...session, section: "projects" });
 assert.match(targeted, /data-note-index="0"[^>]*(?<! hidden)>/, "Other notes remain in the list");
 assert.doesNotMatch(targeted, /data-note-index="0"[^>]*\b(?:open|hidden)\b>/, "A duplicate title stays collapsed, not hidden");
 assert.match(targeted, /data-note-index="1"[^>]* open>/, "The selected note starts open");
 assert.match(targeted, /First session\./);
 assert.doesNotMatch(targeted, /Second session\./, "Other note bodies stay lazy");
 assert.match(targeted, /class="note-pager"[^>]* hidden>/, "Short entries do not show navigation");
+staticContext.renderNoteSearch = () => "";
+const gameFiles = staticContext.renderNotesPage(session);
+assert.match(gameFiles, /class="game-note-file" type="button" data-game-note-index="0"/);
+assert.match(gameFiles, /class="game-note-file" type="button" data-game-note-index="1"/);
+assert.doesNotMatch(gameFiles, /Second session\.|First session\.|<details/, "Game note files retain the original index without rendering the prose until opened");
 
 const linkNote = { id: "main", index: 0, title: "A shareable note", body: "Read this first." };
 for (const handheld of [false, true]) {

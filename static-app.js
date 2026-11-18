@@ -25,9 +25,9 @@ const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330"
 const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
 const sectionRegistryLabels = {
   archive: "Field Archive",
-  games: "Play Log Registry",
+  games: "Media Cabinet",
   logs: "Field Note Index",
-  projects: "Process Registry",
+  projects: "Process Reader",
   setup: "Setup Manifest"
 };
 
@@ -101,6 +101,10 @@ function readLocalMemoryState() {
 
 const initialLocalMemory = readLocalMemoryState();
 const pocket = window.GestaltPocketIndex;
+const instrumentShelves = new Map();
+let standbySection = null;
+let stopSectionStandby;
+let stopProjectRotation;
 const bootStartedAt = performance.now();
 let bootCleanup = null;
 let osBehaviourController = null;
@@ -126,7 +130,7 @@ function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
   motion.addEventListener("change", onMotionChange);
   if (motion.matches) finish();
   // Matches the complete boot/session/workspace timeline in globals.css.
-  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 5200) - elapsed));
+  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 11900) - elapsed));
   return stop;
 }
 let navMotionTimer = 0;
@@ -255,7 +259,11 @@ const state = {
   desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "fixed",
   startupMode: window.GestaltOsBehaviour?.readStartupMode() || "full",
   pocketBootMode: pocket?.readBootMode() || "once",
-  pocketPages: [],
+  selectorGroup: undefined,
+  selectorProjectIds: [],
+  gameShelfQuery: "",
+  gameShelfSearch: false,
+  gameShelfOffsets: { session: 0, past: 0 },
   recordSearchReturn: null,
   panelMinimized: false,
   panelMaximized: false,
@@ -274,6 +282,9 @@ const state = {
   navOpen: false,
   noteSearchQuery: "",
   focusedNoteIndex: null,
+  dashboardNoteReader: false,
+  gameNoteOpen: false,
+  gameNoteSearchOpen: false,
   noteBrowsePage: undefined,
   noteSearchPage: 0,
   updateHistoryOpen: false,
@@ -309,7 +320,7 @@ function selectedRecord() {
   return records.find((record) => record.id === state.selectedId) || records[0];
 }
 
-function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId = null, searchKey) {
+function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId = null, searchKey, dashboardNote = false) {
   const record = records.find((entry) => entry.id === recordId);
 
   if (!record) {
@@ -330,6 +341,7 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.accessComplete = false;
   state.headlineAnimating = false;
   state.selectedId = record.id;
+  state.dashboardNoteReader = dashboardNote;
   state.activeContent = handheld ? pocket.readingView?.(record.section, contentKey) ?? contentKey : contentKey;
   state.panelOpen = true;
   state.panelMinimized = false;
@@ -341,7 +353,9 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
+  state.gameNoteSearchOpen = false;
   state.focusedNoteIndex = Number.isInteger(noteIndex) && noteIndex >= 0 ? noteIndex : null;
+  state.gameNoteOpen = record.section === "games" && !dashboardNote && state.focusedNoteIndex !== null;
   state.linkedNoteId = noteId;
   state.noteLinkMissing = Boolean(noteId && state.focusedNoteIndex === null);
   state.noteBrowsePage = undefined;
@@ -351,7 +365,15 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   startRecordAccessSequence();
   if (record.section === "setup" && noteId && !state.noteLinkMissing) {
     root.querySelector(`.record-window [data-setup-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "nearest" });
-  } else if (state.focusedNoteIndex > 0) revealFocusedNote();
+  } else if (!dashboardNote && state.focusedNoteIndex > 0) revealFocusedNote();
+}
+
+function openDashboardNote(recordId, index) {
+  const record = records.find((entry) => entry.id === recordId);
+  if (!record || record.section === "setup") return;
+  const note = noteEntries(record.body)[index];
+  if (note?.body.trim()) openRecord(recordId, "notes", index, note.id, undefined, true);
+  else openRecord(recordId);
 }
 
 function openSection(sectionId) {
@@ -366,7 +388,11 @@ function openSection(sectionId) {
   stopRecordAccessSequence();
   state.headlineAnimating = state.activeSection !== sectionId;
   state.activeSection = sectionId;
-  state.pocketPages = [];
+  state.selectorGroup = undefined;
+  state.selectorProjectIds = [];
+  state.gameShelfQuery = "";
+  state.gameShelfSearch = false;
+  state.gameShelfOffsets = { session: 0, past: 0 };
   state.panelOpen = false;
   state.panelMinimized = false;
   state.searchOpen = false;
@@ -415,7 +441,11 @@ function openHome() {
   }
   state.headlineAnimating = state.activeSection !== "system";
   state.activeSection = "system";
-  state.pocketPages = [];
+  state.selectorGroup = undefined;
+  state.selectorProjectIds = [];
+  state.gameShelfQuery = "";
+  state.gameShelfSearch = false;
+  state.gameShelfOffsets = { session: 0, past: 0 };
   state.panelOpen = false;
   state.panelMinimized = false;
   state.panelMaximized = false;
@@ -497,6 +527,7 @@ function recentActivity(limit) {
         return [{
           ...recordItem,
           content: "notes",
+          noteIndex: record.section === "logs" ? trace.index : undefined,
           noteId: trace.note.id,
           date: record.section === "logs" ? recordItem.date : trace.date,
           detail: `${record.type} / ${activityTraceTitle(trace.note.title)}`
@@ -816,7 +847,7 @@ async function initializeSteamDisplay() {
     steamDisplayReady = true;
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
-    if (panel) panel.outerHTML = currentGamePanel();
+    if (panel && state.bootDismissed) panel.outerHTML = currentGamePanel();
     const display = currentGameDisplay();
     const label = document.querySelector("[data-current-game-label]");
     if (label) label.textContent = display?.title || "None";
@@ -1302,13 +1333,17 @@ function currentNotePage(record) {
   return notePage(noteEntries(record.body), state.noteSearchQuery, searching ? state.noteSearchPage : state.noteBrowsePage, state.focusedNoteIndex);
 }
 
-function renderNoteRows({ notes, openIndex }) {
+function renderNoteRows({ notes, openIndex }, fileRecord) {
   if (!notes.length) return '<p class="notes-empty">No note matches that signal.</p>';
   const handheld = pocket?.isHandheld();
   return notes.map((note) => {
     const index = note.index;
     const open = index === openIndex;
     const titleParts = splitNoteTitle(note.title);
+    if (fileRecord) {
+      const title = titleParts.title === "Current note" ? fileRecord.title : titleParts.title;
+      return `<button class="game-note-file" type="button" data-game-note-index="${index}">${pocketIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 13h8m-8 4h8"/>')}<strong>${escapeHtml(title)}</strong>${titleParts.date ? `<time datetime="${titleParts.dateTime}">${escapeHtml(titleParts.date)}</time>` : ""}</button>`;
+    }
     const link = note.id ? renderNoteLink(note.id) : "";
     return `<details class="note-entry note-entry--indexed" data-note-index="${index}"${open ? ' data-note-loaded="true" open' : ""}>
       <summary>
@@ -1326,17 +1361,31 @@ function renderNoteRows({ notes, openIndex }) {
 
 function renderNotesPage(record, handheld = false) {
   const paging = currentNotePage(record);
-  return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
+  const files = record.section === "games";
+  return `<section class="${files ? "notes-page game-note-files" : "content-terminal notes-page"}" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
-      <div class="terminal-title">// NOTES PAGE</div>
+      <div class="terminal-title">${files ? "// NOTE FILES" : "// NOTES PAGE"}</div>
       <nav class="note-pager" aria-label="Note pages"${paging.pages < 2 ? " hidden" : ""}>
         <button type="button" data-note-page="-1" aria-label="Previous note page" title="Previous note page" aria-disabled="${paging.page === 0}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
         <span aria-live="polite" aria-atomic="true">${paging.page + 1} / ${paging.pages}</span>
         <button type="button" data-note-page="1" aria-label="Next note page" title="Next note page" aria-disabled="${paging.page + 1 === paging.pages}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
     </div>
-    ${handheld ? renderNoteSearch(record) : ""}
-    <div class="note-stack">${renderNoteRows(paging)}</div>
+    ${handheld && !files ? renderNoteSearch(record) : ""}
+    <div class="note-stack${files ? " game-note-file-grid" : ""}">${renderNoteRows(paging, files ? record : undefined)}</div>
+  </section>`;
+}
+
+function renderFocusedNote(record, note, toFiles = false) {
+  const parts = splitNoteTitle(note.title);
+  const title = parts.title === "Current note" ? record.title : parts.title;
+  return `<section class="focused-note" aria-labelledby="focused-note-title">
+    <header class="focused-note-header"><div>
+      ${parts.date ? `<time datetime="${parts.dateTime}">${escapeHtml(parts.date)}</time>` : ""}
+      <h2 id="focused-note-title">${escapeHtml(title)}</h2>
+      ${title !== record.title ? `<p>${escapeHtml(record.title)}</p>` : ""}
+    </div><button type="button" class="focused-note-full" ${toFiles ? `data-return-game-notes>${pocketIcon('<path d="m12 19-7-7 7-7m-7 7h14"/>')} Notes` : `data-open-full-entry>Open full entry ${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}`}</button></header>
+    <div class="record-body">${markdownBody(note.body)}</div>
   </section>`;
 }
 
@@ -1370,6 +1419,19 @@ function renderNoteSearch(record) {
     <label for="note-search">Search note</label>
     <input id="note-search" type="search" list="note-search-suggestions" value="${escapeHtml(state.noteSearchQuery)}" data-note-search-input autocomplete="off" placeholder="Title or date" />
     <datalist id="note-search-suggestions">${suggestions}</datalist>
+  </div>`;
+}
+
+function gameNoteSearchIcon(open) {
+  return pocketIcon(open ? '<path d="m18 6-12 12M6 6l12 12"/>' : '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>');
+}
+
+function renderGameNoteSearch(record) {
+  if (noteEntries(record.body).length < 2) return "";
+  const open = Boolean(state.gameNoteSearchOpen);
+  return `<div class="game-note-search"${open ? " data-expanded" : ""}>
+    <input id="game-note-search-input" type="search" data-note-search-input value="${escapeHtml(state.noteSearchQuery)}" autocomplete="off" placeholder="Title or date" aria-label="Search notes" />
+    <button type="button" data-game-note-search-toggle aria-expanded="${open}" aria-controls="game-note-search-input" aria-label="${open ? "Close note search" : "Search notes"}">${gameNoteSearchIcon(open)}</button>
   </div>`;
 }
 
@@ -1511,7 +1573,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.78.0</span>
+        <span>v1.79.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1525,7 +1587,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.78.0</span>
+        <span class="version-label">v1.79.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1545,7 +1607,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.78.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.79.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1614,12 +1676,14 @@ function archiveNavigationMenu() {
 }
 
 function dashboardPanel(title, body, footerLabel, action, className = "") {
+  const module = window.GestaltOsBehaviour?.bootModules?.[title];
   const titleMarkup = footerLabel && action
     ? `<button class="panel-title-action" type="button" ${action} aria-label="${escapeHtml(footerLabel)}" title="${escapeHtml(footerLabel)}">${escapeHtml(title)}</button>`
     : escapeHtml(title);
-  return `<article class="dashboard-panel ${className}">
+  return `<article class="dashboard-panel ${className}"${module ? ` data-boot-module="${module.id}" style="--boot-module-order: ${module.order}"` : ""}>
     <h2>${titleMarkup}</h2>
     <div>${body}</div>
+    ${module ? `<span class="dashboard-boot-readout" aria-hidden="true"><i></i>${escapeHtml(module.label)}</span>` : ""}
   </article>`;
 }
 
@@ -1752,7 +1816,7 @@ function dashboard() {
         .map(
           ({ freshness, item }) => `<li data-activity-age="${freshness}" data-state="${recordStateKey(item.record.status)}">
           <span>[${shortDate(item.date)}]</span>
-          <button type="button" data-open-record="${escapeHtml(item.record.id)}"${item.content ? ` data-open-content="${item.content}"` : ""}${item.noteIndex !== undefined ? ` data-open-note-index="${item.noteIndex}"` : ""}>
+          <button type="button" data-open-record="${escapeHtml(item.record.id)}"${item.content ? ` data-open-content="${item.content}"` : ""}${item.noteIndex !== undefined ? ` data-open-note-index="${item.noteIndex}"` : ""}${item.record.section !== "setup" && item.content === "notes" && item.noteIndex !== undefined ? " data-open-note-reader" : ""}>
             <strong>${escapeHtml(item.title)}</strong>
             <small>${escapeHtml(item.detail)}</small>
           </button>
@@ -1768,7 +1832,7 @@ function dashboard() {
     ${dashboardPanel("LOCAL WEATHER", weatherPanel(), "", "", "weather-panel")}
     ${state.memoryStateEnabled ? dashboardPanel("MEMORY STATE", memoryPanelContent(), "", "", "memory-panel") : ""}
     ${currentGamePanel()}
-    ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${latestLog.id}"` : "", "latest-log-panel")}
+    ${dashboardPanel("LATEST LOG", log, "Read log", latestLog ? `data-open-record="${escapeHtml(latestLog.id)}" data-open-note-index="0" data-open-note-reader` : "", "latest-log-panel")}
     ${dashboardPanel("RECENT ACTIVITY", feed, "View full timeline", "data-open-timeline", "wide-panel activity-panel")}
     ${seasonalAccentMarkup()}
   </div>`;
@@ -1823,7 +1887,7 @@ function sectionPage(sectionId) {
   const visibleRecords = sectionId === "logs" ? sectionRecords.filter((record) => !isLogArchivedByAge(record)) : sectionRecords;
   const countLabel = `${visibleRecords.length} ${visibleRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(sectionId, visibleRecords);
-  const readout = sectionReadout(visibleRecords);
+  const readout = sectionReadout(visibleRecords, splitSection, sectionId);
 
   if (sectionId === "setup") {
     return renderSetupBay(section, visibleRecords, countLabel, readout);
@@ -1832,75 +1896,232 @@ function sectionPage(sectionId) {
   if (sectionId === "archive") {
     return renderArchiveFolders(section, sectionRecords);
   }
+  const games = sectionId === "games" ? gameShelfView(splitSection) : null;
+  const searchOpen = games?.searchable && state.gameShelfSearch;
 
-  if (splitSection) {
-    return `<section class="section-page section-page--split section-page--${sectionId}" aria-label="${escapeHtml(section.code)} records">
-      <header class="section-page-header">
-        <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
-        <div>
-          <p>${escapeHtml(section.code)}</p>
-            <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
-            ${renderSectionReadout(readout)}
-        </div>
-        <i>${countLabel}</i>
-      </header>
-      <div class="section-note-layout">
-      <div class="section-split-grid">
-        ${splitSection.map(renderSplitRecordColumn).join("")}
-      </div>
-      ${renderSectionNotePreview(visibleRecords, sectionId)}
-      </div>
-    </section>`;
-  }
-
-  return `<section class="section-page section-page--${section.id}" aria-label="${escapeHtml(section.code)} records">
+  return `<section class="section-page section-page--${section.id}${splitSection ? " section-page--selector" : ""}" aria-label="${escapeHtml(section.code)} records">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div>
-        <p>${escapeHtml(section.code)}</p>
+        ${splitSection ? "" : `<p>${escapeHtml(section.code)}</p>`}
           <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
           ${renderSectionReadout(readout)}
       </div>
-      <i>${countLabel}</i>
+      ${games ? `<div class="section-page-header-actions"><i>${countLabel}</i>${renderGameShelfSearch(games.searchable, searchOpen)}</div>` : `<i>${countLabel}</i>`}
     </header>
-      <div class="section-note-layout">
+      ${games ? renderGameShelf(games) : splitSection ? renderRecordSelector(splitSection) : `<div class="section-note-layout">
         <div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>
         ${sectionId === "logs" ? renderSectionNotePreview(visibleRecords, "logs") : ""}
+      </div>`}
+  </section>`;
+}
+
+function selectorGroupIndex(groups) {
+  return state.selectorGroup ?? (groups[0].records.length || !groups[1].records.length ? 0 : 1);
+}
+
+function gameShelfView(groups) {
+  const shelves = groups.map((group, i) => ({
+    title: group.title,
+    kind: i === 0 ? "session" : "past",
+    results: pocket.filterShelfGames(group.records, state.gameShelfQuery)
+  }));
+  return {
+    shelves,
+    searchable: groups.reduce((sum, group) => sum + group.records.length, 0) >= pocket.shelfSearchMin,
+    count: shelves.reduce((sum, shelf) => sum + shelf.results.length, 0)
+  };
+}
+
+function gameShelfIcon(open) {
+  return open ? pocketIcon('<path d="m18 6-12 12M6 6l12 12"/>') : pocketIcon('<circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>');
+}
+
+function renderGameShelfSearch(searchable, open) {
+  return `<div class="game-search-dock" ${searchable ? "" : "hidden"}>
+    <input id="game-shelf-search" class="game-shelf-search" type="search" aria-label="Search Session and Past Logs" placeholder="Search game titles" autocomplete="off" value="${escapeHtml(state.gameShelfQuery)}" ${open ? "" : "hidden"}>
+    <button type="button" class="archive-create-record game-shelf-search-toggle" data-shelf-search-toggle aria-controls="game-shelf-search" aria-label="${open ? "Close game search" : "Search games"}" aria-expanded="${Boolean(open)}">${gameShelfIcon(open)}</button>
+  </div>`;
+}
+
+function renderGameShelfResults({ kind, results }) {
+  const empty = state.gameShelfQuery ? '<p class="search-empty">No matching games.</p>' : '';
+  const rail = `game-rail-${kind}`;
+  const label = kind === "session" ? "Session Logs" : "Past Logs";
+  return `<div class="game-shelf-track">
+    <div id="${rail}" class="record-media-cabinet" data-media-cabinet="${kind}">${results.length ? renderSelectorTiles(results) : empty || renderSelectorTiles([])}</div>
+    <button class="game-shelf-edge" type="button" data-shelf-prev aria-disabled="true" tabindex="-1" aria-controls="${rail}" aria-label="Scroll ${label} left">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
+    <button class="game-shelf-edge" type="button" data-shelf-next aria-disabled="true" tabindex="-1" aria-controls="${rail}" aria-label="Scroll ${label} right">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
+  </div>`;
+}
+
+function gameShelfStatus(count) {
+  return state.gameShelfQuery ? `${count} ${count === 1 ? "game" : "games"} found` : "";
+}
+
+function renderGameShelf(view) {
+  return `<section class="record-selector record-selector--games" aria-label="Browse games">
+    ${view.shelves.map((shelf) => `<section class="game-shelf" aria-labelledby="game-shelf-${shelf.kind}">
+      <h3 id="game-shelf-${shelf.kind}" class="game-shelf-heading">${escapeHtml(shelf.title)}<span>${shelf.results.length}</span><span class="game-shelf-bus" aria-hidden="true"><i></i></span></h3>
+      ${renderGameShelfResults(shelf)}
+    </section>`).join("")}
+    <p class="game-shelf-live" role="status">${gameShelfStatus(view.count)}</p>
+  </section>`;
+}
+
+function syncGameShelf({ search, query } = {}) {
+  if (state.activeSection !== "games") return;
+  const shell = root.querySelector(".workspace .section-page--games");
+  if (!shell) return;
+  const groups = splitSectionRecords("games", recordsFor("games").sort(compareSectionRecords));
+  if (search !== undefined) {
+    state.gameShelfSearch = search;
+    if (!search) state.gameShelfQuery = "";
+  } else if (query !== undefined) state.gameShelfQuery = query;
+  const view = gameShelfView(groups);
+  const open = view.searchable && state.gameShelfSearch;
+  const toggle = shell.querySelector("[data-shelf-search-toggle]");
+  toggle.parentElement.hidden = !view.searchable;
+  if (toggle.getAttribute("aria-expanded") !== String(open)) toggle.innerHTML = gameShelfIcon(open);
+  toggle.setAttribute("aria-expanded", String(open));
+  toggle.setAttribute("aria-label", open ? "Close game search" : "Search games");
+  const input = shell.querySelector("#game-shelf-search");
+  input.hidden = !open;
+  if (input.value !== state.gameShelfQuery) input.value = state.gameShelfQuery;
+  if (search !== true) {
+    for (const shelf of view.shelves) {
+      shell.querySelector(`#game-shelf-${shelf.kind} span`).textContent = String(shelf.results.length);
+      shell.querySelector(`[data-media-cabinet="${shelf.kind}"]`).parentElement.outerHTML = renderGameShelfResults(shelf);
+    }
+    syncInstrumentShelf();
+  }
+  shell.querySelector(".game-shelf-live").textContent = gameShelfStatus(view.count);
+  if (search !== undefined) (open ? input : toggle).focus({ preventScroll: true });
+}
+
+function selectorView(groups) {
+  const index = selectorGroupIndex(groups);
+  const group = groups[index];
+  const workbench = pocket.projectWorkbench(group.records, state.selectorProjectIds[index]);
+  return { index, group, workbench, page: workbench?.index ?? 0, count: group.records.length, other: index === 1 };
+}
+
+function renderRecordSelector(groups) {
+  const view = selectorView(groups);
+  const { index, page, count, other } = view;
+  return `<section class="record-selector" aria-label="Browse records" data-workbench="${other ? "other" : "active"}" data-project-count="${count}">
+    <div class="record-selector-toolbar">
+      <div class="record-selector-groups" role="group" aria-label="Record groups">
+        ${groups.map((group, i) => `<button type="button" data-selector-group="${i}" aria-pressed="${i === index}">${escapeHtml(group.title)}<span>${group.records.length}</span></button>`).join("")}
       </div>
+      <nav class="record-selector-pager" aria-label="Project plates" ${count < 2 ? "hidden" : ""}>
+        <button type="button" data-selector-page="-1" aria-label="Previous project" aria-disabled="${page === 0}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
+        <span>${page + 1} / ${count}</span>
+        <button type="button" data-selector-page="1" aria-label="Next project" aria-disabled="${page + 1 === count}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
+      </nav>
+    </div>
+    <div class="record-selector-results">${renderSelectorResults(view)}</div>
   </section>`;
 }
 
-function renderSplitRecordColumn(group, index) {
-  const paging = pocket?.isHandheld() ? pocket.recordPage(group.records, state.pocketPages[index]) : null;
-  return `<section class="section-record-column" aria-label="${escapeHtml(group.title)}" data-pocket-group="${index}">
-    <header><div><h3>${escapeHtml(group.title)}</h3><small>${escapeHtml(groupStatusLine(group.records))}</small></div><span>${group.records.length}</span></header>
-    <div class="section-record-grid">${renderSectionRows(paging?.records ?? group.records)}</div>
-    ${paging && paging.pages > 1 ? `<nav class="pocket-record-pager" aria-label="${escapeHtml(group.title)} pages">
-      <button type="button" data-pocket-page="-1" aria-disabled="${paging.page === 0}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}Previous</button>
-      <span aria-live="polite" aria-atomic="true">${paging.page + 1} / ${paging.pages}</span>
-      <button type="button" data-pocket-page="1" aria-disabled="${paging.page + 1 === paging.pages}">Next${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
-    </nav>` : ""}
-  </section>`;
+function renderSelectorResults({ workbench, other }) {
+  if (!workbench) return '<p class="search-empty">No records filed here yet.</p>';
+  return `<div class="project-workbench">
+    <div class="project-workbench-frame">${renderProjectStage(workbench, other)}<span class="project-workbench-register" aria-hidden="true"></span></div>
+  </div>`;
 }
 
-function stepPocketRecordPage(button) {
-  if (!pocket?.isHandheld() || button.getAttribute("aria-disabled") === "true") return;
-  const column = button.closest("[data-pocket-group]");
-  const grid = column?.querySelector(".section-record-grid");
-  const pager = button.closest(".pocket-record-pager");
-  const direction = Number(button.dataset.pocketPage);
-  if (!grid || !pager || (direction !== -1 && direction !== 1)) return;
-  const index = Number(column.dataset.pocketGroup);
-  const group = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords))?.[index];
-  if (!group) return;
-  const current = pocket.recordPage(group.records, state.pocketPages[index]);
-  const next = pocket.recordPage(group.records, current.page + direction);
-  if (next.page === current.page) return;
-  state.pocketPages[index] = next.page;
-  grid.innerHTML = renderSectionRows(next.records);
-  pager.querySelector("span").textContent = `${next.page + 1} / ${next.pages}`;
-  pager.querySelector('[data-pocket-page="-1"]').setAttribute("aria-disabled", String(next.page === 0));
-  pager.querySelector('[data-pocket-page="1"]').setAttribute("aria-disabled", String(next.page + 1 === next.pages));
+function renderProjectStage({ record, brief, progress, stops, more }, other) {
+  return `<div class="project-workbench-record">
+    ${other ? `<span class="project-state-mark" aria-hidden="true">${escapeHtml(record.status)}</span>` : ""}
+    <div class="project-workbench-brief"><p class="project-workbench-signal">${escapeHtml(record.status)}</p><h3>${escapeHtml(record.title)}</h3>${brief ? `<p>${escapeHtml(brief)}</p>` : ""}</div>
+    <div class="project-workbench-progress">
+      <div class="project-workbench-caption"><span>${stops.length ? "Milestone trace" : "Progress readout"}</span><b>${progress}% overall</b></div>
+      ${stops.length ? `<ol class="project-milestone-trace" role="list">${stops.map(({ label, state, value }) => `<li data-stop="${state}"><i class="project-milestone-node" aria-hidden="true"></i><strong>${escapeHtml(label)}</strong><small>${escapeHtml(value)}</small></li>`).join("")}</ol>` : `<meter min="0" max="100" value="${progress}" aria-label="Project progress"></meter>`}
+      ${more ? `<small class="project-milestone-more">+${more} in record</small>` : ""}
+    </div>
+    <button class="project-workbench-hit" type="button" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(`Open ${record.title}`)}"><span class="project-workbench-light" aria-hidden="true"></span></button>
+  </div>`;
+}
+
+function renderSelectorTiles(sectionRecords) {
+  if (!sectionRecords.length) return '<p class="search-empty">No records filed here yet.</p>';
+  return sectionRecords.map((record) => {
+    const status = gameActivityLabel(record);
+    const activity = gameLogPlacement(record) === "session" && (status === "Active" || status === "Inactive") ? status : "";
+    return `<button class="record-sleeve" data-game-sleeve type="button" data-state="${recordStateKey(status)}" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(activity ? `${record.title}, ${activity}` : record.title)}">
+      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${activity ? `<small>${activity}</small>` : ""}</span><span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span></span>
+    </button>`;
+  }).join("");
+}
+
+function syncInstrumentShelf(reveal = false) {
+  if (reveal && state.activeSection === "projects") window.GestaltSectionMotion?.revealProjectReader(root.querySelector(".workspace .project-workbench-frame"));
+  const section = root.querySelector(".workspace > :is(.section-page--games, .section-page--projects) > .record-selector");
+  if (section !== standbySection) {
+    stopSectionStandby?.();
+    stopProjectRotation?.();
+    standbySection = section;
+    stopSectionStandby = window.GestaltSectionMotion?.bindSectionStandby(section, state.activeSection);
+    stopProjectRotation = state.activeSection === "projects" ? window.GestaltSectionMotion?.bindProjectRotation(section, () => syncRecordSelector(null, true)) : undefined;
+  }
+  const nodes = new Set(root.querySelectorAll(".workspace [data-media-cabinet]"));
+  for (const [node, release] of instrumentShelves) {
+    if (nodes.has(node)) continue;
+    release();
+    instrumentShelves.delete(node);
+  }
+  for (const node of nodes) {
+    if (instrumentShelves.has(node)) continue;
+    const group = node.dataset.mediaCabinet;
+    node.scrollLeft = state.gameShelfQuery ? 0 : state.gameShelfOffsets[group];
+    const remember = () => { if (!state.gameShelfQuery) state.gameShelfOffsets[group] = node.scrollLeft; };
+    const unbind = window.GestaltSectionMotion?.bindInstrumentShelf(node);
+    const cancelReveal = reveal ? window.GestaltSectionMotion?.revealInstrumentShelf(node) : null;
+    node.addEventListener("scroll", remember, { passive: true });
+    instrumentShelves.set(node, () => { node.removeEventListener("scroll", remember); unbind?.(); cancelReveal?.(); });
+  }
+}
+
+function syncRecordSelector(button, automatic = false) {
+  const selector = root.querySelector(".workspace > .section-page--selector .record-selector");
+  if (state.activeSection !== "projects" || !selector || (!button && !automatic) || button?.getAttribute("aria-disabled") === "true") return;
+  const groups = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords));
+  const current = selectorView(groups);
+  let direction;
+  if (button?.dataset.selectorGroup !== undefined) {
+    const group = Number(button.dataset.selectorGroup);
+    if (!groups[group] || group === current.index) return;
+    state.selectorGroup = group;
+  } else {
+    if (current.count < 2) return;
+    direction = automatic ? 1 : Number(button.dataset.selectorPage);
+    const next = automatic ? (current.page + 1) % current.count : current.page + direction;
+    if ((direction !== -1 && direction !== 1) || next < 0 || next >= current.count) return;
+    state.selectorProjectIds[current.index] = current.group.records[next].id;
+  }
+  const next = selectorView(groups);
+  const { index, page, count, workbench, other } = next;
+  if (index !== current.index) {
+    selector.dataset.workbench = other ? "other" : "active";
+    selector.dataset.projectCount = String(count);
+  }
+  selector.querySelectorAll("[data-selector-group]").forEach((control, i) => control.setAttribute("aria-pressed", String(i === index)));
+  if (workbench && direction) {
+    const frame = selector.querySelector(".project-workbench-frame");
+    const commit = window.GestaltSectionMotion?.preparePlateTurn(frame, direction);
+    frame.firstElementChild.outerHTML = renderProjectStage(workbench, other);
+    commit?.();
+  } else {
+    selector.querySelector(".record-selector-results").innerHTML = renderSelectorResults(next);
+  }
+  const pager = selector.querySelector(".record-selector-pager");
+  pager.hidden = count < 2;
+  pager.querySelector("span").textContent = `${page + 1} / ${count}`;
+  const previous = pager.querySelector('[data-selector-page="-1"]');
+  const forward = pager.querySelector('[data-selector-page="1"]');
+  previous.setAttribute("aria-disabled", String(page === 0));
+  forward.setAttribute("aria-disabled", String(page + 1 === count));
 }
 
 const logArchiveAfterDays = 7;
@@ -2083,14 +2304,14 @@ function recordTraceId(record) {
   return window.GestaltRecordLinks?.traceId?.(record.id, record.section) || "";
 }
 
-function sectionReadout(sectionRecords) {
+function sectionReadout(sectionRecords, split = null, section) {
   const archivedStatuses = new Set(["archived", "completed", "deprecated", "done", "filed"]);
-  const openCount = sectionRecords.filter((record) => record.section === "games" ? gameLogPlacement(record) === "session" : !archivedStatuses.has(record.status.toLowerCase())).length;
+  const openCount = split?.[0].records.length ?? sectionRecords.filter((record) => !archivedStatuses.has(record.status.toLowerCase())).length;
   const filedCount = sectionRecords.length - openCount;
 
   return [
-    { label: "OPEN", value: String(openCount).padStart(2, "0") },
-    { label: "FILED", value: String(filedCount).padStart(2, "0") },
+    { label: section === "games" ? "SESSION" : section === "projects" ? "ACTIVE" : "OPEN", value: String(openCount).padStart(2, "0") },
+    { label: section === "games" ? "PAST" : section === "projects" ? "OTHER" : "FILED", value: String(filedCount).padStart(2, "0") },
     { label: "LAST", value: sectionRecords[0] ? readableDate(sectionRecords[0].updated) : "-- / -- / ----" }
   ];
 }
@@ -2099,17 +2320,6 @@ function renderSectionReadout(items) {
   return `<dl class="section-page-readout">
     ${items.map((item) => `<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value)}</dd></div>`).join("")}
   </dl>`;
-}
-
-function groupStatusLine(sectionRecords) {
-  if (sectionRecords.length > 0 && sectionRecords[0].section === "games") {
-    const activeCount = sectionRecords.filter((record) => ["active", "playing", "in progress"].includes(gameActivityLabel(record).toLowerCase())).length;
-    return `${activeCount} active / ${sectionRecords.length} indexed`;
-  }
-  const liveStatuses = new Set(["active", "blocked", "in progress", "on hold", "paused", "planning", "playing"]);
-  const liveCount = sectionRecords.filter((record) => liveStatuses.has(record.status.toLowerCase())).length;
-
-  return `${liveCount} live ${liveCount === 1 ? "file" : "files"} / ${sectionRecords.length} indexed`;
 }
 
 const setupGroupRegistry = [
@@ -2334,7 +2544,7 @@ function splitSectionRecords(sectionId, sectionRecords) {
 
     return [
       { title: "ACTIVE PROJECTS", records: sectionRecords.filter((record) => activeStatuses.has(record.status.toLowerCase())) },
-      { title: "OTHER PROCESSES", records: sectionRecords.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
+      { title: "OTHER PROJECTS", records: sectionRecords.filter((record) => !activeStatuses.has(record.status.toLowerCase())) }
     ];
   }
 
@@ -2518,6 +2728,14 @@ function cleanDisplaySummary(value) {
   return summary && summary.toLowerCase() !== "no summary recorded." ? summary : "";
 }
 
+function recordArtwork(record) {
+  return window.GestaltImageFraming?.recordHeadingArtwork?.(record, steamDisplayModule?.steamBannerImage) || { src: recordHeaderImage(record) };
+}
+
+function renderHeadingImage(record, artwork) {
+  return `<img class="heading-banner-image" src="${escapeHtml(artwork.src)}"${artwork.coverFallback ? ` data-steam-cover="${escapeHtml(artwork.coverFallback)}"` : ""} alt="" decoding="async" referrerpolicy="no-referrer" style="${window.GestaltImageFraming?.headerFrameCss(record) || ""}" />`;
+}
+
 function recordWindow(record) {
   if (!state.panelOpen) {
     return "";
@@ -2533,17 +2751,22 @@ function recordWindow(record) {
   const activeContent = handheld ? window.GestaltPocketIndex?.readingView?.(record.section, availableContent) ?? availableContent : availableContent;
   const readingContents = window.GestaltPocketIndex?.readingContents?.(record.section, contents) ?? contents;
   const titleClass = `record-title-text${record.title.length > 26 ? " is-long-title" : ""}`;
+  const readingNotes = activeContent === "notes";
+  const games = record.section === "games";
+  const retractArtwork = readingNotes && !games;
+  const gameNote = games && readingNotes && state.gameNoteOpen;
+  const focusedNote = (state.dashboardNoteReader || gameNote) && state.focusedNoteIndex !== null ? noteEntries(record.body)[state.focusedNoteIndex] : null;
+  const noteTitle = focusedNote ? splitNoteTitle(focusedNote.title).title : "";
+  const caption = focusedNote ? `// ${noteTitle === "Current note" ? record.title : noteTitle}` : games || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const artwork = recordArtwork(record);
 
-  const artwork = window.GestaltImageFraming?.recordHeadingArtwork?.(record, steamDisplayModule?.steamBannerImage);
-  const headerImage = artwork?.src || recordHeaderImage(record);
-
-  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${record.section === "setup" ? "is-setup-record" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} archive entry">
+  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${games ? "has-game-files" : ""} ${focusedNote ? "is-note-reader" : readingNotes ? "is-notes-view" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} ${focusedNote ? "note reader" : "archive entry"}">
     ${recordAccessSurfaceMarkup()}
     <header class="window-bar">
       ${pocketBack()}
-      <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
+      <span class="record-window-caption">${escapeHtml(caption)}</span>
       <div class="window-control-group">
-        ${record.section !== "system" ? recordLinkButton() : ""}
+        ${record.section !== "system" ? recordLinkButton(focusedNote?.id) : ""}
         <div class="window-actions">
           <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
           <button type="button" data-window-action="maximize" aria-label="${state.panelMaximized ? "Restore record" : "Maximize record"}">${state.panelMaximized ? "restore" : "maximize"}</button>
@@ -2552,11 +2775,16 @@ function recordWindow(record) {
       </div>
     </header>
 
-    ${record.section !== "system" ? recordLinkFeedback(false, state.noteLinkMissing) : ""}
+    ${record.section !== "system" ? recordLinkFeedback(Boolean(focusedNote?.id), state.noteLinkMissing) : ""}
     <div class="record-layout">
+      ${focusedNote ? renderFocusedNote(record, focusedNote, gameNote && !state.dashboardNoteReader) : `
       <div class="record-main">
-        <div class="${headerImage ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}">
-          ${headerImage ? `<img class="heading-banner-image" src="${escapeHtml(headerImage)}"${artwork?.coverFallback ? ` data-steam-cover="${escapeHtml(artwork.coverFallback)}"` : ""} alt="" decoding="async" referrerpolicy="no-referrer" style="${window.GestaltImageFraming?.headerFrameCss(record) || ""}" />` : ""}
+        ${games ? `<nav class="game-record-tabs" aria-label="Entry contents">
+          <div class="game-record-tab-links">${contents.map(({ key, label }) => `<button type="button" data-content-key="${key}"${activeContent === key ? ' aria-current="true"' : ""}>${escapeHtml(label)}</button>`).join("")}</div>
+          ${renderGameNoteSearch(record)}
+        </nav>` : ""}
+        <div class="record-heading${artwork.src ? " has-heading-banner" : ""}${retractArtwork ? " is-notes-heading" : ""}">
+          ${artwork.src && !retractArtwork ? renderHeadingImage(record, artwork) : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">${escapeHtml(recordTraceId(record))}</span>
           <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span></h2>
@@ -2569,15 +2797,20 @@ function recordWindow(record) {
           </p>
         </div>
 
-        ${readingContents.length > 1 ? `<label class="pocket-record-contents"><span>Contents</span><span class="pocket-record-select"><select data-record-content-picker>
+        ${!games && readingContents.length > 1 ? `<label class="pocket-record-contents"><span>Contents</span><span class="pocket-record-select"><select data-record-content-picker>
           ${readingContents.map(({ key, label }) => `<option value="${key}"${key === activeContent ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
         </select></span></label>` : ""}
         <div class="record-content-view">${renderRecordContent(record, activeContent, handheld)}</div>
+        ${games ? `<dl class="game-record-dates"${activeContent === "overview" ? "" : " hidden"}>
+          <div><dt>Created</dt><dd>${record.started ? readableDate(record.started) : "Unknown"}</dd></div>
+          <div><dt>Last Updated</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
+        </dl>` : ""}
       </div>
 
-      <aside class="record-aside">${recordAsideContent(record, contents, activeContent, handheld)}</aside>
+      ${games ? "" : `<aside class="record-aside">${recordAsideContent(record, contents, activeContent, handheld)}</aside>`}
+      `}
     </div>
-    ${record.section === "games" ? "" : renderUpdateHistoryModal(record)}
+    ${focusedNote || record.section === "games" ? "" : renderUpdateHistoryModal(record)}
   </article>`;
 }
 
@@ -3181,6 +3414,49 @@ function syncRecordWindow() {
   return true;
 }
 
+function replaceRecordReadingView(record, focusFile) {
+  const current = root.querySelector(".record-window");
+  if (!current) return;
+  const template = document.createElement("template");
+  template.innerHTML = recordWindow(record);
+  const entry = template.content.firstElementChild;
+  if (!entry) return;
+  for (const name of ["is-note-reader", "is-notes-view"]) current.classList.toggle(name, entry.classList.contains(name));
+  current.setAttribute("aria-label", entry.getAttribute("aria-label"));
+  current.replaceChildren(...entry.childNodes);
+  const file = focusFile ? current.querySelector(`[data-game-note-index="${state.focusedNoteIndex}"]`) : null;
+  if (file) file.focus();
+  else current.focus({ preventScroll: true });
+}
+
+function openFullEntry() {
+  if (!state.dashboardNoteReader || !state.panelOpen) return;
+  state.dashboardNoteReader = false;
+  const record = selectedRecord();
+  if (record.section === "games") {
+    state.linkedNoteId = null;
+    window.GestaltRecordLinks?.open(window, record.id);
+  }
+  replaceRecordReadingView(record, record.section === "games");
+  if (record.section !== "games" && state.focusedNoteIndex > 0) revealFocusedNote();
+}
+
+function showGameNote(index) {
+  const record = selectedRecord();
+  if (!state.panelOpen || record?.section !== "games" || state.activeContent !== "notes" || state.dashboardNoteReader) return;
+  const note = index === null ? null : noteEntries(record.body)[index];
+  if (index !== null && !note) return;
+  if (note) {
+    state.focusedNoteIndex = index;
+    window.GestaltMemoryState?.record("note.expand", { index: index + 1 });
+  }
+  state.gameNoteOpen = Boolean(note);
+  state.noteLinkMissing = false;
+  state.linkedNoteId = note?.id ?? null;
+  window.GestaltRecordLinks?.open(window, record.id, note?.id);
+  replaceRecordReadingView(record, !note);
+}
+
 function syncTimelineWindow() {
   const workspace = root.querySelector(".workspace");
   if (!workspace || !state.bootDismissed || recordMotionController?.busy) return false;
@@ -3208,6 +3484,7 @@ function dismissRecordView() {
   stopRecordAccessSequence();
   state.panelOpen = false;
   state.panelMinimized = false;
+  state.dashboardNoteReader = false;
   minimizedRecordWindow = null;
   root.querySelector(".record-window")?.remove();
   root.querySelector("[data-record-backdrop]")?.remove();
@@ -3299,7 +3576,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.78.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.79.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3315,7 +3592,7 @@ function workspaceHeading() {
   return `<div>
     <p class="route-label">// ${escapeHtml(dashboard ? "DASHBOARD" : section.code)}</p>
     <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}">${renderHeadlineLetters(headline)}<span class="cursor headline-cursor${resolving ? " is-delayed" : ""}">_</span></h1>
-    <p class="subtle">${dashboard ? dashboardSubtext() : "Browse the records filed under this archive."}</p>
+    <p class="subtle">${dashboard ? dashboardSubtext() : section.id === "games" || section.id === "projects" ? "" : "Browse the records filed under this archive."}</p>
   </div>`;
 }
 
@@ -3332,6 +3609,7 @@ function syncSection() {
   workspace.dataset.pocketSection = state.activeSection;
   heading.outerHTML = workspaceHeading();
   content.outerHTML = workspaceContent();
+  syncInstrumentShelf(previousSection !== state.activeSection);
   removeReadingWindows(workspace);
   const menuToggle = dismissArchiveMenu();
 
@@ -3407,10 +3685,11 @@ function render() {
         <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
         <b class="boot-meter"><b></b></b>
       </div>
+      ${state.startupMode === "full" ? `<ol class="boot-process-log">${(window.GestaltOsBehaviour?.bootProcesses || []).map(({ at, label, stamp }) => `<li style="--boot-line-time: ${at}ms"><span class="boot-process-stamp">${escapeHtml(stamp)}</span><span class="boot-process-state">[ OK ]</span>${escapeHtml(label)}</li>`).join("")}</ol>` : ""}
       <div class="boot-session">
         <span class="boot-session-label">// SESSION READY</span>
-        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="112" height="112" alt="" decoding="async" loading="lazy">
-        <span class="boot-session-user" aria-label="Eightmouse">${renderHeadlineLetters("Eightmouse")}</span>
+        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async" loading="lazy">
+        <span class="boot-session-user">Eightmouse</span>
         <span class="boot-session-detail">Opening the archive</span>
       </div>
     </div>`}
@@ -3451,6 +3730,7 @@ function render() {
   </main>`;
 
   root.innerHTML = markup;
+  syncInstrumentShelf(state.previousActiveSection !== state.activeSection);
   if (retained) root.querySelector(".workspace")?.append(retained);
   if (state.webSearchOpen || state.connectionsOpen) root.querySelector(".archive-shell")?.setAttribute("data-workspace-tool-open", "");
   root.querySelector(".archive-shell")?.toggleAttribute("data-search-open", state.searchOpen);
@@ -3506,6 +3786,9 @@ function completeBoot() {
   shell.style.removeProperty("--boot-elapsed");
   root.querySelector(".boot-screen")?.remove();
   root.querySelector(".pocket-boot")?.remove();
+  const gamePanel = shell.querySelector(".current-game-panel");
+  // Keep the plate's animation timeline intact if the snapshot arrives during boot.
+  if (gamePanel && steamDisplayReady) gamePanel.outerHTML = currentGamePanel();
   const prompt = root.querySelector(".local-memory-consent");
   if (state.localMemory === "prompt") {
     if (!prompt) shell.insertAdjacentHTML("afterbegin", localMemoryPrompt());
@@ -3594,7 +3877,7 @@ function syncNotePage(notesPage, paging = currentNotePage(selectedRecord())) {
   pager.querySelector("span").textContent = `${paging.page + 1} / ${paging.pages}`;
   pager.querySelector('[data-note-page="-1"]').setAttribute("aria-disabled", String(paging.page === 0));
   pager.querySelector('[data-note-page="1"]').setAttribute("aria-disabled", String(paging.page + 1 === paging.pages));
-  stack.innerHTML = renderNoteRows(paging);
+  stack.innerHTML = renderNoteRows(paging, notesPage.classList.contains("game-note-files") ? selectedRecord() : undefined);
 }
 
 function stepNotePage(button) {
@@ -3609,6 +3892,34 @@ function stepNotePage(button) {
   if (state.noteSearchQuery.trim()) state.noteSearchPage = next;
   else state.noteBrowsePage = next;
   syncNotePage(notesPage, currentNotePage(record));
+}
+
+function paintGameNoteSearch(button, open) {
+  const search = button.closest(".game-note-search");
+  const input = search?.querySelector("input");
+  if (!input) return null;
+  search.toggleAttribute("data-expanded", open);
+  button.setAttribute("aria-expanded", String(open));
+  button.setAttribute("aria-label", open ? "Close note search" : "Search notes");
+  button.innerHTML = gameNoteSearchIcon(open);
+  if (!open) input.value = "";
+  return input;
+}
+
+function toggleGameNoteSearch(button, open) {
+  if (open && state.activeContent !== "notes") selectRecordContent("notes");
+  const input = paintGameNoteSearch(button, open);
+  if (!input) return;
+  state.gameNoteSearchOpen = open;
+  if (open) {
+    input.focus();
+  } else {
+    state.noteSearchQuery = "";
+    state.noteSearchPage = 0;
+    const notesPage = button.closest(".record-layout")?.querySelector(".game-note-files");
+    if (notesPage) syncNotePage(notesPage);
+    button.focus({ preventScroll: true });
+  }
 }
 
 function setUpdateHistory(open) {
@@ -3635,20 +3946,49 @@ function selectRecordContent(key, layout) {
   const contents = record ? getRecordContents(record) : [];
   const available = layout ? pocket?.readingContents?.(record?.section, contents) ?? contents : contents;
   if (!state.panelOpen || !available.some((item) => item.key === key)) return;
+  if (record.section === "games" && state.activeContent === key) return;
   if (state.activeContent !== key) window.GestaltMemoryState?.record("content.select", { view: key });
   state.activeContent = key;
+  state.gameNoteOpen = false;
+  state.gameNoteSearchOpen = false;
   state.noteSearchQuery = "";
   state.focusedNoteIndex = null;
   state.noteBrowsePage = undefined;
   state.noteSearchPage = 0;
   setUpdateHistory(false);
 
-  // A native picker should keep focus, along with the record's existing backdrop and entry animation.
+  // Keep the heading and window mounted so the artwork can retract in place.
+  layout ??= root.querySelector(".record-window .record-layout");
   const panel = layout?.querySelector(".record-content-view");
   const aside = layout?.querySelector(".record-aside");
-  if (panel && aside) {
-    panel.innerHTML = renderRecordContent(record, key, true);
-    aside.innerHTML = recordAsideContent(record, contents, key, true);
+  const tabs = layout?.querySelector(".game-record-tabs");
+  const heading = layout?.querySelector(".record-heading");
+  if (panel && (aside || tabs) && heading) {
+    const handheld = pocket?.isHandheld();
+    const focusTab = aside?.contains(document.activeElement);
+    if (!handheld) layout.scrollTop = 0;
+    if (key !== "notes" && heading.classList.contains("has-heading-banner") && !heading.querySelector(".heading-banner-image")) {
+      const artwork = recordArtwork(record);
+      if (artwork.src) heading.insertAdjacentHTML("afterbegin", renderHeadingImage(record, artwork));
+    }
+    heading.classList.toggle("is-notes-heading", key === "notes" && !tabs);
+    const entry = layout.closest(".record-window");
+    const caption = entry?.querySelector(".record-window-caption");
+    entry?.classList.toggle("is-notes-view", key === "notes");
+    if (caption) caption.textContent = tabs || key === "notes" ? `// ${record.title}` : "// ARCHIVE ENTRY";
+    panel.innerHTML = renderRecordContent(record, key, handheld);
+    if (aside) aside.innerHTML = recordAsideContent(record, contents, key, handheld);
+    if (tabs) {
+      tabs.querySelectorAll("[data-content-key]").forEach((tab) => {
+        if (tab.dataset.contentKey === key) tab.setAttribute("aria-current", "true");
+        else tab.removeAttribute("aria-current");
+      });
+      const dates = layout.querySelector(".game-record-dates");
+      if (dates) dates.hidden = key !== "overview";
+      const toggle = tabs.querySelector('[data-game-note-search-toggle][aria-expanded="true"]');
+      if (toggle) paintGameNoteSearch(toggle, false);
+    }
+    if (focusTab) aside.querySelector(`[data-content-key="${key}"]`)?.focus({ preventScroll: true });
     const picker = layout.querySelector("[data-record-content-picker]");
     if (picker && picker.value !== key) picker.value = key;
     return;
@@ -3749,6 +4089,12 @@ document.addEventListener("click", (event) => {
   if (clickTarget.closest("[data-roadmap-retry]")) { void refreshPublicRoadmap(); return; }
   if (clickTarget.closest("[data-open-os-behaviour]")) { openOsBehaviour(); return; }
   if (clickTarget.closest("[data-open-connections]")) { openWorkspaceTool("connections"); return; }
+  if (clickTarget.closest("[data-open-full-entry]")) { openFullEntry(); return; }
+  if (clickTarget.closest("[data-return-game-notes]")) { showGameNote(null); return; }
+  const noteSearchToggle = clickTarget.closest("[data-game-note-search-toggle]");
+  if (noteSearchToggle) { toggleGameNoteSearch(noteSearchToggle, !state.gameNoteSearchOpen); return; }
+  const gameFile = clickTarget.closest("[data-game-note-index]");
+  if (gameFile) { showGameNote(Number(gameFile.dataset.gameNoteIndex)); return; }
 
   const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
 
@@ -3839,8 +4185,12 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (target.dataset.pocketPage !== undefined) {
-    stepPocketRecordPage(target);
+  if (target.dataset.selectorGroup !== undefined || target.dataset.selectorPage !== undefined) {
+    syncRecordSelector(target);
+    return;
+  }
+  if (target.dataset.shelfSearchToggle !== undefined) {
+    syncGameShelf({ search: !state.gameShelfSearch });
     return;
   }
 
@@ -3932,7 +4282,20 @@ document.addEventListener("click", (event) => {
   }
 
   if (recordId) {
-    if (target.closest(".pocket-dispatches")) target.focus({ preventScroll: true });
+    if (target.classList.contains("project-workbench-hit") && window.GestaltSectionMotion) {
+      window.GestaltSectionMotion.openProjectPlate(target, () => openRecord(recordId));
+      return;
+    }
+    if (target.hasAttribute("data-game-sleeve") && window.GestaltSectionMotion) {
+      window.GestaltSectionMotion.openInstrumentSleeve(target, () => openRecord(recordId), event.detail > 0);
+      return;
+    }
+    if (target.closest(".pocket-dispatches, .record-selector")) target.focus({ preventScroll: true });
+    if (target.hasAttribute("data-open-note-reader")) {
+      target.focus({ preventScroll: true });
+      openDashboardNote(recordId, Number(target.dataset.openNoteIndex));
+      return;
+    }
     const searchKey = target.dataset.searchResult;
     if (target.dataset.openNoteId) {
       const record = records.find((entry) => entry.id === recordId);
@@ -4001,6 +4364,11 @@ document.addEventListener("input", (event) => {
     return;
   }
 
+  if (target.id === "game-shelf-search") {
+    syncGameShelf({ query: target.value });
+    return;
+  }
+
   if (target.dataset.searchInput !== undefined) {
     state.searchQuery = target.value;
     syncSearchPanel();
@@ -4038,6 +4406,12 @@ document.addEventListener("keydown", (event) => {
   const target = event.target;
   const isInputTarget = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || (target instanceof HTMLElement && (target.isContentEditable || Boolean(target.closest('select, [role="textbox"]'))));
   const isPaletteInput = target instanceof HTMLInputElement && target.id === "archive-search";
+  if (event.key === "Escape" && target instanceof HTMLInputElement && target.id === "game-shelf-search") {
+    event.preventDefault();
+    event.stopPropagation();
+    syncGameShelf({ search: false });
+    return;
+  }
 
   if (event.key === "Enter" && isPaletteInput && target.value.trim() && !event.defaultPrevented && !event.metaKey && !event.ctrlKey && !event.altKey) {
     const firstResult = target.closest(".command-panel")?.querySelector(".search-suggestions button");
@@ -4112,7 +4486,17 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.noteSearchQuery) {
+  if (state.panelOpen && state.gameNoteSearchOpen && !state.gameNoteOpen) {
+    const button = root.querySelector("[data-game-note-search-toggle]");
+    if (button) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleGameNoteSearch(button, false);
+      return;
+    }
+  }
+
+  if (state.noteSearchQuery && !state.gameNoteOpen && !state.dashboardNoteReader) {
     event.preventDefault();
     const notesPage = document.querySelector(".notes-page");
     const input = document.querySelector("[data-note-search-input]");
@@ -4182,7 +4566,7 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     else note.firstElementChild?.after(tools);
   }
   const noteSearch = root.querySelector(".record-window .note-search-panel");
-  if (noteSearch) {
+  if (noteSearch && !noteSearch.closest(".game-note-files")) {
     const record = noteSearch.closest(".record-window");
     if (event.matches) record.querySelector(".notes-page-header")?.after(noteSearch);
     else record.querySelector(".record-aside")?.append(noteSearch);
@@ -4193,9 +4577,8 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     syncWeather();
     syncMemoryMotion();
     syncMemoryTrace();
-  } else if (state.activeSection === "games" || state.activeSection === "projects") {
-    const page = root.querySelector(".workspace > .section-page--split");
-    if (page) page.outerHTML = sectionPage(state.activeSection);
+  } else if (state.activeSection === "projects") {
+    syncRecordSelector();
   }
   if (!event.matches && !weatherStarted) { weatherStarted = true; void requestWeather(); }
 });

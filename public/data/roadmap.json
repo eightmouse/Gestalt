@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "18 / 11 / 2026",
+  "updated": "19 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -14,11 +14,11 @@
         },
         {
           "title": "Projects & Games: selector redesign",
-          "detail": "Local review: the Process Reader and Media Cabinet have joined instrument headers, group readouts, distinct entrances and quiet standby cues that pause while reading. Prism has a qualitative milestone trace. Dashboard motion remains a separate pass."
+          "detail": "The Process Reader rotates project plates while idle; the Media Cabinet uses draggable disks. Game notes open as individual files. Visual polish remains in progress."
         },
         {
           "title": "Align minimized windows with the content",
-          "detail": "Local review: the desktop restore controls and System Tips align with the workspace's right rail, in the reserved area above the footer. Existing restore behavior is unchanged."
+          "detail": "The desktop restore controls and System Tips align with the workspace's right rail, above the footer. Existing restore behavior is unchanged."
         }
       ]
     },
@@ -40,6 +40,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Process Reader, Media Cabinet and note files",
+          "detail": "Projects rotate in their own workplates. Games use draggable disks and open notes as files. The welcome console brings dashboard plates online without moving them at the handoff.",
+          "version": "v1.79.0",
+          "releasedOn": "2026-11-19"
+        },
         {
           "title": "Setup editing in place",
           "detail": "Edit systems, shortcut icons and links, peripheral photos and setup notes in their existing windows. Pocket Index opens single-note logs directly, and the Timeline reuses its results. Studio remains a fallback.",

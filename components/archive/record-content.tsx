@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { ChevronLeft, ChevronRight, Cpu } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, Cpu, FileText } from "lucide-react";
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
@@ -15,7 +15,7 @@ import {
 import { setupHardwareSource } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
-import noteInline, { type NoteInlineToken } from "@/public/note-inline.js";
+import noteInline, { type ArchiveNote, type NoteInlineToken } from "@/public/note-inline.js";
 import { NoteLinkControl } from "@/components/archive/record-link-control";
 import { steamBannerImage } from "@/public/steam-display.mjs";
 import imageFraming from "@/public/image-framing.js";
@@ -355,7 +355,30 @@ export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange:
   );
 }
 
-function NotesPage({ focusedIndex, query, record, shareable, handheld, searchControl }: { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean; searchControl?: ReactNode }) {
+export function noteReaderTitle(title: string, recordTitle: string) {
+  const parts = splitNoteTitle(title);
+  return parts.title === "Current note" ? recordTitle : parts.title;
+}
+
+export function FocusedNotePanel({ note, recordTitle, onReturn, toFiles = false }: { note: ArchiveNote; recordTitle: string; onReturn: () => void; toFiles?: boolean }) {
+  const parts = splitNoteTitle(note.title);
+  const title = parts.title === "Current note" ? recordTitle : parts.title;
+  return <section className="focused-note" aria-labelledby="focused-note-title">
+    <header className="focused-note-header">
+      <div>
+        {parts.date ? <time dateTime={parts.dateTime}>{parts.date}</time> : null}
+        <h2 id="focused-note-title">{title}</h2>
+        {title !== recordTitle ? <p>{recordTitle}</p> : null}
+      </div>
+      <button type="button" className="focused-note-full" onClick={onReturn}>{toFiles ? <><ArrowLeft size={16} aria-hidden="true" />Notes</> : <>Open full entry <ArrowUpRight size={16} aria-hidden="true" /></>}</button>
+    </header>
+    <RecordBody body={note.body} />
+  </section>;
+}
+
+type NotesPageProps = { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean; searchControl?: ReactNode; openFile?: (index: number) => void };
+
+export function NotesPage({ focusedIndex, query, record, shareable, handheld, searchControl, openFile }: NotesPageProps) {
   const pageRef = useRef<HTMLElement>(null);
   const search = query.trim().toLowerCase();
   const [browsePage, setBrowsePage] = useState<number>();
@@ -382,9 +405,9 @@ function NotesPage({ focusedIndex, query, record, shareable, handheld, searchCon
   }, [focusedIndex]);
 
   return (
-    <section ref={pageRef} className="content-terminal notes-page" aria-label={`${record.title} notes`}>
+    <section ref={pageRef} className={openFile ? "notes-page game-note-files" : "content-terminal notes-page"} aria-label={`${record.title} notes`}>
       <div className="notes-page-header">
-        <div className="terminal-title">// NOTES PAGE</div>
+        <div className="terminal-title">{openFile ? "// NOTE FILES" : "// NOTES PAGE"}</div>
         {pages > 1 ? <nav className="note-pager" aria-label="Note pages">
           <button type="button" aria-label="Previous note page" title="Previous note page" aria-disabled={page === 0} onClick={() => step(-1)}><ChevronLeft size={16} aria-hidden="true" /></button>
           <span aria-live="polite" aria-atomic="true">{page + 1} / {pages}</span>
@@ -392,9 +415,9 @@ function NotesPage({ focusedIndex, query, record, shareable, handheld, searchCon
         </nav> : null}
       </div>
       {searchControl}
-      <div className="note-stack">
+      <div className={openFile ? "note-stack game-note-file-grid" : "note-stack"}>
         {notes.length > 0 ? (
-          notes.map((note) => (
+          notes.map((note) => openFile ? <NoteFile key={note.index} note={note} recordTitle={record.title} onOpen={openFile} /> : (
             <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} recordId={shareable && note.id ? record.id : undefined} noteId={note.id} handheld={handheld} />
           ))
         ) : (
@@ -403,6 +426,15 @@ function NotesPage({ focusedIndex, query, record, shareable, handheld, searchCon
       </div>
     </section>
   );
+}
+
+function NoteFile({ note, recordTitle, onOpen }: { note: ArchiveNote & { index: number }; recordTitle: string; onOpen: (index: number) => void }) {
+  const parts = splitNoteTitle(note.title);
+  return <button className="game-note-file" data-game-note-index={note.index} type="button" onClick={() => onOpen(note.index)}>
+    <FileText size={36} strokeWidth={1.3} aria-hidden="true" />
+    <strong>{parts.title === "Current note" ? recordTitle : parts.title}</strong>
+    {parts.date ? <time dateTime={parts.dateTime}>{parts.date}</time> : null}
+  </button>;
 }
 
 function NoteEntry({ body, defaultOpen, index, title, recordId, noteId, handheld }: { body: string; defaultOpen: boolean; index?: number; title: string; recordId?: string; noteId?: string; handheld?: boolean }) {

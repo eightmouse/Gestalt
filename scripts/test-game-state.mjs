@@ -28,8 +28,8 @@ function compile(source, globals = {}) {
 }
 const policy = compile(read("lib/game-state.ts")).exports;
 const names = ["gameLogPlacement", "gameActivityValue", "gameActivityLabel"];
-const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "groupStatusLine", "renderSectionRows", "recordStateKey", "recordTraceId", "readableDate", "escapeHtml"]), { window: { GestaltRecordLinks: recordLinks } });
-const react = compile(`${functions("components/archive/record-utils.ts", ["formatReadableDate"])}\n${functions("components/archive/section-page.tsx", ["splitSectionRecords", "groupStatusLine", "SectionRecordButton", "recordStateKey"])}\nexports.split = splitSectionRecords; exports.Card = SectionRecordButton;`, { ...policy, recordLinks });
+const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "renderSelectorTiles", "recordStateKey", "recordTraceId", "escapeHtml"]), { window: { GestaltRecordLinks: recordLinks } });
+const react = compile(`${functions("components/archive/section-page.tsx", ["splitSectionRecords", "RecordSelectorTile", "recordStateKey"])}\nexports.split = splitSectionRecords; exports.Card = RecordSelectorTile;`, { ...policy, recordLinks });
 const studio = compile(`${functions("components/studio-client.tsx", ["splitStudioSectionRecords", "toRecordPreview", "readStudioDrafts"])}\nexports.split = splitStudioSectionRecords; exports.preview = toRecordPreview; exports.drafts = readStudioDrafts;`, {
   ...policy, imageFraming, studioDraftStorageKey: "fixture-drafts", mediaListFromText: () => []
 });
@@ -66,13 +66,30 @@ assert.deepEqual(groups(studio.exports.split("games", records)), expected);
 staticContext.records = records.map(({ meta, ...record }) => ({ ...record, ...meta }));
 assert.deepEqual(groups(vm.runInContext('splitSectionRecords("games", records)', staticContext)), expected);
 const inactiveCard = { ...records[0], priority: 50, updated: "2026-10-21", type: "Play Log", title: "Online Game", summary: "Original notes" };
-staticContext.card = { ...inactiveCard, ...inactiveCard.meta };
-for (const html of [renderToStaticMarkup(createElement(react.exports.Card, { record: inactiveCard, onOpenRecord() {} })), vm.runInContext("renderSectionRows([card])", staticContext)]) {
+const tileHtml = (record) => {
+  staticContext.card = { ...record, ...record.meta };
+  return [renderToStaticMarkup(createElement(react.exports.Card, { record, onOpenRecord() {} })), vm.runInContext("renderSelectorTiles([card])", staticContext)];
+};
+for (const html of tileHtml(inactiveCard)) {
   assert.ok(html.includes('data-state="inactive"'));
   assert.ok(html.includes("Inactive"));
   assert.ok(!html.includes("Playing"), "An inactive Session card displays the authored activity");
-  assert.ok(html.includes(recordLinks.traceId(inactiveCard.id, "games")), "Reader cards share the same stable display reference");
+  assert.ok(html.includes("data-game-sleeve"));
+  assert.ok(!html.includes(recordLinks.traceId(inactiveCard.id, "games")), "The sleeve prioritizes the title over the filing ID");
 }
+for (const html of tileHtml({ ...inactiveCard, meta: { gamePlacement: "session", gameActivity: "active" } })) {
+  assert.ok(html.includes('data-state="active"'));
+  assert.ok(html.includes('<small>Active</small>') && html.includes('aria-label="Online Game, Active"'), "Session treats both activity states equally");
+}
+for (const html of tileHtml({ ...inactiveCard, status: "Inactive", meta: { gamePlacement: "past", gameActivity: "inactive" } })) {
+  assert.ok(!html.includes("<small>Inactive</small>"), "Past Logs do not reuse the Session activity label");
+}
+for (const html of tileHtml({ ...inactiveCard, title: '<A "long" title>', banner: "/media/records/game/cover.webp", progress: 100 })) {
+  assert.ok(html.includes('<strong>&lt;A') && html.includes('class="game-disk-hub"'), "Floppy renders the escaped title and hub");
+  assert.ok(!html.includes("<img") && !html.includes("/media/records/game/cover.webp"), "A shelf does not request entry artwork");
+  assert.ok(!html.includes("100%"), "The game tile doesn't imply achievement or completion progress");
+}
+assert.equal(imageFraming.recordHeadingArtwork({ ...inactiveCard, banner: "/media/records/game/cover.webp" }).src, "/media/records/game/cover.webp");
 const form = { id: "fixture", section: "games", status: "Completed", gamePlacement: "session", gameActivity: "inactive" };
 const preview = studio.exports.preview(form, "Unchanged note");
 assert.equal(preview.meta.gamePlacement, "session");

@@ -20,6 +20,7 @@ const node = (selector) => {
   return value;
 };
 const shell = node(".archive-shell"), workspace = node(".workspace"), dashboard = node(".dashboard-grid");
+shell.querySelector = (selector) => nodes.get(selector) || null;
 const background = node(".grain-layer");
 const trayNode = node(".workspace-window-tray"), restoreNode = node(".reopen-control");
 workspace.querySelector = (selector) => selector === ":scope > .archive-folder-page" ? nodes.get(".workspace > .archive-folder-page") : null;
@@ -38,6 +39,7 @@ const context = vm.createContext({
   recordBackdrop: () => "backdrop", recordWindow: (record) => record.id,
   timelineWindow: () => "timeline", syncDesktopNavigation: () => navigationSyncs++, syncRecordFocus: () => focusSyncs++,
   render: () => renders++, localMemoryPrompt: () => "consent", stopRecordAccessSequence: () => stopped++,
+  steamDisplayReady: true, currentGamePanel: () => "settled current game",
   recordMotionController: { busy: false, close: ({ onComplete }) => { completion = onComplete; } }, bootCleanup: () => {},
 });
 vm.runInContext(functions, context);
@@ -76,6 +78,7 @@ shell.inert = true;
 shell.classList.values.add("is-booting");
 shell.classList.values.add("is-quick-boot");
 node(".boot-screen");
+const gameModule = node(".current-game-panel");
 vm.runInContext("completeBoot()", context);
 assert.equal(renders, 1, "Boot handoff does not rebuild the already-revealed workspace");
 assert.equal(shell.inert, false);
@@ -83,6 +86,7 @@ assert.equal(shell.removedAttribute, "aria-busy");
 assert.equal(shell.removedStyle, "--boot-elapsed");
 assert.equal(shell.classList.values.size, 0);
 assert.equal(shell.inserted.html, "consent", "Consent still appears only after boot");
+assert.equal(gameModule.outerHTML, "settled current game", "The ready snapshot can update the plate only after its startup cue");
 assert.equal(context.bootCleanup, null);
 assert.ok(!nodes.has(".boot-screen"));
 node(".local-memory-consent");
@@ -257,7 +261,7 @@ const route = vm.createContext({
   stopRecordAccessSequence() {}, render: () => fallback++, workspaceContent: () => `content:${route.state.activeSection}`,
   greeting: () => "Good morning.", dashboardSubtext: () => "Daily note", escapeHtml: String, renderHeadlineLetters: String,
   syncRoadmapDialog() { assert.equal(route.state.roadmapOpen, false); }, syncWorkspaceFocus() {}, syncSearchPanel() { assert.equal(route.state.searchOpen, false); }, syncRecordFocus() {},
-  syncMemoryMotion: () => events.push("legacy sync"), syncMemoryTrace: () => events.push("trace sync")
+  syncMemoryMotion: () => events.push("legacy sync"), syncMemoryTrace: () => events.push("trace sync"), syncInstrumentShelf() {}
 });
 vm.runInContext(functions, route);
 document.activeElement = menuItem;
@@ -314,12 +318,18 @@ findContentBranch(ast);
 assert.ok(contentBranch?.getText(ast).includes("selectRecordContent(contentKey);"), "Desktop tabs use the shared content selection path");
 const selectContent = ast.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === "selectRecordContent");
 const contentState = { panelOpen: true, activeContent: "overview", noteSearchQuery: "old", focusedNoteIndex: 8, noteBrowsePage: 2, noteSearchPage: 1 };
-const panel = {}, aside = {};
+const panel = {}, aside = { contains: () => false };
+const heading = { classList: classes() };
+heading.classList.contains = (name) => heading.classList.values.has(name);
 const picker = { value: "notes" };
-const contentLayout = { scrollTop: 200, querySelector: (selector) => ({ ".record-aside": aside, ".record-content-view": panel, "[data-record-content-picker]": picker })[selector] };
+const caption = {};
+const entry = { querySelector: () => caption, classList: classes() };
+const contentLayout = { scrollTop: 200, closest: () => entry, querySelector: (selector) => ({ ".record-aside": aside, ".record-content-view": panel, ".record-heading": heading, "[data-record-content-picker]": picker })[selector] };
 let windowUpdates = 0;
+let handheld = true;
 const select = vm.runInNewContext(`${selectContent.getText(ast)}\nselectRecordContent`, {
-  state: contentState, window: {}, pocket: undefined, selectedRecord: () => ({ id: "fixture" }), getRecordContents: () => [{ key: "notes" }, { key: "overview" }],
+  state: contentState, window: {}, document: {}, pocket: { isHandheld: () => handheld }, selectedRecord: () => ({ id: "fixture", title: "Test Entry" }), getRecordContents: () => [{ key: "notes" }, { key: "overview" }],
+  root: { querySelector: () => contentLayout },
   setUpdateHistory() {}, renderRecordContent: () => "new note panel", recordAsideContent: () => "new Contents rail",
   syncRecordWindow: () => ++windowUpdates, render: () => assert.fail("The workspace should stay mounted")
 });
@@ -333,8 +343,14 @@ assert.equal(contentLayout.scrollTop, 200, "Changing sections does not scroll th
 assert.equal(panel.innerHTML, "new note panel");
 assert.equal(aside.innerHTML, "new Contents rail");
 assert.equal(windowUpdates, 0, "The handheld picker, entry chrome and scroll container remain mounted");
+assert.ok(heading.classList.values.has("is-notes-heading"), "Notes use a compact heading");
+assert.ok(entry.classList.values.has("is-notes-view"));
+assert.equal(caption.textContent, "// Test Entry", "Notes move the record title to the bar");
+handheld = false;
 select("overview");
-assert.equal(windowUpdates, 1, "Desktop tabs retain the established window-only update path");
+assert.equal(windowUpdates, 0, "Desktop tabs keep the heading mounted so it can retract in place");
+assert.ok(!heading.classList.values.has("is-notes-heading"));
+assert.equal(caption.textContent, "// ARCHIVE ENTRY", "Overview restores the original caption");
 assert.ok(!read("index.html").includes("performance-probe"), "The opt-in probe is never part of the public reader");
 assert.ok(!read("scripts/prepare-pages.mjs").includes("performance-preview"));
 const readerAst = ts.createSourceFile("archive-os.tsx", read("components/archive-os.tsx"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

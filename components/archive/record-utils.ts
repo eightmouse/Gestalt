@@ -167,6 +167,7 @@ export function recentActivity(records: RecordEntry[], limit: number): ActivityE
         return [{
           ...recordItem,
           content: "notes",
+          noteIndex: record.section === "logs" ? trace.index : undefined,
           noteId: trace.note.id,
           date: record.section === "logs" ? recordItem.date : trace.date,
           detail: `${record.type} / ${activityTraceTitle(trace.note.title)}`

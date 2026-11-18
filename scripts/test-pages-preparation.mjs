@@ -19,7 +19,7 @@ files.push("app/desktop-navigation.css", "public/desktop-navigation.js");
 files.push("public/images/eightmouse-avatar.png");
 files.push("public/os-behaviour.js");
 files.push("public/workspace-tools.js");
-files.push("public/record-motion.js");
+files.push("public/record-motion.js", "public/section-motion.js");
 files.push("public/record-links.js", "public/archive-search.js");
 files.push("public/appearance.js", "app/appearance.css");
 files.push("public/ambient-motion.js");

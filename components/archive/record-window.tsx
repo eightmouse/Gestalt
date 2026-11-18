@@ -2,18 +2,21 @@
 
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
-import { ArrowLeft, Maximize2, Minimize2, Settings, X } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Search, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import {
   contentOrdinal,
+  FocusedNotePanel,
   getRecordContents,
+  noteReaderTitle,
   NoteSearchBox,
+  NotesPage,
   RecordBody,
   RecordContentPanel,
   UpdateHistory,
   UpdateHistoryModal
 } from "@/components/archive/record-content";
-import { formatReadableDate, recordHeaderImage, recordLastUpdated } from "@/components/archive/record-utils";
+import { formatReadableDate, noteEntries, recordHeaderImage, recordLastUpdated } from "@/components/archive/record-utils";
 import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
@@ -43,14 +46,15 @@ type RecordWindowProps = {
   onClose: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
+  onOpenFullEntry?: () => void;
 };
 
-export function RecordWindow({ handheld, minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+export function RecordWindow({ handheld, minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize, onOpenFullEntry }: RecordWindowProps) {
   if (record.section === "setup") {
     return <SetupRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} shareable={shareable} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
-  return <ArchiveRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} maximized={maximized} record={record} shareable={shareable} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+  return <ArchiveRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} maximized={maximized} record={record} shareable={shareable} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} onOpenFullEntry={onOpenFullEntry} />;
 }
 
 function useRecordFocus(minimized: boolean | undefined, id: string) {
@@ -68,36 +72,82 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
   dismiss();
 }
 
-function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
+function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize, onOpenFullEntry }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
   const contents = getRecordContents(record);
   const readingContents = pocket.readingContents(record.section, contents);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const availableContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
   const activeContent = handheld ? pocket.readingView(record.section, availableContent) : availableContent;
+  const [keepArtwork, setKeepArtwork] = useState(false);
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
+  const [gameNoteSearchOpen, setGameNoteSearchOpen] = useState(false);
+  const gameSearchInput = useRef<HTMLInputElement>(null);
+  const gameSearchButton = useRef<HTMLButtonElement>(null);
   const [focusedNoteIndex, setFocusedNoteIndex] = useState(initialNoteIndex);
+  const [gameNoteOpen, setGameNoteOpen] = useState(initialNoteIndex !== undefined && !onOpenFullEntry);
+  const returnToFile = useRef<number | undefined>(undefined);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
   const artwork = imageFraming.recordHeadingArtwork(record, steamBannerImage);
+  const readingNotes = activeContent === "notes";
+  const games = record.section === "games";
+  const retractArtwork = readingNotes && !games;
+  const canSearchGameNotes = games && noteEntries(record.body).length > 1;
+  const dashboardNote = onOpenFullEntry && initialNoteIndex !== undefined ? noteEntries(record.body)[initialNoteIndex] : undefined;
+  const gameNote = games && readingNotes && gameNoteOpen && focusedNoteIndex !== undefined ? noteEntries(record.body)[focusedNoteIndex] : undefined;
+  const focusedNote = editor ? undefined : dashboardNote ?? gameNote;
+  const caption = focusedNote ? `// ${noteReaderTitle(focusedNote.title, record.title)}` : games || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const focusReading = () => {
+    windowRef.current?.focus({ preventScroll: true });
+    const layout = windowRef.current?.querySelector(".record-layout");
+    if (layout) layout.scrollTop = 0;
+  };
 
   const selectContent = (key: ContentKey) => {
     if (activeContent !== key) memoryState.record("content.select", { view: key });
+    if (key !== activeContent) {
+      const layout = windowRef.current?.querySelector(".record-layout");
+      if (layout && !handheld) layout.scrollTop = 0;
+      if (key === "notes" && !games) setKeepArtwork(true);
+    }
     setActiveContent(key);
     if (handheld || key !== "notes") {
       setNoteSearchQuery("");
       setFocusedNoteIndex(undefined);
+      setGameNoteOpen(false);
     }
+    if (key !== "notes") setGameNoteSearchOpen(false);
     setUpdateHistoryOpen(false);
   };
-  const noteSearch = activeContent === "notes" ? <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} /> : null;
+  const noteSearch = readingNotes && !games ? <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} /> : null;
+
+  const toggleGameNoteSearch = (open: boolean) => {
+    if (open && !readingNotes) selectContent("notes");
+    setGameNoteSearchOpen(open);
+    if (open) window.requestAnimationFrame(() => gameSearchInput.current?.focus());
+    else {
+      setNoteSearchQuery("");
+      gameSearchButton.current?.focus({ preventScroll: true });
+    }
+  };
 
   useEffect(() => {
     setActiveContent(initialContent);
     setNoteSearchQuery("");
+    setGameNoteSearchOpen(false);
     setFocusedNoteIndex(initialNoteIndex);
+    setGameNoteOpen(initialNoteIndex !== undefined && !onOpenFullEntry);
     setUpdateHistoryOpen(false);
   }, [initialContent, initialNoteIndex, record.id]);
+
+  useEffect(() => {
+    const index = returnToFile.current;
+    if (!focusedNote && index !== undefined) {
+      returnToFile.current = undefined;
+      windowRef.current?.querySelector<HTMLElement>(`[data-game-note-index="${index}"]`)?.focus();
+    }
+  }, [focusedNote, windowRef]);
 
   useEffect(() => {
     if (handheld) setActiveContent((current) => pocket.readingView(record.section, current));
@@ -131,16 +181,17 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       tabIndex={-1}
       hidden={minimized}
       inert={minimized}
-      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${record.section === "setup" ? " is-setup-record" : ""}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${games ? " has-game-files" : ""}${focusedNote ? " is-note-reader" : readingNotes ? " is-notes-view" : ""}`}
       data-state={recordStateKey(record.status)}
-      aria-label={`${record.title} archive entry`}
+      aria-label={`${record.title} ${focusedNote ? "note reader" : "archive entry"}`}
       onKeyDown={(event) => {
         if (minimized || escapeBlocked || editor || editorBusy) return;
         handleRecordEscape(event, () => {
           if (updateHistoryOpen) {
             setUpdateHistoryOpen(false);
             updateHistoryRef.current?.querySelector("button")?.focus({ preventScroll: true });
-          } else if (noteSearchQuery) setNoteSearchQuery("");
+          } else if (!focusedNote && canSearchGameNotes && gameNoteSearchOpen) toggleGameNoteSearch(false);
+          else if (noteSearchQuery && !focusedNote) setNoteSearchQuery("");
           else onClose();
         });
       }}
@@ -149,11 +200,11 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       <header className="window-bar">
         <button className="pocket-record-back" type="button" disabled={editorBusy} onClick={onClose}><ArrowLeft size={16} aria-hidden="true" />Back</button>
         <div className="window-title-group">
-          <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
+          <span className="record-window-caption">{caption}</span>
         </div>
         <div className="window-control-group">
-          {shareable ? <RecordLinkButton id={record.id} /> : null}
-          {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
+          {shareable ? <RecordLinkButton id={record.id} noteId={focusedNote?.id} /> : null}
+          {onEdit && !dashboardNote ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
           <div className="window-actions">
             <button type="button" disabled={editorBusy} data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
               <Minimize2 size={14} />
@@ -168,14 +219,36 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
         </div>
       </header>
 
-      {shareable ? <RecordLinkFeedback unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
+      {shareable ? <RecordLinkFeedback note={Boolean(focusedNote?.id)} unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
       <div className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
-        {editor ?? <>
+        {editor ?? (focusedNote ? <FocusedNotePanel note={focusedNote} recordTitle={record.title} toFiles={Boolean(gameNote && !dashboardNote)} onReturn={() => {
+          focusReading();
+          if (games) returnToFile.current = focusedNoteIndex;
+          if (dashboardNote) {
+            if (games && shareable) recordLinks.open(window, record.id);
+            onOpenFullEntry?.();
+          }
+          else {
+            setGameNoteOpen(false);
+            if (shareable) recordLinks.open(window, record.id);
+          }
+        }} /> : <>
         <div className="record-main">
+          {games ? <nav className="game-record-tabs" aria-label="Entry contents">
+            <div className="game-record-tab-links">
+              {contents.map(({ key, label }) => <button type="button" key={key} aria-current={key === activeContent ? "true" : undefined} onClick={() => selectContent(key)}>{label}</button>)}
+            </div>
+            {canSearchGameNotes ? <div className="game-note-search" data-expanded={gameNoteSearchOpen ? "" : undefined}>
+              <input ref={gameSearchInput} id="game-note-search-input" type="search" autoComplete="off" placeholder="Title or date" aria-label="Search notes" value={noteSearchQuery} onChange={(event) => setNoteSearchQuery(event.target.value)} />
+              <button ref={gameSearchButton} type="button" aria-label={gameNoteSearchOpen ? "Close note search" : "Search notes"} aria-expanded={gameNoteSearchOpen} aria-controls="game-note-search-input" onClick={() => toggleGameNoteSearch(!gameNoteSearchOpen)}>
+                {gameNoteSearchOpen ? <X size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
+              </button>
+            </div> : null}
+          </nav> : null}
           <div
-            className={`${artwork ? "record-heading has-heading-banner" : "record-heading"}${record.section === "setup" ? " setup-record-heading" : ""}`}
+            className={`${artwork ? "record-heading has-heading-banner" : "record-heading"}${retractArtwork ? " is-notes-heading" : ""}`}
           >
-            {artwork ? <img key={artwork.src} className="heading-banner-image" src={artwork.src} alt="" decoding="async" referrerPolicy="no-referrer" style={imageFraming.headerFrameStyle(record.meta)} onError={artwork.coverFallback ? (event) => {
+            {artwork && (!retractArtwork || keepArtwork) ? <img key={artwork.src} className="heading-banner-image" src={artwork.src} alt="" decoding="async" referrerPolicy="no-referrer" style={imageFraming.headerFrameStyle(record.meta)} onError={artwork.coverFallback ? (event) => {
               const image = event.currentTarget;
               if (image.dataset.coverFallback) return;
               image.dataset.coverFallback = "true";
@@ -205,7 +278,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             </p>
           </div>
 
-          {readingContents.length > 1 ? <label className="pocket-record-contents">
+          {!games && readingContents.length > 1 ? <label className="pocket-record-contents">
             <span>Contents</span>
             <span className="pocket-record-select">
               <select value={activeContent} onChange={(event) => {
@@ -217,11 +290,21 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             </span>
           </label> : null}
           <div className="record-content-view">
-            <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} noteSearch={handheld ? noteSearch : undefined} />
+            {games && readingNotes ? <NotesPage focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} openFile={(index) => {
+              focusReading();
+              setFocusedNoteIndex(index);
+              setGameNoteOpen(true);
+              if (shareable) recordLinks.open(window, record.id, noteEntries(record.body)[index]?.id);
+              memoryState.record("note.expand", { index: index + 1 });
+            }} /> : <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} noteSearch={handheld ? noteSearch : undefined} />}
           </div>
+          {games && activeContent === "overview" ? <dl className="game-record-dates">
+            <div><dt>Created</dt><dd>{record.started ? formatReadableDate(record.started) : "Unknown"}</dd></div>
+            <div><dt>Last Updated</dt><dd>{formatReadableDate(recordLastUpdated(record))}</dd></div>
+          </dl> : null}
         </div>
 
-        <aside className="record-aside">
+        {!games ? <aside className="record-aside">
           <div className="record-contents-list">
             <h3>CONTENTS</h3>
             <ol>
@@ -252,8 +335,8 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
           {record.section === "games" || activeContent === "notes" ? null : (
             <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
           )}
-        </aside>
-        </>}
+        </aside> : null}
+        </>)}
       </div>
       {updateHistoryOpen && record.section !== "games" ? <UpdateHistoryModal body={record.body} onClose={() => setUpdateHistoryOpen(false)} /> : null}
     </article>

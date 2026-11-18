@@ -23,6 +23,8 @@ const recordFocusCheck = spawnSync(process.execPath, [path.join(root, "scripts/t
 if (recordFocusCheck.status !== 0) errors.push(`Record keyboard regression failed: ${(recordFocusCheck.stderr || recordFocusCheck.stdout || "").trim()}`);
 const transitionCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-transition-lifecycle.mjs")], { encoding: "utf8" });
 if (transitionCheck.status !== 0) errors.push(`Transition lifecycle regression failed: ${(transitionCheck.stderr || transitionCheck.stdout || "").trim()}`);
+const standbyCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-section-standby.mjs")], { encoding: "utf8" });
+if (standbyCheck.status !== 0) errors.push(`Section standby regression failed: ${(standbyCheck.stderr || standbyCheck.stdout || "").trim()}`);
 const effectsCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-compositor-effects.mjs")], { encoding: "utf8" });
 if (effectsCheck.status !== 0) errors.push(`Compositor effects regression failed: ${(effectsCheck.stderr || effectsCheck.stdout || "").trim()}`);
 const pocketCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-pocket-index.mjs")], { encoding: "utf8" });
@@ -39,6 +41,7 @@ const cacheTokenCases = [
   ['src="public/os-behaviour.js?v=1.59.0"', 'src="public/os-behaviour.js?v=12345"'],
   ['src="public/workspace-tools.js?v=1.62.0"', 'src="public/workspace-tools.js?v=12345"'],
   ['src="public/record-motion.js?v=1.64.0"', 'src="public/record-motion.js?v=12345"'],
+  ['src="public/section-motion.js?v=1"', 'src="public/section-motion.js?v=12345"'],
   ['src="public/record-links.js?v=1"', 'src="public/record-links.js?v=12345"'],
   ['src="public/archive-search.js?v=1"', 'src="public/archive-search.js?v=12345"'],
   ['src="public/desktop-navigation.js?v=1.54.0"', 'src="public/desktop-navigation.js?v=12345"'],
@@ -95,6 +98,11 @@ const sidebar = extractFunction("sidebar");
 const archiveNavigationMenu = extractFunction("archiveNavigationMenu");
 const recordsScriptIndex = indexHtml.indexOf("public/data/records.js");
 const appScriptIndex = indexHtml.indexOf("static-app.js");
+const sectionMotionScript = indexHtml.indexOf("public/section-motion.js");
+const sectionMotionSyntax = spawnSync(process.execPath, ["--check", path.join(root, "public/section-motion.js")], { encoding: "utf8" });
+if (sectionMotionScript === -1 || sectionMotionScript > appScriptIndex || sectionMotionSyntax.status !== 0) {
+  errors.push("The section motion helper must load before the static runtime and have valid syntax.");
+}
 const inlineScriptIndex = indexHtml.indexOf("public/note-inline.js");
 const framingScriptIndex = indexHtml.indexOf("public/image-framing.js");
 const seasonalScriptIndex = indexHtml.indexOf("public/seasonal.js");

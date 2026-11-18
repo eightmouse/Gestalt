@@ -42,7 +42,7 @@ for (const source of [reactBoot, staticBoot.getText(ast)]) {
       continue;
     }
     assert.equal(completed, 0, "No early consent/completion");
-    assert.equal([...timers.values()][0].delay, mode === "quick" ? 2300 : 4700, "Rebuilds keep the chosen startup deadline");
+    assert.equal([...timers.values()][0].delay, mode === "quick" ? 2300 : 11400, "Rebuilds keep the chosen startup deadline");
     [...timers.values()][0].callback();
     assert.equal(completed, 1);
     assert.equal(timers.size, 0);
@@ -62,7 +62,7 @@ for (const source of [reactBoot, staticBoot.getText(ast)]) {
     assert.equal(listeners.size, 0);
     stop();
     motion.matches = false;
-    stop = start(() => completed++, 7500);
+    stop = start(() => completed++, 12000);
     assert.equal([...timers.values()][0].delay, 0, "A delayed render adds no extra wait");
     stop();
   }
@@ -77,40 +77,24 @@ const postcss = createRequire(require.resolve("next/package.json"))("postcss");
 const sheet = postcss.parse(css);
 const declarations = (rule) => Object.fromEntries(rule.nodes.filter((node) => node.type === "decl").map((node) => [node.prop, node.value]));
 const bootDefaults = declarations(sheet.nodes.find((node) => node.selector === ".boot-screen"));
-const welcomeLetters = [".boot-session-user .headline-char:nth-child(-n + 3)", ".boot-session-user .headline-char:nth-child(n + 4):nth-child(-n + 6)", ".boot-session-user .headline-char:nth-child(n + 7)"].map((selector) => declarations(sheet.nodes.find((node) => node.selector === selector)));
-assert.equal(new Set(welcomeLetters.map((values) => values["--boot-user-duration"])).size, 3, "Each interrupted letter has its own brief duration");
-for (const [mask, nth] of [[0, "3n + 1"], [1, "3n + 2"], [2, "3n"]]) assert.ok(css.includes(`:root[data-boot-interference="${mask}"] .boot-session-user .headline-char:nth-child(${nth})`), "Each visit pattern selects just three of nine letters");
 const signalDetails = new Set();
-const welcomeMasks = new Set();
 for (const sample of [...Array.from({ length: 257 }, (_, index) => index / 257), -1, 1, 2, NaN, Infinity]) {
   const attributes = new Map(), styles = new Map();
   let draws = 0, writes = 0;
   const doc = { documentElement: { getAttribute: (key) => attributes.get(key), setAttribute: (key, value) => attributes.set(key, value), style: { setProperty(key, value) { writes++; styles.set(key, value); } } } };
-  const profile = behaviour.initializeBootPresentation(doc, () => { draws++; return sample; });
+  behaviour.initializeBootPresentation(doc, () => { draws++; return sample; });
   const before = [...styles];
   behaviour.initializeBootPresentation(doc, () => { throw new Error("No per-render randomness"); });
   assert.equal(draws, 1);
-  assert.equal(writes, 6, "Six bounded pre-paint values, never an ongoing updater");
+  assert.equal(writes, 2, "Only the Gestalt loader has randomized signal timing");
   assert.deepEqual([...styles], before);
   const ms = (name) => { assert.match(styles.get(name), /^-?\d+ms$/); return parseInt(styles.get(name)); };
   const start = ms("--boot-signal-start"), duration = ms("--boot-signal-span");
   assert.ok(start >= 90 && start <= 390 && duration >= 760 && duration <= 1160);
   assert.ok(start + duration < 1800, "GESTALT settles before loader handoff");
-  const jitter = ms("--boot-user-jitter");
-  assert.ok(jitter >= -40 && jitter <= 40);
-  const override = sheet.nodes.find((node) => node.selector === `:root[data-boot-profile="${profile}"] .boot-screen`);
-  const userStart = parseInt(({ ...bootDefaults, ...(override ? declarations(override) : {}) })["--boot-user-delay"]) + jitter;
-  assert.ok(userStart >= 3000);
-  for (const [index, range] of [[0, [30, 180]], [1, [0, 90]], [2, [100, 240]]]) {
-    const offset = ms(`--boot-user-offset-${"abc"[index]}`);
-    assert.ok(offset >= range[0] && offset <= range[1]);
-    assert.ok(userStart + offset + parseInt(welcomeLetters[index]["--boot-user-duration"]) < 3744, "Every randomized letter settles before welcome fade");
-  }
   signalDetails.add(JSON.stringify([...styles]));
-  welcomeMasks.add(attributes.get("data-boot-interference"));
 }
 assert.ok(signalDetails.size > 250, "Variation is finer than four repeated scripted timings");
-assert.deepEqual([...welcomeMasks].sort(), ["0", "1", "2"]);
 const curves = new Set();
 for (const [index, profile] of behaviour.bootProfiles.entries()) {
   let draws = 0;
@@ -140,9 +124,6 @@ for (const [index, profile] of behaviour.bootProfiles.entries()) {
   assert.ok(end >= 1800 && end <= 2220, "Every bar finishes before the existing loader handoff");
   const textEnd = parseInt(values["--boot-status-delay"]) + 18 * parseInt(values["--boot-status-step"]) + 450;
   assert.ok(textEnd < 1800, "Status remains readable before the loader exits");
-  const userStart = parseInt(values["--boot-user-delay"]);
-  assert.ok(userStart >= 3000, "The name is readable before its signal disturbance");
-  for (const letter of welcomeLetters) assert.ok(userStart + Number(letter["--boot-user-offset"].match(/, (\d+)ms\)/)[1]) + parseInt(letter["--boot-user-duration"]) < 3744, "Fallback timing settles before welcome fade");
 }
 assert.equal(curves.size, 4, "Four distinct rhythms, not the same curve renamed");
 for (const name of ["boot-signal-lock", "boot-signal-register"]) {
@@ -169,11 +150,13 @@ assert.match(staticSource, /state\.bootDismissed \? "" : " is-booting"/);
 assert.match(staticSource, /state\.localMemory !== "prompt" \|\| !state\.bootDismissed/);
 assert.match(staticSource, /--boot-elapsed: -\$\{Math\.max\(0, performance\.now\(\) - bootStartedAt\)\}ms/);
 assert.match(staticSource, /if \(!state\.bootDismissed && !bootCleanup\)/);
-assert.match(css, /boot-exit 5200ms ease-in-out var\(--boot-elapsed, 0ms\)/);
-assert.match(css, /boot-loader-exit 420ms ease-in-out calc\(2220ms \+ var\(--boot-elapsed, 0ms\)\)/);
-assert.match(css, /boot-session 5200ms ease-in-out var\(--boot-elapsed, 0ms\)/);
+assert.match(css, /\.archive-shell\.is-booting \{ --boot-handoff-delay: 3960ms; --boot-meter-extension: 210ms; --boot-ui-extension: 720ms; \}/);
+assert.match(css, /\.archive-shell\.is-quick-boot \{ --boot-handoff-delay: 0ms; --boot-meter-extension: 0ms; \}/);
+assert.match(css, /boot-exit 830ms ease-in-out calc\(8280ms \+ var\(--boot-elapsed, 0ms\)\)/);
+assert.match(css, /boot-loader-exit 420ms ease-in-out calc\(2220ms \+ var\(--boot-meter-extension\) \+ var\(--boot-elapsed, 0ms\)\)/);
+assert.match(css, /boot-session 2670ms ease-in-out calc\(2288ms \+ var\(--boot-handoff-delay\) \+ var\(--boot-elapsed, 0ms\)\)/);
 assert.match(css, /\.archive-shell\.is-quick-boot > \.boot-screen \{\s*animation-name: quick-boot-exit;\s*animation-duration: 2800ms;/);
-assert.match(css, /\.archive-shell\.is-quick-boot \.boot-session \{ display: none; \}/);
+assert.match(css, /\.archive-shell\.is-quick-boot :is\(\.boot-session, \.boot-process-log\) \{ display: none; \}/);
 assert.match(reactSource, /const done = \(\) => setBootComplete\(true\)/);
 assert.match(reactSource, /scheduleBootCompletion\(done, 0, startupMode\)/);
 assert.match(staticSource, /performance.now\(\) - bootStartedAt, state.startupMode/);
@@ -182,17 +165,43 @@ const sessionFrames = css.match(/@keyframes boot-session \{([\s\S]*?)\n\}/)?.[1]
 assert.ok(sessionFrames);
 const hold = sessionFrames.match(/([\d.]+)%, ([\d.]+)% \{ opacity: 1; \}/);
 assert.ok(hold);
-const fadeInStart = sessionFrames.match(/0%, ([\d.]+)% \{ opacity: 0; \}/);
 const fadeOutEnd = sessionFrames.match(/([\d.]+)%, 100% \{ opacity: 0; visibility: hidden; \}/);
-assert.ok(fadeInStart && fadeOutEnd);
-const visibleMs = (Number(fadeOutEnd[1]) - Number(fadeInStart[1])) * 5200 / 100;
-assert.ok(visibleMs >= 2000 && visibleMs <= 2500, "The whole profile phase, including both fades, lasts 2-2.5 seconds");
-assert.ok((Number(hold[2]) - Number(hold[1])) * 5200 / 100 >= 800, "The profile still has a readable pause between fades");
+assert.ok(fadeOutEnd);
+const visibleMs = Number(fadeOutEnd[1]) * 2670 / 100;
+const consoleStart = 2710, consoleDuration = 3530, lineStart = 2800, lineWrite = 1;
+assert.equal(behaviour.bootProcesses.length, 24, "Full startup renders a tall process log");
+assert.ok(consoleStart + consoleDuration < 3960 + 2288, "Console clears before the profile appears");
+assert.ok(lineStart + behaviour.bootProcesses[0].at + lineWrite > 2220 + 210 + 420, "The first completed line follows the loader");
+assert.ok(lineStart + behaviour.bootProcesses.at(-1).at + lineWrite + 400 < consoleStart + consoleDuration, "The complete log holds before the cut");
+assert.ok(behaviour.bootProcesses.slice(1).filter((row, index) => row.at - behaviour.bootProcesses[index].at >= 300).length >= 2, "Startup has distinct phases rather than a fixed cadence");
+assert.match(css, /boot-process-window 3530ms linear calc\(2710ms/);
+assert.match(css, /@keyframes boot-process-window \{ from, to \{ visibility: visible; \} \}/, "The console cuts out without fading");
+assert.match(css, /boot-process-line 1ms linear calc\(2800ms \+ var\(--boot-line-time\)[^;]*forwards/, "Each console line stays visible once written");
+assert.ok(visibleMs >= 2200 && visibleMs <= 2450, "The operator phase leaves room for the module handoff");
+assert.ok((Number(hold[2]) - Number(hold[1])) * 2670 / 100 >= 1300, "The profile still has a readable hold before the workspace");
 assert.match(css, /\.boot-session-mark \{[^}]*border-radius: 0;/, "The portrait frame is square");
 for (const [delay, duration] of [[3660, 1200], [3740, 1200], [3880, 1200], [4110, 970]]) {
-  assert.ok(css.includes(`boot-surface ${duration}ms ease-in-out calc(${delay}ms + var(--boot-elapsed, 0ms)) both`));
-  assert.ok(delay + duration <= 5200, "All surfaces settle before controls are released");
+  assert.ok(css.includes(`boot-surface ${duration}ms ease-in-out calc(${delay}ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms)) both`));
+  assert.ok(3960 + 720 + delay + duration <= 11900, "All surfaces settle before controls are released");
 }
+const modules = Object.values(behaviour.bootModules);
+assert.deepEqual(modules.map(({ order }) => order), [0, 1, 2, 3, 4, 5]);
+assert.equal(new Set(modules.map(({ label }) => label)).size, 6, "Every plate has a distinct startup cue");
+assert.match(css, /--boot-module-at: calc\(9110ms \+ var\(--boot-module-order\) \* 210ms/);
+assert.match(css, /boot-module-seat 820ms/);
+for (const name of ["seat", "heading", "content"]) {
+  const frames = css.match(new RegExp(`@keyframes boot-module-${name} \\{([\\s\\S]*?)\\n\\}`))?.[1];
+  assert.ok(frames);
+  assert.doesNotMatch(frames, /clip-path|transform|height/, "Visible plates and their contents retain full bounds during startup");
+}
+assert.match(css, /--boot-readout-delay: 55ms;\s*--boot-readout-duration: 1020ms;/);
+assert.match(css, /--boot-ready-at: calc\(var\(--boot-module-at\) \+ var\(--boot-readout-delay\) \+ var\(--boot-readout-duration\)\)/, "Module content cannot overlap its readout");
+assert.match(css, /boot-module-heading 320ms ease-out var\(--boot-ready-at\) both/);
+assert.match(css, /boot-module-content 520ms [^;]+ calc\(var\(--boot-ready-at\) \+ 80ms\) both/);
+assert.match(css, /@keyframes boot-module-content \{\s*from \{ opacity: 0; \}/);
+assert.ok(9110 + modules.at(-1).order * 210 + 55 + 1020 + 80 + 520 <= 11900, "The last plate settles before releasing inert");
+assert.match(read("components/archive/dashboard.tsx"), /osBehaviour\.bootModules\[title\]/);
+assert.match(staticSource, /window\.GestaltOsBehaviour\?\.bootModules\?\.\[title\]/);
 const reactScreen = read("components/archive/boot-screen.tsx");
 for (const source of [reactScreen, staticSource]) {
   for (const className of ["boot-loader", "boot-session", "boot-session-label", "boot-session-mark", "boot-session-user", "boot-session-detail"]) {
@@ -201,8 +210,8 @@ for (const source of [reactScreen, staticSource]) {
   assert.ok(source.includes("// SESSION READY"));
   assert.ok(source.includes("Opening the archive"));
 }
-assert.match(reactScreen, /src="\/images\/eightmouse-avatar.png" width="112" height="112" alt=""/);
-assert.match(staticSource, /src="public\/images\/eightmouse-avatar.png" width="112" height="112" alt=""/);
+assert.match(reactScreen, /src="\/images\/eightmouse-avatar.png" width="120" height="120" alt=""/);
+assert.match(staticSource, /src="public\/images\/eightmouse-avatar.png" width="120" height="120" alt=""/);
 const avatar = readFileSync(new URL("../public/images/eightmouse-avatar.png", import.meta.url));
 assert.equal(avatar.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", "The local avatar is a PNG, not a downloaded error page");
 assert.equal(avatar.readUInt32BE(16), 256);
@@ -229,30 +238,16 @@ const cipherModule = vm.createContext({ exports: {} });
 vm.runInContext(ts.transpileModule(read("components/archive/cipher.ts"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, cipherModule);
 const headlineModule = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/cipher" ? cipherModule.exports : require(id) });
 vm.runInContext(ts.transpileModule(read("components/archive/headline-text.tsx"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText, headlineModule);
-const rendered = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/headline-text" ? headlineModule.exports : require(id) });
+const rendered = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/headline-text" ? headlineModule.exports : id === "@/public/os-behaviour.js" ? behaviour : require(id) });
 vm.runInContext(ts.transpileModule(reactScreen, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, rendered);
-const reactMarkup = renderToStaticMarkup(rendered.exports.BootScreen());
-const staticLetters = vm.createContext({ cipherizeText: cipherModule.exports.cipherizeText });
-for (const name of ["escapeHtml", "renderHeadlineLetters"]) {
-  vm.runInContext(ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name).getText(ast), staticLetters);
-}
-const staticUserMarkup = staticSource.replace('${renderHeadlineLetters("Eightmouse")}', vm.runInContext('renderHeadlineLetters("Eightmouse")', staticLetters));
-const sessionMarkup = (markup) => markup.slice(markup.indexOf('<div class="boot-session">'), markup.indexOf("</div>", markup.indexOf('<div class="boot-session">')) + 6).replace(/\s+</g, "<").replaceAll('src="public/images/eightmouse-avatar.png"', 'src="/images/eightmouse-avatar.png"').replaceAll("/>", ">").replace(/<span aria-hidden="true" class="headline-char" style="--headline-index:(\d+)">/g, '<span class="headline-char" style="--headline-index: $1" aria-hidden="true">');
-assert.equal(sessionMarkup(reactMarkup), sessionMarkup(staticUserMarkup), "Both readers render the same welcome and cipher letters with their own public asset paths");
-assert.ok(reactMarkup.includes('class="boot-session-user" aria-label="Eightmouse"'));
-const userFrames = ["boot-user-readable", "boot-user-cipher"].map((name) => {
-  const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
-  assert.ok(frames);
-  frames.walkDecls((decl) => assert.ok(["opacity", "transform"].includes(decl.prop), "Name disturbance uses only opacity and transform"));
-  return frames.nodes.flatMap((node) => node.selector.split(",").map((percent) => [parseInt(percent), Number(declarations(node).opacity)])).sort((a, b) => a[0] - b[0]);
-});
-for (let percent = 0; percent <= 100; percent++) {
-  const [readable, cipher] = userFrames.map((points) => points.filter(([at]) => at <= percent).at(-1)[1]);
-  assert.equal(readable + cipher, 1, "Readable and cipher layers never overlap or leave a blank letter");
-  if (percent === 0 || percent === 100) assert.equal(readable, 1, "Welcome begins and ends readable");
-}
-assert.match(css, /\.boot-session-user :is\(\.headline-char-readable, \.headline-char-cipher\) \{[^}]*animation-duration: var\(--boot-user-duration\);[^}]*animation-fill-mode: both;/);
-assert.match(css, /\.boot-session-user \.headline-char \{ --boot-user-readable-sequence: none; --boot-user-cipher-sequence: none; \}/, "Unaffected letters stay still");
+const reactMarkup = renderToStaticMarkup(rendered.exports.BootScreen({ startupMode: "full" }));
+assert.doesNotMatch(renderToStaticMarkup(rendered.exports.BootScreen({ startupMode: "quick" })), /boot-process-log/);
+assert.match(staticSource, /state.startupMode === "full" \? `<ol class="boot-process-log">\$\{\(window.GestaltOsBehaviour\?\.bootProcesses/);
+assert.deepEqual([...reactMarkup.matchAll(/--boot-line-time:(\d+)ms"><span class="boot-process-stamp">([\d.]+)<\/span><span class="boot-process-state">\[ OK \]<\/span>([^<]+)/g)].map(([, at, stamp, label]) => ({ at: Number(at), stamp, label })), behaviour.bootProcesses);
+const sessionMarkup = (markup) => markup.slice(markup.indexOf('<div class="boot-session">'), markup.indexOf("</div>", markup.indexOf('<div class="boot-session">')) + 6).replace(/\s+</g, "<").replaceAll('src="public/images/eightmouse-avatar.png"', 'src="/images/eightmouse-avatar.png"').replaceAll("/>", ">");
+assert.equal(sessionMarkup(reactMarkup), sessionMarkup(staticSource), "Both readers render the same welcome with their own public asset paths");
+assert.ok(reactMarkup.includes('<span class="boot-session-user">Eightmouse</span>'), "The operator name has no cipher layer");
+assert.doesNotMatch(css, /boot-user-(?:cipher|readable|jitter|duration)|data-boot-interference/);
 assert.ok(css.includes("var(--boot-signal-span, var(--boot-signal-duration))") && css.includes("var(--boot-signal-start, 90ms)"), "GESTALT consumes bounded per-visit timing with CSS fallbacks");
 assert.ok(!css.includes("var(--headline-index) * 8ms"), "No evenly staggered welcome wave");
 assert.match(declarations(sheet.nodes.find((node) => node.selector === ".boot-meter b")).animation, /cubic-bezier\(0\.3, 0\.04, 0\.25, 1\)/, "Progress uses eased acceleration instead of rigid linear catches");
@@ -339,4 +334,4 @@ for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) 
 const steamInit = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "initializeSteamDisplay").getText(ast);
 assert.match(steamInit, /if \(steamDisplayStarted\) return;/);
 assert.ok(!steamInit.includes("!state.bootDismissed"), "The existing one-shot Steam read can prepare during boot");
-console.log("Boot passed: stable visit rhythms, bounded signal/letter variation, monotonic progress, complementary cipher layers, unchanged handoff, cancellation, reduced motion and keyboard guards.");
+console.log("Boot passed: stable loader rhythms, ordered process log, plain operator profile, readable non-overlapping module cues, and quick/reduced startup.");

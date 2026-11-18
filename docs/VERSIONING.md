@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.78.0`. Previous site-code release: `v1.77.3` (f7436f9f).
+Release target: `v1.79.0`. Previous site-code release: `v1.78.0` (e510fe9c).
+
+`v1.79.0` introduces the Process Reader, Media Cabinet and Game note-file preview. Project plates advance while idle, and Game tabs keep their artwork, title and note search in place. Dashboard notes open in a focused reader, Full Welcome brings up the dashboard in stages without clipping, and the desktop window tray aligns with the workspace. Visual polish is still in progress. No authored records, original media or dependencies changed.
 
 `v1.78.0` lets the owner edit all four Setup groups from their existing terminals, with separate launch and edit actions for shortcuts. Local drafts and the publish bell keep their existing roles; Studio remains a fallback and Pages remains read-only. The release also improves handheld note navigation, caches Timeline results, restores earlier notebook milestones, and renames recent field notes without changing their URLs or note IDs. No dependency or original media changes.
 

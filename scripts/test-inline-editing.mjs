@@ -441,7 +441,7 @@ console.log("Editor selectors: shared native styling, labelled controls, decorat
 
 const reader = read("components/archive/record-window.tsx");
 assert.match(reader, /editor \? "record-layout is-editing-record" : "record-layout"/);
-assert.match(reader, /\{editor \?\? <>/);
+assert.match(reader, /\{editor \?\? \(focusedNote \? <FocusedNotePanel/, "The editor still takes precedence over either reading surface");
 const archive = read("components/archive-os.tsx");
 assert.match(archive, /process\.env\.NODE_ENV === "development" && editingInline/);
 assert.match(archive, /if \(inlineDraftWindow\?\.id === selectedId\) return;/);

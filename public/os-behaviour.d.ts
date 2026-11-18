@@ -10,6 +10,8 @@ export type OsBehaviourController = {
 };
 declare const behaviour: {
   bootProfiles: readonly string[];
+  bootProcesses: readonly { readonly at: number; readonly label: string; readonly stamp: string }[];
+  bootModules: Readonly<Partial<Record<string, { readonly id: string; readonly order: number; readonly label: string }>>>;
   initializeBootPresentation(doc?: Document, random?: () => number): string;
   normalizeStartupMode(value: unknown): StartupMode;
   readStartupMode(storage?: Pick<Storage, "getItem">): StartupMode;

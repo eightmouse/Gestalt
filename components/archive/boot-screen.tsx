@@ -2,8 +2,9 @@
 
 import type { CSSProperties } from "react";
 import { renderHeadlineLetters } from "@/components/archive/headline-text";
+import osBehaviour, { type StartupMode } from "@/public/os-behaviour.js";
 
-export function BootScreen() {
+export function BootScreen({ startupMode }: { startupMode: StartupMode }) {
   return (
     <div className="boot-screen" aria-hidden="true">
       <div className="boot-loader">
@@ -17,10 +18,13 @@ export function BootScreen() {
         </div>
         <b className="boot-meter"><b /></b>
       </div>
+      {startupMode === "full" ? <ol className="boot-process-log">
+        {osBehaviour.bootProcesses.map(({ at, label, stamp }) => <li key={label} style={{ "--boot-line-time": `${at}ms` } as CSSProperties}><span className="boot-process-stamp">{stamp}</span><span className="boot-process-state">[ OK ]</span>{label}</li>)}
+      </ol> : null}
       <div className="boot-session">
         <span className="boot-session-label">// SESSION READY</span>
-        <img className="boot-session-mark" src="/images/eightmouse-avatar.png" width="112" height="112" alt="" decoding="async" loading="lazy" />
-        <span className="boot-session-user" aria-label="Eightmouse">{renderHeadlineLetters("Eightmouse")}</span>
+        <img className="boot-session-mark" src="/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async" loading="lazy" />
+        <span className="boot-session-user">Eightmouse</span>
         <span className="boot-session-detail">Opening the archive</span>
       </div>
     </div>

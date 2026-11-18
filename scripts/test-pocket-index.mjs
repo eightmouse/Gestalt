@@ -71,6 +71,30 @@ assert.deepEqual(pocket.recordPage(records, 99), { records: ["record-13"], page:
 assert.equal(pocket.recordPage(records, -1).page, 0);
 assert.equal(pocket.recordPage(records, 1.5).page, 0);
 assert.deepEqual(pocket.recordPage([]), { records: [], page: 0, pages: 1 });
+assert.deepEqual(pocket.recordPage(records, 1, false), { records: records.slice(6, 12), page: 1, pages: 3 });
+assert.deepEqual(Array.from({ length: 3 }, (_, page) => pocket.recordPage(records, page, false).records).flat(), records);
+const shelf = [{ title: "Kingdom Hearts" }, { title: "Pokémon" }, { title: "Kingdom Hearts II" }];
+assert.equal(pocket.filterShelfGames(shelf, "   "), shelf);
+assert.deepEqual(pocket.filterShelfGames(shelf, "HEARTS"), [shelf[0], shelf[2]]);
+assert.deepEqual(pocket.filterShelfGames(shelf, " pokemon "), [shelf[1]]);
+assert.deepEqual(pocket.filterShelfGames(shelf, "not found"), []);
+const workbenchProjects = [
+  { id: "shell", progress: 70, summary: "A brief", milestones: [{ label: "Ready", status: "Done", progress: 100 }] },
+  { id: "editor", progress: 112, milestones: [{ label: "Review", status: "Planning", progress: 0 }, { label: "Draft", status: "In Progress", progress: 50 }] },
+  { id: "reader", progress: -1, milestones: [{ label: "Layout", status: "In Progress", progress: 70 }, { label: "  Assets ", status: "Blocked", progress: 0 }] }
+];
+assert.equal(pocket.projectWorkbench([]), null);
+assert.deepEqual(pocket.projectWorkbench(workbenchProjects, "removed"), { record: workbenchProjects[0], index: 0, progress: 70, brief: "A brief", stops: [{ label: "Ready", state: "ready", value: "Done" }], more: 0 });
+assert.equal(pocket.projectWorkbench(workbenchProjects, "editor").progress, 100);
+assert.deepEqual(pocket.projectWorkbench(workbenchProjects, "editor").stops, [{ label: "Review", state: "queued", value: "Planning" }, { label: "Draft", state: "working", value: "50%" }]);
+assert.equal(pocket.projectWorkbench(workbenchProjects, "reader").progress, 0);
+assert.deepEqual(pocket.projectWorkbench(workbenchProjects, "reader").stops.at(-1), { label: "Assets", state: "blocked", value: "Blocked" });
+assert.deepEqual(pocket.projectWorkbench([{ id: "only", progress: 0 }]).stops, []);
+const crowded = { ...workbenchProjects[2], milestones: [...workbenchProjects[1].milestones, ...workbenchProjects[1].milestones, ...workbenchProjects[2].milestones] };
+assert.equal(pocket.projectWorkbench([crowded]).more, 2, "The fixed reader reserves space for at most four stops");
+assert.equal(pocket.projectWorkbench([crowded]).stops.at(-1).state, "blocked", "A blocker remains visible beyond the first four steps");
+const testingProject = { id: "prism", progress: 67, milestones: [{ label: "Client testing", status: "In Progress", progress: 0 }] };
+assert.deepEqual(pocket.projectWorkbench([testingProject]).stops, [{ label: "Client testing", state: "working", value: "In Progress" }], "Qualitative milestones do not need invented percentages");
 const dispatch = (id, day, section, recordId = id, content = "notes") => ({ id, date: `2026-11-${day}`, record: { id: recordId, section }, content });
 const today = Date.parse("2026-11-17T12:00:00Z");
 const firstNote = dispatch("note-1", 17, "games", "game", "notes");
@@ -106,7 +130,8 @@ assert.deepEqual(pocket.readingContents("logs", [...logViews, attachments]), [{ 
 assert.equal(pocket.readingContents("projects", logViews), logViews, "Non-log sections do not change");
 assert.match(staticReader, /<label class="pocket-record-contents"><span>Contents<\/span>/);
 assert.match(localReader, /<label className="pocket-record-contents">\s*<span>Contents<\/span>/);
-assert.match(staticReader, /\$\{handheld \? renderNoteSearch\(record\) : ""\}\s*<div class="note-stack">/);
-assert.match(read("components/archive/record-content.tsx"), /\{searchControl\}\s*<div className="note-stack">/);
+assert.match(staticReader, /\$\{handheld && !files \? renderNoteSearch\(record\) : ""\}\s*<div class="note-stack/);
+assert.match(read("app/pocket-index.css"), /\.pocket-boot-mount\s*\{\s*display: contents;/, "The local handheld boot wrapper must not occupy a desktop grid cell");
+assert.match(read("components/archive/record-content.tsx"), /\{searchControl\}\s*<div className=\{openFile \? "note-stack game-note-file-grid" : "note-stack"\}>/);
 assert.doesNotMatch(css, /\[data-os-group="entry"\]/, "The shared Entry Animation preferences remain visible on handheld");
 console.log("Pocket Index preferences, boot lifecycle, progress curves and record paging passed.");

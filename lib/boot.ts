@@ -20,6 +20,6 @@ export function scheduleBootCompletion(onComplete: () => void, elapsed = 0, mode
   motion.addEventListener("change", onMotionChange);
   if (motion.matches) finish();
   // Matches the complete boot/session/workspace timeline in globals.css.
-  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 5200) - elapsed));
+  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 11900) - elapsed));
   return stop;
 }

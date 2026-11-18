@@ -20,16 +20,51 @@
   .command-preferences--desktop-nav { display: none; }
 }
 
-@media (min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 761px) {
   .archive-shell {
-    --window-tray-inline: calc(48px * var(--desktop-size, 1));
-    --window-tray-bottom: calc(48px * var(--desktop-size, 1));
+    --window-rail-pad: clamp(28px, 5vw, 74px);
+    --window-rail-start: calc(var(--sidebar-width) + var(--window-rail-pad));
+    --window-rail-max-inline: var(--dashboard-max-inline);
+    --window-tray-inline: max(var(--window-rail-pad), calc(100vw - var(--window-rail-start) - var(--window-rail-max-inline)));
+    --window-tray-bottom: calc(70px * var(--desktop-size, 1));
     --window-tray-control: calc(44px * var(--desktop-size, 1));
     --window-tray-popup-gap: calc(18px * var(--desktop-size, 1));
+    --window-tray-clearance: calc(var(--window-tray-bottom) + var(--window-tray-control) + 8px * var(--desktop-size, 1));
   }
+  .archive-shell:not([data-nav-wide]):has(> .workspace > .section-page--logs) { --window-rail-max-inline: var(--log-content-max-inline); }
+  .archive-shell:not([data-nav-wide]):has(> .workspace > .archive-folder-page) { --window-rail-max-inline: var(--archive-content-max-inline); }
+  .archive-shell > .workspace {
+    --workspace-pad-inline: var(--window-rail-pad);
+    padding-block-end: max(calc(var(--workspace-pad-bottom) + var(--footer-reserve)), var(--window-tray-clearance));
+  }
+  .archive-shell .workspace-window-tray {
+    position: fixed;
+    inset-inline-end: var(--window-tray-inline);
+    inset-block-end: var(--window-tray-bottom);
+    z-index: 9;
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--desktop-size, 1));
+  }
+  .archive-shell .workspace-window-tray > .reopen-control {
+    position: static;
+    inset: auto;
+    min-block-size: var(--window-tray-control);
+    padding: calc(10px * var(--desktop-size, 1)) calc(16px * var(--desktop-size, 1));
+    font-size: calc(16px * var(--desktop-size, 1));
+    line-height: 1.3;
+  }
+}
+@media (min-width: 2200px) and (min-height: 1100px) {
+  .archive-shell { --window-rail-pad: calc(74px * var(--desktop-size, 1)); }
+}
+
+@media (min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine) {
   .archive-shell[data-desktop-nav][data-nav-wide] {
     --dashboard-max-inline: calc(1480px * var(--desktop-size, 1));
     --section-split-max-inline: var(--dashboard-max-inline);
+    --window-rail-pad: max(calc(74px * var(--desktop-size, 1)), calc((100vw - var(--dashboard-max-inline)) / 2));
+    --window-rail-start: var(--window-rail-pad);
     grid-template-columns: minmax(0, 1fr);
   }
   .archive-shell[data-desktop-nav][data-nav-wide]::before {
@@ -38,7 +73,7 @@
   .archive-shell[data-nav-wide] > .workspace {
     --sidebar-width: 0px;
     --section-index-max-inline: var(--dashboard-max-inline);
-    --workspace-pad-inline: max(calc(74px * var(--desktop-size, 1)), calc((100vw - var(--dashboard-max-inline)) / 2));
+    --workspace-pad-inline: var(--window-rail-pad);
     grid-column: 1;
     grid-row: 1;
   }
@@ -130,23 +165,6 @@
   .desktop-terminal-body nav button:focus-visible { outline: 1px solid var(--text); outline-offset: 3px; }
   .desktop-directory-marker { color: var(--muted); }
   .desktop-terminal-body nav time { color: var(--muted); font-size: calc(13px * var(--desktop-size, 1)); white-space: nowrap; }
-  .archive-shell .workspace-window-tray {
-    position: fixed;
-    inset-inline-end: var(--window-tray-inline);
-    inset-block-end: var(--window-tray-bottom);
-    z-index: 9;
-    display: flex;
-    align-items: center;
-    gap: calc(8px * var(--desktop-size, 1));
-  }
-  .archive-shell .workspace-window-tray > .reopen-control {
-    position: static;
-    inset: auto;
-    min-block-size: calc(44px * var(--desktop-size, 1));
-    padding: calc(10px * var(--desktop-size, 1)) calc(16px * var(--desktop-size, 1));
-    font-size: calc(16px * var(--desktop-size, 1));
-    line-height: 1.3;
-  }
   .archive-shell:is([data-nav-minimized], [data-nav-retracting]) .desktop-terminal-restore {
     display: grid;
     place-items: center;
