@@ -311,7 +311,30 @@ function findContentBranch(node) {
   ts.forEachChild(node, findContentBranch);
 }
 findContentBranch(ast);
-assert.ok(contentBranch?.getText(ast).includes("if (!syncRecordWindow()) render();"), "Content-tab changes use the same retained-workspace path");
+assert.ok(contentBranch?.getText(ast).includes("selectRecordContent(contentKey);"), "Desktop tabs use the shared content selection path");
+const selectContent = ast.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === "selectRecordContent");
+const contentState = { panelOpen: true, activeContent: "overview", noteSearchQuery: "old", focusedNoteIndex: 8, noteBrowsePage: 2, noteSearchPage: 1 };
+const panel = {}, aside = {};
+const contentLayout = { scrollTop: 200, querySelector: (selector) => selector === ".record-aside" ? aside : panel };
+const picker = { closest: () => ({ querySelector: () => contentLayout }) };
+let windowUpdates = 0;
+const select = vm.runInNewContext(`${selectContent.getText(ast)}\nselectRecordContent`, {
+  state: contentState, window: {}, selectedRecord: () => ({ id: "fixture" }), getRecordContents: () => [{ key: "notes" }, { key: "overview" }],
+  setUpdateHistory() {}, renderRecordContent: () => "new note panel", recordAside: () => "new Contents rail",
+  syncRecordWindow: () => ++windowUpdates, render: () => assert.fail("The workspace should stay mounted")
+});
+select("missing", picker);
+assert.equal(contentState.activeContent, "overview", "A section must exist in the record before it can be selected");
+select("notes", picker);
+assert.equal(contentState.activeContent, "notes");
+assert.equal(contentState.noteSearchQuery, "");
+assert.equal(contentState.focusedNoteIndex, null);
+assert.equal(contentLayout.scrollTop, 0);
+assert.equal(panel.outerHTML, "new note panel");
+assert.equal(aside.outerHTML, "new Contents rail");
+assert.equal(windowUpdates, 0, "The handheld picker, entry chrome and scroll container remain mounted");
+select("overview");
+assert.equal(windowUpdates, 1, "Desktop tabs retain the established window-only update path");
 assert.ok(!read("index.html").includes("performance-probe"), "The opt-in probe is never part of the public reader");
 assert.ok(!read("scripts/prepare-pages.mjs").includes("performance-preview"));
 const readerAst = ts.createSourceFile("archive-os.tsx", read("components/archive-os.tsx"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

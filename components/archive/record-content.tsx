@@ -78,7 +78,7 @@ function getTextList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record, shareable, handheld }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry; shareable?: boolean; handheld?: boolean }) {
+export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearchQuery, record, shareable, handheld, noteSearch }: { activeContent: ContentKey; focusedNoteIndex?: number; noteSearchQuery: string; record: RecordEntry; shareable?: boolean; handheld?: boolean; noteSearch?: ReactNode }) {
   if (activeContent === "overview") {
     return <RecordOverviewPage record={record} />;
   }
@@ -92,7 +92,7 @@ export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearch
   }
 
   if (activeContent === "notes") {
-    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} />;
+    return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} searchControl={noteSearch} />;
   }
 
   if (activeContent === "technical") {
@@ -355,7 +355,7 @@ export function NoteSearchBox({ onQueryChange, query, record }: { onQueryChange:
   );
 }
 
-function NotesPage({ focusedIndex, query, record, shareable, handheld }: { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean }) {
+function NotesPage({ focusedIndex, query, record, shareable, handheld, searchControl }: { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean; searchControl?: ReactNode }) {
   const pageRef = useRef<HTMLElement>(null);
   const search = query.trim().toLowerCase();
   const [browsePage, setBrowsePage] = useState<number>();
@@ -391,6 +391,7 @@ function NotesPage({ focusedIndex, query, record, shareable, handheld }: { focus
           <button type="button" aria-label="Next note page" title="Next note page" aria-disabled={page + 1 === pages} onClick={() => step(1)}><ChevronRight size={16} aria-hidden="true" /></button>
         </nav> : null}
       </div>
+      {searchControl}
       <div className="note-stack">
         {notes.length > 0 ? (
           notes.map((note) => (

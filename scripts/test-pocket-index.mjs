@@ -94,5 +94,11 @@ assert.match(read("static-app.js"), /<button class="pocket-brand" type="button" 
 assert.match(read("components/archive/pocket-index.tsx"), /<button className="pocket-brand" type="button" aria-label="Gestalt home" onClick=\{onHome\}>/);
 assert.match(read("components/archive-os.tsx"), /<PocketHeader[^>]+onHome=\{openHome\}/);
 assert.match(css, /\.record-window \.record-link-button \{[^}]*inline-size: 44px;[^}]*block-size: 44px;[^}]*border: 0;/);
+assert.match(css, /\.pocket-directory \.nav-mark \{ inline-size: 24px; block-size: 26px; \}/, "Directory glyphs keep their own centered artboard");
+const staticReader = read("static-app.js"), localReader = read("components/archive/record-window.tsx");
+assert.match(staticReader, /<select aria-label="Contents" data-record-content-picker>/);
+assert.match(localReader, /<select aria-label="Contents" value=\{activeContent\}/);
+assert.match(staticReader, /\$\{handheld \? renderNoteSearch\(record\) : ""\}\s*<div class="note-stack">/);
+assert.match(read("components/archive/record-content.tsx"), /\{searchControl\}\s*<div className="note-stack">/);
 assert.doesNotMatch(css, /\[data-os-group="entry"\]/, "The shared Entry Animation preferences remain visible on handheld");
 console.log("Pocket Index preferences, boot lifecycle, progress curves and record paging passed.");

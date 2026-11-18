@@ -69,6 +69,7 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
 
 function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
+  const layoutRef = useRef<HTMLDivElement>(null);
   const contents = getRecordContents(record);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
   const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
@@ -77,6 +78,18 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
   const artwork = imageFraming.recordHeadingArtwork(record, steamBannerImage);
+
+  const selectContent = (key: ContentKey) => {
+    if (activeContent !== key) memoryState.record("content.select", { view: key });
+    setActiveContent(key);
+    if (handheld || key !== "notes") {
+      setNoteSearchQuery("");
+      setFocusedNoteIndex(undefined);
+    }
+    setUpdateHistoryOpen(false);
+    if (handheld && layoutRef.current) layoutRef.current.scrollTop = 0;
+  };
+  const noteSearch = activeContent === "notes" ? <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} /> : null;
 
   useEffect(() => {
     setActiveContent(initialContent);
@@ -134,6 +147,14 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
           <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
         </div>
         <div className="window-control-group">
+          {!editor && contents.length > 1 ? <div className="pocket-record-contents">
+            <select aria-label="Contents" value={activeContent} onChange={(event) => {
+              const item = contents.find(({ key }) => key === event.target.value);
+              if (item) selectContent(item.key);
+            }}>
+              {contents.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </div> : null}
           {shareable ? <RecordLinkButton id={record.id} /> : null}
           {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
           <div className="window-actions">
@@ -151,7 +172,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       </header>
 
       {shareable ? <RecordLinkFeedback unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
-      <div className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
+      <div ref={layoutRef} className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
         {editor ?? <>
         <div className="record-main">
           <div
@@ -187,26 +208,18 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             </p>
           </div>
 
-          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} />
+          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} noteSearch={handheld ? noteSearch : undefined} />
         </div>
 
         <aside className="record-aside">
-          <div>
+          <div className="record-contents-list">
             <h3>CONTENTS</h3>
             <ol>
               {contents.map((item, index) => (
                 <li className={activeContent === item.key ? "is-active" : ""} key={item.key}>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (activeContent !== item.key) memoryState.record("content.select", { view: item.key });
-                      setActiveContent(item.key);
-                      if (item.key !== "notes") {
-                        setNoteSearchQuery("");
-                        setFocusedNoteIndex(undefined);
-                      }
-                      setUpdateHistoryOpen(false);
-                    }}
+                    onClick={() => selectContent(item.key)}
                   >
                     {contentOrdinal(record, index)}_{item.label}
                   </button>
@@ -225,9 +238,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
               <dd>{formatReadableDate(recordLastUpdated(record))}</dd>
             </div>
           </dl>
-          {activeContent === "notes" ? (
-            <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} />
-          ) : null}
+          {handheld ? null : noteSearch}
           {record.section === "games" || activeContent === "notes" ? null : (
             <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} />
           )}

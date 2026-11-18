@@ -1322,7 +1322,7 @@ function renderNoteRows({ notes, openIndex }) {
   }).join("");
 }
 
-function renderNotesPage(record) {
+function renderNotesPage(record, handheld = false) {
   const paging = currentNotePage(record);
   return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
@@ -1333,6 +1333,7 @@ function renderNotesPage(record) {
         <button type="button" data-note-page="1" aria-label="Next note page" title="Next note page" aria-disabled="${paging.page + 1 === paging.pages}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
     </div>
+    ${handheld ? renderNoteSearch(record) : ""}
     <div class="note-stack">${renderNoteRows(paging)}</div>
   </section>`;
 }
@@ -1447,7 +1448,7 @@ function renderChangeLogPage(record) {
   </section>`;
 }
 
-function renderRecordContent(record, activeContent) {
+function renderRecordContent(record, activeContent, handheld = false) {
   if (activeContent === "overview") {
     return renderOverviewPage(record);
   }
@@ -1461,7 +1462,7 @@ function renderRecordContent(record, activeContent) {
   }
 
   if (activeContent === "notes") {
-    return renderNotesPage(record);
+    return renderNotesPage(record, handheld);
   }
 
   if (activeContent === "technical") {
@@ -1508,7 +1509,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.77.2</span>
+        <span>v1.77.3</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1522,7 +1523,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.77.2</span>
+        <span class="version-label">v1.77.3</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1542,7 +1543,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.77.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.77.3</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2527,6 +2528,7 @@ function recordWindow(record) {
 
   const contents = getRecordContents(record);
   const activeContent = normalizeContentKey(record);
+  const handheld = window.GestaltPocketIndex?.isHandheld();
   const titleClass = `record-title-text${record.title.length > 26 ? " is-long-title" : ""}`;
 
   const artwork = window.GestaltImageFraming?.recordHeadingArtwork?.(record, steamDisplayModule?.steamBannerImage);
@@ -2538,6 +2540,9 @@ function recordWindow(record) {
       ${pocketBack()}
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-control-group">
+        ${contents.length > 1 ? `<div class="pocket-record-contents"><select aria-label="Contents" data-record-content-picker>
+          ${contents.map(({ key, label }) => `<option value="${key}"${key === activeContent ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+        </select></div>` : ""}
         ${record.section !== "system" ? recordLinkButton() : ""}
         <div class="window-actions">
           <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
@@ -2564,11 +2569,18 @@ function recordWindow(record) {
           </p>
         </div>
 
-        ${renderRecordContent(record, activeContent)}
+        ${renderRecordContent(record, activeContent, handheld)}
       </div>
 
-      <aside class="record-aside">
-        <div>
+      ${recordAside(record, contents, activeContent, handheld)}
+    </div>
+    ${record.section === "games" ? "" : renderUpdateHistoryModal(record)}
+  </article>`;
+}
+
+function recordAside(record, contents, activeContent, handheld) {
+  return `<aside class="record-aside">
+        <div class="record-contents-list">
           <h3>CONTENTS</h3>
           <ol>
             ${contents
@@ -2586,11 +2598,8 @@ function recordWindow(record) {
           <div><dt>Last Updated:</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
         </dl>
 
-        ${activeContent === "notes" ? renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
-      </aside>
-    </div>
-    ${record.section === "games" ? "" : renderUpdateHistoryModal(record)}
-  </article>`;
+        ${activeContent === "notes" ? handheld ? "" : renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
+      </aside>`;
 }
 
 function recordBackdrop() {
@@ -3289,7 +3298,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.77.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.77.3</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3620,6 +3629,33 @@ function setUpdateHistory(open) {
   }
 }
 
+function selectRecordContent(key, picker) {
+  const record = selectedRecord();
+  const contents = record ? getRecordContents(record) : [];
+  if (!state.panelOpen || !contents.some((item) => item.key === key)) return;
+  if (state.activeContent !== key) window.GestaltMemoryState?.record("content.select", { view: key });
+  state.activeContent = key;
+  state.noteSearchQuery = "";
+  state.focusedNoteIndex = null;
+  state.noteBrowsePage = undefined;
+  state.noteSearchPage = 0;
+  setUpdateHistory(false);
+
+  // A native picker should keep focus, along with the record's existing backdrop and entry animation.
+  const layout = picker?.closest(".record-window")?.querySelector(".record-layout");
+  const panel = layout?.querySelector(".record-main > :nth-child(2)");
+  const aside = layout?.querySelector(".record-aside");
+  if (panel && aside) {
+    panel.outerHTML = renderRecordContent(record, key, true);
+    aside.outerHTML = recordAside(record, contents, key, true);
+    layout.scrollTop = 0;
+    return;
+  }
+
+  state.windowSteady = true;
+  if (!syncRecordWindow()) render();
+}
+
 async function requestWeather() {
   if (weatherState.loading) {
     return;
@@ -3918,15 +3954,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (contentKey) {
-    if (state.activeContent !== contentKey) window.GestaltMemoryState?.record("content.select", { view: contentKey });
-    state.activeContent = contentKey;
-    state.windowSteady = true;
-    state.noteSearchQuery = "";
-    state.focusedNoteIndex = null;
-    state.noteBrowsePage = undefined;
-    state.noteSearchPage = 0;
-    state.updateHistoryOpen = false;
-    if (!syncRecordWindow()) render();
+    selectRecordContent(contentKey);
     return;
   }
 
@@ -3954,6 +3982,13 @@ document.addEventListener("click", (event) => {
 
   if (state.panelOpen && !recordId && !sectionId && !contentKey && !windowAction && !clickTarget.closest(".record-window")) {
     minimizeRecord();
+  }
+});
+
+document.addEventListener("change", (event) => {
+  const picker = event.target;
+  if (picker instanceof HTMLSelectElement && picker.hasAttribute("data-record-content-picker") && pocket?.isHandheld()) {
+    selectRecordContent(picker.value, picker);
   }
 });
 
@@ -4140,6 +4175,12 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     const note = tools.parentElement;
     if (event.matches) note.append(tools);
     else note.firstElementChild?.after(tools);
+  }
+  const noteSearch = root.querySelector(".record-window .note-search-panel");
+  if (noteSearch) {
+    const record = noteSearch.closest(".record-window");
+    if (event.matches) record.querySelector(".notes-page-header")?.after(noteSearch);
+    else record.querySelector(".record-aside")?.append(noteSearch);
   }
   if (state.activeSection === "system") {
     const grid = root.querySelector(".workspace > .dashboard-grid");

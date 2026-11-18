@@ -32,6 +32,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Pocket Index: easier reading and navigation",
+          "detail": "Directory icons line up with section names. Switch between parts of an entry from the header, or search above the list when the entry has multiple notes.",
+          "version": "v1.77.3",
+          "releasedOn": "2026-11-18"
+        },
+        {
           "title": "Handheld scrolling and record references",
           "detail": "Entries are ready to scroll as the opening sequence finishes. Record badges no longer repeat the sort priority, and shared links still lead to the same entries and notes.",
           "version": "v1.77.2",

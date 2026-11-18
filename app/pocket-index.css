@@ -1,4 +1,4 @@
-.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-pager, .pocket-note-link-label,
+.pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-contents, .pocket-record-pager, .pocket-note-link-label,
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
@@ -86,7 +86,11 @@
   .pocket-stamp i:last-child { --pocket-layer: 2; }
   .pocket-stamp i:last-child::after { content: ""; position: absolute; inset: 8px 7px; border-block: 1px solid currentColor; }
   .pocket-directory button, .pocket-dispatch { display: grid; align-items: center; gap: 10px; inline-size: 100%; min-block-size: 54px; padding: 7px 3px; border: 0; border-block-end: 1px solid var(--pocket-line); background: transparent; color: inherit; text-align: start; font: 500 15px/1.45 system-ui, sans-serif; }
-  .pocket-directory button { grid-template-columns: 20px 18px minmax(0, 1fr) 16px; }
+  .pocket-directory button { grid-template-columns: 20px 24px minmax(0, 1fr) 16px; }
+  /* The shared glyph strokes are drawn around the 13px block center. */
+  .pocket-directory .nav-mark { inline-size: 24px; block-size: 26px; }
+  .pocket-directory .nav-mark[data-icon="archive"]::before { inset-block-start: 5px; }
+  .pocket-directory .nav-mark[data-icon="archive"]::after { inset-block-start: 9px; }
   .pocket-directory :is(svg, .pocket-chevron, .nav-mark) { color: var(--pocket-muted); }
   .pocket-chevron { font: 400 20px/1 var(--pocket-mono); }
   .pocket-directory strong, .pocket-dispatch strong { font-weight: 500; overflow-wrap: anywhere; }
@@ -159,6 +163,36 @@
   .record-window .window-actions, .record-window .window-title-group, .record-window > .window-bar > span { display: none; }
   .record-window .window-bar { justify-content: space-between; }
   .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
+  .record-window .pocket-record-contents { position: relative; display: block; min-inline-size: 0; }
+  .record-window .pocket-record-contents::after {
+    content: "";
+    position: absolute;
+    inset-block-start: 18px;
+    inset-inline-end: 9px;
+    inline-size: 6px;
+    block-size: 6px;
+    border: solid var(--pocket-signal);
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+  .record-window .pocket-record-contents select {
+    display: block;
+    appearance: none;
+    min-block-size: 44px;
+    max-inline-size: 100%;
+    padding-inline: 9px 22px;
+    border: 0;
+    background: transparent;
+    color: var(--pocket-ink);
+    color-scheme: var(--control-scheme, dark);
+    font: 500 16px/1.2 system-ui, sans-serif;
+  }
+  .record-window .window-control-group:has(.pocket-record-contents) { min-inline-size: 0; flex-shrink: 1; gap: 4px; }
+  .record-window .pocket-record-contents select:focus-visible { outline: 1px solid var(--pocket-signal); outline-offset: -2px; }
+  .record-window .record-contents-list { display: none; }
+  .record-window .notes-page .note-search-panel { margin-block-end: 12px; }
+  .record-window .notes-page .note-search-panel input { min-block-size: 44px; font-size: 16px; }
   .record-window.is-maximized .record-layout:not(.is-editing-record) { grid-template-columns: minmax(0, 1fr); }
   .record-window .window-edit-action { min-inline-size: 44px; min-block-size: 44px; }
   .record-window .record-link-button {

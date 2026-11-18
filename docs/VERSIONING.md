@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.77.2`. Previous site-code release: `v1.77.1` (129e42ed).
+Release target: `v1.77.3`. Previous site-code release: `v1.77.2` (ce18c30d).
+
+`v1.77.3` aligns Pocket Index directory icons with their labels. Handheld entries have a Contents picker in the header and place search above the note list when there are multiple notes. Desktop keeps its Contents rail. The entry animation, authored records, media and dependencies are unchanged.
 
 `v1.77.2` keeps handheld entry scrolling active during the ACCESSING sequence without exposing unrevealed controls. Archive badges use stable references derived from record IDs instead of shared sort priorities. Record URLs, notes, media and dependencies are unchanged.
 
