@@ -18,6 +18,13 @@
   function isHandheld(host = globalThis.window) {
     return Boolean(host?.matchMedia("(max-width: 760px)").matches);
   }
+  function readingView(section, view) {
+    return section === "logs" && view === "overview" ? "notes" : view;
+  }
+  function readingContents(section, contents) {
+    return section === "logs" ? contents.filter(({ key }) => key !== "overview")
+      .map((item) => item.key === "notes" ? { ...item, label: "Notes" } : item) : contents;
+  }
   function recordPage(records, requestedPage = 0) {
     const size = 4;
     const pages = Math.max(1, Math.ceil(records.length / size));
@@ -114,5 +121,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, recordPage, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

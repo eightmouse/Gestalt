@@ -8,16 +8,22 @@ import type { SearchResult, TimelineItem } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import archiveSearch from "@/public/archive-search.js";
 
-export function getTimelineItems(records: RecordEntry[], limit: number): TimelineItem[] {
-  return records
+const timelineByRecords = new WeakMap<RecordEntry[], TimelineItem[]>();
+
+export function getTimelineItems(records: RecordEntry[]): TimelineItem[] {
+  const cached = timelineByRecords.get(records);
+  if (cached) return cached;
+
+  const timeline = records
     .filter((record) => record.section !== "system")
     .flatMap((record) => {
+      const date = activityDate(record);
       const items: TimelineItem[] = [
         {
           content: "overview",
-          date: activityDate(record),
+          date,
           detail: `${record.type} / ${record.status}`,
-          id: `${record.id}-activity-${activityDate(record)}`,
+          id: `${record.id}-activity-${date}`,
           kind: "record",
           record,
           title: `${record.title} updated`
@@ -48,7 +54,9 @@ export function getTimelineItems(records: RecordEntry[], limit: number): Timelin
       || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
       || (b.record.writtenOrder || 0) - (a.record.writtenOrder || 0)
       || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
-    .slice(0, limit);
+    .slice(0, 32);
+  timelineByRecords.set(records, timeline);
+  return timeline;
 }
 
 export function getSearchResults(records: RecordEntry[], query: string, currentGame?: RecordEntry, latestLog?: RecordEntry): SearchResult[] {

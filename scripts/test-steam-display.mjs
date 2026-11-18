@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { renderToStaticMarkup } from "react-dom/server";
 import imageFraming from "../public/image-framing.js";
+import pocket from "../public/pocket-index.js";
 import recordLinks from "../public/record-links.js";
 import { createSteamSnapshotLoader, currentGameCover, publicSnapshot, resolveCurrentGame, steamBannerImage, steamCoverUrl, steamRecordSeed } from "../public/steam-display.mjs";
 
@@ -199,7 +200,7 @@ assert.deepEqual(imageFraming.recordHeadingArtwork({ ...legacyGame, meta: { head
 assert.equal(imageFraming.recordHeadingArtwork({ ...legacyGame, section: "projects" }, steamBannerImage), null, "Only games promote legacy banners");
 
 Object.assign(react, {
-  recordLinks,
+  recordLinks, pocket,
   useState: (value) => [value, () => {}], useEffect() {}, useRef: () => ({ current: null }),
   motion: { article: ({ children }) => require("react").createElement("article", null, children) },
   getRecordContents: () => [],
@@ -219,7 +220,7 @@ Object.assign(staticContext, {
   recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => ""
 });
-vm.runInContext(["recordWindow", "recordAside", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
+vm.runInContext(["recordWindow", "recordAsideContent", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
 function findHeaderElement(node, className) {
   if (!node || typeof node !== "object") return null;
   if (node.props?.className === className) return node;

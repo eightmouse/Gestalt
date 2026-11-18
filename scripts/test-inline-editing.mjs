@@ -17,9 +17,12 @@ const record = { id: "inline-fixture", title: "Original title", section: "logs",
 const helpers = vm.createContext({ exports: {} });
 vm.runInContext(ts.transpileModule(read("lib/inline-editing.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, helpers);
 const { supportsInlineEditing, newInlineRecord } = helpers.exports;
+const setupEditing = vm.createContext({ exports: {}, URL });
+vm.runInContext(ts.transpileModule(read("lib/setup-editing.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, setupEditing);
+const { setupSpecDraft, setupSpecLine, validSetupShortcut } = setupEditing.exports;
 const api = vm.createContext({ exports: {}, Error });
 vm.runInContext(ts.transpileModule(read("lib/studio-client-api.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, api);
-assert.equal(supportsInlineEditing("setup"), false);
+assert.equal(supportsInlineEditing("setup"), true);
 assert.equal(supportsInlineEditing("archive"), false);
 for (const section of ["logs", "games", "projects"]) {
   const draft = newInlineRecord(section, undefined, new Date("2026-10-22T12:00:00"));
@@ -28,7 +31,7 @@ for (const section of ["logs", "games", "projects"]) {
   assert.ok(draft.id.startsWith("__new:"), "Unsaved window identities cannot be confused with a saved record");
 }
 
-async function fixture({ fail = false, exported = true, inline = true, section = "logs", create = false, seed, manual = false } = {}) {
+async function fixture({ fail = false, exported = true, inline = true, section = "logs", setupGroup = "systems", create = false, seed, manual = false } = {}) {
   let stateIndex = 0, refIndex = 0;
   const states = [], refs = [], calls = [], changes = [];
   const other = { body: "Unrelated draft", form: { ...record, id: "other-record", originalId: "other-record", body: "Unrelated draft" }, updatedAt: 10 };
@@ -37,13 +40,13 @@ async function fixture({ fail = false, exported = true, inline = true, section =
     useState(initial) { const index = stateIndex++; if (!(index in states)) states[index] = typeof initial === "function" ? initial() : initial; return [states[index], (next) => { states[index] = typeof next === "function" ? next(states[index]) : next; }]; },
     useRef(initial) { const index = refIndex++; if (!(index in refs)) refs[index] = { current: initial }; return refs[index]; },
     memo: (component) => component, useMemo: (callback) => callback(), useCallback: (callback) => callback, useEffect() {}, useLayoutEffect() {},
-    window: { localStorage: { getItem: () => storage, setItem: (_key, value) => { storage = value; }, removeItem: () => { storage = null; } } },
+    window: { confirm: () => true, localStorage: { getItem: () => storage, setItem: (_key, value) => { storage = value; }, removeItem: () => { storage = null; } } },
     imageFraming: require("../public/image-framing.js"),
     gameLogPlacement: (form) => form.gamePlacement || form.meta?.gamePlacement || "session", gameActivityValue: (form) => form.gameActivity || form.meta?.gameActivity || "", compareSectionRecords: () => 0,
-    supportsInlineEditing, InlineRecordLayout() {}, HeaderFraming() {}, ArtworkFraming() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ImagePlus: require("lucide-react").ImagePlus, ChevronDown: require("lucide-react").ChevronDown,
+    supportsInlineEditing, setupSpecDraft, validSetupShortcut, setupGroupFor: (record) => record.meta.setupGroup || "systems", InlineSetupLayout() {}, InlineRecordLayout() {}, HeaderFraming() {}, ArtworkFraming() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ImagePlus: require("lucide-react").ImagePlus, ChevronDown: require("lucide-react").ChevronDown,
     readStudioResponse: api.exports.readStudioResponse, StudioRequestError: api.exports.StudioRequestError,
     fetch: async (url, options) => {
-      calls.push({ url, payload: JSON.parse(options.body || "{}") });
+      calls.push({ url, method: options.method, payload: JSON.parse(options.body || "{}") });
       if (url === "/api/studio/entry") {
         if (fail) return Response.json({ error: "Fixture save refused" }, { status: 503 });
         const payload = calls.at(-1).payload;
@@ -60,10 +63,11 @@ async function fixture({ fail = false, exported = true, inline = true, section =
   context.useStudioPublishing = Object.assign(() => publisher.exports.useStudioPublishing.getState(), { getState: () => publisher.exports.useStudioPublishing.getState() });
   vm.runInContext(compiled, context);
   const sourceRecord = { ...record, section, meta: section === "games" ? { gamePlacement: "session", gameActivity: "inactive", steamAppId: "123", achievementCount: "25 / 50" } : section === "projects" ? { technicalStack: "TypeScript\nNext.js", samples: ["/media/fixture.png"] } : {} };
-  const props = { records: [sourceRecord], initialRecordId: create ? undefined : record.id, initialSection: create ? section : undefined, initialSteamGame: seed, inline, embedded: true, initialContent: "notes", onRecordsChange: (...args) => changes.push(args) };
+  if (section === "setup") sourceRecord.meta.setupGroup = setupGroup;
+  const props = { records: [sourceRecord], initialRecordId: create ? undefined : record.id, initialSection: create ? section : undefined, initialSetupGroup: setupGroup, initialSteamGame: seed, inline, embedded: true, initialContent: "notes", onRecordsChange: (...args) => changes.push(args) };
   const render = () => { stateIndex = 0; refIndex = 0; return context.exports.StudioClient(props); };
   const find = (node, predicate) => !node || typeof node !== "object" ? null : predicate(node) ? node : [node.props?.children].flat(Infinity).map((child) => find(child, predicate)).find(Boolean);
-  const layout = () => find(render(), (node) => node.type === context.InlineRecordLayout);
+  const layout = () => find(render(), (node) => node.type === (section === "setup" ? context.InlineSetupLayout : context.InlineRecordLayout));
   if (!inline) return { calls, changes, states,
     heading: () => find(render(), (node) => node.type === context.EditableHeading),
     content: () => find(render(), (node) => node.type === context.StudioContent),
@@ -106,6 +110,52 @@ assert.equal(pendingExport.layout.props.saveState, "saved", "A successful source
 const legacy = await fixture({ inline: false });
 await legacy.save();
 assert.equal(legacy.calls.filter((call) => call.url === "/api/studio/entry").length, 2, "The existing full-Studio batch-save behavior is unchanged");
+
+const legacyHardware = ":::note Specs {#n-ffffffffffffffffffffffffffffffff}\nGPU: First GPU\nGPU: Second GPU\nSerial: keep untouched\n:::\n\n# Setup diary\nWritten as prose.\n\n\x60\x60\x60\nLabel: fenced sample\n\x60\x60\x60";
+const spec = setupSpecDraft("", legacyHardware);
+assert.equal(spec.field, "body");
+assert.deepEqual(Array.from(spec.rows, ({ label, value }) => [label, value]), [["GPU", "First GPU"], ["GPU", "Second GPU"]]);
+assert.equal(setupSpecLine("Serial", "private"), null);
+assert.equal(setupSpecLine("Storage type", "NVMe: 1 TB"), "Storage type: NVMe: 1 TB");
+assert.equal(setupSpecDraft(": ", legacyHardware).field, "hardware", "A partially typed new spec remains editable");
+assert.equal(setupSpecDraft(": 32 GB", "").rows[0].value, "32 GB", "Typing a value before the label keeps the row in view");
+assert.equal(setupSpecDraft("CPU: Explicit", legacyHardware).rows[0].value, "Explicit");
+for (const url of ["", "https://example.test/app", "http://example.test"]) assert.equal(validSetupShortcut(url), true);
+for (const url of ["javascript:alert(1)", "https://", "https://user:secret@example.test/"]) assert.equal(validSetupShortcut(url), false);
+for (const group of ["systems", "tools", "peripherals", "notes"]) {
+  const temp = newInlineRecord("setup", undefined, new Date("2026-11-18T12:00:00"), group);
+  assert.equal(temp.id, `__new:setup:${group}`);
+  assert.equal(temp.meta.setupGroup, group);
+  const draft = await fixture({ section: "setup", setupGroup: group, manual: true, create: true });
+  assert.equal(draft.layout().props.group, group);
+  assert.equal(draft.layout().props.fields.title, "");
+  draft.layout().props.onUpdate("title", `${group} fixture`);
+  assert.ok(draft.storedDrafts()[`new:setup:${group}`], "Each Setup group has an independent draft slot");
+  if (group === "tools") {
+    draft.layout().props.onUpdate("externalUrl", "javascript:invalid");
+    await draft.layout().props.onSave();
+    assert.equal(draft.calls.length, 0);
+    draft.layout().props.onUpdate("externalUrl", "https://example.test/app");
+  } else if (group === "systems") {
+    draft.layout().props.onUpdate("hardware", ": ");
+    await draft.layout().props.onSave();
+    assert.equal(draft.calls.length, 0);
+    draft.layout().props.onUpdate("hardware", "RAM: 32 GB");
+  }
+  await draft.layout().props.onSave();
+  const written = draft.calls.find((call) => call.method === "POST");
+  assert.equal(written.payload.setupGroup, group);
+  assert.equal(draft.changes[0][0][0].meta.setupGroup, group);
+  assert.ok(!draft.storedDrafts()[`new:setup:${group}`]);
+}
+const movable = await fixture({ section: "setup", manual: true });
+movable.layout().props.onMove("peripherals");
+await movable.layout().props.onSave();
+assert.equal(movable.changes[0][0][0].id, record.id, "A group move does not break the record link");
+assert.equal(movable.changes[0][0][0].meta.setupGroup, "peripherals");
+await movable.layout().props.onDelete();
+assert.equal(movable.calls.find((call) => call.method === "DELETE").payload.id, record.id);
+assert.equal(movable.changes.at(-1)[1], null);
 
 for (const section of ["logs", "games", "projects"]) {
   const editor = await fixture({ section, manual: true });

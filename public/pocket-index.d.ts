@@ -5,6 +5,8 @@ declare const pocket: {
   stamp: string;
   bootMarkup: string;
   isHandheld(host?: Window): boolean;
+  readingView<T extends string>(section: string, view: T): T | "notes";
+  readingContents<T extends string>(section: string, contents: Array<{ key: T; label: string }>): Array<{ key: T; label: string }>;
   recordPage<T>(records: readonly T[], requestedPage?: number): { records: T[]; page: number; pages: number };
   recentDispatches<T extends { id: string; record: { id: string; section: string }; date: string; content?: string }>(featuredId: string | undefined, activity: readonly T[], now?: number): T[];
   normalizeBootMode(value: unknown): PocketBootMode;

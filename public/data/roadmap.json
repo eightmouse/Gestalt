@@ -8,8 +8,9 @@
       "title": "In progress",
       "items": [
         {
-          "title": "Performance and display pass",
-          "detail": "Navigation, compact layouts and real browser zoom have been checked in Firefox, Edge and Chrome. Visible-browser frame pacing, physical display checks and the wider accessibility review are still open."
+          "title": "Desktop performance and display pass",
+          "detail": "Compact through 4K layouts and 200% browser zoom checked in Firefox, Edge and Chrome. Timeline can reopen and filter without rebuilding its data. These checks do not certify frame pacing on physical displays or screen-reader behavior.",
+          "completed": true
         }
       ]
     },
@@ -19,11 +20,7 @@
       "items": [
         {
           "title": "Archive Relay",
-          "detail": "An idea for a writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
-        },
-        {
-          "title": "Setup editing in place",
-          "detail": "Parked for later, when the device bay needs more attention. Keep Tools and Peripherals simple when bringing their editing into the reading view."
+          "detail": "Discuss after Setup editing. A writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
         }
       ]
     },
@@ -31,6 +28,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Setup editing in place",
+          "detail": "Edit systems, shortcut icons and links, peripheral photos and setup notes in their existing windows. Pocket Index opens single-note logs directly, and the Timeline reuses its results. Studio remains a fallback.",
+          "version": "v1.78.0",
+          "releasedOn": "2026-11-18"
+        },
         {
           "title": "Pocket Index: easier reading and navigation",
           "detail": "Directory icons line up with section names. Switch between parts of an entry from the header, or search above the list when the entry has multiple notes.",
@@ -271,6 +274,162 @@
           "title": "Field Archive",
           "detail": "A file-manager home for older notes, with original writing order preserved.",
           "version": "v1.42.0"
+        },
+        {
+          "title": "Logs keep their place",
+          "detail": "Editing a field note no longer moves it up the archive. Empty summaries can use the note itself, and Studio adds its first block-formatting tools.",
+          "version": "v1.39.1",
+          "releasedOn": "2026-10-21"
+        },
+        {
+          "title": "Safer saves and publish recovery",
+          "detail": "Studio distinguishes a saved record from an export or publish failure. The archive can refresh its generated index without making you write the note again.",
+          "version": "v1.36.30",
+          "releasedOn": "2026-10-20"
+        },
+        {
+          "title": "ACCESSING",
+          "detail": "Opening a record gets an archive handshake: its frame draws in, a signal passes through it, and the contents come into view.",
+          "version": "v1.36.11",
+          "releasedOn": "2026-10-19"
+        },
+        {
+          "title": "The first Field Archive",
+          "detail": "Older logs get a home of their own, with folders to browse them. Studio gets a single place to review saved changes before publishing.",
+          "version": "v1.36.2",
+          "releasedOn": "2026-10-13"
+        },
+        {
+          "title": "A launcher for Gestalt",
+          "detail": "A Windows launcher opens the local archive without starting it by hand from a terminal. Editing controls are visible in the local reader, separate from the public archive.",
+          "version": "v1.35.10",
+          "releasedOn": "2026-10-13"
+        },
+        {
+          "title": "From the archive to the editor",
+          "detail": "Open an entry in the local archive and jump straight into editing that record, instead of finding it again in Studio.",
+          "version": "v1.34.0",
+          "releasedOn": "2026-10-12"
+        },
+        {
+          "title": "Lighter media, original files kept",
+          "detail": "Studio can create smaller display copies for notes. Readers still open the full image on demand. Studio styles are split away from the public reader.",
+          "version": "v1.31.0",
+          "releasedOn": "2026-06-13"
+        },
+        {
+          "title": "Media survives an update",
+          "detail": "Covers, screenshots and icons can stay in the browser cache across deployments, instead of downloading again with every archive update.",
+          "version": "v1.30.3",
+          "releasedOn": "2026-06-12"
+        },
+        {
+          "title": "The Setup device bay",
+          "detail": "Tools, peripherals, systems and notes get their own ways of opening. Apps can be shortcuts, photos can be viewed at full size, and system records keep their terminal.",
+          "version": "v1.29.0",
+          "releasedOn": "2026-06-12"
+        },
+        {
+          "title": "Recent Activity becomes a ledger",
+          "detail": "The desktop dashboard gets room to show both newer and older dispatches without crowding the entry titles.",
+          "version": "v1.28.0",
+          "releasedOn": "2026-06-12"
+        },
+        {
+          "title": "Local memory is a choice",
+          "detail": "The archive asks before remembering browser preferences. It still works when you choose to keep things to the current visit.",
+          "version": "v1.27.0",
+          "releasedOn": "2026-06-10"
+        },
+        {
+          "title": "An atmosphere of its own",
+          "detail": "The archive gains more of its own visual character through registration marks, layered surfaces and quieter details instead of making every panel look alike.",
+          "version": "v1.26.2",
+          "releasedOn": "2026-06-08"
+        },
+        {
+          "title": "A terminal for Setup",
+          "detail": "System records move out of the ordinary entry layout and into a terminal-style space for hardware and machine notes.",
+          "version": "v1.25.0",
+          "releasedOn": "2026-06-03"
+        },
+        {
+          "title": "One tap to change sections",
+          "detail": "An early handheld redesign puts the main sections on a bottom dock and moves the rest of the navigation into an on-demand menu.",
+          "version": "v1.24.34",
+          "releasedOn": "2026-05-28"
+        },
+        {
+          "title": "The first handheld layout",
+          "detail": "Small screens get their own navigation and way into records, the first step away from squeezing the desktop archive onto a phone.",
+          "version": "v1.19.0",
+          "releasedOn": "2026-05-21"
+        },
+        {
+          "title": "The archive speaks in cipher",
+          "detail": "Navigation gains its own glyphs, giving the sidebar a little mystery while keeping the original section names.",
+          "version": "v1.15.0",
+          "releasedOn": "2026-05-20"
+        },
+        {
+          "title": "A chronology for the archive",
+          "detail": "The first Timeline brings activity from different parts of Gestalt together in date order.",
+          "version": "v1.13.0",
+          "releasedOn": "2026-05-20"
+        },
+        {
+          "title": "The Command Palette",
+          "detail": "Search records and jump around the archive from one keyboard-friendly surface.",
+          "version": "v1.11.0",
+          "releasedOn": "2026-05-20"
+        },
+        {
+          "title": "Publishing from Studio",
+          "detail": "Studio begins publishing archive updates without a separate terminal command. Later versions separate local saves from the decision to publish.",
+          "version": "v1.8.0",
+          "releasedOn": "2026-05-20"
+        },
+        {
+          "title": "An archive built for Pages",
+          "detail": "The static archive is prepared for GitHub Pages, giving readers a way in without running the local app.",
+          "version": "v1.6.1",
+          "releasedOn": "2026-05-20"
+        },
+        {
+          "title": "Studio starts to feel like the archive",
+          "detail": "A reworked local editor brings record editing and artwork handling closer to the reading interface.",
+          "version": "v1.6.0",
+          "releasedOn": "2026-05-15"
+        },
+        {
+          "title": "The first Steam sync",
+          "detail": "The Persona 5 Royal record gets Steam stats alongside the hand-written play log.",
+          "version": "v1.5.10",
+          "releasedOn": "2026-05-14"
+        },
+        {
+          "title": "A stack of session notes",
+          "detail": "Game logs can hold individual notes so a new session adds to the record instead of rewriting the previous one.",
+          "version": "v1.5.0",
+          "releasedOn": "2026-05-14"
+        },
+        {
+          "title": "Persona 5 Royal opens the play logs",
+          "detail": "The first game record brings session writing and game artwork into the archive.",
+          "version": "v1.4.0",
+          "releasedOn": "2026-05-14"
+        },
+        {
+          "title": "Memory State wakes up",
+          "detail": "The first animated Memory State gives the dashboard a pulse of its own.",
+          "version": "v1.3.0",
+          "releasedOn": "2026-05-14"
+        },
+        {
+          "title": "First Signal",
+          "detail": "The earliest working Gestalt in Git: an archive in the shape of a little desktop, with its first field note and room for projects, play logs and setup records.",
+          "version": "v1.2.6",
+          "releasedOn": "2026-05-14"
         }
       ]
     }

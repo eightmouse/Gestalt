@@ -134,8 +134,7 @@ function setupSpecRows(record: RecordEntry): Array<{ label: string; value: strin
 
       return { label, value };
     })
-    .filter((row): row is { label: string; value: string } => Boolean(row))
-    .slice(0, 8);
+    .filter((row): row is { label: string; value: string } => Boolean(row));
 }
 
 export function setupHardwareSource(record: RecordEntry): string {

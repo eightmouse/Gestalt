@@ -158,7 +158,7 @@ for (const name of ["ArchiveRecordWindow", "SetupRecordWindow"]) {
   const script = `${findFunction("handleRecordEscape").getText(reactAst)}\nconst handler = ${attribute.initializer.expression.getText(reactAst)}; handler;`;
   const handler = vm.runInContext(ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, route);
   for (const { isComposing, ...overrides } of [...ignoredEscapes, { shiftKey: true }]) assert.equal(press(handler, { ...overrides, nativeEvent: { isComposing } }).prevented, false);
-  for (const guard of ["minimized", "escapeBlocked", ...(name === "ArchiveRecordWindow" ? ["editor", "editorBusy"] : ["expandedImage"])]) {
+  for (const guard of ["minimized", "escapeBlocked", "editor", "editorBusy", ...(name === "SetupRecordWindow" ? ["expandedImage"] : [])]) {
     route[guard] = true;
     assert.equal(press(handler).prevented, false, `${name} leaves Escape to ${guard}`);
     route[guard] = false;

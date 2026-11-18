@@ -18,6 +18,7 @@ import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "
 import type { ContentKey } from "@/components/archive/types";
 import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
+import pocket from "@/public/pocket-index.js";
 import recordLinks from "@/public/record-links.js";
 import recordMotion from "@/public/record-motion.js";
 import { NoteLinkControl, RecordLinkButton, RecordLinkFeedback } from "@/components/archive/record-link-control";
@@ -46,7 +47,7 @@ type RecordWindowProps = {
 
 export function RecordWindow({ handheld, minimized = false, accessPending = false, accessComplete = false, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   if (record.section === "setup") {
-    return <SetupRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} shareable={shareable} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} onEdit={onEdit} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
+    return <SetupRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} maximized={maximized} record={record} shareable={shareable} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
   }
 
   return <ArchiveRecordWindow handheld={handheld} minimized={minimized} accessPending={accessPending} accessComplete={accessComplete} initialContent={initialContent} initialNoteIndex={initialNoteIndex} linkedNoteId={linkedNoteId} maximized={maximized} record={record} shareable={shareable} onEdit={onEdit} editor={editor} editorBusy={editorBusy} escapeBlocked={escapeBlocked} onClose={onClose} onMinimize={onMinimize} onMaximize={onMaximize} />;
@@ -69,10 +70,11 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
 
 function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
-  const layoutRef = useRef<HTMLDivElement>(null);
   const contents = getRecordContents(record);
+  const readingContents = pocket.readingContents(record.section, contents);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
-  const activeContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
+  const availableContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
+  const activeContent = handheld ? pocket.readingView(record.section, availableContent) : availableContent;
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
   const [focusedNoteIndex, setFocusedNoteIndex] = useState(initialNoteIndex);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
@@ -87,7 +89,6 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       setFocusedNoteIndex(undefined);
     }
     setUpdateHistoryOpen(false);
-    if (handheld && layoutRef.current) layoutRef.current.scrollTop = 0;
   };
   const noteSearch = activeContent === "notes" ? <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} /> : null;
 
@@ -97,6 +98,10 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
     setFocusedNoteIndex(initialNoteIndex);
     setUpdateHistoryOpen(false);
   }, [initialContent, initialNoteIndex, record.id]);
+
+  useEffect(() => {
+    if (handheld) setActiveContent((current) => pocket.readingView(record.section, current));
+  }, [handheld, record.section]);
 
   useEffect(() => {
     if (!updateHistoryOpen) {
@@ -147,14 +152,6 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
           <span>{record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
         </div>
         <div className="window-control-group">
-          {!editor && contents.length > 1 ? <div className="pocket-record-contents">
-            <select aria-label="Contents" value={activeContent} onChange={(event) => {
-              const item = contents.find(({ key }) => key === event.target.value);
-              if (item) selectContent(item.key);
-            }}>
-              {contents.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </div> : null}
           {shareable ? <RecordLinkButton id={record.id} /> : null}
           {onEdit ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
           <div className="window-actions">
@@ -172,7 +169,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       </header>
 
       {shareable ? <RecordLinkFeedback unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
-      <div ref={layoutRef} className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
+      <div className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
         {editor ?? <>
         <div className="record-main">
           <div
@@ -208,7 +205,20 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             </p>
           </div>
 
-          <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} noteSearch={handheld ? noteSearch : undefined} />
+          {readingContents.length > 1 ? <label className="pocket-record-contents">
+            <span>Contents</span>
+            <span className="pocket-record-select">
+              <select value={activeContent} onChange={(event) => {
+                const item = readingContents.find(({ key }) => key === event.target.value);
+                if (item) selectContent(item.key);
+              }}>
+                {readingContents.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+              </select>
+            </span>
+          </label> : null}
+          <div className="record-content-view">
+            <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} noteSearch={handheld ? noteSearch : undefined} />
+          </div>
         </div>
 
         <aside className="record-aside">
@@ -251,8 +261,16 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
   );
 }
 
-function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
+function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize }: Omit<RecordWindowProps, "initialContent">) {
   const windowRef = useRecordFocus(minimized, record.id);
+  const editing = Boolean(editor);
+  const wasEditing = useRef(editing);
+  useEffect(() => {
+    if (wasEditing.current && !editing && !minimized && document.activeElement === document.body) {
+      windowRef.current?.querySelector<HTMLButtonElement>(".window-edit-action")?.focus({ preventScroll: true });
+    }
+    wasEditing.current = editing;
+  }, [editing, minimized, windowRef]);
   const group = setupGroupFor(record);
   const profile = setupProfile(record);
   const headerImage = setupRecordImage(record);
@@ -279,11 +297,11 @@ function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete,
       tabIndex={-1}
       hidden={minimized}
       inert={minimized}
-      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""} is-setup-record is-setup-record--${group}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${editor ? " is-editing-setup" : ""} is-setup-record is-setup-record--${group}`}
       data-state={recordStateKey(record.status)}
       aria-label={`${record.title} setup terminal`}
       onKeyDown={(event) => {
-        if (!minimized && !escapeBlocked && !expandedImage) handleRecordEscape(event, onClose);
+        if (!minimized && !escapeBlocked && !expandedImage && !editor && !editorBusy) handleRecordEscape(event, onClose);
       }}
     >
       <RecordAccessSurface />
@@ -292,6 +310,8 @@ function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete,
         <section className={`setup-console setup-console--${group}`} aria-label={`${record.title} setup profile`}>
           <SetupPrompt
             command={profile.command}
+            editing={Boolean(editor)}
+            busy={editorBusy}
             maximized={maximized}
             record={record}
             shareable={shareable}
@@ -301,7 +321,7 @@ function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete,
             onMinimize={onMinimize}
           />
 
-          {group === "tools" ? (
+          {editor ?? (group === "tools" ? (
             <SetupToolBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
           ) : group === "peripherals" ? (
             <SetupPeripheralBody headerImage={headerImage} record={record} onExpandImage={setExpandedImage} />
@@ -309,10 +329,10 @@ function SetupRecordWindow({ handheld, minimized, accessPending, accessComplete,
             <SetupNoteBody notes={notes} record={record} shareable={shareable} handheld={handheld} />
           ) : (
             <SetupSystemBody headerImage={headerImage} profile={profile} record={record} specs={specs} />
-          )}
+          ))}
         </section>
 
-        {group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} shareable={shareable} handheld={handheld} /> : null}
+        {!editor && group !== "notes" && notes.length > 0 ? <SetupNotesTerminal notes={notes} record={record} shareable={shareable} handheld={handheld} /> : null}
       </div>
       {expandedImage ? (
         <ImageLightbox image={expandedImage} label="Close expanded setup image" onClose={() => setExpandedImage(null)} />
@@ -351,7 +371,9 @@ function RecordAccessSurface() {
 }
 
 function SetupPrompt({
+  busy,
   command,
+  editing = false,
   maximized,
   onClose,
   onEdit,
@@ -360,7 +382,9 @@ function SetupPrompt({
   record,
   shareable
 }: {
+  busy?: boolean;
   command: string;
+  editing?: boolean;
   maximized: boolean;
   record: RecordEntry;
   shareable?: boolean;
@@ -371,7 +395,7 @@ function SetupPrompt({
 }) {
   return (
     <div className="setup-console-prompt">
-      <button className="pocket-record-back" type="button" onClick={onClose}><ArrowLeft size={16} aria-hidden="true" />Back</button>
+      <button className="pocket-record-back" type="button" disabled={busy} onClick={editing ? onEdit : onClose}><ArrowLeft size={16} aria-hidden="true" />Back</button>
       <div className="setup-prompt-command">
         <span>eightmouse@gestalt</span>
         <i>:</i>
@@ -381,15 +405,15 @@ function SetupPrompt({
       </div>
       <div className="setup-prompt-actions">
         {shareable ? <RecordLinkButton id={record.id} /> : null}
-        {onEdit ? <button className="window-edit-action" type="button" onClick={onEdit} aria-label="Edit this record locally" title="Edit locally"><Settings size={15} aria-hidden="true" /></button> : null}
+        {onEdit ? <button className="window-edit-action" type="button" disabled={busy} onClick={onEdit} aria-pressed={editing} aria-label={editing ? "Read saved record" : "Edit this record locally"} title={editing ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
         <div className="window-actions setup-window-actions">
-          <button type="button" data-window-action="minimize" onClick={onMinimize} aria-label="Minimize setup terminal">
+          <button type="button" data-window-action="minimize" disabled={busy} onClick={onMinimize} aria-label="Minimize setup terminal">
             <Minimize2 size={14} />
           </button>
           <button type="button" data-window-action="maximize" onClick={onMaximize} aria-label={maximized ? "Restore setup terminal" : "Maximize setup terminal"}>
             <Maximize2 size={14} />
           </button>
-          <button type="button" data-window-action="close" onClick={onClose} aria-label="Close setup terminal">
+          <button type="button" data-window-action="close" disabled={busy} onClick={onClose} aria-label="Close setup terminal">
             <X size={15} />
           </button>
         </div>

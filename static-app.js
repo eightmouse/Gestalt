@@ -330,7 +330,7 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.accessComplete = false;
   state.headlineAnimating = false;
   state.selectedId = record.id;
-  state.activeContent = contentKey;
+  state.activeContent = handheld ? pocket.readingView?.(record.section, contentKey) ?? contentKey : contentKey;
   state.panelOpen = true;
   state.panelMinimized = false;
   state.panelMaximized = false;
@@ -888,8 +888,10 @@ function countMediaPaths(sourceRecords) {
   return paths.size;
 }
 
-function getTimelineItems(limit) {
-  return records
+let cachedTimeline;
+function getTimelineItems() {
+  // Pages records do not change within a visit. Keep only the visible history window.
+  return cachedTimeline ??= records
     .filter((record) => record.section !== "system")
     .flatMap((record) => {
       const date = activityDate(record);
@@ -929,7 +931,7 @@ function getTimelineItems(limit) {
       || (b.record.writtenAt || "").localeCompare(a.record.writtenAt || "")
       || (b.record.writtenOrder || 0) - (a.record.writtenOrder || 0)
       || a.record.priority - b.record.priority || a.title.localeCompare(b.title))
-    .slice(0, limit);
+    .slice(0, 32);
 }
 
 function searchResults() {
@@ -1509,7 +1511,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.77.3</span>
+        <span>v1.78.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1523,7 +1525,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.77.3</span>
+        <span class="version-label">v1.78.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1543,7 +1545,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.77.3</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.78.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2288,8 +2290,7 @@ function setupSpecRows(record) {
 
       return { label, value };
     })
-    .filter(Boolean)
-    .slice(0, 8);
+    .filter(Boolean);
 }
 
 function setupHardwareSource(record) {
@@ -2527,8 +2528,10 @@ function recordWindow(record) {
   }
 
   const contents = getRecordContents(record);
-  const activeContent = normalizeContentKey(record);
   const handheld = window.GestaltPocketIndex?.isHandheld();
+  const availableContent = normalizeContentKey(record);
+  const activeContent = handheld ? window.GestaltPocketIndex?.readingView?.(record.section, availableContent) ?? availableContent : availableContent;
+  const readingContents = window.GestaltPocketIndex?.readingContents?.(record.section, contents) ?? contents;
   const titleClass = `record-title-text${record.title.length > 26 ? " is-long-title" : ""}`;
 
   const artwork = window.GestaltImageFraming?.recordHeadingArtwork?.(record, steamDisplayModule?.steamBannerImage);
@@ -2540,9 +2543,6 @@ function recordWindow(record) {
       ${pocketBack()}
       <span>${record.section === "setup" ? "// SETUP TERMINAL" : "// ARCHIVE ENTRY"}</span>
       <div class="window-control-group">
-        ${contents.length > 1 ? `<div class="pocket-record-contents"><select aria-label="Contents" data-record-content-picker>
-          ${contents.map(({ key, label }) => `<option value="${key}"${key === activeContent ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
-        </select></div>` : ""}
         ${record.section !== "system" ? recordLinkButton() : ""}
         <div class="window-actions">
           <button type="button" data-window-action="minimize" aria-label="Minimize record">minimize</button>
@@ -2569,18 +2569,20 @@ function recordWindow(record) {
           </p>
         </div>
 
-        ${renderRecordContent(record, activeContent, handheld)}
+        ${readingContents.length > 1 ? `<label class="pocket-record-contents"><span>Contents</span><span class="pocket-record-select"><select data-record-content-picker>
+          ${readingContents.map(({ key, label }) => `<option value="${key}"${key === activeContent ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+        </select></span></label>` : ""}
+        <div class="record-content-view">${renderRecordContent(record, activeContent, handheld)}</div>
       </div>
 
-      ${recordAside(record, contents, activeContent, handheld)}
+      <aside class="record-aside">${recordAsideContent(record, contents, activeContent, handheld)}</aside>
     </div>
     ${record.section === "games" ? "" : renderUpdateHistoryModal(record)}
   </article>`;
 }
 
-function recordAside(record, contents, activeContent, handheld) {
-  return `<aside class="record-aside">
-        <div class="record-contents-list">
+function recordAsideContent(record, contents, activeContent, handheld) {
+  return `<div class="record-contents-list">
           <h3>CONTENTS</h3>
           <ol>
             ${contents
@@ -2598,8 +2600,7 @@ function recordAside(record, contents, activeContent, handheld) {
           <div><dt>Last Updated:</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
         </dl>
 
-        ${activeContent === "notes" ? handheld ? "" : renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}
-      </aside>`;
+        ${activeContent === "notes" ? handheld ? "" : renderNoteSearch(record) : record.section === "games" ? "" : renderUpdateHistory(record)}`;
 }
 
 function recordBackdrop() {
@@ -2964,7 +2965,7 @@ function renderTimelineResults(items, source) {
 
 function changeTimelineSource(source) {
   if (!state.timelineOpen) return;
-  const items = getTimelineItems(32);
+  const items = getTimelineItems();
   if (source !== "all" && !timelineSources(items).some((item) => item.id === source)) return;
   const results = root.querySelector(".timeline-window #timeline-results");
   if (!(results instanceof HTMLElement)) return;
@@ -2979,7 +2980,7 @@ function timelineWindow() {
     return "";
   }
 
-  const items = getTimelineItems(32);
+  const items = getTimelineItems();
   const sources = timelineSources(items);
   const source = state.timelineSource === "all" || sources.some((item) => item.id === state.timelineSource) ? state.timelineSource : "all";
   const range = items.length ? `${readableDate(items[items.length - 1].date)} to ${readableDate(items[0].date)}` : "No activity recorded";
@@ -3298,7 +3299,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.77.3</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.78.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3629,10 +3630,11 @@ function setUpdateHistory(open) {
   }
 }
 
-function selectRecordContent(key, picker) {
+function selectRecordContent(key, layout) {
   const record = selectedRecord();
   const contents = record ? getRecordContents(record) : [];
-  if (!state.panelOpen || !contents.some((item) => item.key === key)) return;
+  const available = layout ? pocket?.readingContents?.(record?.section, contents) ?? contents : contents;
+  if (!state.panelOpen || !available.some((item) => item.key === key)) return;
   if (state.activeContent !== key) window.GestaltMemoryState?.record("content.select", { view: key });
   state.activeContent = key;
   state.noteSearchQuery = "";
@@ -3642,13 +3644,13 @@ function selectRecordContent(key, picker) {
   setUpdateHistory(false);
 
   // A native picker should keep focus, along with the record's existing backdrop and entry animation.
-  const layout = picker?.closest(".record-window")?.querySelector(".record-layout");
-  const panel = layout?.querySelector(".record-main > :nth-child(2)");
+  const panel = layout?.querySelector(".record-content-view");
   const aside = layout?.querySelector(".record-aside");
   if (panel && aside) {
-    panel.outerHTML = renderRecordContent(record, key, true);
-    aside.outerHTML = recordAside(record, contents, key, true);
-    layout.scrollTop = 0;
+    panel.innerHTML = renderRecordContent(record, key, true);
+    aside.innerHTML = recordAsideContent(record, contents, key, true);
+    const picker = layout.querySelector("[data-record-content-picker]");
+    if (picker && picker.value !== key) picker.value = key;
     return;
   }
 
@@ -3988,7 +3990,7 @@ document.addEventListener("click", (event) => {
 document.addEventListener("change", (event) => {
   const picker = event.target;
   if (picker instanceof HTMLSelectElement && picker.hasAttribute("data-record-content-picker") && pocket?.isHandheld()) {
-    selectRecordContent(picker.value, picker);
+    selectRecordContent(picker.value, picker.closest(".record-layout"));
   }
 });
 
@@ -4171,6 +4173,9 @@ if (weatherStarted) void requestWeather();
 window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
   const dispatches = root.querySelector(".pocket-dispatches");
   if (dispatches && event.matches) dispatches.innerHTML = pocketDispatchesMarkup();
+  if (event.matches && state.panelOpen && state.activeContent === "overview" && selectedRecord()?.section === "logs") {
+    selectRecordContent("notes", root.querySelector(".record-window .record-layout"));
+  }
   for (const tools of root.querySelectorAll(".record-window :is(.note-entry, .setup-note) > .note-link-tools")) {
     const note = tools.parentElement;
     if (event.matches) note.append(tools);

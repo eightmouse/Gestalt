@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.77.3`. Previous site-code release: `v1.77.2` (ce18c30d).
+Release target: `v1.78.0`. Previous site-code release: `v1.77.3` (f7436f9f).
+
+`v1.78.0` lets the owner edit all four Setup groups from their existing terminals, with separate launch and edit actions for shortcuts. Local drafts and the publish bell keep their existing roles; Studio remains a fallback and Pages remains read-only. The release also improves handheld note navigation, caches Timeline results, restores earlier notebook milestones, and renames recent field notes without changing their URLs or note IDs. No dependency or original media changes.
 
 `v1.77.3` aligns Pocket Index directory icons with their labels. Handheld entries have a Contents picker in the header and place search above the note list when there are multiple notes. Desktop keeps its Contents rail. The entry animation, authored records, media and dependencies are unchanged.
 

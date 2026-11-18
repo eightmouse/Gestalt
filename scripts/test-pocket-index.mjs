@@ -96,8 +96,16 @@ assert.match(read("components/archive-os.tsx"), /<PocketHeader[^>]+onHome=\{open
 assert.match(css, /\.record-window \.record-link-button \{[^}]*inline-size: 44px;[^}]*block-size: 44px;[^}]*border: 0;/);
 assert.match(css, /\.pocket-directory \.nav-mark \{ inline-size: 24px; block-size: 26px; \}/, "Directory glyphs keep their own centered artboard");
 const staticReader = read("static-app.js"), localReader = read("components/archive/record-window.tsx");
-assert.match(staticReader, /<select aria-label="Contents" data-record-content-picker>/);
-assert.match(localReader, /<select aria-label="Contents" value=\{activeContent\}/);
+const logViews = [{ key: "overview", label: "Entry" }, { key: "notes", label: "Full Note" }];
+const attachments = { key: "attachments", label: "Attachments" };
+assert.equal(pocket.readingView("logs", "overview"), "notes");
+assert.equal(pocket.readingView("logs", "attachments"), "attachments", "Explicitly requested attachments remain reachable");
+assert.equal(pocket.readingView("games", "overview"), "overview");
+assert.deepEqual(pocket.readingContents("logs", logViews), [{ key: "notes", label: "Notes" }]);
+assert.deepEqual(pocket.readingContents("logs", [...logViews, attachments]), [{ key: "notes", label: "Notes" }, attachments]);
+assert.equal(pocket.readingContents("projects", logViews), logViews, "Non-log sections do not change");
+assert.match(staticReader, /<label class="pocket-record-contents"><span>Contents<\/span>/);
+assert.match(localReader, /<label className="pocket-record-contents">\s*<span>Contents<\/span>/);
 assert.match(staticReader, /\$\{handheld \? renderNoteSearch\(record\) : ""\}\s*<div class="note-stack">/);
 assert.match(read("components/archive/record-content.tsx"), /\{searchControl\}\s*<div className="note-stack">/);
 assert.doesNotMatch(css, /\[data-os-group="entry"\]/, "The shared Entry Animation preferences remain visible on handheld");

@@ -163,8 +163,19 @@
   .record-window .window-actions, .record-window .window-title-group, .record-window > .window-bar > span { display: none; }
   .record-window .window-bar { justify-content: space-between; }
   .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
-  .record-window .pocket-record-contents { position: relative; display: block; min-inline-size: 0; }
-  .record-window .pocket-record-contents::after {
+  .record-window .pocket-record-contents {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 12px;
+    margin-block: 0 14px;
+    border-block: 1px solid var(--pocket-line);
+    color: var(--pocket-muted);
+    font: 500 12px/1.2 var(--pocket-mono);
+  }
+  .record-window .pocket-record-select { position: relative; display: block; min-inline-size: 0; max-inline-size: 100%; }
+  .record-window .pocket-record-select::after {
     content: "";
     position: absolute;
     inset-block-start: 18px;
@@ -188,7 +199,6 @@
     color-scheme: var(--control-scheme, dark);
     font: 500 16px/1.2 system-ui, sans-serif;
   }
-  .record-window .window-control-group:has(.pocket-record-contents) { min-inline-size: 0; flex-shrink: 1; gap: 4px; }
   .record-window .pocket-record-contents select:focus-visible { outline: 1px solid var(--pocket-signal); outline-offset: -2px; }
   .record-window .record-contents-list { display: none; }
   .record-window .notes-page .note-search-panel { margin-block-end: 12px; }
@@ -218,9 +228,9 @@
     letter-spacing: 0;
   }
   .pocket-note-link-label { display: inline; }
-  .record-window .setup-console-prompt:has(.record-link-button) { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
-  .record-window .setup-console-prompt:has(.record-link-button) .setup-prompt-command { grid-column: 1 / -1; grid-row: 2; }
-  .record-window .setup-console-prompt:has(.record-link-button) .setup-prompt-actions { grid-column: 2; grid-row: 1; }
+  .record-window .setup-console-prompt:has(:is(.record-link-button, .window-edit-action)) { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+  .record-window .setup-console-prompt:has(:is(.record-link-button, .window-edit-action)) .setup-prompt-command { grid-column: 1 / -1; grid-row: 2; }
+  .record-window .setup-console-prompt:has(:is(.record-link-button, .window-edit-action)) .setup-prompt-actions { grid-column: 2; grid-row: 1; }
   .record-window .record-link-feedback { inset-block-start: calc(var(--pocket-safe-top) + var(--record-titlebar-size) + 8px); inset-inline-end: max(12px, var(--pocket-safe-right)); }
   .record-window .record-link-feedback input { font-size: 16px; }
   .record-window .record-heading h2 { position: relative; font-family: var(--pocket-mono); font-size: 30px; letter-spacing: 0; }

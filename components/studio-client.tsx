@@ -14,8 +14,11 @@ import imageFraming, { type HeaderFrame, type ImageFrame } from "@/public/image-
 import { ArtworkFraming } from "@/components/studio/artwork-framing";
 import { HeaderFraming } from "@/components/studio/header-framing";
 import { InlineRecordLayout } from "@/components/studio/inline-record-layout";
+import { InlineSetupLayout } from "@/components/studio/inline-setup-layout";
 import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
 import { supportsInlineEditing } from "@/lib/inline-editing";
+import { setupSpecDraft, validSetupShortcut } from "@/lib/setup-editing";
+import { setupGroupFor } from "@/components/archive/setup-utils";
 import { readStudioResponse, StudioRequestError } from "@/lib/studio-client-api";
 import { useStudioPublishing } from "@/components/studio/publishing-store";
 import { PublishNotificationPanel } from "@/components/studio/change-review-panel";
@@ -155,14 +158,14 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     : embedded && initialSection
       ? undefined
       : records[0];
-  const initialForm = firstRecord ? fromRecord(firstRecord) : emptyForm(initialSection ?? "projects", initialSetupGroup ?? "");
+  const initialForm = firstRecord ? fromRecord(firstRecord, !inline) : emptyForm(initialSection ?? "projects", initialSetupGroup ?? "");
   if (!firstRecord && initialSection === "games" && initialSteamGame) {
     Object.assign(initialForm, initialSteamGame, { id: `steam-${initialSteamGame.steamAppId}`, steamDraftAppId: initialSteamGame.steamAppId, summary: "", status: "Playing" });
   }
   if (inline && !firstRecord) {
     initialForm.title = initialSteamGame?.title || "";
     initialForm.summary = "";
-    initialForm.body = initialForm.body.replace("Write the first note here.", "");
+    initialForm.body = initialForm.body.replace(/Write the first (?:setup )?note here\./, "");
   }
   const [studioRecords, setStudioRecords] = useState<RecordEntry[]>(records);
   const [selectedId, setSelectedId] = useState(firstRecord?.id ?? "__new");
@@ -236,7 +239,9 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     const draftKey = initialRecordId
       ? studioRecordDraftKey(initialRecordId)
       : studioDraftKey(initialForm, "__new", initialSection ?? "projects");
-    const draft = drafts[draftKey];
+    const draft = !initialRecordId && initialSection === "setup"
+      ? setupDraftForGroup(drafts, normalizeSetupGroup(initialForm.setupGroup))
+      : drafts[draftKey];
 
     if (draft) {
       bodyDraftRef.current = draft.body;
@@ -392,13 +397,14 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     setSelectedId("__new");
     setActiveContent("overview");
     setMode("edit");
-    const next = emptyForm("setup", setupGroup);
-    bodyDraftRef.current = next.body;
+    const draft = setupDraftForGroup(draftsRef.current, setupGroup);
+    const next = draft?.form ?? emptyForm("setup", setupGroup);
+    bodyDraftRef.current = draft?.body ?? next.body;
     formRef.current = next;
     setSavedSnapshot(null);
     setBufferedDirty(false);
     setForm(next);
-    setMessage(`New ${setupGroupLabel(setupGroup).toLowerCase()} setup record ready.`);
+    setMessage(draft ? "Restored unsaved Setup draft." : `New ${setupGroupLabel(setupGroup).toLowerCase()} setup record ready.`);
   }, []);
 
   const writeRecord = async (recordForm: StudioForm, recordBody: string) => {
@@ -428,6 +434,16 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     if ((inline || (formRef.current.section === "logs" && !formRef.current.originalId)) && !formRef.current.title.trim()) {
       setMessage("Give this entry a title before saving.");
       return;
+    }
+    if (inline && formRef.current.section === "setup") {
+      if (formRef.current.setupGroup === "tools" && !validSetupShortcut(formRef.current.externalUrl)) {
+        setMessage("Use a valid public HTTP or HTTPS link without login details.");
+        return;
+      }
+      if (formRef.current.setupGroup === "systems" && setupSpecDraft(formRef.current.hardware, bodyDraftRef.current).rows.some(({ label, value }) => label.trim().length < 2 || !value.trim())) {
+        setMessage("Complete or remove the unfinished spec before saving.");
+        return;
+      }
     }
     setSaving(true);
     setMessage("Writing record...");
@@ -476,6 +492,9 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
           const next = { ...current };
           delete next[item.key];
           delete next[studioRecordDraftKey(data.id)];
+          const legacySetup = next["new:setup"];
+          if (item.draft.form.section === "setup" && !item.draft.form.originalId && legacySetup &&
+              normalizeSetupGroup(legacySetup.form.setupGroup) === item.draft.form.setupGroup) delete next["new:setup"];
           return next;
         });
       }
@@ -504,6 +523,7 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   };
 
   const deleteRecord = async () => {
+    if (saving || uploading) return;
     if (!form.originalId || selectedId === "__new") {
       setMessage("Nothing saved yet, so there is no record file to delete.");
       return;
@@ -605,7 +625,12 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
 
   const chooseFiles = (target: MediaTarget) => {
     fileTargetRef.current = target;
-    fileInputRef.current?.click();
+    const input = fileInputRef.current;
+    if (!input) return;
+    const setupArtwork = formRef.current.section === "setup" && (target === "headerImage" || target === "iconImage");
+    input.multiple = !setupArtwork;
+    input.accept = setupArtwork ? "image/png,image/jpeg,image/webp,image/gif" : "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm";
+    input.click();
   };
 
   const uploadMediaFile = async (file: File) => {
@@ -663,9 +688,15 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   };
 
   const uploadFiles = async (files: FileList | File[], target = fileTargetRef.current) => {
+    const setupArtwork = formRef.current.section === "setup" && (target === "headerImage" || target === "iconImage");
     const list = Array.from(files);
+    if (setupArtwork && list.length > 1) list.length = 1;
 
     if (list.length === 0) {
+      return;
+    }
+    if (setupArtwork && !/\.(png|jpe?g|webp|gif)$/i.test(list[0].name)) {
+      setMessage("Select a PNG, JPEG, WebP, or GIF image.");
       return;
     }
 
@@ -766,6 +797,23 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
 
   if (inline) {
     if (!supportsInlineEditing(form.section)) return null;
+    if (form.section === "setup") {
+      const group = normalizeSetupGroup(form.setupGroup);
+      const notes = <NoteStackEditor value={form.body} onCommit={(value) => update("body", value)} onMediaUpload={uploadNoteMedia} onOptimizeMedia={optimizeNoteMedia} />;
+      return <>
+        <input ref={fileInputRef} hidden type="file" onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
+        <InlineSetupLayout group={group} fields={form} image={group === "tools" ? form.iconImage || form.headerImage || form.banner : form.headerImage || form.banner}
+          assignedImage={Boolean(group === "tools" ? form.iconImage : form.headerImage)} titleHint={`New ${defaultSetupType(group)}`}
+          notes={group === "systems" ? <details><summary>Setup notes</summary>{notes}</details> : notes}
+          busy={saving || uploading} isNew={!form.originalId} exportRequired={archiveRefreshRequired} message={editorMessage} saveState={saveState}
+          onUpdate={update} onPick={chooseFiles} onDrop={uploadFiles} onClear={(field) => update(field, "")}
+          onMove={(nextGroup) => {
+            const previousType = formRef.current.type;
+            update("setupGroup", nextGroup);
+            if (isDefaultSetupType(previousType)) update("type", defaultSetupType(nextGroup));
+          }} onDelete={deleteRecord} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive} onMessage={setMessage} />
+      </>;
+    }
     const inlineContents = getStudioContents(form.section) as Array<{ key: "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation"; label: string }>;
     const inlineContent = inlineContents.find((item) => item.key === activeContent)?.key ?? "overview";
     return <>
@@ -2589,7 +2637,7 @@ function isGeneratedSetupBody(value: string): boolean {
   );
 }
 
-function fromRecord(record?: RecordEntry): StudioForm {
+function fromRecord(record?: RecordEntry, legacySetupEditor = true): StudioForm {
   if (!record || record.section === "system") {
     return emptyForm();
   }
@@ -2612,13 +2660,13 @@ function fromRecord(record?: RecordEntry): StudioForm {
     headerImage: typeof record.meta.headerImage === "string" ? record.meta.headerImage : "",
     iconImage: typeof record.meta.iconImage === "string" ? record.meta.iconImage : "",
     externalUrl: typeof record.meta.externalUrl === "string" ? record.meta.externalUrl : "",
-    setupGroup: typeof record.meta.setupGroup === "string" ? normalizeSetupGroup(record.meta.setupGroup) : record.section === "setup" ? inferSetupGroup(record) : "",
+    setupGroup: record.section === "setup" ? setupGroupForRecord(record) : "",
     samples: metaMediaList(record.meta.samples),
     attachments: metaMediaList(record.meta.attachments),
     progress: record.progress,
     priority: record.priority,
     milestones: typeof record.meta.milestones === "string" ? record.meta.milestones : "",
-    hardware: metaTextBlock(record.meta.hardware) || (record.section === "setup" ? setupHardwareFallback(record.body) : ""),
+    hardware: metaTextBlock(record.meta.hardware) || (legacySetupEditor && record.section === "setup" ? setupHardwareFallback(record.body) : ""),
     technicalStack: metaTextBlock(record.meta.technicalStack),
     recommendation: metaTextBlock(record.meta.recommendation),
     gamePlacement: record.section === "games" ? gameLogPlacement(record) : "",
@@ -2700,6 +2748,15 @@ function studioNewDraftKey(section: StudioSection) {
   return `new:${section}`;
 }
 
+function studioSetupDraftKey(group: string) {
+  return `new:setup:${group}`;
+}
+
+function setupDraftForGroup(drafts: StudioDraftMap, group: SetupGroupId) {
+  const legacy = drafts["new:setup"];
+  return drafts[studioSetupDraftKey(group)] ?? (legacy && normalizeSetupGroup(legacy.form.setupGroup) === group ? legacy : undefined);
+}
+
 function studioDraftKey(form: StudioForm, selectedId: string, fallbackSection: StudioSection) {
   if (form.originalId) {
     return studioRecordDraftKey(form.originalId);
@@ -2712,6 +2769,7 @@ function studioDraftKey(form: StudioForm, selectedId: string, fallbackSection: S
   if (form.section === "games" && /^\d+$/.test(form.steamDraftAppId ?? "")) {
     return `new:games:steam:${form.steamDraftAppId}`;
   }
+  if (form.section === "setup" && form.setupGroup) return studioSetupDraftKey(form.setupGroup);
 
   return studioNewDraftKey(form.section || fallbackSection);
 }
@@ -2748,24 +2806,6 @@ function normalizeSetupGroup(value: string): SetupGroupId {
   return setupGroupIds.includes(value as SetupGroupId) ? value as SetupGroupId : "systems";
 }
 
-function inferSetupGroup(record: RecordEntry): SetupGroupId {
-  const haystack = [record.title, record.type, record.summary, metaTextBlock(record.meta.hardware)].join(" ").toLowerCase();
-
-  if (/\b(keyboard|mouse|monitor|display|headset|speaker|audio|mic|microphone|controller|tablet|dock|peripheral|device)\b/.test(haystack)) {
-    return "peripherals";
-  }
-
-  if (/\b(tool|tools|software|app|apps|utility|utilities|editor|launcher|workflow|script|stack)\b/.test(haystack)) {
-    return "tools";
-  }
-
-  if (/\b(note|notes|memo|file)\b/.test(haystack) && !/\b(windows|linux|arch|os|pc|laptop|desktop|machine|rig|system|hardware)\b/.test(haystack)) {
-    return "notes";
-  }
-
-  return "systems";
-}
-
 function setupDetailsLabel(setupGroup: string): string {
   return {
     systems: "Hardware Notes",
@@ -2789,7 +2829,7 @@ function setupGroupLabel(setupGroup: string): string {
 }
 
 function setupGroupForRecord(record: RecordEntry): SetupGroupId {
-  return typeof record.meta.setupGroup === "string" ? normalizeSetupGroup(record.meta.setupGroup) : inferSetupGroup(record);
+  return setupGroupFor(record);
 }
 
 function setupRecordStudioMedia(record: RecordEntry): string {

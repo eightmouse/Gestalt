@@ -1,5 +1,9 @@
 # Gestalt Roadmap
 
+18 November, v1.78.0: Setup now opens its editor in the device bay's existing windows. Systems have editable spec rows, Peripherals accept photos and optional descriptions, Notes use the shared editor, and Tools have a shortcut edit mode separate from launching links. Each group can add records and keep its own drafts. The publish bell is unchanged, and full Studio remains a fallback. Archive Relay is next for discussion. The owner authorized publishing the reviewed batch after verification.
+
+18 November desktop closeout, local: the [desktop review](REVIEW_2026-11-18-DESKTOP.md) closes the scoped performance and display pass. Do not infer FPS or screen-reader acceptance from headless measurements.
+
 10 November release review: owner approved committing and pushing the v1.73.3 display and artwork fixes. File the completed work without closing the broader browser pass. Preserve the separate FFXIV note edit, generated record data, and unrelated development types. Next proposed small task is a verified lighter startup backdrop; no visual replacement is part of this release.
 
 10 November, local `v1.73.3`: real browser zoom and compact-layout checks reproduced clipped dashboard rows in all three desktop browsers. Compact desktops now scroll complete cards inside the dashboard, with the existing layout retained elsewhere. Remove one incorrect local backdrop warmup; the actual artwork/preloads and owner records are unchanged. Firefox headless timing was unstable even with the close animation bypassed; keep the effects intact and defer conclusions until a visible-browser trace. See [display and timing review](REVIEW_2026-11-10-DISPLAY.md). Keep physical-display and wider accessibility acceptance open. No commit or push requested.

@@ -28,7 +28,7 @@ try {
   git("config", "user.name", "Publish fixture");
   git("config", "user.email", "fixture@example.invalid");
   git("config", "core.autocrlf", "false");
-  for (const file of ["scripts/publish-site.mjs", "scripts/static-cache.mjs", "scripts/export-static-records.mjs", "scripts/validate-content.mjs", "scripts/validate-notebook.mjs", "lib/publish-paths.mjs", "public/image-framing.js", "public/note-inline.js", "public/roadmap.mjs", "public/data/roadmap.json"]) {
+  for (const file of ["scripts/publish-site.mjs", "scripts/static-cache.mjs", "scripts/export-static-records.mjs", "scripts/validate-content.mjs", "scripts/validate-notebook.mjs", "lib/publish-paths.mjs", "public/image-framing.js", "public/note-inline.js", "public/record-links.js", "public/roadmap.mjs", "public/data/roadmap.json"]) {
     mkdirSync(path.dirname(path.join(fixture, file)), { recursive: true });
     copyFileSync(path.join(root, file), path.join(fixture, file));
   }

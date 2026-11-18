@@ -86,9 +86,17 @@ button {
   font: inherit;
 }
 
-button,
-a {
+:is(button, a, summary, select, input, textarea, label, [role="button"]) {
   -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a[href], summary, select, [role="button"]):focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* These windows receive programmatic focus; their frame already shows the active surface. */
+.archive-shell :is([role="dialog"], .system-notices-panel)[tabindex="-1"]:focus {
+  outline: none;
 }
 
 button:focus-visible {
@@ -2745,6 +2753,9 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   gap: 10px;
 }
 
+.setup-group-actions .archive-create-record.setup-edit-shortcuts { inline-size: auto; padding-inline: 8px; display: inline-flex; gap: 5px; }
+.setup-edit-shortcuts[aria-pressed="true"] { border-color: var(--accent); color: var(--text-strong); }
+
 .archive-create-record {
   inline-size: 30px;
   block-size: 30px;
@@ -4479,7 +4490,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .archive-shell > .workspace > .section-page .section-page-header { grid-template-columns: calc(34px * var(--desktop-size)) minmax(0, 1fr) auto; padding: calc(18px * var(--desktop-size)) calc(20px * var(--desktop-size)); gap: calc(16px * var(--desktop-size)); }
   .archive-shell > .workspace > .section-page .section-page-header > .nav-mark { transform: scale(var(--desktop-size)); transform-origin: center; }
   .archive-shell > .workspace > .section-page .section-page-header h2 { font-size: calc(34px * var(--desktop-size)); margin-block-start: calc(5px * var(--desktop-size)); }
-  .archive-shell > .workspace > .section-page .archive-create-record { inline-size: calc(30px * var(--desktop-size)); block-size: calc(30px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-create-record { block-size: calc(30px * var(--desktop-size)); }
+  .archive-shell > .workspace > .section-page .archive-create-record:not(.setup-edit-shortcuts) { inline-size: calc(30px * var(--desktop-size)); }
   .archive-shell > .workspace > .section-page .archive-create-record svg { inline-size: calc(15px * var(--desktop-size)); block-size: calc(15px * var(--desktop-size)); }
   .archive-shell > .workspace > .section-page .section-page-readout { margin-block-start: calc(9px * var(--desktop-size)); gap: calc(7px * var(--desktop-size)) calc(16px * var(--desktop-size)); }
   .archive-shell > .workspace > .section-page .section-page-readout dt { font-size: calc(10px * var(--desktop-size)); }
@@ -5281,7 +5293,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   animation: record-label-materialize 640ms cubic-bezier(0.18, 0.72, 0.22, 1) 1940ms both;
 }
 
-.record-window.is-access-pending .record-main > :nth-child(2) {
+.record-window.is-access-pending .record-main > :is(.record-content-view, .pocket-record-contents) {
   animation: record-panel-populate 900ms cubic-bezier(0.18, 0.72, 0.22, 1) 2050ms both;
 }
 
@@ -6600,10 +6612,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   box-shadow: inset 0 0 0 1px rgba(var(--tone-highlight, 255, 255, 255), 0.025);
 }
 
-.is-setup-record--peripherals .setup-window-shell {
-  overflow: hidden;
-}
-
 .is-setup-record--peripherals .setup-console {
   min-block-size: min(710px, calc(100dvh - 96px));
 }
@@ -6741,8 +6749,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   background: rgba(var(--tone-ink, 217, 213, 193), 0.045);
 }
 
-.setup-console-body--tool,
-.setup-console-body--peripheral {
+.setup-console-body--tool {
   grid-template-columns: minmax(160px, 0.58fr) minmax(0, 1.42fr);
 }
 
@@ -6940,6 +6947,8 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   min-width: 0;
   align-self: center;
 }
+
+:is(.setup-fetch h2, .setup-fetch h3, .setup-fetch dd, .setup-peripheral-copy, .setup-note-file-copy) { overflow-wrap: anywhere; }
 
 .setup-fetch--terminal {
   align-self: center;

@@ -24,7 +24,7 @@ import {
   recentActivity,
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
-import { setupNarrativeNotes, type SetupGroupId } from "@/components/archive/setup-utils";
+import { setupGroupFor, setupNarrativeNotes, type SetupGroupId } from "@/components/archive/setup-utils";
 import { compareLogWritingOrder, isLogArchivedByAge } from "@/lib/log-archive";
 import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
@@ -470,18 +470,21 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     });
   };
 
-  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string, searchKey?: string) => {
+  const openRecord = (record: RecordEntry, content: ContentKey = "overview", noteIndex?: number, noteId?: string, searchKey?: string, editSetupTool = false) => {
     if (inlineBusy) return;
     if (publicReader && record.section !== "system") recordLinks.open(window, record.id, noteId);
     setLinkedNoteId(noteId);
     setRecordLinkMissing(false);
     recordSearchReturn.current = searchOpen && (searchKey || handheld) ? { query: searchQuery, key: searchKey } : null;
     memoryState.record("record.open", { section: record.section });
-    setInlineRecordId(null);
+    setInlineRecordId(editSetupTool ? record.id : null);
     setInlineDraftWindow(null);
-    startRecordAccess();
+    if (editSetupTool) {
+      stopRecordAccess();
+      setRecordAccessComplete(true);
+    } else startRecordAccess();
     setSelectedId(record.id);
-    setInitialContent(content);
+    setInitialContent(handheld ? pocket.readingView(record.section, content) : content);
     setInitialNoteIndex(noteIndex);
     setPanelOpen(true);
     setPanelMinimized(false);
@@ -551,7 +554,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (inlineBusy) return;
     setStudioSteamGame(steamGame);
     if (supportsInlineEditing(section)) {
-      const draft = newInlineRecord(section, steamGame);
+      const draft = newInlineRecord(section, steamGame, undefined, setupGroup);
       stopRecordAccess();
       setRecordAccessComplete(true);
       setInlineDraftWindow(draft);
@@ -738,7 +741,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       stopRecordAccess();
     }
   };
-  const timelineItems = useMemo(() => timelineOpen ? getTimelineItems(archiveRecords, 32) : [], [archiveRecords, timelineOpen]);
+  const timelineItems = timelineOpen ? getTimelineItems(archiveRecords) : [];
 
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
@@ -926,6 +929,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onOpenRecord={openRecord}
             onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}
             onCreateSetupRecord={process.env.NODE_ENV === "development" ? (group) => createLocalRecord("setup", group) : undefined}
+            onEditSetupTool={process.env.NODE_ENV === "development" ? (record) => openRecord(record, "overview", undefined, undefined, undefined, true) : undefined}
           />
         )}
 
@@ -965,6 +969,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             editor={process.env.NODE_ENV === "development" && editingInline ? (
               <LocalStudioEditor embedded inline initialRecordId={unsavedInline ? undefined : selectedRecord.id}
                 initialSection={supportsInlineEditing(selectedRecord.section) ? selectedRecord.section : undefined}
+                initialSetupGroup={selectedRecord.section === "setup" ? setupGroupFor(selectedRecord) : undefined}
                 initialSteamGame={unsavedInline ? studioSteamGame : undefined}
                 initialContent={initialContent === "changelog" || initialContent === "hardware" ? "overview" : initialContent}
                 records={archiveRecords.filter((record) => record.section !== "system")}

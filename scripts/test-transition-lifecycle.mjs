@@ -315,23 +315,23 @@ assert.ok(contentBranch?.getText(ast).includes("selectRecordContent(contentKey);
 const selectContent = ast.statements.find((item) => ts.isFunctionDeclaration(item) && item.name?.text === "selectRecordContent");
 const contentState = { panelOpen: true, activeContent: "overview", noteSearchQuery: "old", focusedNoteIndex: 8, noteBrowsePage: 2, noteSearchPage: 1 };
 const panel = {}, aside = {};
-const contentLayout = { scrollTop: 200, querySelector: (selector) => selector === ".record-aside" ? aside : panel };
-const picker = { closest: () => ({ querySelector: () => contentLayout }) };
+const picker = { value: "notes" };
+const contentLayout = { scrollTop: 200, querySelector: (selector) => ({ ".record-aside": aside, ".record-content-view": panel, "[data-record-content-picker]": picker })[selector] };
 let windowUpdates = 0;
 const select = vm.runInNewContext(`${selectContent.getText(ast)}\nselectRecordContent`, {
-  state: contentState, window: {}, selectedRecord: () => ({ id: "fixture" }), getRecordContents: () => [{ key: "notes" }, { key: "overview" }],
-  setUpdateHistory() {}, renderRecordContent: () => "new note panel", recordAside: () => "new Contents rail",
+  state: contentState, window: {}, pocket: undefined, selectedRecord: () => ({ id: "fixture" }), getRecordContents: () => [{ key: "notes" }, { key: "overview" }],
+  setUpdateHistory() {}, renderRecordContent: () => "new note panel", recordAsideContent: () => "new Contents rail",
   syncRecordWindow: () => ++windowUpdates, render: () => assert.fail("The workspace should stay mounted")
 });
-select("missing", picker);
+select("missing", contentLayout);
 assert.equal(contentState.activeContent, "overview", "A section must exist in the record before it can be selected");
-select("notes", picker);
+select("notes", contentLayout);
 assert.equal(contentState.activeContent, "notes");
 assert.equal(contentState.noteSearchQuery, "");
 assert.equal(contentState.focusedNoteIndex, null);
-assert.equal(contentLayout.scrollTop, 0);
-assert.equal(panel.outerHTML, "new note panel");
-assert.equal(aside.outerHTML, "new Contents rail");
+assert.equal(contentLayout.scrollTop, 200, "Changing sections does not scroll the Contents row out of place");
+assert.equal(panel.innerHTML, "new note panel");
+assert.equal(aside.innerHTML, "new Contents rail");
 assert.equal(windowUpdates, 0, "The handheld picker, entry chrome and scroll container remain mounted");
 select("overview");
 assert.equal(windowUpdates, 1, "Desktop tabs retain the established window-only update path");

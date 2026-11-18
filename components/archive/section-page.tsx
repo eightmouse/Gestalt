@@ -3,7 +3,7 @@ import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
-import { ArrowUp, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Plus, X } from "lucide-react";
+import { ArrowUp, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useState } from "react";
 import pocket from "@/public/pocket-index.js";
@@ -23,6 +23,7 @@ type SectionPageProps = {
   onOpenRecord: (record: RecordEntry, content?: ContentKey, noteIndex?: number) => void;
   onCreateRecord?: () => void;
   onCreateSetupRecord?: (group: SetupGroupId) => void;
+  onEditSetupTool?: (record: RecordEntry) => void;
 };
 
 const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
@@ -33,7 +34,14 @@ const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
   setup: "Setup Manifest"
 };
 
-export function SectionPage({ handheld, records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord }: SectionPageProps) {
+const setupCreateLabels: Record<SetupGroupId, string> = {
+  systems: "Add system",
+  tools: "Add shortcut",
+  peripherals: "Add peripheral",
+  notes: "Add Setup note"
+};
+
+export function SectionPage({ handheld, records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord, onEditSetupTool }: SectionPageProps) {
   const visibleRecords = section.id === "logs" ? records.filter((record) => !isLogArchivedByAge(record)) : records;
   const sortedRecords = [...visibleRecords].sort(compareSectionRecords);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
@@ -41,7 +49,7 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onCreate
   const readout = sectionReadout(sortedRecords);
 
   if (section.id === "setup") {
-    return <SetupBay countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} readout={readout} records={sortedRecords} section={section} />;
+    return <SetupBay countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} onEditTool={onEditSetupTool} readout={readout} records={sortedRecords} section={section} />;
   }
 
   if (section.id === "archive") {
@@ -383,6 +391,7 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
 function SetupBay({
   countLabel,
   onCreateRecord,
+  onEditTool,
   onOpenRecord,
   readout,
   records,
@@ -390,11 +399,13 @@ function SetupBay({
 }: {
   countLabel: string;
   onCreateRecord?: (group: SetupGroupId) => void;
+  onEditTool?: (record: RecordEntry) => void;
   onOpenRecord: (record: RecordEntry) => void;
   readout: Array<{ label: string; value: string }>;
   records: RecordEntry[];
   section: ArchiveSectionConfig;
 }) {
+  const [editingTools, setEditingTools] = useState(false);
   const groups = setupGroupRegistry.map((group) => ({
     ...group,
     records: records.filter((record) => setupGroupFor(record) === group.id)
@@ -422,14 +433,17 @@ function SetupBay({
               </div>
               <div className="setup-group-actions">
                 <i>{group.records.length}</i>
-                {onCreateRecord ? <CreateRecordButton onClick={() => onCreateRecord(group.id)} label={`Add ${group.title.toLowerCase()} record`} /> : null}
+                {group.id === "tools" && group.records.length > 0 && onEditTool ? <button type="button" className="archive-create-record setup-edit-shortcuts" aria-label="Edit shortcuts" aria-pressed={editingTools} title={editingTools ? "Stop editing shortcuts" : "Edit shortcuts"} onClick={() => setEditingTools((current) => !current)}>
+                  <Pencil size={15} aria-hidden="true" />{editingTools ? "Done" : "Edit"}
+                </button> : null}
+                {onCreateRecord ? <CreateRecordButton onClick={() => onCreateRecord(group.id)} label={setupCreateLabels[group.id]} /> : null}
               </div>
             </header>
             <p>{group.detail}</p>
             <div className="setup-tile-grid">
               {group.records.length > 0 ? (
                 group.records.map((record) => (
-                  <SetupTile key={record.id} record={record} onOpenRecord={onOpenRecord} />
+                  <SetupTile key={record.id} record={record} onOpenRecord={onOpenRecord} onEditTool={editingTools && group.id === "tools" ? onEditTool : undefined} />
                 ))
               ) : (
                 <span className="setup-empty">No files mounted.</span>
@@ -442,12 +456,12 @@ function SetupBay({
   );
 }
 
-function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntry) => void; record: RecordEntry }) {
+function SetupTile({ onOpenRecord, onEditTool, record }: { onOpenRecord: (record: RecordEntry) => void; onEditTool?: (record: RecordEntry) => void; record: RecordEntry }) {
   const group = setupGroupFor(record);
   const image = setupTileImage(record);
   const profile = setupProfile(record);
   const externalUrl = safeExternalUrl(record.meta.externalUrl);
-  const action = group === "tools" ? externalUrl ? "launch" : "idle" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
+  const action = group === "tools" ? onEditTool ? "edit" : externalUrl ? "launch" : "idle" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
   const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${profile.category} . ${record.status}`;
   const content = (
     <>
@@ -464,6 +478,7 @@ function SetupTile({ onOpenRecord, record }: { onOpenRecord: (record: RecordEntr
   );
 
   if (group === "tools") {
+    if (onEditTool) return <button className="setup-tile setup-tile--tools is-editing" type="button" aria-label={`Edit ${record.title}`} onClick={() => onEditTool(record)}>{content}</button>;
     if (externalUrl) {
       return (
         <a className="setup-tile setup-tile--tools" href={externalUrl} target="_blank" rel="noreferrer">

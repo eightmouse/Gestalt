@@ -1,6 +1,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-App%20Router-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-archive%20interface-3178c6)
-![Version](https://img.shields.io/badge/version-v1.77.3-b8b09a)
+![Version](https://img.shields.io/badge/version-v1.78.0-b8b09a)
 [![Support me on Ko-fi](https://img.shields.io/badge/Support%20Me-Ko--fi-F16061?logo=ko-fi&logoColor=white)](https://ko-fi.com/eightmouse)
 
 # Gestalt
@@ -13,7 +13,7 @@ A place for the stuff that usually ends up scattered around notes: project progr
 
 Obsidian gets used a lot, godsend, bless the creators, but I've wanted somewhere to share some of that stuff for a while. Not a standard blog layout, more like a little personal operating system where opening an entry feels like digging into a record.
 
-Current version: `v1.77.3`.
+Current version: `v1.78.0`.
 
 ## What's In Here
 
@@ -38,7 +38,7 @@ The idea is something calm, readable, slightly weird, and very much mine. Archiv
 - **Static export shell** to publish the public site as static files on GitHub Pages.
 - **Steam Web API integration** for game playtime / achievement sync where it makes sense.
 
-The public archive lives on GitHub Pages; my editing Studio stays local. Nothing to edit on the live site, just stuff to read.
+The public archive lives on GitHub Pages. I edit directly in my local copy, with Studio still around as a fallback. The live site is read-only.
 
 ## Desktop And Handheld
 

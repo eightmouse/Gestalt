@@ -113,6 +113,31 @@ staticContext.changeTimelineSource("all");
 assert.equal(results.innerHTML, filtered, "Closed windows do no filter work");
 assert.ok(!functions("static-app.js", ["changeTimelineSource"]).includes("render();"), "Filtering does not rebuild or reopen the public shell");
 assert.match(functions("static-app.js", ["openTimeline"]), /state\.timelineSource = "all"/);
+const timelineRecords = Array.from({ length: 40 }, (_, index) => ({
+  ...record, id: `fixture-${index}`, title: `Fixture ${index}`, updated: "2026-10-22", priority: index,
+  body: "body", type: "Field Note"
+}));
+let reads = 0, datesRead = 0;
+const timelineFixture = {
+  records: timelineRecords,
+  activityDate(value) { datesRead++; return value.updated; },
+  noteEntries() { reads++; return []; },
+};
+const pagesCache = compile(`let cachedTimeline;\n${functions("static-app.js", ["getTimelineItems"])}`, timelineFixture);
+const localCache = compile(`const timelineByRecords = new WeakMap();\n${functions("components/archive/search-utils.ts", ["getTimelineItems"])}`, timelineFixture).exports;
+assert.equal(reads, 0, "Closed timelines don't build a cache on startup");
+const pagesItems = pagesCache.getTimelineItems();
+const localItems = localCache.getTimelineItems(timelineRecords);
+assert.equal(reads, 80);
+assert.equal(datesRead, 80, "Each record's activity date is read once per build");
+assert.equal(pagesItems.length, 32);
+assert.deepEqual(plain(pagesItems), plain(localItems));
+assert.equal(pagesCache.getTimelineItems(), pagesItems, "Pages filters and reopens reuse the bounded slice");
+assert.equal(localCache.getTimelineItems(timelineRecords), localItems);
+assert.equal(reads, 80, "Repeated reads avoid reparsing the archive");
+const saved = [{ ...timelineRecords[0], title: "Saved title" }, ...timelineRecords.slice(1)];
+assert.equal(localCache.getTimelineItems(saved)[0].title, "Saved title updated", "Replacing saved records invalidates the local cache");
+assert.equal(reads, 120);
 assert.ok(!read("app/globals.css").includes(".timeline-metrics"), "Retired counter-card styles are removed");
 assert.ok(!read("components/archive/timeline-window.tsx").includes("motion.article"), "CSS owns the same single entrance in both readers");
 const sheet = postcss.parse(read("app/globals.css"));

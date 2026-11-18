@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import pocket from "../public/pocket-index.js";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { createRequire } from "node:module";
@@ -107,8 +108,9 @@ vm.runInContext(staticFunction("openRecord"), staticLifecycle.context);
 for (const handheld of [true, false]) {
   const { context, timers } = staticLifecycle;
   Object.assign(context.state, { recordAccessPlayed: false, entryAccessMode: "first" });
-  context.pocket = { isHandheld: () => handheld };
+  context.pocket = { ...pocket, isHandheld: () => handheld };
   vm.runInContext('openRecord("fixture")', context);
+  assert.equal(context.state.activeContent, handheld ? "notes" : "overview", "Handheld opens the writing; desktop keeps the overview");
   assert.equal(context.state.accessPending, true, "The same access overlay starts at either viewport");
   assert.deepEqual([...timers.values()].map(({ delay }) => delay), [3250], "Pages uses one full-length access timeline");
   vm.runInContext('openRecord("fixture")', context);
