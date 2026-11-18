@@ -706,7 +706,23 @@ window.__GESTALT_RECORDS = [
     "hardware": "",
     "technicalStack": "CSS + SVG\nNode.js\nZig's C compiler\nPowerShell",
     "recommendation": "",
-    "milestones": [],
+    "milestones": [
+      {
+        "label": "Visual direction",
+        "progress": 100,
+        "status": "Ready"
+      },
+      {
+        "label": "Client testing",
+        "progress": 0,
+        "status": "In Progress"
+      },
+      {
+        "label": "Public release",
+        "progress": 0,
+        "status": "Queued"
+      }
+    ],
     "body": ":::note 26 / 10 / 2026 - PRISM {#n-c5bf560d3f034b8887d5124926d79434}\nThis is my own theme for Codex. I've been working on this for a while, stopped here and there, then I saw other people and projects doing changes  to their client and got inspired, plus I've studied their changes a bit to understand what was going on.\n\n![full=public/media/records/prism/1793069522387-screenshot-2026-10-27-105144.png](public/media/records/prism/1793069522613-screenshot-2026-10-27-105144-display.webp)\n\nI haven't published it yet, plan to.. just not ready.\nMost of it works and I'm happy with it so far, but there might be bugs here and there.\nI'll keep improving it as I use it.\n:::"
   },
   {

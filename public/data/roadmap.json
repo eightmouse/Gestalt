@@ -11,6 +11,14 @@
           "title": "Desktop performance and display pass",
           "detail": "Compact through 4K layouts and 200% browser zoom checked in Firefox, Edge and Chrome. Timeline can reopen and filter without rebuilding its data. These checks do not certify frame pacing on physical displays or screen-reader behavior.",
           "completed": true
+        },
+        {
+          "title": "Projects & Games: selector redesign",
+          "detail": "Local review: the Process Reader and Media Cabinet have joined instrument headers, group readouts, distinct entrances and quiet standby cues that pause while reading. Prism has a qualitative milestone trace. Dashboard motion remains a separate pass."
+        },
+        {
+          "title": "Align minimized windows with the content",
+          "detail": "Local review: the desktop restore controls and System Tips align with the workspace's right rail, in the reserved area above the footer. Existing restore behavior is unchanged."
         }
       ]
     },
@@ -18,6 +26,10 @@
       "id": "ideas",
       "title": "On the desk",
       "items": [
+        {
+          "title": "Dashboard: digital chrome and system tips",
+          "detail": "Explore a hologram-style time and date readout, with distinct cipher and glitch resolves for the Dashboard and footer. Replace the public System Tips button with a bell at the same location as the local publish bell; the public bell keeps tips available even if the welcome prompt is missed. Local publishing stays unchanged."
+        },
         {
           "title": "Archive Relay",
           "detail": "Discuss after Setup editing. A writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
