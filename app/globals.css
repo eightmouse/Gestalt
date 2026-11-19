@@ -223,7 +223,6 @@ button {
   --boot-word-delay: 70ms;
   --boot-signal-sequence: boot-signal-lock;
   --boot-signal-duration: 920ms;
-  --boot-status-step: 28ms;
   --boot-status-delay: 260ms;
   position: fixed;
   inset: 0;
@@ -248,7 +247,6 @@ button {
   --boot-word-delay: 50ms;
   --boot-signal-sequence: boot-signal-register;
   --boot-signal-duration: 1040ms;
-  --boot-status-step: 31ms;
   --boot-status-delay: 220ms;
 }
 :root[data-boot-profile="stream"] .boot-screen {
@@ -258,7 +256,6 @@ button {
   --boot-word-duration: 580ms;
   --boot-word-delay: 100ms;
   --boot-signal-duration: 860ms;
-  --boot-status-step: 25ms;
   --boot-status-delay: 300ms;
 }
 :root[data-boot-profile="verify"] .boot-screen {
@@ -269,7 +266,6 @@ button {
   --boot-word-delay: 60ms;
   --boot-signal-sequence: boot-signal-register;
   --boot-signal-duration: 980ms;
-  --boot-status-step: 29ms;
   --boot-status-delay: 240ms;
 }
 
@@ -501,9 +497,6 @@ button {
 }
 
 .boot-status {
-  --headline-step: var(--boot-status-step);
-  --headline-settle: 220ms;
-  --headline-duration: calc((var(--headline-chars, 19) * var(--headline-step)) + var(--headline-settle));
   --headline-start-delay: calc(var(--boot-status-delay) + var(--boot-elapsed, 0ms));
   inline-size: var(--boot-width);
   justify-content: center;
@@ -1476,9 +1469,6 @@ button {
 .workspace-header h1 {
   position: relative;
   margin: 0;
-  --headline-step: 24ms;
-  --headline-settle: 200ms;
-  --headline-duration: calc((var(--headline-chars, 16) * var(--headline-step)) + var(--headline-settle));
   --headline-start-delay: 50ms;
   color: var(--text);
   font-size: clamp(28px, 3.5vw, 44px);
@@ -1494,96 +1484,93 @@ button {
   white-space: nowrap;
 }
 
-.cipher-cell {
+.cipher-line {
   position: relative;
-  text-shadow: none;
+  display: inline-block;
+  max-inline-size: 100%;
 }
 
 .cipher-glyph {
   display: none;
   position: absolute;
-  inset-block-start: 0;
-  inset-inline: 0;
+  inset: 0;
+  overflow: hidden;
   color: var(--accent);
-  text-align: center;
-  letter-spacing: 0;
+  font-weight: 400;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: .83em;
   line-height: inherit;
+  letter-spacing: .07em;
+  text-align: start;
+  white-space: nowrap;
   pointer-events: none;
   user-select: none;
 }
 
 .cipher-glyph::before { content: attr(data-a); }
-.headline-decode-text { --cipher-start: var(--headline-start-delay); --cipher-step: var(--headline-step); }
-.cipher-on-open { --cipher-start: 50ms; --cipher-step: 15ms; }
+.headline-decode-text { --cipher-start: var(--headline-start-delay); --cipher-duration: 460ms; }
+.boot-status.headline-decode-text { --cipher-duration: 640ms; }
+.boot-status .cipher-glyph { text-align: center; }
+.cipher-on-open { --cipher-start: 50ms; --cipher-duration: 360ms; }
 
+/* Two moving masks per line, with a single change of signal and no character-level animations. */
 @media (prefers-reduced-motion: no-preference) {
   :is(.headline-decode-text.is-resolving, .cipher-on-open, .archive-nav-panel .nav-readable, .record-window.is-access-pending .record-access-identity strong) {
-    --cipher-ink: 0;
     --cipher-display: block;
-    --cipher-signal: cipher-signal-on;
-    --cipher-cycle: cipher-signal-lock;
-    --cipher-glyph-motion: cipher-glyph-cycle;
-    --cipher-read: cipher-ink-lock;
-  }
-  .cipher-cell {
-    --cipher-turn: calc(var(--cipher-start, 0ms) + var(--cipher-lead, 55ms) + var(--cipher-index) * var(--cipher-step, 17ms));
-    --cipher-shuffle: 130ms;
+    --cipher-lock: cipher-ink-lock;
+    --cipher-clear: cipher-signal-clear;
+    --cipher-burst: cipher-signal-burst;
   }
   .cipher-ink {
     display: inline-block;
-    opacity: var(--cipher-ink, 1);
-    animation: var(--cipher-read, none) 1ms step-end calc(var(--cipher-turn) + var(--cipher-shuffle)) forwards;
+    animation: var(--cipher-lock, none) var(--cipher-duration, 360ms) steps(var(--cipher-steps), end) var(--cipher-start, 0ms) both;
   }
   .cipher-glyph {
     display: var(--cipher-display, none);
-    opacity: var(--cipher-idle, 0);
-    animation:
-      var(--cipher-signal, none) 1ms step-end var(--cipher-start, 0ms) forwards,
-      var(--cipher-cycle, none) var(--cipher-shuffle) step-end var(--cipher-turn) forwards;
+    animation: var(--cipher-clear, none) var(--cipher-duration, 360ms) linear var(--cipher-start, 0ms) both;
   }
   .cipher-glyph::before {
-    animation: var(--cipher-glyph-motion, none) var(--cipher-shuffle) step-end var(--cipher-turn) forwards;
+    animation: var(--cipher-burst, none) var(--cipher-duration, 360ms) step-end var(--cipher-start, 0ms) both;
   }
 }
 
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
   .cipher-section {
-    --cipher-ink: 0;
     --cipher-display: block;
-    --cipher-signal: cipher-signal-on;
-    --cipher-cycle: cipher-signal-lock;
-    --cipher-glyph-motion: cipher-glyph-cycle;
-    --cipher-read: cipher-ink-lock;
+    --cipher-lock: cipher-ink-lock;
+    --cipher-clear: cipher-signal-clear;
+    --cipher-burst: cipher-signal-burst;
   }
 }
 
 @media (min-width: 761px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   :is(.nav-stack--sidebar .nav-trigger:not(.is-active) .nav-readable, .command-panel .cipher-description) {
-    --cipher-ink: 0;
     --cipher-display: block;
-    --cipher-idle: .7;
+    --cipher-duration: 290ms;
+  }
+  :is(.nav-stack--sidebar .nav-trigger:not(.is-active):not(:hover, :focus-visible) .nav-readable, .command-panel button:not(:hover, :focus-visible) .cipher-description) .cipher-ink {
+    opacity: 0;
   }
   :is(.nav-stack--sidebar .nav-trigger:not(.is-active):is(:hover, :focus-visible) .nav-readable, .command-panel button:is(:hover, :focus-visible) .cipher-description) {
-    --cipher-cycle: cipher-signal-lock;
-    --cipher-glyph-motion: cipher-glyph-cycle;
-    --cipher-read: cipher-ink-lock;
-    --cipher-lead: 0ms;
-    --cipher-step: 10ms;
+    --cipher-lock: cipher-ink-lock;
+    --cipher-clear: cipher-signal-clear;
+    --cipher-burst: cipher-signal-burst;
   }
 }
 
-@keyframes cipher-signal-on { to { opacity: .6; } }
-@keyframes cipher-ink-lock { to { opacity: 1; } }
-@keyframes cipher-signal-lock {
-  from { opacity: 1; }
-  42% { opacity: 1; }
-  80% { opacity: .77; }
-  to { opacity: 0; }
+@keyframes cipher-ink-lock {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0); }
 }
-@keyframes cipher-glyph-cycle {
-  from { content: attr(data-b); }
-  48% { content: attr(data-c); }
-  82%, to { content: attr(data-b); }
+
+@keyframes cipher-signal-clear {
+  from { clip-path: inset(0); animation-timing-function: steps(var(--cipher-steps), end); }
+  to { clip-path: inset(0 0 0 100%); }
+}
+
+@keyframes cipher-signal-burst {
+  from { content: attr(data-a); }
+  22%, to { content: attr(data-b); }
 }
 
 .record-title-text {
@@ -2151,7 +2138,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .record-access-identity small { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; opacity: 0; }
 .record-access-identity .record-access-state { font-size: 9px; letter-spacing: 0.18em; }
 .record-access-identity strong { color: var(--text-strong); font-family: var(--sans); font-size: clamp(20px, 2.2vw, 30px); font-weight: 400; line-height: 1.1; letter-spacing: 0.12em; }
-.record-access-identity strong { --cipher-start: 130ms; --cipher-step: 22ms; }
+.record-access-identity strong { --cipher-start: 130ms; --cipher-duration: 410ms; }
 .record-access-meter { position: relative; inline-size: 100%; block-size: 3px; overflow: hidden; background: rgba(var(--tone-ink, 217, 213, 193), 0.2); }
 .record-access-meter i { display: block; inline-size: 100%; block-size: 100%; background: var(--text); transform: scaleX(0); transform-origin: left center; }
 
@@ -6602,8 +6589,8 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 .headline-cursor.is-delayed {
   opacity: 0;
   animation:
-    headline-cursor-enter 1ms linear calc(var(--headline-duration) + var(--headline-start-delay) + 60ms) both,
-    cursor-blink 780ms steps(1, end) calc(var(--headline-duration) + var(--headline-start-delay) + 60ms) infinite;
+    headline-cursor-enter 1ms linear calc(var(--cipher-duration) + var(--headline-start-delay) + 60ms) both,
+    cursor-blink 780ms steps(1, end) calc(var(--cipher-duration) + var(--headline-start-delay) + 60ms) infinite;
 }
 
 .banner-frame,

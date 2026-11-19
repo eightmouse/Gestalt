@@ -1,7 +1,4 @@
 declare const cipherDecode: {
-  plan(value: string): Array<
-    { text: string; glyphs?: undefined } |
-    { text: string; glyphs: string[]; step: number; last: boolean }
-  >;
+  plan(value: string): { initial: string; burst: string; steps: number } | null;
 };
 export default cipherDecode;

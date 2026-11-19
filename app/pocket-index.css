@@ -165,18 +165,27 @@
     font: 500 13px/1.2 system-ui, sans-serif;
   }
   .section-page--games .section-page-header-actions { flex: 1 1 auto; justify-content: end; }
-  .section-page--games .game-search-dock:not([hidden]) { display: flex; min-inline-size: 0; }
+  .section-page--games .game-search-dock:not([hidden]) { display: flex; align-items: center; justify-content: end; min-inline-size: 0; }
   .section-page--games .game-search-dock:has(.game-shelf-search:not([hidden])) { flex: 1 1 auto; }
+  .section-page--games .section-page-header-actions .game-shelf-search-toggle {
+    border: 0;
+    background: transparent;
+    color: var(--pocket-signal);
+  }
   .section-page--games .game-shelf-search:not([hidden]) {
     position: static;
-    flex: 1 1 0;
-    inline-size: 0;
-    block-size: 44px;
-    margin-inline-end: -1px;
+    flex: 0 1 185px;
+    inline-size: min(100%, 185px);
+    block-size: 30px;
+    margin-inline-end: -3px;
     appearance: none;
-    padding: 4px 9px;
+    border: 0;
+    border-block-end: 1px solid var(--pocket-line);
+    padding: 2px 4px;
+    background: transparent;
     font-size: 16px;
   }
+  .section-page--games .game-shelf-search:focus { border-color: var(--pocket-signal); }
   .section-page:is(.section-page--games, .section-page--projects) .record-selector {
     padding: 0;
     border: 0;

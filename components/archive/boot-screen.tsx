@@ -12,7 +12,6 @@ export function BootScreen({ startupMode }: { startupMode: StartupMode }) {
         <div
           className="boot-status headline-decode-text is-resolving"
           aria-label="System initializing"
-          style={{ "--headline-chars": "System initializing".length } as CSSProperties}
         >
           <span>{renderCipherLetters("System initializing")}</span>
         </div>

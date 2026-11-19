@@ -123,7 +123,8 @@ for (const [index, profile] of behaviour.bootProfiles.entries()) {
   assert.ok(Math.max(...speeds) > Math.min(...speeds) * 4, "Progress still hesitates and catches, rather than moving at a fixed rate");
   const end = parseInt(values["--boot-meter-duration"]) + parseInt(values["--boot-meter-delay"]);
   assert.ok(end >= 1800 && end <= 2220, "Every bar finishes before the existing loader handoff");
-  const textEnd = parseInt(values["--boot-status-delay"]) + 18 * parseInt(values["--boot-status-step"]) + 450;
+  const statusDuration = parseInt(declarations(sheet.nodes.find((node) => node.selector === ".boot-status.headline-decode-text"))["--cipher-duration"]);
+  const textEnd = parseInt(values["--boot-status-delay"]) + statusDuration;
   assert.ok(textEnd < 1800, "Status remains readable before the loader exits");
 }
 assert.equal(curves.size, 4, "Four distinct rhythms, not the same curve renamed");

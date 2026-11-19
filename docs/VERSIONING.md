@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.84.0`. Previous site-code release: `v1.83.1` (987d0c4d).
+Release target: `v1.84.1`. Previous site-code release: `v1.84.0` (e82c5fd0).
+
+`v1.84.1` replaces per-character cipher animations with a bounded sweep over a separate monospaced signal. This keeps palette glyphs from overlapping and reduces animation work when entering Setup. Setup cards no longer parse terminal specs, and handheld Games uses an unboxed search icon with a slim input. Desktop search, record content and the publishing workflow are unchanged.
 
 `v1.84.0` opens up the handheld Games and Projects libraries with a centered VHS cassette or project card, a horizontal snap rail, and a vertical swipe between groups. Game search sits beside Back; project cards show vertical titles, a brief, and progress. The revised cipher locks individual characters without shifting the line and respects Reduced Motion. Desktop browsing layouts, entry behavior, authored records and media are unchanged.
 

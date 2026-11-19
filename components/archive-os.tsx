@@ -7,7 +7,7 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
@@ -887,18 +887,16 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <h1
               aria-label={headline}
               onAnimationEnd={(event) => {
-                if (event.animationName === "cipher-ink-lock" && event.target instanceof HTMLElement && event.target.hasAttribute("data-cipher-last")) setHeadlineAnimating(false);
+                if (event.animationName === "cipher-ink-lock" && event.target instanceof HTMLElement && event.target.classList.contains("cipher-ink")) setHeadlineAnimating(false);
               }}
               className={headlineAnimating ? "headline-decode-text is-resolving" : "headline-decode-text"}
               key={activeSection}
-              style={{ "--headline-chars": headline.length } as CSSProperties}
             >
               <span>{renderCipherLetters(headline)}</span>
               <span
                 aria-hidden="true"
                 className={headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor"}
                 key={`${activeSection}-cursor`}
-                style={{ "--headline-chars": headline.length } as CSSProperties}
               >
                 _
               </span>

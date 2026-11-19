@@ -3,7 +3,7 @@ import { renderCipherLetters } from "@/components/archive/headline-text";
 import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import type { ContentKey } from "@/components/archive/types";
-import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
+import { setupGroupFor, setupGroupRegistry, type SetupGroupId } from "@/components/archive/setup-utils";
 import { ArrowLeft, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -558,8 +558,12 @@ function SetupBay({
   const [editingTools, setEditingTools] = useState(false);
   const groups = setupGroupRegistry.map((group) => ({
     ...group,
-    records: records.filter((record) => setupGroupFor(record) === group.id)
+    records: [] as RecordEntry[]
   }));
+  for (const record of records) {
+    const id = setupGroupFor(record);
+    groups.find((group) => group.id === id)?.records.push(record);
+  }
 
   return (
     <section className="section-page setup-bay" aria-label={`${section.code} device bay`}>
@@ -593,7 +597,7 @@ function SetupBay({
             <div className="setup-tile-grid">
               {group.records.length > 0 ? (
                 group.records.map((record) => (
-                  <SetupTile key={record.id} record={record} onOpenRecord={onOpenRecord} onEditTool={editingTools && group.id === "tools" ? onEditTool : undefined} />
+                  <SetupTile key={record.id} record={record} group={group.id} category={group.title} onOpenRecord={onOpenRecord} onEditTool={editingTools && group.id === "tools" ? onEditTool : undefined} />
                 ))
               ) : (
                 <span className="setup-empty">No files mounted.</span>
@@ -606,13 +610,11 @@ function SetupBay({
   );
 }
 
-function SetupTile({ onOpenRecord, onEditTool, record }: { onOpenRecord: (record: RecordEntry) => void; onEditTool?: (record: RecordEntry) => void; record: RecordEntry }) {
-  const group = setupGroupFor(record);
+function SetupTile({ onOpenRecord, onEditTool, record, group, category }: { onOpenRecord: (record: RecordEntry) => void; onEditTool?: (record: RecordEntry) => void; record: RecordEntry; group: SetupGroupId; category: string }) {
   const image = setupTileImage(record);
-  const profile = setupProfile(record);
   const externalUrl = safeExternalUrl(record.meta.externalUrl);
   const action = group === "tools" ? onEditTool ? "edit" : externalUrl ? "launch" : "idle" : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
-  const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${profile.category} . ${record.status}`;
+  const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${category} . ${record.status}`;
   const content = (
     <>
       <span className={image ? "setup-tile-icon has-image" : "setup-tile-icon"} aria-hidden="true">

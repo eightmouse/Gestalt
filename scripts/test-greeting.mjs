@@ -13,11 +13,10 @@ function declaration(ast, name) {
   return node.getText(ast);
 }
 const state = { activeSection: "system", bootDismissed: true };
-const classes = new Set(["headline-decode-text", "is-resolving"]), properties = new Map();
+const classes = new Set(["headline-decode-text", "is-resolving"]);
 let label = "Good morning.", writes = 0, markup = "";
 const heading = {
   classList: { remove: (name) => classes.delete(name) },
-  style: { setProperty: (name, value) => properties.set(name, value) },
   getAttribute: () => label, setAttribute: (_, value) => { label = value; },
   set innerHTML(value) { writes++; markup = value; }
 };
@@ -39,7 +38,6 @@ context.syncDashboardGreeting(new Date(2026, 9, 28, 11, 59));
 assert.equal(writes, 0, "Normal clock ticks do not replace the heading or restart its animation");
 context.syncDashboardGreeting(new Date(2026, 9, 28, 12));
 assert.equal(label, "Good afternoon."); assert.equal(writes, 1);
-assert.equal(properties.get("--headline-chars"), String(label.length));
 assert.ok(!classes.has("is-resolving") && !markup.includes("is-delayed"));
 context.syncDashboardGreeting(new Date(2026, 9, 28, 12, 1)); assert.equal(writes, 1);
 state.activeSection = "games";
@@ -87,12 +85,12 @@ resumeContext.exports.resume(); assert.equal(timeCalls, 0);
 resumeContext.document.hidden = false; resumeContext.exports.resume(); assert.equal(timeCalls, 1); assert.equal(seasonalCalls, 2);
 
 let settled = 0;
-class Element { constructor(last) { this.hasAttribute = (name) => name === "data-cipher-last" && last; } }
+class Element { constructor(ink) { this.classList = { contains: (name) => name === "cipher-ink" && ink }; } }
 const endContext = vm.createContext({ exports: {}, headline: "Good morning.", HTMLElement: Element, setHeadlineAnimating: (value) => { assert.equal(value, false); settled++; } });
 vm.runInContext(ts.transpileModule(`exports.end = ${animationHandler.getText(react)};`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, endContext);
 endContext.exports.end({ animationName: "cursor-blink", target: new Element(true) });
 endContext.exports.end({ animationName: "cipher-ink-lock", target: new Element(false) });
-assert.equal(settled, 0, "Do not truncate the title effect at its first character or cursor");
+assert.equal(settled, 0, "Do not settle for an unrelated animation or the cursor");
 endContext.exports.end({ animationName: "cipher-ink-lock", target: new Element(true) });
-assert.equal(settled, 1, "Settle the resolving state after the final readable character");
+assert.equal(settled, 1, "Settle only after the readable line finishes");
 console.log("Greeting checks passed: local boundaries, midnight, idle/tab resume, no repeated heading writes, section/boot guards, one existing timer, React cleanup and final-character settling.");

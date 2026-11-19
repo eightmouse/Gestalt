@@ -37,6 +37,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Steadier cipher and lighter Setup",
+          "detail": "The signal has its own character spacing and reveals the readable line in steps. Setup tiles no longer parse terminal specs. Handheld Games search keeps its tap target with a bare icon and a slim input.",
+          "version": "v1.84.1",
+          "releasedOn": "2026-11-19"
+        },
+        {
           "title": "Pocket libraries and a sharper cipher",
           "detail": "Games gets full-height upright tapes with handwritten labels and search beside Back. Projects uses tall cards with vertical titles. Swipe across records or vertically to change groups. Gestalt's cipher now cycles glyphs and locks text into place, with no movement for Reduced Motion.",
           "version": "v1.84.0",

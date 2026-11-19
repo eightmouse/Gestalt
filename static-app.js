@@ -54,9 +54,9 @@ function gameActivityLabel(record) {
 }
 
 function renderCipherLetters(value) {
-  return window.GestaltCipherDecode?.plan(value).map(({ text, glyphs, step, last }) =>
-    glyphs ? `<span class="cipher-cell" style="--cipher-index:${step}"><span class="cipher-ink"${last ? ' data-cipher-last="true"' : ""}>${escapeHtml(text)}</span><span class="cipher-glyph" aria-hidden="true" data-a="${glyphs[0]}" data-b="${glyphs[1]}" data-c="${glyphs[2]}"></span></span>` : escapeHtml(text)
-  ).join("") ?? escapeHtml(value);
+  const plan = window.GestaltCipherDecode?.plan(value);
+  if (!plan) return escapeHtml(value);
+  return `<span class="cipher-line" style="--cipher-steps:${plan.steps}"><span class="cipher-ink">${escapeHtml(value)}</span><span class="cipher-glyph" aria-hidden="true" data-a="${escapeHtml(plan.initial)}" data-b="${escapeHtml(plan.burst)}"></span></span>`;
 }
 
 const weatherState = {
@@ -1594,7 +1594,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.84.0</span>
+        <span>v1.84.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1608,7 +1608,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.84.0</span>
+        <span class="version-label">v1.84.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1628,7 +1628,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.84.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.84.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2408,8 +2408,12 @@ const setupGroupRegistry = [
 function renderSetupBay(section, sectionRecords, countLabel, readout) {
   const groups = setupGroupRegistry.map((group) => ({
     ...group,
-    records: sectionRecords.filter((record) => setupGroupFor(record) === group.id)
+    records: []
   }));
+  for (const record of sectionRecords) {
+    const group = setupGroupFor(record);
+    groups.find(({ id }) => id === group)?.records.push(record);
+  }
 
   return `<section class="section-page setup-bay" aria-label="${escapeHtml(section.code)} device bay">
     <header class="section-page-header setup-bay-header">
@@ -2433,7 +2437,7 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
             <div class="setup-tile-grid">
               ${
                 group.records.length
-                  ? group.records.map((record) => renderSetupTile(record)).join("")
+                  ? group.records.map((record) => renderSetupTile(record, group)).join("")
                   : `<span class="setup-empty">No files mounted.</span>`
               }
             </div>
@@ -2444,13 +2448,11 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
   </section>`;
 }
 
-function renderSetupTile(record) {
-  const group = setupGroupFor(record);
+function renderSetupTile(record, { id: group, title: category }) {
   const image = setupTileImage(record);
-  const profile = setupProfile(record);
   const externalUrl = safeExternalUrl(record.externalUrl);
   const action = group === "tools" ? (externalUrl ? "launch" : "idle") : group === "peripherals" ? "inspect" : group === "notes" ? "read" : "boot";
-  const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${profile.category} . ${record.status}`;
+  const metaLine = group === "peripherals" ? cleanDisplaySummary(record.summary) : `${category} . ${record.status}`;
   const content = `<span class="${image ? "setup-tile-icon has-image" : "setup-tile-icon"}" aria-hidden="true">${image ? `<img src="${escapeHtml(image)}" alt="" decoding="async" loading="lazy" />` : ""}<span class="setup-tile-glyph"></span></span>
     <span class="setup-tile-body">
       <strong>${escapeHtml(record.title)}</strong>
@@ -3662,7 +3664,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.84.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.84.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3677,7 +3679,7 @@ function workspaceHeading() {
   const resolving = state.headlineAnimating || !state.bootDismissed;
   return `<div>
     <p class="route-label">// ${escapeHtml(dashboard ? "DASHBOARD" : section.code)}</p>
-    <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}"><span>${renderCipherLetters(headline)}</span><span class="cursor headline-cursor${resolving ? " is-delayed" : ""}" aria-hidden="true">_</span></h1>
+    <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" aria-label="${escapeHtml(headline)}"><span>${renderCipherLetters(headline)}</span><span class="cursor headline-cursor${resolving ? " is-delayed" : ""}" aria-hidden="true">_</span></h1>
     <p class="subtle">${dashboard ? dashboardSubtext() : section.id === "games" || section.id === "projects" ? "" : "Browse the records filed under this archive."}</p>
   </div>`;
 }
@@ -3768,7 +3770,7 @@ function render() {
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <div class="boot-loader">
         <span>GESTALT</span>
-        <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}"><span>${renderCipherLetters("System initializing")}</span></div>
+        <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing"><span>${renderCipherLetters("System initializing")}</span></div>
         <b class="boot-meter"><b></b></b>
       </div>
       ${state.startupMode === "full" ? `<ol class="boot-process-log">${(window.GestaltOsBehaviour?.bootProcesses || []).map(({ at, label, stamp }) => `<li style="--boot-line-time: ${at}ms"><span class="boot-process-stamp">${escapeHtml(stamp)}</span><span class="boot-process-state">[ OK ]</span>${escapeHtml(label)}</li>`).join("")}</ol>` : ""}
@@ -3891,7 +3893,6 @@ function syncDashboardGreeting(date = new Date()) {
   if (!heading || heading.getAttribute("aria-label") === text) return;
   heading.classList.remove("is-resolving");
   heading.setAttribute("aria-label", text);
-  heading.style.setProperty("--headline-chars", String(text.length));
   heading.innerHTML = `<span>${renderCipherLetters(text)}</span><span class="cursor headline-cursor" aria-hidden="true">_</span>`;
 }
 
