@@ -16,7 +16,7 @@ const compiled = ts.transpileModule(withoutImports, { compilerOptions: { target:
 const record = { id: "inline-fixture", title: "Original title", section: "logs", type: "Field Note", status: "Filed", started: "2026-10-22", updated: "2026-10-22", writtenAt: "2026-10-22", writtenOrder: 8, body: ":::note First note\nOriginal body\n:::", summary: "", meta: {}, progress: 0, priority: 1, milestones: [] };
 const helpers = vm.createContext({ exports: {} });
 vm.runInContext(ts.transpileModule(read("lib/inline-editing.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, helpers);
-const { supportsInlineEditing, newInlineRecord } = helpers.exports;
+const { supportsInlineEditing, newInlineRecord, inlineNoteIndex } = helpers.exports;
 const setupEditing = vm.createContext({ exports: {}, URL });
 vm.runInContext(ts.transpileModule(read("lib/setup-editing.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, setupEditing);
 const { setupSpecDraft, setupSpecLine, validSetupShortcut } = setupEditing.exports;
@@ -24,6 +24,17 @@ const api = vm.createContext({ exports: {}, Error });
 vm.runInContext(ts.transpileModule(read("lib/studio-client-api.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, api);
 assert.equal(supportsInlineEditing("setup"), true);
 assert.equal(supportsInlineEditing("archive"), false);
+const files = [
+  { id: "n-new", title: "A new file", body: "" },
+  { id: "n-current", title: "Renamed title", body: "" },
+  { title: "Older file", body: "" },
+  { title: "Duplicate title", body: "" },
+  { title: "Duplicate title", body: "" }
+];
+assert.equal(inlineNoteIndex(files, { id: "n-current", title: "Original title", index: 0 }), 1, "IDs follow the exact note through edits and inserts");
+assert.equal(inlineNoteIndex(files, { id: "n-deleted", title: "Older file", index: 2 }), -1, "A missing ID never opens an unrelated file");
+assert.equal(inlineNoteIndex(files, { title: "Older file", index: 1 }), 2, "Legacy files can be found after an insert");
+assert.equal(inlineNoteIndex(files, { title: "Duplicate title", index: 1 }), -1, "Ambiguous legacy matches fall back to the directory");
 for (const section of ["logs", "games", "projects"]) {
   const draft = newInlineRecord(section, undefined, new Date("2026-10-22T12:00:00"));
   assert.equal(draft.section, section);
@@ -31,7 +42,7 @@ for (const section of ["logs", "games", "projects"]) {
   assert.ok(draft.id.startsWith("__new:"), "Unsaved window identities cannot be confused with a saved record");
 }
 
-async function fixture({ fail = false, exported = true, inline = true, section = "logs", setupGroup = "systems", create = false, seed, manual = false } = {}) {
+async function fixture({ fail = false, exported = true, inline = true, section = "logs", setupGroup = "systems", create = false, seed, manual = false, focused, body, noteEditing = false } = {}) {
   let stateIndex = 0, refIndex = 0;
   const states = [], refs = [], calls = [], changes = [];
   const other = { body: "Unrelated draft", form: { ...record, id: "other-record", originalId: "other-record", body: "Unrelated draft" }, updatedAt: 10 };
@@ -43,7 +54,7 @@ async function fixture({ fail = false, exported = true, inline = true, section =
     window: { confirm: () => true, localStorage: { getItem: () => storage, setItem: (_key, value) => { storage = value; }, removeItem: () => { storage = null; } } },
     imageFraming: require("../public/image-framing.js"),
     gameLogPlacement: (form) => form.gamePlacement || form.meta?.gamePlacement || "session", gameActivityValue: (form) => form.gameActivity || form.meta?.gameActivity || "", compareSectionRecords: () => 0,
-    supportsInlineEditing, setupSpecDraft, validSetupShortcut, setupGroupFor: (record) => record.meta.setupGroup || "systems", InlineSetupLayout() {}, InlineRecordLayout() {}, HeaderFraming() {}, ArtworkFraming() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ImagePlus: require("lucide-react").ImagePlus, ChevronDown: require("lucide-react").ChevronDown,
+    supportsInlineEditing, inlineNoteIndex, setupSpecDraft, validSetupShortcut, setupGroupFor: (record) => record.meta.setupGroup || "systems", InlineSetupLayout() {}, InlineRecordLayout() {}, NoteFileSearch() {}, HeaderFraming() {}, ArtworkFraming() {}, StudioSaveState() {}, PublishNotificationPanel() {}, Bell: "svg", Type: "svg", ImagePlus: require("lucide-react").ImagePlus, ChevronDown: require("lucide-react").ChevronDown,
     readStudioResponse: api.exports.readStudioResponse, StudioRequestError: api.exports.StudioRequestError,
     fetch: async (url, options) => {
       calls.push({ url, method: options.method, payload: JSON.parse(options.body || "{}") });
@@ -62,9 +73,9 @@ async function fixture({ fail = false, exported = true, inline = true, section =
   vm.runInContext(ts.transpileModule(read("components/studio/publishing-store.ts"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, publisher);
   context.useStudioPublishing = Object.assign(() => publisher.exports.useStudioPublishing.getState(), { getState: () => publisher.exports.useStudioPublishing.getState() });
   vm.runInContext(compiled, context);
-  const sourceRecord = { ...record, section, meta: section === "games" ? { gamePlacement: "session", gameActivity: "inactive", steamAppId: "123", achievementCount: "25 / 50" } : section === "projects" ? { technicalStack: "TypeScript\nNext.js", samples: ["/media/fixture.png"] } : {} };
+  const sourceRecord = { ...record, section, body: body ?? record.body, meta: section === "games" ? { gamePlacement: "session", gameActivity: "inactive", steamAppId: "123", achievementCount: "25 / 50" } : section === "projects" ? { technicalStack: "TypeScript\nNext.js", samples: ["/media/fixture.png"] } : {} };
   if (section === "setup") sourceRecord.meta.setupGroup = setupGroup;
-  const props = { records: [sourceRecord], initialRecordId: create ? undefined : record.id, initialSection: create ? section : undefined, initialSetupGroup: setupGroup, initialSteamGame: seed, inline, embedded: true, initialContent: "notes", onRecordsChange: (...args) => changes.push(args) };
+  const props = { records: [sourceRecord], initialRecordId: create ? undefined : record.id, initialSection: create ? section : undefined, initialSetupGroup: setupGroup, initialSteamGame: seed, inline, embedded: true, initialContent: "notes", noteFile: focused, onNoteFileChange: noteEditing ? () => {} : undefined, onRecordsChange: (...args) => changes.push(args) };
   const render = () => { stateIndex = 0; refIndex = 0; return context.exports.StudioClient(props); };
   const find = (node, predicate) => !node || typeof node !== "object" ? null : predicate(node) ? node : [node.props?.children].flat(Infinity).map((child) => find(child, predicate)).find(Boolean);
   const layout = () => find(render(), (node) => node.type === (section === "setup" ? context.InlineSetupLayout : context.InlineRecordLayout));
@@ -160,7 +171,7 @@ assert.equal(movable.changes.at(-1)[1], null);
 for (const section of ["logs", "games", "projects"]) {
   const editor = await fixture({ section, manual: true });
   const tabs = editor.layout().props.contents.map((item) => item.key);
-  assert.deepEqual(Array.from(tabs), section === "games" ? ["overview", "notes", "recommendation"] : section === "projects" ? ["technical", "overview", "notes", "samples"] : ["overview", "notes", "attachments"]);
+  assert.deepEqual(Array.from(tabs), section === "games" ? ["overview", "notes", "recommendation"] : section === "projects" ? ["overview", "notes", "technical", "samples"] : ["notes", "overview", "attachments"]);
   assert.equal(Boolean(editor.layout().props.controls), section === "games", "Game placement controls belong only to Games");
   editor.layout().props.onUpdate("title", `Updated ${section}`);
   await editor.layout().props.onSave();
@@ -356,7 +367,7 @@ for (const [state, label] of [["new", "New draft"], ["unsaved", "Unsaved changes
   assert.ok(html.includes(label) && html.includes('role="status"'));
   assert.ok(!html.toLowerCase().includes("published"), "The indicator never claims a Git push or hosted deployment");
 }
-assert.match(read("app/studio/studio.css"), /\.inline-record-actions > \.studio-save-state\s*\{ grid-column: 1 \/ -1;/);
+assert.match(read("app/studio/studio.css"), /\.inline-record-actions > \.studio-save-state\s*\{ margin-inline-end: auto;/);
 assert.match(read("components/studio/inline-record-layout.tsx"), /title="Background behind the entry title; separate from overview artwork and samples"/);
 console.log("Buffered controls and status markup passed: typing, revert, cancel, blur, cleanup, local-save wording and compact action rows.");
 
@@ -440,6 +451,22 @@ assert.match(read("app/globals.css"), /\.timeline-source select\s*\{[^}]*color-s
 console.log("Editor selectors: shared native styling, labelled controls, decorative arrows, unchanged placement/activity behavior and save payload passed.");
 
 const reader = read("components/archive/record-window.tsx");
+const multiNoteBody = record.body + "\n\n:::note Earlier release\nAn older note.\n:::";
+const sessionWriting = await fixture({ section: "games", body: multiNoteBody, manual: true, noteEditing: true, focused: { index: 1, title: "Earlier release" } });
+const sessionDirectory = await fixture({ section: "games", body: multiNoteBody, manual: true, noteEditing: true });
+const singleLog = await fixture({ manual: true, noteEditing: true });
+const multiLog = await fixture({ body: multiNoteBody, manual: true, noteEditing: true });
+const plainSetup = await fixture({ section: "setup", setupGroup: "notes", manual: true, noteEditing: true });
+assert.equal(sessionWriting.layout().props.writingNote, true);
+assert.equal(sessionWriting.layout().props.content.props.directory.file.index, 1);
+assert.equal(sessionDirectory.layout().props.writingNote, false);
+assert.ok(sessionDirectory.layout().props.noteSearch);
+assert.equal(singleLog.layout().props.writingNote, true);
+assert.equal(singleLog.layout().props.noteSearch, undefined);
+assert.equal(multiLog.layout().props.writingNote, false);
+assert.ok(multiLog.layout().props.noteSearch);
+assert.equal(plainSetup.layout().props.notes.props.directory.direct, true);
+console.log("Shared note writer checks passed: exact Game target, searchable directories, direct single Logs, and Setup Notes.");
 assert.match(reader, /editor \? "record-layout is-editing-record" : "record-layout"/);
 assert.match(reader, /\{editor \?\? \(focusedNote \? <FocusedNotePanel/, "The editor still takes precedence over either reading surface");
 const archive = read("components/archive-os.tsx");

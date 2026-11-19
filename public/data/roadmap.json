@@ -14,7 +14,7 @@
         },
         {
           "title": "Projects & Games: selector redesign",
-          "detail": "The Process Reader and Media Cabinet are live. Projects and Games share a file directory inside their entries. Remaining visual polish stays open."
+          "detail": "The desktop Process Reader and Media Cabinet are live. Handheld needs its own browsing treatment; layout and interaction are open for design discussion."
         },
         {
           "title": "Align minimized windows with the content",
@@ -40,6 +40,18 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Write in place across the archive",
+          "detail": "The local gear opens the exact Project or Game note for editing. Single-note Logs and Setup Notes go straight to a framed writer with formatting and media tools. Multi-note records keep their files. Save Record writes locally; the bell still reviews and publishes separately. Pages stays read-only.",
+          "version": "v1.81.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
+          "title": "Focus without the outer box",
+          "detail": "Keyboard navigation and Escape keep a clear focus cue inside the control instead of drawing a square that can clip against a window or shelf.",
+          "version": "v1.81.0",
+          "releasedOn": "2026-11-19"
+        },
         {
           "title": "One file directory for Games and Projects",
           "detail": "Open an entry and browse its notes as files, up to six across on desktop and two on handheld, without paging. Search stays in the tab bar, and closing a note returns you to the same file. Project windows use the project name and only show Technical Stack or Samples when there is something to see.",

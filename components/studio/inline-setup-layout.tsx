@@ -54,7 +54,7 @@ export function InlineSetupLayout({
     <div className="inline-setup-toolbar">
       <StudioSaveState state={saveState} />
       <button type="button" disabled={busy} onClick={onSave}><Save size={15} aria-hidden="true" />Save Record</button>
-      <button type="button" disabled={busy} onClick={onRead}><BookOpen size={15} aria-hidden="true" />{isNew ? "Close draft" : "Read entry"}</button>
+      {group !== "notes" ? <button type="button" disabled={busy} onClick={onRead}><BookOpen size={15} aria-hidden="true" />{isNew ? "Close draft" : "Read entry"}</button> : null}
       {exportRequired ? <button type="button" disabled={busy} onClick={onRefresh}>Refresh archive</button> : null}
     </div>
     <p className="inline-setup-message" role="status">{message}</p>

@@ -2,7 +2,7 @@
 
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
-import { ArrowLeft, Maximize2, Minimize2, Search, Settings, X } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import {
   contentOrdinal,
@@ -10,6 +10,7 @@ import {
   RecordNoteFiles,
   getRecordContents,
   noteReaderTitle,
+  NoteFileSearch,
   NoteSearchBox,
   RecordBody,
   RecordContentPanel,
@@ -19,6 +20,7 @@ import {
 import { formatReadableDate, noteEntries, recordHeaderImage, recordLastUpdated } from "@/components/archive/record-utils";
 import { setupGroupFor, setupNarrativeNotes, setupPathFor, setupProfile } from "@/components/archive/setup-utils";
 import type { ContentKey } from "@/components/archive/types";
+import type { InlineNoteFile } from "@/lib/inline-editing";
 import type { RecordEntry } from "@/lib/types";
 import imageFraming from "@/public/image-framing.js";
 import pocket from "@/public/pocket-index.js";
@@ -39,7 +41,7 @@ type RecordWindowProps = {
   maximized: boolean;
   record: RecordEntry;
   shareable?: boolean;
-  onEdit?: (content?: ContentKey) => void;
+  onEdit?: (content?: ContentKey, file?: InlineNoteFile) => void;
   editor?: ReactNode;
   editorBusy?: boolean;
   escapeBlocked?: boolean;
@@ -99,6 +101,11 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
   const dashboardNote = onOpenFullEntry && initialNoteIndex !== undefined ? noteEntries(record.body)[initialNoteIndex] : undefined;
   const directoryNote = noteDirectory && readingNotes && noteFileOpen && focusedNoteIndex !== undefined ? noteEntries(record.body)[focusedNoteIndex] : undefined;
   const focusedNote = editor ? undefined : dashboardNote ?? directoryNote;
+  const editIndex = dashboardNote ? initialNoteIndex : directoryNote || (logs && readingNotes) ? focusedNoteIndex : undefined;
+  const editableNote = editIndex === undefined ? undefined : (dashboardNote ?? directoryNote ?? noteEntries(record.body)[editIndex]);
+  const editFile = editableNote && editIndex !== undefined
+    ? { index: editIndex, id: editableNote.id, title: editableNote.title }
+    : undefined;
   const caption = focusedNote ? `// ${noteReaderTitle(focusedNote.title, record.title)}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
   const focusReading = () => {
     windowRef.current?.focus({ preventScroll: true });
@@ -214,7 +221,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
         </div>
         <div className="window-control-group">
           {shareable ? <RecordLinkButton id={record.id} noteId={focusedNote?.id} /> : null}
-          {onEdit && !dashboardNote ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : "Edit this record locally"} title={editor ? "Read saved record" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
+          {onEdit && (!dashboardNote || noteDirectory) ? <button className="window-edit-action" type="button" disabled={editorBusy} onClick={() => editFile ? onEdit(activeContent, editFile) : onEdit(activeContent)} aria-pressed={Boolean(editor)} aria-label={editor ? "Read saved record" : editFile ? "Edit this note locally" : "Edit this record locally"} title={editor ? "Read saved record" : editFile ? "Edit note locally" : "Edit locally"}><Settings size={15} aria-hidden="true" /></button> : null}
           <div className="window-actions">
             <button type="button" disabled={editorBusy} data-window-action="minimize" onClick={onMinimize} aria-label="Minimize record">
               <Minimize2 size={14} />
@@ -248,12 +255,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             <div className="record-view-tab-links">
               {contents.map(({ key, label }) => <button type="button" key={key} aria-current={key === activeContent ? "true" : undefined} onClick={() => selectContent(key)}>{label}</button>)}
             </div>
-            {canSearchNoteFiles ? <div className="record-note-search" data-expanded={noteFileSearchOpen ? "" : undefined}>
-              <input ref={fileSearchInput} id="record-note-search-input" type="search" autoComplete="off" placeholder="Title or date" aria-label="Search notes" value={noteSearchQuery} onChange={(event) => setNoteSearchQuery(event.target.value)} />
-              <button ref={fileSearchButton} type="button" aria-label={noteFileSearchOpen ? "Close note search" : "Search notes"} aria-expanded={noteFileSearchOpen} aria-controls="record-note-search-input" onClick={() => toggleNoteFileSearch(!noteFileSearchOpen)}>
-                {noteFileSearchOpen ? <X size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
-              </button>
-            </div> : null}
+            {canSearchNoteFiles ? <NoteFileSearch expanded={noteFileSearchOpen} query={noteSearchQuery} inputRef={fileSearchInput} buttonRef={fileSearchButton} onToggle={toggleNoteFileSearch} onQueryChange={setNoteSearchQuery} /> : null}
           </nav> : null}
           <div
             className={`${artwork ? "record-heading has-heading-banner" : "record-heading"}${retractArtwork ? " is-notes-heading" : ""}`}

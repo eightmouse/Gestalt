@@ -45,7 +45,7 @@ import type { ContentKey, SearchResult } from "@/components/archive/types";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { createSteamSnapshotLoader, loadSteamSnapshot, resolveCurrentGame, steamRecordSeed, type SteamRecordSeed, type SteamSnapshot } from "@/public/steam-display.mjs";
 import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, shouldPlayEntryAccess, type EntryAccessMode } from "@/lib/entry-access";
-import { newInlineRecord, supportsInlineEditing } from "@/lib/inline-editing";
+import { inlineNoteIndex, newInlineRecord, supportsInlineEditing, type InlineNoteFile } from "@/lib/inline-editing";
 import seasonal, { type SeasonalMode } from "@/public/seasonal.js";
 import desktopNavigation, { type DesktopNavigationMode } from "@/public/desktop-navigation.js";
 import { DesktopNavigationChrome, DesktopTerminalRestore, SystemTipsButton, useDesktopNavigation } from "@/components/archive/desktop-navigation";
@@ -138,6 +138,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const [studioSetupGroup, setStudioSetupGroup] = useState<SetupGroupId | undefined>();
   const [studioSteamGame, setStudioSteamGame] = useState<SteamRecordSeed | undefined>();
   const [inlineRecordId, setInlineRecordId] = useState<string | null>(null);
+  const [inlineNoteFile, setInlineNoteFile] = useState<InlineNoteFile | null>(null);
   const [inlineBusy, setInlineBusy] = useState(false);
   const [inlineDraftWindow, setInlineDraftWindow] = useState<RecordEntry | null>(null);
   const webSearchState = useRef({ ready: false, busy: true });
@@ -531,15 +532,18 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     return () => window.removeEventListener("popstate", onPopState);
   }, [bootComplete, localMemory]);
 
-  const openLocalEditor = (recordId: string, content: ContentKey = "overview") => {
+  const openLocalEditor = (recordId: string, content: ContentKey = "overview", file: InlineNoteFile | null = null) => {
     if (inlineBusy) return;
     if (panelOpen && recordId === selectedRecord?.id && supportsInlineEditing(selectedRecord.section)) {
       stopRecordAccess();
       setRecordAccessComplete(true);
-      setInitialContent(content);
-      setInitialNoteIndex(undefined);
       if (editingInline) finishInlineEditing();
-      else setInlineRecordId(recordWindowKey!);
+      else {
+        setInitialContent(content);
+        setInitialNoteIndex(undefined);
+        setInlineNoteFile(file);
+        setInlineRecordId(recordWindowKey!);
+      }
       setSearchOpen(false);
       return;
     }
@@ -551,6 +555,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const finishInlineEditing = () => {
     if (inlineBusy) return;
+    if (selectedRecord && ["games", "logs", "projects"].includes(selectedRecord.section)) {
+      const index = initialContent === "notes" ? inlineNoteIndex(noteEntries(selectedRecord.body), inlineNoteFile) : -1;
+      setInitialNoteIndex(index >= 0 ? index : undefined);
+      if (index < 0) setDashboardNoteReader(false);
+    }
+    setInlineNoteFile(null);
     setInlineRecordId(null);
     if (unsavedInline) {
       setPanelOpen(false);
@@ -569,6 +579,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       setInlineDraftWindow(draft);
       setSelectedId(draft.id);
       setDashboardNoteReader(false);
+      setInlineNoteFile(null);
       setInlineRecordId(draft.id);
       setInitialContent(section === "logs" ? "notes" : "overview");
       setInitialNoteIndex(undefined);
@@ -975,7 +986,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             onOpenFullEntry={dashboardNoteReader ? () => setDashboardNoteReader(false) : undefined}
             record={selectedRecord}
             shareable={publicReader && selectedRecord.section !== "system"}
-            onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content) => openLocalEditor(selectedRecord.id, content) : undefined}
+            onEdit={process.env.NODE_ENV === "development" && selectedRecord.section !== "system" ? (content, file) => openLocalEditor(selectedRecord.id, content, file) : undefined}
             editorBusy={inlineBusy}
             escapeBlocked={searchOpen || navOpen || Boolean(studioRecordId)}
             editor={process.env.NODE_ENV === "development" && editingInline ? (
@@ -984,6 +995,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 initialSetupGroup={selectedRecord.section === "setup" ? setupGroupFor(selectedRecord) : undefined}
                 initialSteamGame={unsavedInline ? studioSteamGame : undefined}
                 initialContent={initialContent === "changelog" || initialContent === "hardware" ? "overview" : initialContent}
+                noteFile={inlineNoteFile} onNoteFileChange={setInlineNoteFile}
                 records={archiveRecords.filter((record) => record.section !== "system")}
                 onBusyChange={setInlineBusy} onContentChange={(content) => setInitialContent(content)}
                 onExit={finishInlineEditing} onRecordsChange={applyStudioRecords} />

@@ -212,6 +212,9 @@ Object.assign(react, {
 });
 const headerComponent = ts.transpileModule(`${declaration("../components/archive/record-window.tsx", "useRecordFocus")}\nexport ${declaration("../components/archive/record-window.tsx", "ArchiveRecordWindow")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 vm.runInContext(`(() => { ${headerComponent} })()`, react);
+const noteFileSearch = ts.transpileModule(`export ${declaration("../components/archive/record-content.tsx", "NoteFileSearch")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+vm.runInContext(`(() => { ${noteFileSearch} })()`, react);
+react.NoteFileSearch = react.exports.NoteFileSearch;
 Object.assign(staticContext, {
   state: { panelOpen: true }, getRecordContents: () => [], normalizeContentKey: () => "overview",
   pocketBack: () => "",
@@ -224,6 +227,7 @@ vm.runInContext(["recordWindow", "recordArtwork", "renderHeadingImage", "recordA
 react.noteEntries = () => [];
 function findHeaderElement(node, className) {
   if (!node || typeof node !== "object") return null;
+  if (node.type === react.NoteFileSearch) return findHeaderElement(node.type(node.props), className);
   if (node.props?.className === className) return node;
   for (const child of [node.props?.children].flat(Infinity)) {
     const found = findHeaderElement(child, className);

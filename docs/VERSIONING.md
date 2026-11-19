@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.80.0`. Previous site-code release: `v1.79.0` (9723e33a).
+Release target: `v1.81.0`. Previous site-code release: `v1.80.0` (1238e65f).
+
+`v1.81.0` gives Projects, Games, Logs and Setup Notes a shared writing panel in the local archive. The gear opens the exact Project or Game note; single-note Logs go straight to writing, while longer records keep their file directory. Formatting, media, draft recovery, local saves and the publish bell remain in place. Both readers use inset focus marks instead of outer rectangles. Public reading layouts, authored records, media and dependencies are unchanged.
 
 `v1.80.0` shares the searchable, unpaginated note directory between Games and Projects. It fits up to six files per desktop row and two on handheld. Project windows show the project title, retain real artwork, and omit the empty Overview artwork panel; Technical Stack and Samples stay conditional. Logs open directly to their prose and retain dates, references, attachments and exact note links. The editor, authored records, original media and dependencies are unchanged.
 

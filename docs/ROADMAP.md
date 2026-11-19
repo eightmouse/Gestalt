@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+19 November, v1.81.0: Local note editing now uses the same framed writing panel in Projects, Games, Logs and Setup Notes. Games keep placement, activity and Steam fields in Overview; single-note Logs open straight to the writer. Tab and Escape use an inset focus mark in both readers. Next design discussion: how the Media Cabinet and Process Reader should work on handheld without shrinking the desktop experience.
+
 19 November, v1.80.0: Game and Project notes share a continuous directory with up to six files per desktop row. Project windows keep their Overview and contextual tabs; Logs open directly to the writing. The previous release is filed in more detail by section. The editor rework remains a separate discussion.
 
 19 November, v1.79.0 preview: Projects and Games have new browsing surfaces, with rotating project plates and draggable game disks. Game entries keep a shared title and artwork across tabs, and Notes opens individual files in the focused reader. The Full Welcome handoff no longer moves or clips the dashboard plates. Visual polish remains open.

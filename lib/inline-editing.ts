@@ -1,8 +1,19 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import type { SteamRecordSeed } from "@/public/steam-display.mjs";
 import type { SetupGroupId } from "@/components/archive/setup-utils";
+import type { ArchiveNote } from "@/public/note-inline.js";
 
 export type InlineSection = "logs" | "games" | "projects" | "setup";
+
+export type InlineNoteFile = { index: number; id?: string; title: string };
+
+export function inlineNoteIndex(notes: ArchiveNote[], file: InlineNoteFile | null): number {
+  if (!file) return -1;
+  if (file.id) return notes.findIndex((note) => note.id === file.id);
+  if (notes[file.index]?.title === file.title) return file.index;
+  const index = notes.findIndex((note) => note.title === file.title);
+  return notes.some((note, position) => position > index && note.title === file.title) ? -1 : index;
+}
 
 export function supportsInlineEditing(section: RecordSection): section is InlineSection {
   return section === "logs" || section === "games" || section === "projects" || section === "setup";

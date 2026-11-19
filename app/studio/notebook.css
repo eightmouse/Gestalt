@@ -15,7 +15,7 @@
 .notebook-item-editor .notebook-title-input { font-size: 18px; color: var(--text-strong); line-height: 1.4; }
 .notebook-item-editor .notebook-detail-input { margin-block-start: 8px; font-size: 15px; }
 .notebook-item-editor textarea:hover { border-color: var(--line); }
-.notebook-item-editor textarea:focus { border-color: var(--accent-dim); outline: 1px solid var(--accent-dim); background: rgba(var(--tone-well, 0, 0, 0), 0.08); }
+.notebook-item-editor textarea:focus { border-color: var(--accent-dim); background: rgba(var(--tone-well, 0, 0, 0), 0.08); }
 .notebook-item-complete { appearance: none; position: relative; inline-size: 18px; block-size: 18px; margin: 5px 0 0; border: 1px solid var(--accent-dim); border-radius: 0; background: transparent; cursor: pointer; }
 .notebook-item-complete:checked::after { content: ""; position: absolute; inset: 2px 5px 4px; border: solid var(--text-strong); border-width: 0 1px 1px 0; transform: rotate(45deg); }
 .notebook-item-editor[data-completed] .notebook-title-input { text-decoration: line-through; text-decoration-color: currentColor; text-decoration-thickness: 2px; }

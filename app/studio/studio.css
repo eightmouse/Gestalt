@@ -11,7 +11,6 @@ html:has(:is(.record-layout.is-editing-record, .record-window.is-editing-setup))
 .inline-setup-editor :is(input, select, textarea):not([type="file"]) { min-inline-size: 0; max-inline-size: 100%; box-sizing: border-box; }
 .inline-setup-editor :is(.inline-setup-title, .inline-setup-field input, .inline-setup-field textarea, .inline-setup-spec input) { inline-size: 100%; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 0; background: var(--surface-input, #10110f); color: var(--text-strong); font: inherit; color-scheme: var(--control-scheme, dark); }
 .inline-setup-editor .inline-setup-title { font-size: inherit; }
-.inline-setup-editor :is(input, select, textarea):focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
 .inline-setup-field { display: grid; gap: 5px; color: var(--muted); font-size: 14px; }
 .inline-setup-field textarea { resize: vertical; }
 .inline-setup-media { position: relative; min-inline-size: 0; }
@@ -89,14 +88,15 @@ html:has(:is(.record-layout.is-editing-record, .record-window.is-editing-setup))
 }
 .record-layout.is-editing-record .inline-record-header-action { position: relative; z-index: 2; justify-self: start; }
 .record-layout.is-editing-record .inline-record-media-actions { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 12px; }
-.record-layout.is-editing-record .inline-record-actions { display: grid; gap: 8px; }
+.record-layout.is-editing-record .inline-record-actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block-end: 12px;
+}
 .record-layout.is-editing-record .inline-record-actions button:first-of-type { border-color: var(--line-strong); }
-.record-layout.is-editing-record .inline-record-actions > .studio-save-state { grid-column: 1 / -1; }
+.record-layout.is-editing-record .inline-record-actions > .studio-save-state { margin-inline-end: auto; }
 .record-layout.is-editing-record .inline-record-actions button:disabled { opacity: 0.55; cursor: wait; }
 .record-layout.is-editing-record .inline-record-message { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
 .studio-save-state { display: block; padding: 4px 0 4px 9px; border-inline-start: 2px solid var(--line-strong); color: var(--muted); font: 14px/1.5 var(--mono); letter-spacing: 0; }
 .studio-save-state[data-save-state="unsaved"], .studio-save-state[data-save-state="new"] { color: var(--text-strong); border-color: var(--accent); }
-.record-layout.is-editing-record .inline-record-aside { max-block-size: none; }
 .record-layout.is-editing-record .record-meta input { inline-size: 100%; min-inline-size: 0; padding: 6px 0; border: 0; border-block-end: 1px dashed var(--line); background: transparent; color: var(--text); color-scheme: var(--control-scheme, dark); font: inherit; }
 .record-layout.is-editing-record .studio-note-editor { min-inline-size: 0; }
 .record-layout.is-editing-record .studio-note-edit textarea { inline-size: 100%; max-inline-size: 100%; resize: vertical; }
@@ -116,20 +116,65 @@ html:has(:is(.record-layout.is-editing-record, .record-window.is-editing-setup))
   font: 16px/1.4 var(--mono); letter-spacing: 0; text-transform: none; cursor: pointer;
 }
 .studio-select-control > select:is(:hover, :focus-visible) { border-color: var(--accent); }
-.studio-select-control > select:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 .studio-select-control > select:disabled { opacity: 0.55; cursor: not-allowed; }
 .studio-select-control > select > option { background: var(--surface-input, #10110f); color: var(--text-strong); }
 .studio-select-control > svg { position: absolute; inset-inline-end: 10px; inset-block-start: 50%; inline-size: 16px; block-size: 16px; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .archive-shell > .workspace:has(> .record-window > .is-editing-record) { z-index: 40; }
 @media (max-width: 1100px) {
-  .archive-shell > .workspace > .record-window .record-layout.is-editing-record { grid-template-columns: minmax(0, 1fr); }
-  .record-layout.is-editing-record .inline-record-aside { position: static; order: -1; }
-  .record-layout.is-editing-record .inline-record-aside ol { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
-  .record-layout.is-editing-record .inline-record-aside li button { padding-inline: 4px; font-size: 12px; }
-  .record-layout.is-editing-record .inline-record-aside .record-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding-block-start: 12px; }
-  .record-layout.is-editing-record .inline-record-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .record-layout.is-editing-record .studio-note-row { grid-template-columns: minmax(0, 1fr) auto; }
   .record-layout.is-editing-record .studio-note-row input { grid-column: 1 / -1; grid-row: 1; }
+}
+
+.archive-shell > .workspace > .record-window .record-layout.is-editing-record:has(> .inline-entry-editor) {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+.inline-entry-editor, .inline-entry-content { min-inline-size: 0; }
+.inline-entry-editor .record-view-tabs { margin-block-end: 8px; }
+.inline-entry-editor .inline-record-message { margin-block-end: 12px; }
+.inline-entry-content .record-meta {
+  display: flex; flex-wrap: wrap; gap: 10px 24px; margin-block: 0 16px;
+}
+.inline-entry-content .record-meta > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.inline-entry-content .record-meta dd { margin: 0; }
+.inline-entry-controls { margin-block-end: 16px; }
+.inline-entry-controls .studio-game-controls { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); align-items: start; }
+.archive-shell > .workspace > .record-window .inline-log-title { margin-block: 0 12px; padding: 0; border: 0; }
+.archive-shell > .workspace > .record-window:not(.is-setup-record) .inline-log-title h2 { margin: 0; font-size: calc(27px * var(--desktop-size, 1)); }
+.inline-note-files .record-note-files-header { align-items: center; }
+.inline-note-writer-tools {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-inline-size: 0;
+  justify-content: space-between;
+}
+.inline-new-note { margin-inline-start: auto; }
+.inline-note-tool {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-block-size: 36px; min-inline-size: 36px; padding: 5px 9px;
+  border: 1px solid var(--line); background: transparent; color: var(--text); font: inherit; cursor: pointer;
+}
+.inline-note-tool:hover { border-color: var(--line-strong); color: var(--text-strong); }
+.archive-shell > .workspace > .record-window .record-layout.is-editing-record:has(> .is-writing-note) {
+  align-content: stretch;
+}
+.inline-entry-editor.is-writing-note,
+.is-writing-note .inline-entry-content,
+.is-writing-note .inline-note-writer,
+.is-writing-note .inline-note-panel {
+  display: flex; flex-direction: column;
+}
+.is-writing-note :is(.inline-entry-content, .inline-note-writer, .inline-note-panel) { flex: 1 0 auto; }
+.inline-note-panel { min-inline-size: 0; }
+:is(.record-layout.is-editing-record, .inline-setup-notes) .inline-note-title {
+  inline-size: 100%; padding: 6px 0; border: 0; border-block-end: 1px solid var(--line);
+  background: none; color: var(--text-strong); font: 400 25px/1.25 var(--sans);
+}
+.record-layout.is-editing-record .inline-note-writer textarea {
+  flex: 1 1 200px; min-block-size: 200px; resize: none;
+}
+@media (max-width: 760px) {
+  .record-layout.is-editing-record .inline-entry-editor :is(.inline-record-actions button, .record-view-tab-links button), .inline-note-tool { min-block-size: 44px; }
+  .inline-note-writer .inline-note-panel { padding: 12px; }
+  .inline-note-writer .studio-note-format-tools button { block-size: 44px; inline-size: 44px; }
 }
 
 .studio-artwork-framing {
@@ -383,13 +428,6 @@ html:has(:is(.record-layout.is-editing-record, .record-window.is-editing-setup))
   padding: 12px;
   line-height: 1.55;
   resize: vertical;
-}
-
-.studio-panel input:focus,
-.studio-panel select:focus,
-.studio-panel textarea:focus {
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .studio-message {
@@ -1499,7 +1537,7 @@ input.studio-title-edit {
   padding: 7px 10px;
 }
 
-.studio-note-edit {
+.studio-note-edit:not(:where(.studio-content-terminal)) {
   display: grid;
   gap: 10px;
   padding: 10px;
@@ -1613,11 +1651,6 @@ input.studio-title-edit {
 .studio-note-format-tools button:focus-visible {
   border-color: var(--line-strong);
   color: var(--text-strong);
-}
-
-.studio-note-format-tools button:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .studio-note-media-tools button {

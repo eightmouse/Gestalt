@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, Cpu, FileText } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, ChevronLeft, ChevronRight, Cpu, FileText, Search, X } from "lucide-react";
 import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
@@ -412,14 +412,31 @@ function NotesPage({ focusedIndex, query, record, shareable, handheld, searchCon
   );
 }
 
-export function RecordNoteFiles({ record, query, onOpen }: { record: RecordEntry; query: string; onOpen: (index: number) => void }) {
-  const files = matchingNotes(noteEntries(record.body), query);
+export function NoteFileSearch({ expanded, query, inputRef, buttonRef, onToggle, onQueryChange }: {
+  expanded: boolean;
+  query: string;
+  inputRef: RefObject<HTMLInputElement | null>;
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  onToggle: (expanded: boolean) => void;
+  onQueryChange: (query: string) => void;
+}) {
+  return <div className="record-note-search" data-expanded={expanded ? "" : undefined}>
+    <input ref={inputRef} id="record-note-search-input" type="search" autoComplete="off" placeholder="Title or date" aria-label="Search notes" value={query} onChange={(event) => onQueryChange(event.target.value)} />
+    <button ref={buttonRef} type="button" aria-label={expanded ? "Close note search" : "Search notes"} aria-expanded={expanded} aria-controls="record-note-search-input" onClick={() => onToggle(!expanded)}>
+      {expanded ? <X size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
+    </button>
+  </div>;
+}
+
+export function RecordNoteFiles({ record, query, notes, action, onOpen }: { record: RecordEntry; query: string; notes?: ArchiveNote[]; action?: ReactNode; onOpen: (index: number) => void }) {
+  const files = matchingNotes(notes ?? noteEntries(record.body), query);
   const countLabel = query.trim() ? (files.length === 1 ? "MATCH" : "MATCHES") : (files.length === 1 ? "FILE" : "FILES");
 
   return <section className="record-note-files" aria-label={`${record.title} notes`}>
     <header className="record-note-files-header">
       <h3 className="terminal-title">// NOTE FILES</h3>
       <p className="record-note-file-count" role="status">{String(files.length).padStart(2, "0")} {countLabel}</p>
+      {action}
     </header>
     <div className="record-note-file-grid">
       {files.length ? files.map((note) => <NoteFile key={note.id ?? note.index} note={note} recordTitle={record.title} onOpen={onOpen} />)

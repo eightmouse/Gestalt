@@ -162,7 +162,6 @@
   .desktop-terminal-body nav { display: grid; }
   .desktop-terminal-body nav button { display: grid; grid-template-columns: calc(20px * var(--desktop-size, 1)) minmax(0, 1fr) auto; align-items: baseline; gap: calc(12px * var(--desktop-size, 1)); min-block-size: calc(36px * var(--desktop-size, 1)); padding: calc(6px * var(--desktop-size, 1)); border: 0; background: transparent; color: var(--text); font: inherit; text-align: start; cursor: pointer; }
   .desktop-terminal-body nav button:hover, .desktop-terminal-body nav button[aria-current="page"] { background: rgba(var(--tone-accent, 200, 189, 159), 0.07); color: var(--text-strong); }
-  .desktop-terminal-body nav button:focus-visible { outline: 1px solid var(--text); outline-offset: 3px; }
   .desktop-directory-marker { color: var(--muted); }
   .desktop-terminal-body nav time { color: var(--muted); font-size: calc(13px * var(--desktop-size, 1)); white-space: nowrap; }
   .archive-shell:is([data-nav-minimized], [data-nav-retracting]) .desktop-terminal-restore {
@@ -219,7 +218,6 @@
   .system-notices-panel kbd { font: inherit; color: var(--text-strong); }
   .desktop-terminal-hint-action { display: grid; gap: calc(8px * var(--desktop-size, 1)); padding: calc(10px * var(--desktop-size, 1)) calc(16px * var(--desktop-size, 1)); border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
   .desktop-terminal-hint-action:hover { background: rgba(var(--tone-ink, 217, 213, 193), 0.04); }
-  .desktop-terminal-hint-action:focus-visible { outline: 1px solid var(--text); outline-offset: -4px; }
   .archive-shell:not([data-nav-wide]) .terminal-shortcut-line { display: none; }
   .archive-shell > .workspace:focus { outline: none; }
   .archive-shell[data-nav-maximized] > .desktop-nav-terminal {
@@ -329,7 +327,6 @@
   .section-note-link p { margin: 0; font-size: calc(15px * var(--desktop-size, 1)); line-height: 1.65; overflow-wrap: anywhere; }
   .section-note-link img { display: block; inline-size: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: rgba(var(--tone-well, 0, 0, 0), 0.2); }
   .section-note-link:hover .section-note-open { color: var(--text-strong); }
-  .section-note-link:focus-visible { outline: 1px solid var(--text); outline-offset: 5px; }
   .archive-shell[data-nav-wide] .section-note-preview--logs { padding: calc(24px * var(--desktop-size, 1)); gap: calc(20px * var(--desktop-size, 1)); background: rgba(var(--tone-surface, 8, 9, 8), 0.18); }
   .section-note-preview--logs .section-note-link { gap: calc(18px * var(--desktop-size, 1)); }
   .section-note-preview--logs .section-note-link strong { font-size: calc(26px * var(--desktop-size, 1)); }

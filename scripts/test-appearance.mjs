@@ -262,7 +262,9 @@ const press = archiveSheet.nodes.find((node) => node.selector?.startsWith(".wind
 assert.ok(press.selector.includes(".window-edit-action:not(:disabled):active") && press.selector.includes(".archive-folder-titlebar button:not(:disabled):active"));
 assert.deepEqual(decls(press), { "background-color": "var(--control-press-fill)", "border-color": "var(--line-strong)", "box-shadow": "var(--control-press-shadow)" }, "Press feedback cannot resize controls, move icons, change labels or override focus outlines");
 assert.ok(archiveSheet.nodes.some((node) => node.selector === '.window-actions button[data-window-action="close"]:hover' && decls(node).color === "var(--danger-text, #e3b9a7)"));
-assert.equal(decls(archiveSheet.nodes.find((node) => node.selector === ".window-actions button:focus-visible")).outline, "1px solid var(--accent)");
+const focusMark = decls(archiveSheet.nodes.find((node) => node.selector?.startsWith(":where(button, a[href], summary, select, textarea") && node.selector.endsWith(":focus-visible")));
+assert.deepEqual(focusMark, { outline: "2px solid transparent", "outline-offset": "-2px", "box-shadow": "var(--focus-mark)" }, "Keyboard focus uses an inset edge, not an outer rectangle");
+assert.equal(decls(archiveSheet.nodes.find((node) => node.selector?.startsWith(".window-actions button:focus-visible,")))["box-shadow"], "inset 0 1px 0 var(--control-top-light), var(--focus-mark)");
 const night = new Map(Object.entries(decls(archiveSheet.nodes.find((node) => node.selector === ":root"))));
 assert.equal(night.get("--window-outline"), "rgba(226, 220, 196, 0.5)", "Night keeps its continuous frame with a softer stroke");
 assert.equal(variables.get("--window-outline"), "rgba(37, 44, 41, 0.42)", "Accepted Day frame stays unchanged");

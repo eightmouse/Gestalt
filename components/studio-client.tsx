@@ -1,9 +1,10 @@
 "use client";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { Bell, Bold, Check, ChevronDown, Code, Heading1, Heading2, Heading3, ImagePlus, Italic, Link, List, Quote, Type, X } from "lucide-react";
+import { ArrowLeft, Bell, Bold, Check, ChevronDown, Code, Heading1, Heading2, Heading3, ImagePlus, Italic, Link, List, Plus, Quote, Trash2, Type, X } from "lucide-react";
 import "@/app/studio/studio.css";
 import { recordDisplaySummary } from "@/components/archive/record-utils";
+import { NoteFileSearch, RecordNoteFiles } from "@/components/archive/record-content";
 import { compareSectionRecords } from "@/lib/log-archive";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { formatNoteSelection, insertNoteLink, type NoteFormat } from "@/lib/note-formatting";
@@ -16,7 +17,7 @@ import { HeaderFraming } from "@/components/studio/header-framing";
 import { InlineRecordLayout } from "@/components/studio/inline-record-layout";
 import { InlineSetupLayout } from "@/components/studio/inline-setup-layout";
 import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
-import { supportsInlineEditing } from "@/lib/inline-editing";
+import { inlineNoteIndex, supportsInlineEditing, type InlineNoteFile } from "@/lib/inline-editing";
 import { setupSpecDraft, validSetupShortcut } from "@/lib/setup-editing";
 import { setupGroupFor } from "@/components/archive/setup-utils";
 import { readStudioResponse, StudioRequestError } from "@/lib/studio-client-api";
@@ -71,6 +72,8 @@ type StudioClientProps = {
   initialSteamGame?: SteamRecordSeed;
   inline?: boolean;
   initialContent?: StudioContentKey;
+  noteFile?: InlineNoteFile | null;
+  onNoteFileChange?: (file: InlineNoteFile | null) => void;
   onContentChange?: (content: StudioContentKey) => void;
   onBusyChange?: (busy: boolean) => void;
   onExit?: () => void;
@@ -152,7 +155,7 @@ const setupManagerGroups: Array<{
 ];
 const setupGroupIds = setupManagerGroups.map((group) => group.id);
 
-export function StudioClient({ embedded = false, inline = false, initialContent = "overview", onContentChange, onBusyChange, initialRecordId, initialSection, initialSetupGroup, initialSteamGame, onExit, onRecordsChange, records }: StudioClientProps) {
+export function StudioClient({ embedded = false, inline = false, initialContent = "overview", noteFile = null, onNoteFileChange, onContentChange, onBusyChange, initialRecordId, initialSection, initialSetupGroup, initialSteamGame, onExit, onRecordsChange, records }: StudioClientProps) {
   const firstRecord = initialRecordId
     ? records.find((record) => record.id === initialRecordId)
     : embedded && initialSection
@@ -175,6 +178,10 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   const [savedSnapshot, setSavedSnapshot] = useState<StudioForm | null>(() => firstRecord ? { ...initialForm } : null);
   const [bufferedDirty, setBufferedDirty] = useState(false);
   const [activeContent, setActiveContent] = useState<StudioContentKey>(initialContent);
+  const [noteSearchOpen, setNoteSearchOpen] = useState(false);
+  const [noteSearchQuery, setNoteSearchQuery] = useState("");
+  const noteSearchInput = useRef<HTMLInputElement>(null);
+  const noteSearchButton = useRef<HTMLButtonElement>(null);
   const [message, setMessage] = useState(
     embedded && firstRecord
       ? `Editing ${firstRecord.title}. Changes stay local until saved.`
@@ -198,7 +205,13 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
   const selectedIdRef = useRef(selectedId);
   const embeddedDraftRestoredRef = useRef(false);
 
-  useEffect(() => { onBusyChange?.(saving || uploading); }, [onBusyChange, saving, uploading]);
+  const closeNoteSearch = useCallback((restoreFocus = false) => {
+    setNoteSearchOpen(false);
+    setNoteSearchQuery("");
+    if (restoreFocus) noteSearchButton.current?.focus({ preventScroll: true });
+  }, []);
+
+  useLayoutEffect(() => { onBusyChange?.(saving || uploading); }, [onBusyChange, saving, uploading]);
 
   const sortedRecords = useMemo(() => [...studioRecords].sort((a, b) => a.section.localeCompare(b.section) || a.title.localeCompare(b.title)), [studioRecords]);
   const groupedRecords = useMemo(() => groupRecords(sortedRecords), [sortedRecords]);
@@ -261,13 +274,16 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
 
     const returnToRecord = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !saving && !uploading && !event.defaultPrevented) {
-        onExit();
+        if (noteSearchOpen) {
+          event.preventDefault();
+          closeNoteSearch(true);
+        } else onExit();
       }
     };
 
     document.addEventListener("keydown", returnToRecord);
     return () => document.removeEventListener("keydown", returnToRecord);
-  }, [embedded, onExit, saving, uploading]);
+  }, [closeNoteSearch, embedded, noteSearchOpen, onExit, saving, uploading]);
 
   useEffect(() => {
     if (!contents.some((item) => item.key === activeContent)) {
@@ -797,9 +813,17 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
 
   if (inline) {
     if (!supportsInlineEditing(form.section)) return null;
+    const noteFiles = onNoteFileChange ? {
+      record: activeRecord, file: noteFile, query: noteSearchQuery,
+      onFileChange: (file: InlineNoteFile | null) => {
+        if (file) closeNoteSearch();
+        onNoteFileChange(file);
+      }
+    } : undefined;
     if (form.section === "setup") {
       const group = normalizeSetupGroup(form.setupGroup);
-      const notes = <NoteStackEditor value={form.body} onCommit={(value) => update("body", value)} onMediaUpload={uploadNoteMedia} onOptimizeMedia={optimizeNoteMedia} />;
+      const notes = <NoteStackEditor value={form.body} directory={group === "notes" && noteFiles ? { ...noteFiles, direct: true } : undefined}
+        onCommit={(value) => update("body", value)} onMediaUpload={uploadNoteMedia} onOptimizeMedia={optimizeNoteMedia} />;
       return <>
         <input ref={fileInputRef} hidden type="file" onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
         <InlineSetupLayout group={group} fields={form} image={group === "tools" ? form.iconImage || form.headerImage || form.banner : form.headerImage || form.banner}
@@ -809,21 +833,53 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
           onUpdate={update} onPick={chooseFiles} onDrop={uploadFiles} onClear={(field) => update(field, "")}
           onMove={(nextGroup) => {
             const previousType = formRef.current.type;
+            onNoteFileChange?.(null);
             update("setupGroup", nextGroup);
             if (isDefaultSetupType(previousType)) update("type", defaultSetupType(nextGroup));
           }} onDelete={deleteRecord} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive} onMessage={setMessage} />
       </>;
     }
-    const inlineContents = getStudioContents(form.section) as Array<{ key: "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation"; label: string }>;
+    const parsedNotes = noteFiles ? parseStudioNotes(form.body) : [];
+    const noteCount = parsedNotes.length;
+    const directNote = form.section === "logs" && noteCount <= 1;
+    const inlineContents = (form.section === "projects" ? [
+      { key: "overview", label: "Overview" },
+      { key: "notes", label: "Notes" },
+      { key: "technical", label: "Technical Stack" },
+      { key: "samples", label: "Samples" }
+    ] : form.section === "logs" ? [
+      { key: "notes", label: directNote ? "Note" : "Notes" },
+      { key: "overview", label: "Details" },
+      { key: "attachments", label: "Attachments" }
+    ] : getStudioContents(form.section)) as Array<{ key: "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation"; label: string }>;
     const inlineContent = inlineContents.find((item) => item.key === activeContent)?.key ?? "overview";
+    const editingNotes = noteFiles && inlineContent === "notes" ? { ...noteFiles, direct: form.section === "logs" } : undefined;
+    const writingNote = Boolean(editingNotes && (directNote || inlineNoteIndex(parsedNotes, noteFile) >= 0));
+    const noteSearch = !writingNote && noteFiles && noteCount > 1
+      ? <NoteFileSearch expanded={noteSearchOpen} query={noteSearchQuery} inputRef={noteSearchInput} buttonRef={noteSearchButton}
+          onQueryChange={setNoteSearchQuery} onToggle={(open) => {
+            if (!open) { closeNoteSearch(true); return; }
+            setActiveContent("notes");
+            onContentChange?.("notes");
+            setNoteSearchOpen(true);
+            window.requestAnimationFrame(() => noteSearchInput.current?.focus());
+          }} />
+      : undefined;
     return <>
       <input ref={fileInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
         onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
       <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={editorMessage} titleAction={titleAction} headerFraming={headerFraming} saveState={saveState}
+        writingNote={writingNote} noteSearch={noteSearch}
         controls={form.section === "games" ? <GameInspectorControls form={form} onUpdate={update} /> : undefined}
         exportRequired={archiveRefreshRequired} onUpdate={update} onPickHeader={() => chooseFiles("headerImage")} onPickThumbnail={() => chooseFiles("banner")}
-        onContentChange={(key) => { setActiveContent(key); onContentChange?.(key); }} onSave={save} onRead={() => onExit?.()} onRefresh={refreshArchive}
-        content={<StudioContent activeContent={inlineContent} form={form} record={activeRecord} uploading={uploading}
+        onContentChange={(key) => {
+          onNoteFileChange?.(null);
+          if (key !== "notes") closeNoteSearch();
+          setActiveContent(key);
+          onContentChange?.(key);
+        }} onSave={save} onRefresh={refreshArchive}
+        content={editingNotes ? <NoteStackEditor value={form.body} directory={editingNotes} onCommit={(value) => update("body", value)} onMediaUpload={uploadNoteMedia} onOptimizeMedia={optimizeNoteMedia} />
+          : <StudioContent activeContent={inlineContent} form={form} record={activeRecord} uploading={uploading}
           onBodyCommit={(value) => update("body", value)} onFileDrop={uploadFiles} onFilePick={chooseFiles}
           onNoteMediaUpload={uploadNoteMedia} onOptimizeNoteMedia={optimizeNoteMedia} onDraftChange={setBufferedDirty} onRetainDraft={retainBufferedDraft} onFrameChange={updateArtworkFrame} onUpdate={update} />} />
     </>;
@@ -1998,17 +2054,26 @@ function NoteStackEditor({
   onCommit,
   onMediaUpload,
   onOptimizeMedia,
+  directory,
   value
 }: {
   onCommit: (value: string) => void;
   onMediaUpload: (files: FileList | File[]) => Promise<string[]>;
   onOptimizeMedia?: (markdown: string) => Promise<string>;
+  directory?: { record: RecordEntry; file: InlineNoteFile | null; query: string; direct?: boolean; onFileChange: (file: InlineNoteFile | null) => void };
   value: string;
 }) {
   const initialParts = useMemo(() => splitStudioUpdateIndex(value), [value]);
-  const [notes, setNotes] = useState<StudioNote[]>(() => parseStudioNotes(value));
+  const [storedNotes, setNotes] = useState<StudioNote[]>(() => parseStudioNotes(value));
   const [updateIndex, setUpdateIndex] = useState(initialParts.updateIndex);
   const [openIndex, setOpenIndex] = useState(0);
+  const direct = directory?.direct && storedNotes.length <= 1;
+  const notes = direct && storedNotes.length === 0 ? [{ title: "", body: "" }] : storedNotes;
+  const focusedIndex = direct ? 0 : directory ? inlineNoteIndex(notes, directory.file) : -1;
+  const directoryRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const returnToFileRef = useRef(-1);
   const [optimizingIndex, setOptimizingIndex] = useState<number | null>(null);
   const lastSerializedRef = useRef("");
   const noteSelectionsRef = useRef<Record<number, { end: number; start: number }>>({});
@@ -2016,6 +2081,18 @@ function NoteStackEditor({
   const pendingFormatRef = useRef<{ index: number; start: number; end: number; scrollTop: number } | null>(null);
   const [formatMessage, setFormatMessage] = useState<{ index: number; text: string } | null>(null);
   const [linkDraft, setLinkDraft] = useState<{ index: number; start: number; end: number; url: string; body: string } | null>(null);
+
+  useLayoutEffect(() => {
+    if (focusedIndex >= 0) {
+      const input = titleInputRef.current;
+      const layout = input?.closest<HTMLElement>(".record-layout");
+      if (layout) layout.scrollTop = 0;
+      input?.focus({ preventScroll: true });
+    } else if (returnToFileRef.current >= 0) {
+      directoryRef.current?.querySelector<HTMLElement>(`[data-note-file-index="${returnToFileRef.current}"]`)?.focus();
+      returnToFileRef.current = -1;
+    }
+  }, [focusedIndex]);
 
   useLayoutEffect(() => {
     const pending = pendingFormatRef.current;
@@ -2044,7 +2121,9 @@ function NoteStackEditor({
 
   const commitNotes = (nextNotes: StudioNote[]) => {
     const identifiedNotes = nextNotes.map((note) => note.id ? note : { ...note, id: newNoteId() });
-    const serialized = serializeStudioNotes(identifiedNotes, updateIndex);
+    const serialized = serializeStudioNotes(directory
+      ? identifiedNotes.map((note) => note.title.trim() ? note : { ...note, title: "Untitled note" })
+      : identifiedNotes, updateIndex);
 
     lastSerializedRef.current = serialized;
     setNotes(identifiedNotes);
@@ -2053,19 +2132,21 @@ function NoteStackEditor({
 
   const addNote = () => {
     setLinkDraft(null);
-    commitNotes([
-      {
-        title: new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note",
-        body: ""
-      },
-      ...notes
-    ]);
+    const title = new Date().toLocaleDateString("en-GB").replaceAll("/", " / ") + " - New Note";
+    const note = { title, body: "", id: newNoteId() };
+    commitNotes([note, ...storedNotes]);
+    directory?.onFileChange({ index: 0, id: note.id, title });
     setOpenIndex(0);
+    if (direct) window.requestAnimationFrame(() => titleInputRef.current?.focus());
   };
 
   const updateNote = (index: number, key: "title" | "body", nextValue: string) => {
     const nextNotes = [...notes];
-    nextNotes[index] = { ...nextNotes[index], [key]: nextValue };
+    const note = nextNotes[index];
+    const id = directory ? note.id ?? newNoteId() : note.id;
+    nextNotes[index] = { ...note, [key]: nextValue, id };
+    const file = directory?.file;
+    if (file && !file.id) directory?.onFileChange({ index, id, title: file.title });
     commitNotes(nextNotes);
   };
 
@@ -2109,15 +2190,9 @@ function NoteStackEditor({
     updateNote(index, "body", result.body);
   };
 
-  const dropMediaIntoNote = async (event: DragEvent<HTMLTextAreaElement>, index: number) => {
-    event.preventDefault();
-
-    if (!event.dataTransfer.files.length) {
-      return;
-    }
-
-    const cursorPosition = event.currentTarget.selectionStart;
-    const snippets = await onMediaUpload(event.dataTransfer.files);
+  const addMediaIntoNote = async (files: FileList | File[], index: number, cursorPosition: number) => {
+    if (!files.length) return;
+    const snippets = await onMediaUpload(files);
 
     if (snippets.length > 0) {
       insertIntoNote(index, snippets.join("\n"), cursorPosition);
@@ -2171,23 +2246,48 @@ function NoteStackEditor({
   };
 
   const removeNote = (index: number) => {
+    if (directory && !window.confirm("Remove this note from the draft? This becomes permanent when you save the record.")) return;
     setLinkDraft(null);
     setFormatMessage(null);
     const nextNotes = notes.filter((_, noteIndex) => noteIndex !== index);
     commitNotes(nextNotes);
+    directory?.onFileChange(null);
     setOpenIndex(Math.max(0, Math.min(openIndex, nextNotes.length - 1)));
   };
 
+  if (directory && focusedIndex < 0) return <div className="inline-note-files" ref={directoryRef}>
+    <RecordNoteFiles record={directory.record} query={directory.query} notes={notes} onOpen={(index) => {
+      setLinkDraft(null);
+      setFormatMessage(null);
+      directory.onFileChange({ index, id: notes[index].id, title: notes[index].title });
+    }} action={<button type="button" className="inline-note-tool inline-new-note" onClick={addNote}><Plus size={16} aria-hidden="true" />New Note</button>} />
+  </div>;
+
+  const visibleIndices = directory ? [focusedIndex] : notes.map((_, index) => index);
   return (
-    <div className="studio-note-editor">
-      <div className="studio-note-editor-head">
+    <div className={directory ? "studio-note-editor inline-note-writer" : "studio-note-editor"}>
+      {directory ? <div className="inline-note-writer-tools">
+        {direct ? <button type="button" className="inline-note-tool" onClick={addNote}><Plus size={16} aria-hidden="true" />New Note</button> : <button type="button" className="inline-note-tool" onClick={() => {
+          returnToFileRef.current = focusedIndex;
+          directory.onFileChange(null);
+        }}><ArrowLeft size={16} aria-hidden="true" />Notes</button>}
+        {storedNotes.length ? <button type="button" className="inline-note-tool" aria-label="Remove note" title="Remove note" onClick={() => removeNote(focusedIndex)}><Trash2 size={16} aria-hidden="true" /></button> : null}
+      </div> : <div className="studio-note-editor-head">
         <span>{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
         <button type="button" onClick={addNote}>+ Note</button>
-      </div>
+      </div>}
       {notes.length > 0 ? (
-        notes.map((note, index) => (
-          <article className={openIndex === index ? "studio-note-edit is-open" : "studio-note-edit"} key={`note-${index}`}>
-            <div className="studio-note-row">
+        visibleIndices.map((index) => {
+          const note = notes[index];
+          return <article className={directory ? "studio-content-terminal studio-note-edit inline-note-panel" : openIndex === index ? "studio-note-edit is-open" : "studio-note-edit"} key={`note-${index}`}>
+            {directory ? <>
+              <input ref={titleInputRef} className="inline-note-title" aria-label="Note title" placeholder="Untitled note" value={note.title} onChange={(event) => updateNote(index, "title", event.target.value)} />
+              <input ref={mediaInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm" onChange={(event) => {
+                const files = Array.from(event.target.files ?? []);
+                event.target.value = "";
+                void addMediaIntoNote(files, index, noteInputsRef.current[index]?.selectionStart ?? note.body.length);
+              }} />
+            </> : <div className="studio-note-row">
               <button
                 className="studio-note-toggle"
                 type="button"
@@ -2197,13 +2297,11 @@ function NoteStackEditor({
                 {openIndex === index ? "Collapse" : "Open"}
               </button>
               <input aria-label="Note title" value={note.title} onChange={(event) => updateNote(index, "title", event.target.value)} />
-              <button type="button" onClick={(event) => {
-                removeNote(index);
-              }}>Remove</button>
-            </div>
-            {openIndex === index ? (
+              <button type="button" onClick={() => removeNote(index)}>Remove</button>
+            </div>}
+            {directory || openIndex === index ? (
               <>
-                <p className="studio-note-hint">Drop screenshots inside the note body to insert them at the cursor.</p>
+                {!directory ? <p className="studio-note-hint">Drop screenshots inside the note body to insert them at the cursor.</p> : null}
                 <div className="studio-note-format-tools" role="group" aria-label="Note formatting">
                   {([
                     { format: "bold", label: "Bold", Icon: Bold },
@@ -2225,6 +2323,7 @@ function NoteStackEditor({
                     setFormatMessage(null);
                     setLinkDraft({ index, start: input.selectionStart, end: input.selectionEnd, url: "", body: notes[index].body });
                   }}><Link size={17} aria-hidden="true" /></button>
+                  {directory ? <button type="button" aria-label="Add media" title="Add media" onClick={() => mediaInputRef.current?.click()}><ImagePlus size={17} aria-hidden="true" /></button> : null}
                 </div>
                 {linkDraft?.index === index ? (
                   <div className="studio-note-link-editor">
@@ -2237,7 +2336,7 @@ function NoteStackEditor({
                   </div>
                 ) : null}
                 {formatMessage?.index === index ? <p className="studio-note-format-message" role="status">{formatMessage.text}</p> : null}
-                <div className="studio-note-media-tools" aria-label="Apply style to the last image in this note">
+                {!directory || note.body.includes("![") ? <div className="studio-note-media-tools" aria-label="Apply style to the last image in this note">
                   {["wide", "banner", "small", "top", "bottom", "contain", "no-caption"].map((token) => (
                     <button
                       type="button"
@@ -2253,10 +2352,10 @@ function NoteStackEditor({
                       {optimizingIndex === index ? "working" : "display thumbs"}
                     </button>
                   ) : null}
-                </div>
+                </div> : null}
                 <textarea
                   ref={(element) => { noteInputsRef.current[index] = element; }}
-                  aria-label={`${note.title} body`}
+                  aria-label={directory ? "Note body" : `${note.title} body`}
                   value={note.body}
                   onChange={(event) => updateNote(index, "body", event.target.value)}
                   onSelect={(event) => {
@@ -2275,12 +2374,15 @@ function NoteStackEditor({
                     }
                   }}
                   onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => dropMediaIntoNote(event, index)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void addMediaIntoNote(event.dataTransfer.files, index, event.currentTarget.selectionStart);
+                  }}
                 />
               </>
             ) : null}
-          </article>
-        ))
+          </article>;
+        })
       ) : (
         <p className="studio-empty-note">No notes yet.</p>
       )}

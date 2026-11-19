@@ -53,7 +53,7 @@
   }
   .pocket-brand { display: grid; align-content: center; gap: 3px; min-block-size: 44px; padding: 0; border: 0; background: none; color: inherit; text-align: start; cursor: pointer; }
   .pocket-brand:active { color: var(--pocket-signal); }
-  .pocket-brand:focus-visible { outline: 1px solid var(--pocket-signal); outline-offset: 3px; }
+  .pocket-brand:focus-visible { box-shadow: inset 0 -2px 0 var(--pocket-signal); }
   .pocket-brand strong { font: 500 21px/1 var(--pocket-mono); }
   :is(.pocket-brand small, .pocket-index small, .pocket-boot-face > div:first-child > span) { color: var(--pocket-muted); font: 500 11px/1.35 var(--pocket-mono); }
   .pocket-tools { display: flex; align-items: center; }
@@ -180,7 +180,7 @@
     color-scheme: var(--control-scheme, dark);
     font: 500 16px/1.2 system-ui, sans-serif;
   }
-  .record-window .pocket-record-contents select:focus-visible { outline: 1px solid var(--pocket-signal); outline-offset: -2px; }
+  .record-window .pocket-record-contents select:focus-visible { box-shadow: inset 0 -2px 0 var(--pocket-signal); }
   .record-window .record-contents-list { display: none; }
   .record-window .notes-page .note-search-panel { margin-block-end: 12px; }
   .record-window .notes-page .note-search-panel input { min-block-size: 44px; font-size: 16px; }
@@ -195,7 +195,7 @@
     color: var(--pocket-muted);
   }
   .record-window .record-link-button:is(:active, :focus-visible) { color: var(--pocket-signal); }
-  .record-window .record-link-button:focus-visible { outline-offset: -2px; }
+  .record-window .record-link-button:focus-visible { box-shadow: inset 0 -2px 0 var(--pocket-signal); }
   .record-window .note-link-tools { margin-block: 0 4px; }
   .record-window .note-link-tools .record-link-button {
     display: inline-flex;
