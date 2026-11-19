@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+19 November, v1.83.0: Handheld Media Cabinet files games as wide VHS cassettes with twin reels and a visible edge of the next tape. The Process Reader replaces its dropdown with direct group controls and swipeable plates. Arrows offer the same navigation without gestures; taps still open the existing entries. Desktop keeps floppy shelves and rotating project plates.
+
 19 November, v1.82.0: Pocket Index gets a single swipe shelf for Games and a still workplate for Projects. Switching Session/Past restores the previous shelf positions; search can show matches from the other shelf. A grouped Project picker replaces desktop arrows on handheld, leaving space for progress and one relevant milestone. Desktop browsing and the note workflow stay in place.
 
 19 November, v1.81.0: Local note editing now uses the same framed writing panel in Projects, Games, Logs and Setup Notes. Games keep placement, activity and Steam fields in Overview; single-note Logs open straight to the writer. Tab and Escape use an inset focus mark in both readers. Next design discussion: how the Media Cabinet and Process Reader should work on handheld without shrinking the desktop experience.

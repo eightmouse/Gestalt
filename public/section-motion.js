@@ -15,6 +15,18 @@
     const old = frame?.firstElementChild;
     turns.get(frame)?.();
     if (!old?.animate || !motionAllowed(host)) return () => {};
+    if (host.matchMedia("(max-width: 760px)").matches) return () => {
+      const plate = frame.firstElementChild;
+      if (!plate?.animate || !motionAllowed(host)) return;
+      const motion = plate.animate([
+        { transform: `translateX(${direction * 14}px)`, opacity: .68 },
+        { transform: "translateX(0)", opacity: 1 }
+      ], { duration: 230, easing: "cubic-bezier(.2,.7,.3,1)" });
+      const cancel = finishReveal([motion], host);
+      turns.set(frame, cancel);
+      const clear = () => { if (turns.get(frame) === cancel) turns.delete(frame); };
+      motion.finished.then(clear, clear);
+    };
     const leaving = old.cloneNode(true);
     leaving.classList.add("is-turning-out");
     leaving.setAttribute("aria-hidden", "true");
@@ -73,6 +85,55 @@
       projectPresses.delete(button);
       if (button.isConnected && host.document.activeElement === button) onOpen();
     }, () => projectPresses.delete(button));
+  }
+
+  function bindProjectSwipe(section, onStep, host = globalThis.window) {
+    if (!section) return () => {};
+    const handheld = host.matchMedia("(max-width: 760px)");
+    let gesture, suppressClick = false;
+
+    function start(event) {
+      if (event.isPrimary) suppressClick = false;
+      gesture = undefined;
+      if (!handheld.matches || event.pointerType !== "touch" || !event.isPrimary || !event.target.closest?.(".project-workbench-hit")) return;
+      gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, axis: null };
+    }
+    function move(event) {
+      if (gesture?.id !== event.pointerId || gesture.axis) return;
+      const dx = Math.abs(event.clientX - gesture.x);
+      const dy = Math.abs(event.clientY - gesture.y);
+      if (Math.max(dx, dy) < 12) return;
+      gesture.axis = dx > dy * 1.25 ? "inline" : "block";
+      if (gesture.axis === "inline") {
+        suppressClick = true;
+        section.setPointerCapture(event.pointerId);
+      }
+    }
+    function finish(event) {
+      if (gesture?.id !== event.pointerId) return;
+      const { x, axis } = gesture;
+      gesture = undefined;
+      const dx = event.clientX - x;
+      if (event.type === "pointerup" && handheld.matches && axis === "inline" && Math.abs(dx) >= 42) onStep(dx < 0 ? 1 : -1);
+    }
+    function guardClick(event) {
+      if (!suppressClick || !event.detail || !event.target.closest?.(".project-workbench-hit")) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+    section.addEventListener("pointerdown", start);
+    section.addEventListener("pointermove", move, { passive: true });
+    section.addEventListener("pointerup", finish);
+    section.addEventListener("pointercancel", finish);
+    section.addEventListener("click", guardClick, true);
+    return () => {
+      section.removeEventListener("pointerdown", start);
+      section.removeEventListener("pointermove", move);
+      section.removeEventListener("pointerup", finish);
+      section.removeEventListener("pointercancel", finish);
+      section.removeEventListener("click", guardClick, true);
+    };
   }
 
   function bindProjectRotation(section, onNext, host = globalThis.window) {
@@ -142,6 +203,7 @@
     const trackNode = node.parentElement;
     const edges = [trackNode?.querySelector("[data-shelf-prev]"), trackNode?.querySelector("[data-shelf-next]")];
     const past = node.dataset.mediaCabinet === "past";
+    const handheld = host.matchMedia("(max-width: 760px)");
     let hovered, point, pending, drag, suppressClick, frame = 0;
     let wheelFrame = 0, wheelTime = 0, wheelGoal = null;
     function syncEdges() {
@@ -187,7 +249,7 @@
       wheelFrame = host.requestAnimationFrame(easeWheel);
     }
     function driveWithWheel(event) {
-      if (!event.cancelable || event.ctrlKey || event.metaKey) return;
+      if (handheld.matches || !event.cancelable || event.ctrlKey || event.metaKey) return;
       const { deltaMode, deltaX, deltaY } = event;
       if (event.shiftKey || Math.abs(deltaY) <= Math.abs(deltaX)) { stopWheel(); return; }
       const max = node.scrollWidth - node.clientWidth;
@@ -493,5 +555,5 @@
     };
   }
 
-  return Object.freeze({ preparePlateTurn, openProjectPlate, bindProjectRotation, bindInstrumentShelf, openInstrumentSleeve, revealInstrumentShelf, revealProjectReader, bindSectionStandby });
+  return Object.freeze({ preparePlateTurn, openProjectPlate, bindProjectSwipe, bindProjectRotation, bindInstrumentShelf, openInstrumentSleeve, revealInstrumentShelf, revealProjectReader, bindSectionStandby });
 });

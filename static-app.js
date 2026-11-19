@@ -105,6 +105,7 @@ const instrumentShelves = new Map();
 let standbySection = null;
 let stopSectionStandby;
 let stopProjectRotation;
+let stopProjectSwipe;
 const bootStartedAt = performance.now();
 let bootCleanup = null;
 let osBehaviourController = null;
@@ -1615,7 +1616,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.82.0</span>
+        <span>v1.83.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1629,7 +1630,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.82.0</span>
+        <span class="version-label">v1.83.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1649,7 +1650,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.82.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.83.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2095,19 +2096,14 @@ function renderRecordSelector(groups) {
         <span>${page + 1} / ${count}</span>
         <button type="button" data-selector-page="1" aria-label="Next project" aria-disabled="${page + 1 === count}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
-      <label class="pocket-project-picker">
-        <span>Project</span>
-        <span class="pocket-project-select">
-          <select data-project-picker ${groups.some((group) => group.records.length) ? "" : "disabled"}>
-            <option value="" hidden ${view.workbench ? "" : "selected"}>No project selected</option>
-            ${groups.map(({ records }, i) => records.length ? `<optgroup label="${i === 0 ? "Active Projects" : "Other Projects"}">${records.map((record) => `<option value="${escapeHtml(record.id)}" ${record.id === view.workbench?.record.id ? "selected" : ""}>${escapeHtml(record.title)}</option>`).join("")}</optgroup>` : "").join("")}
-          </select>
-          ${pocketIcon('<path d="m6 9 6 6 6-6"/>')}
-        </span>
-      </label>
     </div>
+    <span class="pocket-project-announcement" role="status">${escapeHtml(projectPlateStatus(view))}</span>
     <div class="record-selector-results">${renderSelectorResults(view)}</div>
   </section>`;
+}
+
+function projectPlateStatus({ workbench, page, count }) {
+  return workbench ? `${workbench.record.title}, ${page + 1} of ${count}` : "No records filed here yet.";
 }
 
 function renderSelectorResults({ workbench, other }) {
@@ -2141,7 +2137,7 @@ function renderSelectorTiles(sectionRecords) {
     const status = gameActivityLabel(record);
     const activity = gameLogPlacement(record) === "session" && (status === "Active" || status === "Inactive") ? status : "";
     return `<button class="record-sleeve" data-game-sleeve type="button" data-state="${recordStateKey(status)}" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(activity ? `${record.title}, ${activity}` : record.title)}">
-      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${activity ? `<small>${activity}</small>` : ""}</span><span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span></span>
+      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${activity ? `<small>${activity}</small>` : ""}</span><span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span><span class="pocket-tape-reels"></span></span>
     </button>`;
   }).join("");
 }
@@ -2152,9 +2148,11 @@ function syncInstrumentShelf(reveal = false) {
   if (section !== standbySection) {
     stopSectionStandby?.();
     stopProjectRotation?.();
+    stopProjectSwipe?.();
     standbySection = section;
     stopSectionStandby = window.GestaltSectionMotion?.bindSectionStandby(section, state.activeSection);
     stopProjectRotation = state.activeSection === "projects" ? window.GestaltSectionMotion?.bindProjectRotation(section, () => syncRecordSelector(null, true)) : undefined;
+    stopProjectSwipe = state.activeSection === "projects" ? window.GestaltSectionMotion?.bindProjectSwipe(section, (direction) => syncRecordSelector(null, false, direction)) : undefined;
   }
   const nodes = new Set(root.querySelectorAll(".workspace [data-media-cabinet]"));
   for (const [node, release] of instrumentShelves) {
@@ -2174,32 +2172,26 @@ function syncInstrumentShelf(reveal = false) {
   }
 }
 
-function syncRecordSelector(button, automatic = false) {
+function syncRecordSelector(button, automatic = false, swipeDirection) {
   const selector = root.querySelector(".workspace > .section-page--selector .record-selector");
-  if (state.activeSection !== "projects" || !selector || (!button && !automatic) || button?.getAttribute("aria-disabled") === "true") return;
+  if (state.activeSection !== "projects" || !selector || button?.getAttribute("aria-disabled") === "true") return;
   const groups = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords));
   const current = selectorView(groups);
   let direction;
-  if (button?.dataset.projectPicker !== undefined) {
-    const id = button.value;
-    const group = groups.findIndex(({ records }) => records.some((record) => record.id === id));
-    if (group === -1 || current.workbench?.record.id === id) return;
-    state.selectorGroup = group;
-    state.selectorProjectIds[group] = id;
-  } else if (button?.dataset.selectorGroup !== undefined) {
+  if (button?.dataset.selectorGroup !== undefined) {
     const group = Number(button.dataset.selectorGroup);
     if (!groups[group] || group === current.index) return;
     state.selectorGroup = group;
   } else {
     if (current.count < 2) return;
-    direction = automatic ? 1 : Number(button.dataset.selectorPage);
+    direction = automatic ? 1 : swipeDirection ?? Number(button?.dataset.selectorPage);
     const next = automatic ? (current.page + 1) % current.count : current.page + direction;
     if ((direction !== -1 && direction !== 1) || next < 0 || next >= current.count) return;
     state.selectorProjectIds[current.index] = current.group.records[next].id;
   }
   const next = selectorView(groups);
   const { index, page, count, workbench, other } = next;
-  selector.querySelector("[data-project-picker]").value = workbench?.record.id ?? "";
+  selector.querySelector(".pocket-project-announcement").textContent = projectPlateStatus(next);
   if (index !== current.index) {
     selector.dataset.workbench = other ? "other" : "active";
     selector.dataset.projectCount = String(count);
@@ -3685,7 +3677,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.82.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.83.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -4482,7 +4474,6 @@ document.addEventListener("change", (event) => {
   if (picker instanceof HTMLSelectElement && picker.hasAttribute("data-record-content-picker") && pocket?.isHandheld()) {
     selectRecordContent(picker.value, picker.closest(".record-layout"));
   }
-  if (picker instanceof HTMLSelectElement && picker.hasAttribute("data-project-picker") && pocket?.isHandheld()) syncRecordSelector(picker);
 });
 
 document.addEventListener("input", (event) => {
@@ -4709,8 +4700,6 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     syncWeather();
     syncMemoryMotion();
     syncMemoryTrace();
-  } else if (state.activeSection === "projects") {
-    syncRecordSelector();
   }
   if (!event.matches && !weatherStarted) { weatherStarted = true; void requestWeather(); }
 });

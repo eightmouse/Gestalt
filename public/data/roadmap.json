@@ -37,6 +37,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Pocket Index: tapes and touch controls",
+          "detail": "The handheld Media Cabinet uses wide VHS cassettes with readable labels and twin reels. The next tape peeks in from the edge. The Process Reader drops its dropdown: tap a group, swipe the plate or use the arrows, and tap the plate to open the record. Desktop floppies and project rotation stay in place.",
+          "version": "v1.83.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
           "title": "Pocket Index: a shelf and a workplate",
           "detail": "Games uses one swipeable shelf with Session Logs and Past Logs switches. Each shelf remembers its position, and search checks both. Projects uses a grouped picker and a stationary plate with progress and its most relevant milestone. Desktop keeps its original controls and rotation.",
           "version": "v1.82.0",

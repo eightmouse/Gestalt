@@ -1,7 +1,7 @@
 .pocket-boot-mount { display: contents; }
 
 .pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-contents, .pocket-note-link-label,
-.record-selector .pocket-shelf-switch, .pocket-project-picker, .pocket-project-readout,
+.record-selector .pocket-shelf-switch, .pocket-tape-reels, .pocket-project-readout, .pocket-project-announcement,
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
@@ -139,40 +139,79 @@
   .record-selector--games .game-shelf-edge { display: none; }
   .record-selector--games .game-shelf + .game-shelf { border: 0; padding: 0; }
   .record-selector--games .record-media-cabinet {
-    --cabinet-cover: min(180px, calc((100% - 2 * var(--cabinet-gap) - 22px) / 2));
+    --cabinet-cover: min(410px, calc(100% - 50px));
+    --cabinet-gap: 10px;
     --shelf-motion-gutter: 0px;
     padding-block: 4px 8px;
     mask-image: none;
+    scroll-padding-inline: 0;
+    scroll-snap-type: x proximity;
+  }
+  .record-selector--games .record-media-cabinet:has(> .record-sleeve:only-child) { --cabinet-cover: min(410px, 100%); }
+  .record-selector--games .record-sleeve { scroll-snap-align: start; }
+  .record-selector--games .record-sleeve-art {
+    --tape-shape: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
+    grid-template-rows: minmax(84px, 1fr) 34px;
+    align-content: space-between;
+    gap: 10px;
+    aspect-ratio: 1.9;
+    min-block-size: 148px;
+    padding: 9px 12px 11px;
+    clip-path: var(--tape-shape);
+  }
+  .record-selector--games .record-sleeve-art::before {
+    clip-path: var(--tape-shape);
+    background:
+      radial-gradient(circle, var(--pocket-muted) 0 1px, var(--pocket-line) 1.5px 2.5px, transparent 3px) left 7px bottom 9px / 6px 6px no-repeat,
+      radial-gradient(circle, var(--pocket-muted) 0 1px, var(--pocket-line) 1.5px 2.5px, transparent 3px) right 7px bottom 9px / 6px 6px no-repeat,
+      repeating-linear-gradient(0deg, var(--pocket-line) 0 1px, transparent 1px 3px) top / 100% 6px no-repeat,
+      var(--pocket-plate);
+  }
+  .record-selector--games .record-sleeve-art::after,
+  .record-selector--games :is(.game-disk-well, .game-disk-contacts) { display: none; }
+  .record-selector--games .record-sleeve-label {
+    grid-template-rows: auto;
+    align-content: center;
+    gap: 5px;
+    padding: 5px 8px;
+    background: color-mix(in srgb, var(--pocket-paper), var(--pocket-plate) 24%);
+    color: var(--pocket-ink);
+    font: 500 15px/1.18 var(--pocket-mono);
+  }
+  .record-selector--games .record-sleeve-label strong { -webkit-line-clamp: 3; }
+  .pocket-tape-reels {
+    display: grid;
+    grid-template-columns: repeat(2, 24px);
+    justify-content: space-between;
+    align-items: center;
+    justify-self: center;
+    inline-size: min(76%, 192px);
+    padding-inline: 10px;
+    border: 1px solid var(--pocket-line);
+    background:
+      linear-gradient(var(--pocket-line), var(--pocket-line)) center / 84% 1px no-repeat,
+      color-mix(in srgb, var(--pocket-paper), var(--pocket-ink) 5%);
+    box-shadow: inset 0 2px 3px rgb(0 0 0 / .18);
+  }
+  .pocket-tape-reels::before, .pocket-tape-reels::after {
+    content: "";
+    aspect-ratio: 1;
+    border: 1px solid var(--pocket-line);
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, var(--pocket-paper) 0 13%, transparent 15% 43%, var(--pocket-plate) 45% 53%, var(--pocket-paper) 55%),
+      repeating-conic-gradient(var(--pocket-line) 0 36deg, var(--pocket-muted) 37deg 43deg, var(--pocket-line) 44deg 72deg);
   }
 
-  .section-page--projects .record-selector-toolbar > :is(.record-selector-groups, .record-selector-pager) { display: none; }
-  .pocket-project-picker {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    inline-size: 100%;
-    color: var(--pocket-muted);
-    font: 500 12px/1.2 var(--pocket-mono);
-  }
-  .pocket-project-select { position: relative; min-inline-size: 0; }
-  .pocket-project-select select {
-    appearance: none;
-    display: block;
-    inline-size: 100%;
-    min-block-size: 44px;
-    padding: 6px 34px 6px 10px;
-    border: 1px solid var(--pocket-line);
-    border-radius: 0;
-    background: var(--pocket-plate);
-    color: var(--pocket-ink);
-    color-scheme: var(--control-scheme, dark);
-    font: 500 16px/1.35 system-ui, sans-serif;
-    text-overflow: ellipsis;
-  }
-  .pocket-project-select svg { position: absolute; inset: 0 9px 0 auto; margin-block: auto; inline-size: 17px; block-size: 17px; pointer-events: none; }
-  .section-page--projects .project-workbench-record { grid-template-columns: minmax(0, 1fr); min-block-size: 180px; padding: 16px 14px 14px 17px; gap: 10px; }
+  .section-page--projects .record-selector { position: relative; }
+  .section-page--projects .record-selector-toolbar { padding-block-end: 0; border-block-end: 0; }
+  .section-page--projects .record-selector-groups { flex-basis: min(100%, 235px); }
+  .section-page--projects .record-selector-pager { margin-inline: auto; }
+  .section-page--projects .project-workbench { --reader-inset: 5px; }
+  .section-page--projects .project-workbench-record { grid-template-columns: minmax(0, 1fr); align-content: space-between; min-block-size: 215px; padding: 17px 15px 15px 18px; gap: 12px; }
   .section-page--projects .project-workbench-brief p:not(.project-workbench-signal) { -webkit-line-clamp: 2; }
+  .section-page--projects .project-workbench-hit { touch-action: pan-y pinch-zoom; }
+  .pocket-project-announcement { position: absolute; display: block; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
   .project-workbench-progress > :not(.pocket-project-readout) { display: none; }
   .pocket-project-readout { display: block; }
   .pocket-project-readout meter { margin-block-start: 6px; }

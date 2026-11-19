@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.82.0`. Previous site-code release: `v1.81.0` (e7f48e8b).
+Release target: `v1.83.0`. Previous site-code release: `v1.82.0` (7a6ef5b6).
+
+`v1.83.0` makes handheld Games a VHS shelf: one readable tape with twin reels and a peek at the next. Session and Past Logs retain independent scroll positions and shared search. Handheld Projects uses direct groups and swipe or arrow navigation, with progress and a relevant milestone on each plate. Desktop keeps the floppy shelves and automatic project rotation. Entries, editing, publishing, authored content, media and dependencies are unchanged.
 
 `v1.82.0` gives handheld Games one swipe shelf with Session and Past selectors, independent scroll positions and search across both. Handheld Projects uses a grouped picker over a still workplate with progress and a prioritized milestone. Desktop keeps both shelves and rotating project plates. Entries, editing, publishing, records, media and dependencies are unchanged.
 

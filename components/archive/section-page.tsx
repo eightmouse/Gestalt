@@ -3,7 +3,7 @@ import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
-import { ArrowUp, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
+import { ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import pocket from "@/public/pocket-index.js";
@@ -64,7 +64,7 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onCreate
   return (
     <section className={`section-page section-page--${section.id}${splitSection ? " section-page--selector" : ""}`} aria-label={`${section.code} records`}>
       <SectionPageHeader section={section} countLabel={countLabel} readout={readout} onCreateRecord={onCreateRecord} />
-      {splitSection ? <RecordSelector groups={splitSection} onOpenRecord={onOpenRecord} /> : <div className="section-note-layout">
+      {splitSection ? <RecordSelector groups={splitSection} handheld={handheld} onOpenRecord={onOpenRecord} /> : <div className="section-note-layout">
         <div className="section-record-grid">
           {sortedRecords.length > 0 ? (
             sortedRecords.map((record) => (
@@ -182,7 +182,7 @@ function GameShelfRail({ kind, records, shown, query, onOpenRecord }: Pick<Secti
   </div>;
 }
 
-function RecordSelector({ groups, onOpenRecord }: Pick<SectionPageProps, "onOpenRecord"> & { groups: SelectorGroup[] }) {
+function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProps, "handheld" | "onOpenRecord"> & { groups: SelectorGroup[] }) {
   const [selectedGroup, setGroup] = useState<number>();
   const [projectIds, setProjectIds] = useState<Record<number, string>>({});
   const readerRef = useRef<HTMLElement>(null);
@@ -202,9 +202,11 @@ function RecordSelector({ groups, onOpenRecord }: Pick<SectionPageProps, "onOpen
     setProjectIds((current) => ({ ...current, [index]: group.records[next].id }));
   };
   const rotate = useEffectEvent(() => step(1, true));
+  const swipe = useEffectEvent((direction: -1 | 1) => step(direction));
   useLayoutEffect(() => sectionMotion.revealProjectReader(frameRef.current), []);
   useLayoutEffect(() => sectionMotion.bindSectionStandby(readerRef.current, "projects"), []);
   useEffect(() => sectionMotion.bindProjectRotation(readerRef.current, rotate), []);
+  useEffect(() => handheld ? sectionMotion.bindProjectSwipe(readerRef.current, swipe) : undefined, [handheld]);
   useLayoutEffect(() => {
     commitTurn.current?.();
     commitTurn.current = null;
@@ -219,25 +221,8 @@ function RecordSelector({ groups, onOpenRecord }: Pick<SectionPageProps, "onOpen
         <span>{page + 1} / {count}</span>
         <button type="button" aria-label="Next project" aria-disabled={page + 1 === count} onClick={() => step(1)}><ChevronRight size={16} aria-hidden="true" /></button>
       </nav>
-      <label className="pocket-project-picker">
-        <span>Project</span>
-        <span className="pocket-project-select">
-          <select value={workbench?.record.id ?? ""} onChange={(event) => {
-            const id = event.currentTarget.value;
-            const nextGroup = groups.findIndex(({ records }) => records.some((record) => record.id === id));
-            if (nextGroup < 0) return;
-            setGroup(nextGroup);
-            setProjectIds((current) => ({ ...current, [nextGroup]: id }));
-          }} disabled={!groups.some(({ records }) => records.length)}>
-            {!workbench ? <option value="" hidden>No project selected</option> : null}
-            {groups.map(({ title, records }, i) => records.length ? <optgroup key={title} label={i === 0 ? "Active Projects" : "Other Projects"}>
-              {records.map((record) => <option key={record.id} value={record.id}>{record.title}</option>)}
-            </optgroup> : null)}
-          </select>
-          <ChevronDown size={16} aria-hidden="true" />
-        </span>
-      </label>
     </div>
+    <span className="pocket-project-announcement" role="status">{workbench ? `${workbench.record.title}, ${page + 1} of ${count}` : "No records filed here yet."}</span>
     {workbench ? <div className="project-workbench">
       <div ref={frameRef} className="project-workbench-frame">
         <ProjectWorkprint workbench={workbench} other={other} onOpenRecord={onOpenRecord} />
@@ -282,6 +267,7 @@ function RecordSelectorTile({ record, onOpenRecord }: { record: RecordEntry; onO
       <span className="record-sleeve-label"><strong>{record.title}</strong>{activity ? <small>{activity}</small> : null}</span>
       <span className="game-disk-well"><span className="game-disk-hub" /></span>
       <span className="game-disk-contacts" />
+      <span className="pocket-tape-reels" />
     </span>
   </button>;
 }
