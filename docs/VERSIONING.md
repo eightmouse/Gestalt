@@ -2,9 +2,11 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.79.0`. Previous site-code release: `v1.78.0` (e510fe9c).
+Release target: `v1.80.0`. Previous site-code release: `v1.79.0` (9723e33a).
 
-`v1.79.0` introduces the Process Reader, Media Cabinet and Game note-file preview. Project plates advance while idle, and Game tabs keep their artwork, title and note search in place. Dashboard notes open in a focused reader, Full Welcome brings up the dashboard in stages without clipping, and the desktop window tray aligns with the workspace. Visual polish is still in progress. No authored records, original media or dependencies changed.
+`v1.80.0` shares the searchable, unpaginated note directory between Games and Projects. It fits up to six files per desktop row and two on handheld. Project windows show the project title, retain real artwork, and omit the empty Overview artwork panel; Technical Stack and Samples stay conditional. Logs open directly to their prose and retain dates, references, attachments and exact note links. The editor, authored records, original media and dependencies are unchanged.
+
+`v1.79.0` replaces Project lists with the Process Reader, including idle rotation, separate plate transitions and authored milestone traces. The Media Cabinet splits Session and Past Logs into draggable floppy shelves, with wheel scrolling, search and disk feedback. Game entries share their title and artwork across tabs and open note files in a focused reader. A 24-line welcome console brings dashboard modules online in stages; the desktop window tray aligns with the workspace. No authored records, original media or dependencies changed.
 
 `v1.78.0` lets the owner edit all four Setup groups from their existing terminals, with separate launch and edit actions for shortcuts. Local drafts and the publish bell keep their existing roles; Studio remains a fallback and Pages remains read-only. The release also improves handheld note navigation, caches Timeline results, restores earlier notebook milestones, and renames recent field notes without changing their URLs or note IDs. No dependency or original media changes.
 

@@ -107,10 +107,15 @@ export function noteEntries(body: string) {
   return noteInline.parseNotes(mainBody);
 }
 
+export function matchingNotes(notes: ReturnType<typeof noteEntries>, query: string) {
+  const search = query.trim().toLowerCase();
+  return notes.flatMap((note, index) => note.title.toLowerCase().includes(search) ? [{ ...note, index }] : []);
+}
+
 export function notePage(notes: ReturnType<typeof noteEntries>, query: string, requestedPage?: number, focusedIndex?: number) {
   const size = 5;
   const search = query.trim().toLowerCase();
-  const matches = notes.map((note, index) => ({ ...note, index })).filter((note) => note.title.toLowerCase().includes(search));
+  const matches = matchingNotes(notes, search);
   const focused = !search && focusedIndex !== undefined && notes[focusedIndex] ? focusedIndex : undefined;
   const pages = Math.max(1, Math.ceil(matches.length / size));
   const initial = focused === undefined ? 0 : Math.floor(focused / size);

@@ -330,6 +330,7 @@ let handheld = true;
 const select = vm.runInNewContext(`${selectContent.getText(ast)}\nselectRecordContent`, {
   state: contentState, window: {}, document: {}, pocket: { isHandheld: () => handheld }, selectedRecord: () => ({ id: "fixture", title: "Test Entry" }), getRecordContents: () => [{ key: "notes" }, { key: "overview" }],
   root: { querySelector: () => contentLayout },
+  usesNoteDirectory: () => false,
   setUpdateHistory() {}, renderRecordContent: () => "new note panel", recordAsideContent: () => "new Contents rail",
   syncRecordWindow: () => ++windowUpdates, render: () => assert.fail("The workspace should stay mounted")
 });

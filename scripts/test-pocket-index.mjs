@@ -130,8 +130,8 @@ assert.deepEqual(pocket.readingContents("logs", [...logViews, attachments]), [{ 
 assert.equal(pocket.readingContents("projects", logViews), logViews, "Non-log sections do not change");
 assert.match(staticReader, /<label class="pocket-record-contents"><span>Contents<\/span>/);
 assert.match(localReader, /<label className="pocket-record-contents">\s*<span>Contents<\/span>/);
-assert.match(staticReader, /\$\{handheld && !files \? renderNoteSearch\(record\) : ""\}\s*<div class="note-stack/);
+assert.match(staticReader, /\$\{handheld \? renderNoteSearch\(record\) : ""\}\s*<div class="note-stack">/);
 assert.match(read("app/pocket-index.css"), /\.pocket-boot-mount\s*\{\s*display: contents;/, "The local handheld boot wrapper must not occupy a desktop grid cell");
-assert.match(read("components/archive/record-content.tsx"), /\{searchControl\}\s*<div className=\{openFile \? "note-stack game-note-file-grid" : "note-stack"\}>/);
+assert.match(read("components/archive/record-content.tsx"), /\{searchControl\}\s*<div className="note-stack">/);
 assert.doesNotMatch(css, /\[data-os-group="entry"\]/, "The shared Entry Animation preferences remain visible on handheld");
 console.log("Pocket Index preferences, boot lifecycle, progress curves and record paging passed.");

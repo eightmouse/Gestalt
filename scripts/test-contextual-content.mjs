@@ -25,24 +25,24 @@ function compile(source, globals = {}) {
   return context;
 }
 const common = ["getRecordContents", "recordMediaSources", "hasRecordAttachments", "contentOrdinal"];
-const react = compile(`${functions("components/archive/record-utils.ts", ["metaText", "decodeTextBlock"])}\n${functions("components/archive/record-content.tsx", [...common, "getTextList", "SampleGrid", "AttachmentGrid", "RecordContentPanel"])}\nexports.samples = SampleGrid; exports.attachments = AttachmentGrid;`);
-const staticContext = compile(functions("static-app.js", [...common, "textList", "textBlock", "escapeHtml", "normalizeContentKey", "renderSamplePage", "renderMediaPage", "renderTechnicalPage"]), { state: { activeContent: "overview" } });
+const react = compile(`${functions("components/archive/record-utils.ts", ["metaText", "decodeTextBlock"])}\n${functions("components/archive/record-content.tsx", [...common, "getTextList", "SampleGrid", "AttachmentGrid", "RecordContentPanel", "RecordOverviewPage"])}\nexports.samples = SampleGrid; exports.attachments = AttachmentGrid; exports.overview = RecordOverviewPage;`);
+const staticContext = compile(functions("static-app.js", [...common, "textList", "textBlock", "escapeHtml", "normalizeContentKey", "renderSamplePage", "renderMediaPage", "renderTechnicalPage", "renderOverviewPage"]), { state: { activeContent: "overview" } });
 const base = { id: "fixture", title: "Fixture", section: "projects", banner: "/media/header.png", body: "", meta: {} };
 const staticRecord = (record) => ({ ...record, ...record.meta });
 const keys = (items) => Array.from(items, (item) => item.key);
 for (const [meta, expected] of [
   [{}, ["overview", "notes"]],
   [{ technicalStack: " \n | " , samples: [" ", ""] }, ["overview", "notes"]],
-  [{ technicalStack: ["TypeScript", "Next.js"] }, ["technical", "overview", "notes"]],
+  [{ technicalStack: ["TypeScript", "Next.js"] }, ["overview", "notes", "technical"]],
   [{ samples: ["/media/sample.png"] }, ["overview", "notes", "samples"]],
-  [{ technicalStack: "TypeScript | Next.js", samples: "/media/a.png, /media/b.png" }, ["technical", "overview", "notes", "samples"]]
+  [{ technicalStack: "TypeScript | Next.js", samples: "/media/a.png, /media/b.png" }, ["overview", "notes", "technical", "samples"]]
 ]) {
   const record = { ...base, meta };
   react.record = record;
   staticContext.record = staticRecord(record);
   for (const context of [react, staticContext]) {
     assert.deepEqual(keys(vm.runInContext("getRecordContents(record)", context)), expected);
-    assert.equal(vm.runInContext("contentOrdinal(record, 0)", context), expected[0] === "technical" ? "00" : "01");
+    assert.equal(vm.runInContext("contentOrdinal(record, 0)", context), expected.includes("technical") ? "00" : "01");
   }
   staticContext.state.activeContent = "samples";
   assert.equal(vm.runInContext("normalizeContentKey(record)", staticContext), expected.includes("samples") ? "samples" : "overview");
@@ -55,7 +55,12 @@ for (const section of ["logs", "games", "archive", "setup"]) {
     const reactContents = vm.runInContext("getRecordContents(record)", react);
     const staticContents = vm.runInContext("getRecordContents(record)", staticContext);
     assert.equal(JSON.stringify(reactContents), JSON.stringify(staticContents), "Public navigation labels and keys match");
-    if (section === "logs") assert.equal(keys(reactContents).includes("attachments"), attachments?.[0]?.trim().length > 0);
+    if (section === "logs") {
+      const hasAttachments = Boolean(attachments?.[0]?.trim());
+      assert.deepEqual(keys(reactContents), hasAttachments ? ["notes", "attachments"] : ["notes"]);
+      staticContext.state.activeContent = "overview";
+      assert.equal(vm.runInContext("normalizeContentKey(record)", staticContext), "notes");
+    }
   }
 }
 for (const kind of ["samples", "attachments"]) {
@@ -82,7 +87,26 @@ for (const html of [renderToStaticMarkup(createElement(react.exports.RecordConte
 }
 const studio = compile(`${functions("components/studio-client.tsx", ["getStudioContents"])}\nexports.contents = getStudioContents;`);
 assert.deepEqual(keys(studio.exports.contents("projects")), ["technical", "overview", "notes", "samples"], "Studio retains empty authoring targets");
+const bannerClass = (record) => record.banner ? "banner-frame" : "empty-banner";
+Object.assign(react, {
+  imageFraming: { recordHeadingArtwork: () => null },
+  RecordBanner: ({ record }) => createElement("div", { className: bannerClass(record) }),
+  ProgressMeter: () => null
+});
+Object.assign(staticContext, {
+  window: {}, recordHeaderImage: () => "", recordMilestones: () => "",
+  recordBanner: (record) => `<div class="${bannerClass(record)}"></div>`
+});
+for (const [section, banner, marker] of [["projects", "", null], ["projects", "/media/project.png", "banner-frame"], ["games", "", "empty-banner"]]) {
+  const record = { ...base, section, banner, summary: "Overview copy.", progress: 55, milestones: [] };
+  staticContext.record = record;
+  for (const html of [renderToStaticMarkup(createElement(react.exports.overview, { record })), vm.runInContext("renderOverviewPage(record)", staticContext)]) {
+    assert.equal(html.includes('class="empty-banner"'), marker === "empty-banner");
+    assert.equal(html.includes('class="banner-frame"'), marker === "banner-frame");
+    assert.match(html, /Overview copy\./, "Only the empty Project artwork panel is removed");
+  }
+}
 const windowSource = read("components/archive/record-window.tsx");
-assert.match(windowSource, /contents\.some\(\(item\) => item\.key === requestedContent\) \? requestedContent : "overview"/, "React settles a removed tab to Overview");
+assert.match(windowSource, /contents\.some\(\(item\) => item\.key === requestedContent\) \? requestedContent : logs \? "notes" : "overview"/, "Logs open Notes; other records settle a removed tab to Overview");
 assert.doesNotMatch(read("app/globals.css"), /\.record-layout:has\(\.record-heading\.has-heading-banner\)\s+\.record-aside/, "Header artwork must not change Contents alignment or impose an empty navigation height");
 console.log("Contextual content tests passed: empty tabs, stable numbering, real media only, bounded galleries, reader parity and preserved Studio controls.");

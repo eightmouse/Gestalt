@@ -153,8 +153,8 @@ for (const name of ["ArchiveRecordWindow", "SetupRecordWindow"]) {
   assert.ok(attribute, `${name} handles Escape on its own dialog`);
   const calls = [];
   const route = vm.createContext({ minimized: false, escapeBlocked: false, editor: null, editorBusy: false, expandedImage: null,
-    updateHistoryOpen: false, noteSearchQuery: "", focusedNote: null, canSearchGameNotes: false, gameNoteSearchOpen: false, updateHistoryRef: { current: null },
-    toggleGameNoteSearch: () => calls.push("game filter"),
+    updateHistoryOpen: false, noteSearchQuery: "", focusedNote: null, canSearchNoteFiles: false, noteFileSearchOpen: false, updateHistoryRef: { current: null },
+    toggleNoteFileSearch: () => calls.push("game filter"),
     setUpdateHistoryOpen: () => calls.push("history"), setNoteSearchQuery: () => calls.push("filter"), onClose: () => calls.push("record") });
   const script = `${findFunction("handleRecordEscape").getText(reactAst)}\nconst handler = ${attribute.initializer.expression.getText(reactAst)}; handler;`;
   const handler = vm.runInContext(ts.transpileModule(script, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, route);
@@ -170,10 +170,10 @@ for (const name of ["ArchiveRecordWindow", "SetupRecordWindow"]) {
     press(handler); route.updateHistoryOpen = false;
     press(handler); route.noteSearchQuery = "";
     assert.deepEqual(calls, ["history", "filter"]);
-    route.canSearchGameNotes = route.gameNoteSearchOpen = true;
+    route.canSearchNoteFiles = route.noteFileSearchOpen = true;
     press(handler);
     assert.equal(calls.at(-1), "game filter", "Escape first closes the expanded note search");
-    route.gameNoteSearchOpen = false;
+    route.noteFileSearchOpen = false;
     route.focusedNoteIndex = 1;
   }
   assert.deepEqual(press(handler), { prevented: true, stopped: true });

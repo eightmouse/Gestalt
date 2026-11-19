@@ -5,10 +5,10 @@ import { ImageLightbox } from "@/components/archive/image-lightbox";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import {
   formatReadableDate,
+  matchingNotes,
   metaText,
   noteEntries,
   notePage,
-  recordDisplaySummary,
   recordLastUpdated,
   splitUpdateIndex
 } from "@/components/archive/record-utils";
@@ -39,8 +39,7 @@ export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey;
 
   if (record.section === "logs") {
     const contents: Array<{ key: ContentKey; label: string }> = [
-      { key: "overview", label: "Entry" },
-      { key: "notes", label: "Full Note" }
+      { key: "notes", label: "Note" }
     ];
 
     return hasRecordAttachments(record) ? [...contents, { key: "attachments", label: "Attachments" }] : contents;
@@ -48,9 +47,9 @@ export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey;
 
   if (record.section === "projects") {
     const contents: Array<{ key: ContentKey; label: string }> = [
-      { key: "technical", label: "Technical Stack" },
       { key: "overview", label: "Overview" },
       { key: "notes", label: "Notes" },
+      { key: "technical", label: "Technical Stack" },
       { key: "samples", label: "Samples" }
     ];
     return contents.filter((item) => {
@@ -92,6 +91,7 @@ export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearch
   }
 
   if (activeContent === "notes") {
+    if (record.section === "logs") return <LogNoteContent record={record} focusedIndex={focusedNoteIndex} shareable={shareable} />;
     return <NotesPage key={focusedNoteIndex ?? "default"} focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} searchControl={noteSearch} />;
   }
 
@@ -169,40 +169,24 @@ export function RecordContentPanel({ activeContent, focusedNoteIndex, noteSearch
 
 function RecordOverviewPage({ record }: { record: RecordEntry }) {
   const hasHeaderArtwork = Boolean(imageFraming.recordHeadingArtwork(record));
-  const summary = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
-  const latestNote = record.section === "logs" ? noteEntries(record.body)[0] : undefined;
-  const noteHeading = latestNote?.title.match(/^\s*(\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4})\s*[-:–—]?\s*(.*)$/);
+  const showOverviewBanner = !hasHeaderArtwork && (record.section !== "projects" || Boolean(record.banner));
 
   return (
-    <div className="overview-stack">
-      {hasHeaderArtwork ? null : <RecordBanner record={record} />}
+    <div className={record.section === "projects" ? "overview-stack overview-stack--project" : "overview-stack"}>
+      {showOverviewBanner ? <RecordBanner record={record} /> : null}
 
-      {record.section === "logs" ? (
-        <section className="log-entry-preview" aria-label="Field note preview">
-          <div className="log-entry-preview-meta">
-            <span>// FIELD NOTE</span>
-            <time dateTime={record.updated}>{noteHeading?.[1]?.replace(/\s*\/\s*/g, " / ") || formatReadableDate(record.updated)}</time>
-          </div>
-          <h2>{noteHeading?.[2]?.trim() || latestNote?.title || "Untitled entry"}</h2>
-          <p>{summary}</p>
-        </section>
-      ) : (
-        <section className="record-section">
-          <h3>// OVERVIEW</h3>
-          <p>{summary}</p>
-        </section>
-      )}
-
-      {record.section === "logs" ? null : (
-        <section className="record-section">
-          <div className="section-row">
-            <h3>// CURRENT PROGRESS</h3>
-            <span>{record.progress}%</span>
-          </div>
-          <ProgressMeter value={record.progress} />
-          {record.milestones.length > 0 ? <MilestoneList record={record} /> : null}
-        </section>
-      )}
+      <section className="record-section">
+        <h3>// OVERVIEW</h3>
+        <p>{record.summary}</p>
+      </section>
+      <section className="record-section">
+        <div className="section-row">
+          <h3>// CURRENT PROGRESS</h3>
+          <span>{record.progress}%</span>
+        </div>
+        <ProgressMeter value={record.progress} />
+        {record.milestones.length > 0 ? <MilestoneList record={record} /> : null}
+      </section>
     </div>
   );
 }
@@ -376,9 +360,9 @@ export function FocusedNotePanel({ note, recordTitle, onReturn, toFiles = false 
   </section>;
 }
 
-type NotesPageProps = { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean; searchControl?: ReactNode; openFile?: (index: number) => void };
+type NotesPageProps = { focusedIndex?: number; query: string; record: RecordEntry; shareable?: boolean; handheld?: boolean; searchControl?: ReactNode };
 
-export function NotesPage({ focusedIndex, query, record, shareable, handheld, searchControl, openFile }: NotesPageProps) {
+function NotesPage({ focusedIndex, query, record, shareable, handheld, searchControl }: NotesPageProps) {
   const pageRef = useRef<HTMLElement>(null);
   const search = query.trim().toLowerCase();
   const [browsePage, setBrowsePage] = useState<number>();
@@ -405,9 +389,9 @@ export function NotesPage({ focusedIndex, query, record, shareable, handheld, se
   }, [focusedIndex]);
 
   return (
-    <section ref={pageRef} className={openFile ? "notes-page game-note-files" : "content-terminal notes-page"} aria-label={`${record.title} notes`}>
+    <section ref={pageRef} className="content-terminal notes-page" aria-label={`${record.title} notes`}>
       <div className="notes-page-header">
-        <div className="terminal-title">{openFile ? "// NOTE FILES" : "// NOTES PAGE"}</div>
+        <div className="terminal-title">// NOTES PAGE</div>
         {pages > 1 ? <nav className="note-pager" aria-label="Note pages">
           <button type="button" aria-label="Previous note page" title="Previous note page" aria-disabled={page === 0} onClick={() => step(-1)}><ChevronLeft size={16} aria-hidden="true" /></button>
           <span aria-live="polite" aria-atomic="true">{page + 1} / {pages}</span>
@@ -415,9 +399,9 @@ export function NotesPage({ focusedIndex, query, record, shareable, handheld, se
         </nav> : null}
       </div>
       {searchControl}
-      <div className={openFile ? "note-stack game-note-file-grid" : "note-stack"}>
+      <div className="note-stack">
         {notes.length > 0 ? (
-          notes.map((note) => openFile ? <NoteFile key={note.index} note={note} recordTitle={record.title} onOpen={openFile} /> : (
+          notes.map((note) => (
             <NoteEntry body={note.body} defaultOpen={note.index === openIndex} index={note.index} key={`${note.index}:${note.title}`} title={note.title} recordId={shareable && note.id ? record.id : undefined} noteId={note.id} handheld={handheld} />
           ))
         ) : (
@@ -428,9 +412,53 @@ export function NotesPage({ focusedIndex, query, record, shareable, handheld, se
   );
 }
 
+export function RecordNoteFiles({ record, query, onOpen }: { record: RecordEntry; query: string; onOpen: (index: number) => void }) {
+  const files = matchingNotes(noteEntries(record.body), query);
+  const countLabel = query.trim() ? (files.length === 1 ? "MATCH" : "MATCHES") : (files.length === 1 ? "FILE" : "FILES");
+
+  return <section className="record-note-files" aria-label={`${record.title} notes`}>
+    <header className="record-note-files-header">
+      <h3 className="terminal-title">// NOTE FILES</h3>
+      <p className="record-note-file-count" role="status">{String(files.length).padStart(2, "0")} {countLabel}</p>
+    </header>
+    <div className="record-note-file-grid">
+      {files.length ? files.map((note) => <NoteFile key={note.id ?? note.index} note={note} recordTitle={record.title} onOpen={onOpen} />)
+        : <p className="notes-empty">{query.trim() ? "No note matches that signal." : "No notes filed."}</p>}
+    </div>
+  </section>;
+}
+
+function LogNoteContent({ record, focusedIndex, shareable }: { record: RecordEntry; focusedIndex?: number; shareable?: boolean }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const notes = noteEntries(record.body);
+
+  useEffect(() => {
+    if (!focusedIndex) return;
+    const note = sectionRef.current?.querySelector<HTMLElement>(`[data-note-index="${focusedIndex}"]`);
+    const layout = note?.closest<HTMLElement>(".record-layout");
+    if (note && layout) layout.scrollTop += note.getBoundingClientRect().top - layout.getBoundingClientRect().top - 16;
+  }, [focusedIndex]);
+
+  return <section className="log-reading-notes" ref={sectionRef} aria-label={`${record.title} notes`}>
+    {notes.length ? notes.map((note, index) => {
+      const { title, date, dateTime } = splitNoteTitle(note.title);
+      const showTitle = title !== "Current note" && (notes.length > 1 || title !== record.title);
+      const link = shareable && note.id ? <NoteLinkControl id={record.id} noteId={note.id} /> : null;
+      return <article className="log-reading-note" key={note.id ?? index} data-note-index={index}>
+        {date || showTitle || link ? <header className="log-reading-note-meta">
+          {showTitle ? <h3>{title}</h3> : null}
+          {date ? <time dateTime={dateTime}>{date}</time> : null}
+          {link}
+        </header> : null}
+        <RecordBody body={note.body} />
+      </article>;
+    }) : <p className="notes-empty">No notes filed.</p>}
+  </section>;
+}
+
 function NoteFile({ note, recordTitle, onOpen }: { note: ArchiveNote & { index: number }; recordTitle: string; onOpen: (index: number) => void }) {
   const parts = splitNoteTitle(note.title);
-  return <button className="game-note-file" data-game-note-index={note.index} type="button" onClick={() => onOpen(note.index)}>
+  return <button className="record-note-file" data-note-file-index={note.index} type="button" onClick={() => onOpen(note.index)}>
     <FileText size={36} strokeWidth={1.3} aria-hidden="true" />
     <strong>{parts.title === "Current note" ? recordTitle : parts.title}</strong>
     {parts.date ? <time dateTime={parts.dateTime}>{parts.date}</time> : null}

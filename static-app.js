@@ -283,8 +283,8 @@ const state = {
   noteSearchQuery: "",
   focusedNoteIndex: null,
   dashboardNoteReader: false,
-  gameNoteOpen: false,
-  gameNoteSearchOpen: false,
+  noteFileOpen: false,
+  noteFileSearchOpen: false,
   noteBrowsePage: undefined,
   noteSearchPage: 0,
   updateHistoryOpen: false,
@@ -342,7 +342,7 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.headlineAnimating = false;
   state.selectedId = record.id;
   state.dashboardNoteReader = dashboardNote;
-  state.activeContent = handheld ? pocket.readingView?.(record.section, contentKey) ?? contentKey : contentKey;
+  state.activeContent = pocket?.readingView?.(record.section, contentKey) ?? contentKey;
   state.panelOpen = true;
   state.panelMinimized = false;
   state.panelMaximized = false;
@@ -353,9 +353,9 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.archiveFolderWindow = null;
   state.navOpen = false;
   state.noteSearchQuery = "";
-  state.gameNoteSearchOpen = false;
+  state.noteFileSearchOpen = false;
   state.focusedNoteIndex = Number.isInteger(noteIndex) && noteIndex >= 0 ? noteIndex : null;
-  state.gameNoteOpen = record.section === "games" && !dashboardNote && state.focusedNoteIndex !== null;
+  state.noteFileOpen = usesNoteDirectory(record) && !dashboardNote && state.focusedNoteIndex !== null;
   state.linkedNoteId = noteId;
   state.noteLinkMissing = Boolean(noteId && state.focusedNoteIndex === null);
   state.noteBrowsePage = undefined;
@@ -372,7 +372,7 @@ function openDashboardNote(recordId, index) {
   const record = records.find((entry) => entry.id === recordId);
   if (!record || record.section === "setup") return;
   const note = noteEntries(record.body)[index];
-  if (note?.body.trim()) openRecord(recordId, "notes", index, note.id, undefined, true);
+  if (note?.body.trim()) openRecord(recordId, "notes", index, note.id, undefined, record.section !== "logs");
   else openRecord(recordId);
 }
 
@@ -971,6 +971,10 @@ function searchResults() {
     currentGameRecord(), latestLogRecord()) ?? [];
 }
 
+function usesNoteDirectory(record) {
+  return record?.section === "games" || record?.section === "projects";
+}
+
 function getRecordContents(record) {
   if (record.section === "games") {
     return [
@@ -990,8 +994,7 @@ function getRecordContents(record) {
 
   if (record.section === "logs") {
     const contents = [
-      { key: "overview", label: "Entry" },
-      { key: "notes", label: "Full Note" }
+      { key: "notes", label: "Note" }
     ];
 
     return hasRecordAttachments(record) ? [...contents, { key: "attachments", label: "Attachments" }] : contents;
@@ -999,9 +1002,9 @@ function getRecordContents(record) {
 
   if (record.section === "projects") {
     const contents = [
-      { key: "technical", label: "Technical Stack" },
       { key: "overview", label: "Overview" },
       { key: "notes", label: "Notes" },
+      { key: "technical", label: "Technical Stack" },
       { key: "samples", label: "Samples" }
     ];
     return contents.filter((item) => {
@@ -1020,7 +1023,7 @@ function getRecordContents(record) {
 
 function normalizeContentKey(record) {
   const contents = getRecordContents(record);
-  return contents.some((item) => item.key === state.activeContent) ? state.activeContent : "overview";
+  return contents.some((item) => item.key === state.activeContent) ? state.activeContent : record.section === "logs" ? "notes" : "overview";
 }
 
 function hasRecordAttachments(record) {
@@ -1231,27 +1234,17 @@ function recordMilestones(record) {
 
 function renderOverviewPage(record) {
   const hasHeaderArtwork = window.GestaltImageFraming?.recordHeadingArtwork?.(record) || recordHeaderImage(record);
+  const showOverviewBanner = !hasHeaderArtwork && (record.section !== "projects" || Boolean(record.banner));
   const milestones = recordMilestones(record);
-  const overview = record.section === "logs" ? recordDisplaySummary(record) : record.summary;
-  const latestNote = record.section === "logs" ? noteEntries(record.body)[0] : null;
-  const noteHeading = latestNote?.title.match(/^\s*(\d{1,2}\s*\/\s*\d{1,2}\s*\/\s*\d{4})\s*[-:–—]?\s*(.*)$/);
-  const entryPreview = record.section === "logs"
-    ? `<section class="log-entry-preview" aria-label="Field note preview">
-      <div class="log-entry-preview-meta"><span>// FIELD NOTE</span><time datetime="${escapeHtml(record.updated)}">${escapeHtml(noteHeading?.[1]?.replace(/\s*\/\s*/g, " / ") || readableDate(record.updated))}</time></div>
-      <h2>${escapeHtml(noteHeading?.[2]?.trim() || latestNote?.title || "Untitled entry")}</h2>
-      <p>${escapeHtml(overview)}</p>
-    </section>`
-    : `<section class="record-section"><h3>// OVERVIEW</h3><p>${escapeHtml(overview)}</p></section>`;
 
-  return `<div class="overview-stack">
-    ${hasHeaderArtwork ? "" : recordBanner(record)}
-    ${entryPreview}
-
-    ${record.section === "logs" ? "" : `<section class="record-section">
+  return `<div class="overview-stack${record.section === "projects" ? " overview-stack--project" : ""}">
+    ${showOverviewBanner ? recordBanner(record) : ""}
+    <section class="record-section"><h3>// OVERVIEW</h3><p>${escapeHtml(record.summary)}</p></section>
+    <section class="record-section">
       <div class="section-row"><h3>// CURRENT PROGRESS</h3><span>${record.progress}%</span></div>
       <div class="progress-meter" aria-label="${record.progress}%"><span style="inline-size: ${record.progress}%"></span></div>
       ${milestones ? `<div class="milestone-list">${milestones}</div>` : ""}
-    </section>`}
+    </section>
   </div>`;
 }
 
@@ -1315,10 +1308,15 @@ function recordMediaSources(record, key) {
   return cleanSources.slice(0, 6);
 }
 
+function matchingNotes(notes, query) {
+  const search = query.trim().toLowerCase();
+  return notes.flatMap((note, index) => note.title.toLowerCase().includes(search) ? [{ ...note, index }] : []);
+}
+
 function notePage(notes, query, requestedPage, focusedIndex) {
   const size = 5;
   const search = query.trim().toLowerCase();
-  const matches = notes.map((note, index) => ({ ...note, index })).filter((note) => note.title.toLowerCase().includes(search));
+  const matches = matchingNotes(notes, search);
   const focused = !search && focusedIndex !== undefined && notes[focusedIndex] ? focusedIndex : undefined;
   const pages = Math.max(1, Math.ceil(matches.length / size));
   const initial = focused === undefined ? 0 : Math.floor(focused / size);
@@ -1333,17 +1331,13 @@ function currentNotePage(record) {
   return notePage(noteEntries(record.body), state.noteSearchQuery, searching ? state.noteSearchPage : state.noteBrowsePage, state.focusedNoteIndex);
 }
 
-function renderNoteRows({ notes, openIndex }, fileRecord) {
+function renderNoteRows({ notes, openIndex }) {
   if (!notes.length) return '<p class="notes-empty">No note matches that signal.</p>';
   const handheld = pocket?.isHandheld();
   return notes.map((note) => {
     const index = note.index;
     const open = index === openIndex;
     const titleParts = splitNoteTitle(note.title);
-    if (fileRecord) {
-      const title = titleParts.title === "Current note" ? fileRecord.title : titleParts.title;
-      return `<button class="game-note-file" type="button" data-game-note-index="${index}">${pocketIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 13h8m-8 4h8"/>')}<strong>${escapeHtml(title)}</strong>${titleParts.date ? `<time datetime="${titleParts.dateTime}">${escapeHtml(titleParts.date)}</time>` : ""}</button>`;
-    }
     const link = note.id ? renderNoteLink(note.id) : "";
     return `<details class="note-entry note-entry--indexed" data-note-index="${index}"${open ? ' data-note-loaded="true" open' : ""}>
       <summary>
@@ -1361,19 +1355,62 @@ function renderNoteRows({ notes, openIndex }, fileRecord) {
 
 function renderNotesPage(record, handheld = false) {
   const paging = currentNotePage(record);
-  const files = record.section === "games";
-  return `<section class="${files ? "notes-page game-note-files" : "content-terminal notes-page"}" aria-label="${escapeHtml(record.title)} notes">
+  return `<section class="content-terminal notes-page" aria-label="${escapeHtml(record.title)} notes">
     <div class="notes-page-header">
-      <div class="terminal-title">${files ? "// NOTE FILES" : "// NOTES PAGE"}</div>
+      <div class="terminal-title">// NOTES PAGE</div>
       <nav class="note-pager" aria-label="Note pages"${paging.pages < 2 ? " hidden" : ""}>
         <button type="button" data-note-page="-1" aria-label="Previous note page" title="Previous note page" aria-disabled="${paging.page === 0}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
         <span aria-live="polite" aria-atomic="true">${paging.page + 1} / ${paging.pages}</span>
         <button type="button" data-note-page="1" aria-label="Next note page" title="Next note page" aria-disabled="${paging.page + 1 === paging.pages}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
     </div>
-    ${handheld && !files ? renderNoteSearch(record) : ""}
-    <div class="note-stack${files ? " game-note-file-grid" : ""}">${renderNoteRows(paging, files ? record : undefined)}</div>
+    ${handheld ? renderNoteSearch(record) : ""}
+    <div class="note-stack">${renderNoteRows(paging)}</div>
   </section>`;
+}
+
+function recordNoteDirectory(record, query) {
+  const searching = Boolean(query.trim());
+  const files = matchingNotes(noteEntries(record.body), query);
+  const countLabel = searching ? (files.length === 1 ? "MATCH" : "MATCHES") : (files.length === 1 ? "FILE" : "FILES");
+  const items = files.map((note) => {
+    const parts = splitNoteTitle(note.title);
+    const title = parts.title === "Current note" ? record.title : parts.title;
+    return `<button class="record-note-file" type="button" data-note-file-index="${note.index}">${pocketIcon('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 13h8m-8 4h8"/>')}<strong>${escapeHtml(title)}</strong>${parts.date ? `<time datetime="${parts.dateTime}">${escapeHtml(parts.date)}</time>` : ""}</button>`;
+  }).join("");
+  return {
+    count: `${String(files.length).padStart(2, "0")} ${countLabel}`,
+    items: items || `<p class="notes-empty">${searching ? "No note matches that signal." : "No notes filed."}</p>`
+  };
+}
+
+function renderRecordNoteFiles(record) {
+  const { count, items } = recordNoteDirectory(record, state.noteSearchQuery);
+  return `<section class="record-note-files" aria-label="${escapeHtml(record.title)} notes">
+    <header class="record-note-files-header">
+      <h3 class="terminal-title">// NOTE FILES</h3>
+      <p class="record-note-file-count" role="status">${count}</p>
+    </header>
+    <div class="record-note-file-grid">${items}</div>
+  </section>`;
+}
+
+function renderLogNoteContent(record) {
+  const notes = noteEntries(record.body);
+  const items = notes.map((note, index) => {
+    const { title, date, dateTime } = splitNoteTitle(note.title);
+    const showTitle = title !== "Current note" && (notes.length > 1 || title !== record.title);
+    const link = note.id ? renderNoteLink(note.id) : "";
+    return `<article class="log-reading-note" data-note-index="${index}">
+      ${date || showTitle || link ? `<header class="log-reading-note-meta">
+        ${showTitle ? `<h3>${escapeHtml(title)}</h3>` : ""}
+        ${date ? `<time datetime="${dateTime}">${escapeHtml(date)}</time>` : ""}
+        ${link}
+      </header>` : ""}
+      <div class="record-body">${markdownBody(note.body)}</div>
+    </article>`;
+  }).join("");
+  return `<section class="log-reading-notes" aria-label="${escapeHtml(record.title)} notes">${items || '<p class="notes-empty">No notes filed.</p>'}</section>`;
 }
 
 function renderFocusedNote(record, note, toFiles = false) {
@@ -1384,7 +1421,7 @@ function renderFocusedNote(record, note, toFiles = false) {
       ${parts.date ? `<time datetime="${parts.dateTime}">${escapeHtml(parts.date)}</time>` : ""}
       <h2 id="focused-note-title">${escapeHtml(title)}</h2>
       ${title !== record.title ? `<p>${escapeHtml(record.title)}</p>` : ""}
-    </div><button type="button" class="focused-note-full" ${toFiles ? `data-return-game-notes>${pocketIcon('<path d="m12 19-7-7 7-7m-7 7h14"/>')} Notes` : `data-open-full-entry>Open full entry ${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}`}</button></header>
+    </div><button type="button" class="focused-note-full" ${toFiles ? `data-return-note-files>${pocketIcon('<path d="m12 19-7-7 7-7m-7 7h14"/>')} Notes` : `data-open-full-entry>Open full entry ${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}`}</button></header>
     <div class="record-body">${markdownBody(note.body)}</div>
   </section>`;
 }
@@ -1422,16 +1459,16 @@ function renderNoteSearch(record) {
   </div>`;
 }
 
-function gameNoteSearchIcon(open) {
+function noteFileSearchIcon(open) {
   return pocketIcon(open ? '<path d="m18 6-12 12M6 6l12 12"/>' : '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>');
 }
 
-function renderGameNoteSearch(record) {
+function renderNoteFileSearch(record) {
   if (noteEntries(record.body).length < 2) return "";
-  const open = Boolean(state.gameNoteSearchOpen);
-  return `<div class="game-note-search"${open ? " data-expanded" : ""}>
-    <input id="game-note-search-input" type="search" data-note-search-input value="${escapeHtml(state.noteSearchQuery)}" autocomplete="off" placeholder="Title or date" aria-label="Search notes" />
-    <button type="button" data-game-note-search-toggle aria-expanded="${open}" aria-controls="game-note-search-input" aria-label="${open ? "Close note search" : "Search notes"}">${gameNoteSearchIcon(open)}</button>
+  const open = Boolean(state.noteFileSearchOpen);
+  return `<div class="record-note-search"${open ? " data-expanded" : ""}>
+    <input id="record-note-search-input" type="search" data-note-search-input value="${escapeHtml(state.noteSearchQuery)}" autocomplete="off" placeholder="Title or date" aria-label="Search notes" />
+    <button type="button" data-record-note-search-toggle aria-expanded="${open}" aria-controls="record-note-search-input" aria-label="${open ? "Close note search" : "Search notes"}">${noteFileSearchIcon(open)}</button>
   </div>`;
 }
 
@@ -1526,7 +1563,8 @@ function renderRecordContent(record, activeContent, handheld = false) {
   }
 
   if (activeContent === "notes") {
-    return renderNotesPage(record, handheld);
+    if (record.section === "logs") return renderLogNoteContent(record);
+    return usesNoteDirectory(record) ? renderRecordNoteFiles(record) : renderNotesPage(record, handheld);
   }
 
   if (activeContent === "technical") {
@@ -1573,7 +1611,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.79.0</span>
+        <span>v1.80.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1587,7 +1625,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.79.0</span>
+        <span class="version-label">v1.80.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1607,7 +1645,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.79.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.80.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2752,15 +2790,17 @@ function recordWindow(record) {
   const readingContents = window.GestaltPocketIndex?.readingContents?.(record.section, contents) ?? contents;
   const titleClass = `record-title-text${record.title.length > 26 ? " is-long-title" : ""}`;
   const readingNotes = activeContent === "notes";
-  const games = record.section === "games";
-  const retractArtwork = readingNotes && !games;
-  const gameNote = games && readingNotes && state.gameNoteOpen;
-  const focusedNote = (state.dashboardNoteReader || gameNote) && state.focusedNoteIndex !== null ? noteEntries(record.body)[state.focusedNoteIndex] : null;
+  const logs = record.section === "logs";
+  const noteDirectory = usesNoteDirectory(record);
+  const readingLayout = noteDirectory || logs;
+  const retractArtwork = readingNotes && !readingLayout;
+  const directoryNote = noteDirectory && readingNotes && state.noteFileOpen;
+  const focusedNote = (state.dashboardNoteReader || directoryNote) && state.focusedNoteIndex !== null ? noteEntries(record.body)[state.focusedNoteIndex] : null;
   const noteTitle = focusedNote ? splitNoteTitle(focusedNote.title).title : "";
-  const caption = focusedNote ? `// ${noteTitle === "Current note" ? record.title : noteTitle}` : games || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const caption = focusedNote ? `// ${noteTitle === "Current note" ? record.title : noteTitle}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
   const artwork = recordArtwork(record);
 
-  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${games ? "has-game-files" : ""} ${focusedNote ? "is-note-reader" : readingNotes ? "is-notes-view" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} ${focusedNote ? "note reader" : "archive entry"}">
+  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${readingLayout ? "has-reading-layout" : ""} ${logs ? "is-log-record" : ""} ${focusedNote ? "is-note-reader" : readingNotes ? "is-notes-view" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} ${focusedNote ? "note reader" : "archive entry"}">
     ${recordAccessSurfaceMarkup()}
     <header class="window-bar">
       ${pocketBack()}
@@ -2777,11 +2817,11 @@ function recordWindow(record) {
 
     ${record.section !== "system" ? recordLinkFeedback(Boolean(focusedNote?.id), state.noteLinkMissing) : ""}
     <div class="record-layout">
-      ${focusedNote ? renderFocusedNote(record, focusedNote, gameNote && !state.dashboardNoteReader) : `
+      ${focusedNote ? renderFocusedNote(record, focusedNote, directoryNote && !state.dashboardNoteReader) : `
       <div class="record-main">
-        ${games ? `<nav class="game-record-tabs" aria-label="Entry contents">
-          <div class="game-record-tab-links">${contents.map(({ key, label }) => `<button type="button" data-content-key="${key}"${activeContent === key ? ' aria-current="true"' : ""}>${escapeHtml(label)}</button>`).join("")}</div>
-          ${renderGameNoteSearch(record)}
+        ${readingLayout && contents.length > 1 ? `<nav class="record-view-tabs" aria-label="Entry contents">
+          <div class="record-view-tab-links">${contents.map(({ key, label }) => `<button type="button" data-content-key="${key}"${activeContent === key ? ' aria-current="true"' : ""}>${escapeHtml(label)}</button>`).join("")}</div>
+          ${noteDirectory ? renderNoteFileSearch(record) : ""}
         </nav>` : ""}
         <div class="record-heading${artwork.src ? " has-heading-banner" : ""}${retractArtwork ? " is-notes-heading" : ""}">
           ${artwork.src && !retractArtwork ? renderHeadingImage(record, artwork) : ""}
@@ -2797,21 +2837,29 @@ function recordWindow(record) {
           </p>
         </div>
 
-        ${!games && readingContents.length > 1 ? `<label class="pocket-record-contents"><span>Contents</span><span class="pocket-record-select"><select data-record-content-picker>
+        ${!readingLayout && readingContents.length > 1 ? `<label class="pocket-record-contents"><span>Contents</span><span class="pocket-record-select"><select data-record-content-picker>
           ${readingContents.map(({ key, label }) => `<option value="${key}"${key === activeContent ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
         </select></span></label>` : ""}
+        ${logs ? recordReadingDetails(record) : ""}
         <div class="record-content-view">${renderRecordContent(record, activeContent, handheld)}</div>
-        ${games ? `<dl class="game-record-dates"${activeContent === "overview" ? "" : " hidden"}>
-          <div><dt>Created</dt><dd>${record.started ? readableDate(record.started) : "Unknown"}</dd></div>
-          <div><dt>Last Updated</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
-        </dl>` : ""}
+        ${noteDirectory && activeContent === "overview" ? recordReadingDetails(record) : ""}
       </div>
 
-      ${games ? "" : `<aside class="record-aside">${recordAsideContent(record, contents, activeContent, handheld)}</aside>`}
+      ${readingLayout ? "" : `<aside class="record-aside">${recordAsideContent(record, contents, activeContent, handheld)}</aside>`}
       `}
     </div>
     ${focusedNote || record.section === "games" ? "" : renderUpdateHistoryModal(record)}
   </article>`;
+}
+
+function recordReadingDetails(record) {
+  return `<div class="record-reading-details">
+    <dl class="record-reading-dates">
+      <div><dt>Created</dt><dd>${record.started ? readableDate(record.started) : "Unknown"}</dd></div>
+      <div><dt>Last Updated</dt><dd>${readableDate(recordLastUpdated(record))}</dd></div>
+    </dl>
+    ${record.section === "games" ? "" : renderUpdateHistory(record)}
+  </div>`;
 }
 
 function recordAsideContent(record, contents, activeContent, handheld) {
@@ -3424,7 +3472,7 @@ function replaceRecordReadingView(record, focusFile) {
   for (const name of ["is-note-reader", "is-notes-view"]) current.classList.toggle(name, entry.classList.contains(name));
   current.setAttribute("aria-label", entry.getAttribute("aria-label"));
   current.replaceChildren(...entry.childNodes);
-  const file = focusFile ? current.querySelector(`[data-game-note-index="${state.focusedNoteIndex}"]`) : null;
+  const file = focusFile ? current.querySelector(`[data-note-file-index="${state.focusedNoteIndex}"]`) : null;
   if (file) file.focus();
   else current.focus({ preventScroll: true });
 }
@@ -3433,24 +3481,25 @@ function openFullEntry() {
   if (!state.dashboardNoteReader || !state.panelOpen) return;
   state.dashboardNoteReader = false;
   const record = selectedRecord();
-  if (record.section === "games") {
+  const directory = usesNoteDirectory(record);
+  if (directory) {
     state.linkedNoteId = null;
     window.GestaltRecordLinks?.open(window, record.id);
   }
-  replaceRecordReadingView(record, record.section === "games");
-  if (record.section !== "games" && state.focusedNoteIndex > 0) revealFocusedNote();
+  replaceRecordReadingView(record, directory);
+  if (!directory && state.focusedNoteIndex > 0) revealFocusedNote();
 }
 
-function showGameNote(index) {
+function showNoteFile(index) {
   const record = selectedRecord();
-  if (!state.panelOpen || record?.section !== "games" || state.activeContent !== "notes" || state.dashboardNoteReader) return;
+  if (!state.panelOpen || !usesNoteDirectory(record) || state.activeContent !== "notes" || state.dashboardNoteReader) return;
   const note = index === null ? null : noteEntries(record.body)[index];
   if (index !== null && !note) return;
   if (note) {
     state.focusedNoteIndex = index;
     window.GestaltMemoryState?.record("note.expand", { index: index + 1 });
   }
-  state.gameNoteOpen = Boolean(note);
+  state.noteFileOpen = Boolean(note);
   state.noteLinkMissing = false;
   state.linkedNoteId = note?.id ?? null;
   window.GestaltRecordLinks?.open(window, record.id, note?.id);
@@ -3576,7 +3625,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.79.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.80.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3862,6 +3911,11 @@ function syncWeather() {
 
 function revealFocusedNote() {
   const layout = root.querySelector(".record-window .record-layout");
+  const logNote = layout?.querySelector(`.log-reading-note[data-note-index="${state.focusedNoteIndex}"]`);
+  if (logNote) {
+    layout.scrollTop += logNote.getBoundingClientRect().top - layout.getBoundingClientRect().top - 16;
+    return;
+  }
   const summary = layout?.querySelector(`[data-note-index="${state.focusedNoteIndex}"] > summary`);
   if (!layout || !summary) return;
   const top = layout.getBoundingClientRect().top + layout.clientTop;
@@ -3877,7 +3931,14 @@ function syncNotePage(notesPage, paging = currentNotePage(selectedRecord())) {
   pager.querySelector("span").textContent = `${paging.page + 1} / ${paging.pages}`;
   pager.querySelector('[data-note-page="-1"]').setAttribute("aria-disabled", String(paging.page === 0));
   pager.querySelector('[data-note-page="1"]').setAttribute("aria-disabled", String(paging.page + 1 === paging.pages));
-  stack.innerHTML = renderNoteRows(paging, notesPage.classList.contains("game-note-files") ? selectedRecord() : undefined);
+  stack.innerHTML = renderNoteRows(paging);
+}
+
+function syncRecordNoteFiles(directory) {
+  if (!directory) return;
+  const { count, items } = recordNoteDirectory(selectedRecord(), state.noteSearchQuery);
+  directory.querySelector(".record-note-file-count").textContent = count;
+  directory.querySelector(".record-note-file-grid").innerHTML = items;
 }
 
 function stepNotePage(button) {
@@ -3894,30 +3955,29 @@ function stepNotePage(button) {
   syncNotePage(notesPage, currentNotePage(record));
 }
 
-function paintGameNoteSearch(button, open) {
-  const search = button.closest(".game-note-search");
+function paintNoteFileSearch(button, open) {
+  const search = button.closest(".record-note-search");
   const input = search?.querySelector("input");
   if (!input) return null;
   search.toggleAttribute("data-expanded", open);
   button.setAttribute("aria-expanded", String(open));
   button.setAttribute("aria-label", open ? "Close note search" : "Search notes");
-  button.innerHTML = gameNoteSearchIcon(open);
+  button.innerHTML = noteFileSearchIcon(open);
   if (!open) input.value = "";
   return input;
 }
 
-function toggleGameNoteSearch(button, open) {
+function toggleNoteFileSearch(button, open) {
   if (open && state.activeContent !== "notes") selectRecordContent("notes");
-  const input = paintGameNoteSearch(button, open);
+  const input = paintNoteFileSearch(button, open);
   if (!input) return;
-  state.gameNoteSearchOpen = open;
+  state.noteFileSearchOpen = open;
   if (open) {
     input.focus();
   } else {
     state.noteSearchQuery = "";
     state.noteSearchPage = 0;
-    const notesPage = button.closest(".record-layout")?.querySelector(".game-note-files");
-    if (notesPage) syncNotePage(notesPage);
+    syncRecordNoteFiles(button.closest(".record-layout")?.querySelector(".record-note-files"));
     button.focus({ preventScroll: true });
   }
 }
@@ -3946,11 +4006,11 @@ function selectRecordContent(key, layout) {
   const contents = record ? getRecordContents(record) : [];
   const available = layout ? pocket?.readingContents?.(record?.section, contents) ?? contents : contents;
   if (!state.panelOpen || !available.some((item) => item.key === key)) return;
-  if (record.section === "games" && state.activeContent === key) return;
+  if (usesNoteDirectory(record) && state.activeContent === key) return;
   if (state.activeContent !== key) window.GestaltMemoryState?.record("content.select", { view: key });
   state.activeContent = key;
-  state.gameNoteOpen = false;
-  state.gameNoteSearchOpen = false;
+  state.noteFileOpen = false;
+  state.noteFileSearchOpen = false;
   state.noteSearchQuery = "";
   state.focusedNoteIndex = null;
   state.noteBrowsePage = undefined;
@@ -3961,7 +4021,7 @@ function selectRecordContent(key, layout) {
   layout ??= root.querySelector(".record-window .record-layout");
   const panel = layout?.querySelector(".record-content-view");
   const aside = layout?.querySelector(".record-aside");
-  const tabs = layout?.querySelector(".game-record-tabs");
+  const tabs = layout?.querySelector(".record-view-tabs");
   const heading = layout?.querySelector(".record-heading");
   if (panel && (aside || tabs) && heading) {
     const handheld = pocket?.isHandheld();
@@ -3983,10 +4043,13 @@ function selectRecordContent(key, layout) {
         if (tab.dataset.contentKey === key) tab.setAttribute("aria-current", "true");
         else tab.removeAttribute("aria-current");
       });
-      const dates = layout.querySelector(".game-record-dates");
-      if (dates) dates.hidden = key !== "overview";
-      const toggle = tabs.querySelector('[data-game-note-search-toggle][aria-expanded="true"]');
-      if (toggle) paintGameNoteSearch(toggle, false);
+      if (usesNoteDirectory(record)) {
+        const details = layout.querySelector(".record-reading-details");
+        if (key !== "overview") details?.remove();
+        else if (!details) panel.insertAdjacentHTML("afterend", recordReadingDetails(record));
+      }
+      const toggle = tabs.querySelector('[data-record-note-search-toggle][aria-expanded="true"]');
+      if (toggle) paintNoteFileSearch(toggle, false);
     }
     if (focusTab) aside.querySelector(`[data-content-key="${key}"]`)?.focus({ preventScroll: true });
     const picker = layout.querySelector("[data-record-content-picker]");
@@ -4090,11 +4153,11 @@ document.addEventListener("click", (event) => {
   if (clickTarget.closest("[data-open-os-behaviour]")) { openOsBehaviour(); return; }
   if (clickTarget.closest("[data-open-connections]")) { openWorkspaceTool("connections"); return; }
   if (clickTarget.closest("[data-open-full-entry]")) { openFullEntry(); return; }
-  if (clickTarget.closest("[data-return-game-notes]")) { showGameNote(null); return; }
-  const noteSearchToggle = clickTarget.closest("[data-game-note-search-toggle]");
-  if (noteSearchToggle) { toggleGameNoteSearch(noteSearchToggle, !state.gameNoteSearchOpen); return; }
-  const gameFile = clickTarget.closest("[data-game-note-index]");
-  if (gameFile) { showGameNote(Number(gameFile.dataset.gameNoteIndex)); return; }
+  if (clickTarget.closest("[data-return-note-files]")) { showNoteFile(null); return; }
+  const noteSearchToggle = clickTarget.closest("[data-record-note-search-toggle]");
+  if (noteSearchToggle) { toggleNoteFileSearch(noteSearchToggle, !state.noteFileSearchOpen); return; }
+  const noteFile = clickTarget.closest("[data-note-file-index]");
+  if (noteFile) { showNoteFile(Number(noteFile.dataset.noteFileIndex)); return; }
 
   const lazyNote = clickTarget.closest("details.note-entry[data-note-index]");
 
@@ -4385,6 +4448,10 @@ document.addEventListener("input", (event) => {
     const changed = target.value.trim().toLowerCase() !== state.noteSearchQuery.trim().toLowerCase();
     state.noteSearchQuery = target.value;
     if (!changed) return;
+    if (target.id === "record-note-search-input") {
+      syncRecordNoteFiles(target.closest(".record-layout")?.querySelector(".record-note-files"));
+      return;
+    }
     state.noteSearchPage = 0;
     const notesPage = document.querySelector(".notes-page");
 
@@ -4486,17 +4553,17 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (state.panelOpen && state.gameNoteSearchOpen && !state.gameNoteOpen) {
-    const button = root.querySelector("[data-game-note-search-toggle]");
+  if (state.panelOpen && state.noteFileSearchOpen && !state.noteFileOpen) {
+    const button = root.querySelector("[data-record-note-search-toggle]");
     if (button) {
       event.preventDefault();
       event.stopPropagation();
-      toggleGameNoteSearch(button, false);
+      toggleNoteFileSearch(button, false);
       return;
     }
   }
 
-  if (state.noteSearchQuery && !state.gameNoteOpen && !state.dashboardNoteReader) {
+  if (state.noteSearchQuery && !state.noteFileOpen && !state.dashboardNoteReader) {
     event.preventDefault();
     const notesPage = document.querySelector(".notes-page");
     const input = document.querySelector("[data-note-search-input]");
@@ -4566,7 +4633,7 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     else note.firstElementChild?.after(tools);
   }
   const noteSearch = root.querySelector(".record-window .note-search-panel");
-  if (noteSearch && !noteSearch.closest(".game-note-files")) {
+  if (noteSearch && !noteSearch.closest(".record-note-files")) {
     const record = noteSearch.closest(".record-window");
     if (event.matches) record.querySelector(".notes-page-header")?.after(noteSearch);
     else record.querySelector(".record-aside")?.append(noteSearch);

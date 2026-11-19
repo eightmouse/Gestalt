@@ -87,7 +87,7 @@ assert.ok(!html.includes("<script>"));
 assert.ok(html.includes('data-open-content="notes"') && html.includes('data-open-record="&lt;unsafe&quot;id&gt;"'));
 const focused = vm.createContext({ records, state: {}, pocket: undefined, window: { matchMedia: () => ({ matches: false }) }, stopRecordAccessSequence() {}, shouldPlayEntryAccess: () => false, syncRecordWindow: () => false, render() {}, startRecordAccessSequence() {}, revealFocusedNote() {} });
 focused.root = { querySelector: () => null };
-vm.runInContext(declaration("static-app.js", "openRecord") + "\n" + declaration("static-app.js", "syncRecordLinkNotice"), focused);
+vm.runInContext(["openRecord", "syncRecordLinkNotice", "usesNoteDirectory"].map((name) => declaration("static-app.js", name)).join("\n"), focused);
 focused.openRecord(records[0].id, "notes", 1);
 assert.equal(focused.state.focusedNoteIndex, 1);
 assert.equal(focused.state.noteSearchQuery, "", "Deep links don't start a search");

@@ -18,7 +18,7 @@ const realRecords = compiled("../lib/content.ts").getRecords();
 const staticSource = readFileSync(new URL("../static-app.js", import.meta.url), "utf8");
 const ast = ts.createSourceFile("static-app.js", staticSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
 const staticContext = vm.createContext({ window: { GestaltNoteInline: noteInline }, pocket: { isHandheld: () => false } });
-for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "renderSetupNotes", "splitNoteTitle", "escapeHtml", "pocketIcon", "renderNoteLink", "recordLinkButton", "recordLinkFeedback"]) {
+for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "matchingNotes", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "recordNoteDirectory", "renderRecordNoteFiles", "renderLogNoteContent", "renderSetupNotes", "splitNoteTitle", "escapeHtml", "pocketIcon", "renderNoteLink", "recordLinkButton", "recordLinkFeedback"]) {
   const declaration = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name);
   assert.ok(declaration, `Static function ${name} exists`);
   vm.runInContext(declaration.getText(ast), staticContext);
@@ -90,18 +90,18 @@ for (const [record, expected] of [[session, "2026-11-13"], [project, "2026-11-12
 assert.equal(react.activityDate(records[2]), "2026-05-01", "Field-log ordering uses writing date, not display freshness");
 staticContext.state = { noteSearchQuery: "", focusedNoteIndex: 1 };
 staticContext.markdownBody = staticContext.escapeHtml;
-const targeted = staticContext.renderNotesPage({ ...session, section: "projects" });
+const targeted = staticContext.renderNotesPage({ ...session, section: "system" });
 assert.match(targeted, /data-note-index="0"[^>]*(?<! hidden)>/, "Other notes remain in the list");
 assert.doesNotMatch(targeted, /data-note-index="0"[^>]*\b(?:open|hidden)\b>/, "A duplicate title stays collapsed, not hidden");
 assert.match(targeted, /data-note-index="1"[^>]* open>/, "The selected note starts open");
 assert.match(targeted, /First session\./);
 assert.doesNotMatch(targeted, /Second session\./, "Other note bodies stay lazy");
 assert.match(targeted, /class="note-pager"[^>]* hidden>/, "Short entries do not show navigation");
-staticContext.renderNoteSearch = () => "";
-const gameFiles = staticContext.renderNotesPage(session);
-assert.match(gameFiles, /class="game-note-file" type="button" data-game-note-index="0"/);
-assert.match(gameFiles, /class="game-note-file" type="button" data-game-note-index="1"/);
-assert.doesNotMatch(gameFiles, /Second session\.|First session\.|<details/, "Game note files retain the original index without rendering the prose until opened");
+const gameFiles = staticContext.renderRecordNoteFiles(session);
+assert.match(gameFiles, /class="record-note-file" type="button" data-note-file-index="0"/);
+assert.match(gameFiles, /class="record-note-file" type="button" data-note-file-index="1"/);
+assert.match(gameFiles, /role="status">04 FILES</);
+assert.doesNotMatch(gameFiles, /Second session\.|First session\.|<details|note-pager/, "Game note files retain the original index without pagination or preloaded prose");
 
 const linkNote = { id: "main", index: 0, title: "A shareable note", body: "Read this first." };
 for (const handheld of [false, true]) {
@@ -129,4 +129,23 @@ for (const paginate of [react.notePage, staticContext.notePage]) {
   assert.deepEqual(list(paginate(long, "06 / 11", 1)), [11]);
   assert.deepEqual(list(paginate(long, "no match")), []);
 }
+const longGame = { ...session, body: long.map((note) => `:::note ${note.title}\n${note.body}\n:::`).join("\n\n") };
+for (const section of ["games", "projects"]) {
+  const allFiles = staticContext.renderRecordNoteFiles({ ...longGame, section });
+  assert.equal([...allFiles.matchAll(/data-note-file-index=/g)].length, 13, "Games and Projects render every file");
+  assert.match(allFiles, /role="status">13 FILES</);
+  assert.doesNotMatch(allFiles, /Fixture body|note-pager/);
+}
+staticContext.state.noteSearchQuery = "  SIGNAL 12 ";
+const matched = staticContext.renderRecordNoteFiles(longGame);
+assert.match(matched, /role="status">01 MATCH</);
+assert.deepEqual([...matched.matchAll(/data-note-file-index="(\d+)"/g)].map((match) => Number(match[1])), [12]);
+assert.deepEqual(Array.from(react.matchingNotes(long, " SIGNAL 12 "), (file) => file.index), [12], "The React directory targets the same original note when filtering");
+staticContext.state.noteSearchQuery = "no match";
+assert.match(staticContext.renderRecordNoteFiles(longGame), /role="status">00 MATCHES</);
+const logReader = staticContext.renderLogNoteContent({ ...session, section: "logs" });
+assert.match(logReader, /class="log-reading-note" data-note-index="1"/);
+assert.match(logReader, /First session\./);
+assert.match(logReader, /Second session\./);
+assert.doesNotMatch(logReader, /<details|note-pager|FIELD NOTE PREVIEW/);
 console.log("Log order, Recent Activity and note paging passed: writing dates, same-day notes, exact destinations, full-entry search, limits and React/static parity.");

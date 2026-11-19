@@ -14,7 +14,7 @@
         },
         {
           "title": "Projects & Games: selector redesign",
-          "detail": "The Process Reader rotates project plates while idle; the Media Cabinet uses draggable disks. Game notes open as individual files. Visual polish remains in progress."
+          "detail": "The Process Reader and Media Cabinet are live. Projects and Games share a file directory inside their entries. Remaining visual polish stays open."
         },
         {
           "title": "Align minimized windows with the content",
@@ -41,8 +41,32 @@
       "title": "Filed",
       "items": [
         {
-          "title": "Process Reader, Media Cabinet and note files",
-          "detail": "Projects rotate in their own workplates. Games use draggable disks and open notes as files. The welcome console brings dashboard plates online without moving them at the handoff.",
+          "title": "One file directory for Games and Projects",
+          "detail": "Open an entry and browse its notes as files, up to six across on desktop and two on handheld, without paging. Search stays in the tab bar, and closing a note returns you to the same file. Project windows use the project name and only show Technical Stack or Samples when there is something to see.",
+          "version": "v1.80.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
+          "title": "Logs open straight to the writing",
+          "detail": "Logs skip the overview and open directly to the full note. References, dates, status and exact note links stay intact. Attachments have their own tab only when present. The editor is unchanged.",
+          "version": "v1.80.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
+          "title": "Projects and Games: a different way to browse",
+          "detail": "Projects gets its own Process Reader. Active Projects and Other Projects use cycling workplates instead of long lists, with real statuses, progress and milestone traces. Active plates turn mechanically; the quieter Other Projects plates register with a brief glitch. Hover brings up a slow glow, and pressing the plate opens its record.",
+          "version": "v1.79.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
+          "title": "Games: the Media Cabinet",
+          "detail": "Session Logs and Past Logs now sit on separate shelves of Gestalt floppy disks. Drag the shelves, scroll Past Logs with the wheel, or search from the section header. Hover lifts a disk and turns its hub; pressing it opens the existing entry. Inside, Overview, Notes and Recommendation share a title bar and artwork, and notes open as individual files.",
+          "version": "v1.79.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
+          "title": "Full Welcome and the desktop reading flow",
+          "detail": "Full Welcome runs through 24 console lines and the operator screen before each dashboard module comes online with its own cue. Quick Start and handheld boot keep their existing behavior. Dashboard notes can open in a focused reader, and minimized windows and System Tips sit on the workspace rail.",
           "version": "v1.79.0",
           "releasedOn": "2026-11-19"
         },

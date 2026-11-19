@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+19 November, v1.80.0: Game and Project notes share a continuous directory with up to six files per desktop row. Project windows keep their Overview and contextual tabs; Logs open directly to the writing. The previous release is filed in more detail by section. The editor rework remains a separate discussion.
+
 19 November, v1.79.0 preview: Projects and Games have new browsing surfaces, with rotating project plates and draggable game disks. Game entries keep a shared title and artwork across tabs, and Notes opens individual files in the focused reader. The Full Welcome handoff no longer moves or clips the dashboard plates. Visual polish remains open.
 
 19 November, local reading review: Dashboard notes open in a focused reader with the same window controls and an action to open the full record at the same note. The full Notes view retracts its artwork; direct Notes opens compact. Dashboard startup plates now seat within the grid and hold their module readouts a little longer.

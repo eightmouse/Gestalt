@@ -220,7 +220,7 @@ Object.assign(staticContext, {
   recordLastUpdated: (record) => record.updated,
   gameLogPlacement: () => "session", gameActivityValue: () => "", noteEntries: () => []
 });
-vm.runInContext(["recordWindow", "recordArtwork", "renderHeadingImage", "recordAsideContent", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon", "renderGameNoteSearch", "gameNoteSearchIcon"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
+vm.runInContext(["recordWindow", "recordArtwork", "renderHeadingImage", "recordAsideContent", "recordTraceId", "recordLinkButton", "recordLinkFeedback", "pocketIcon", "renderNoteFileSearch", "noteFileSearchIcon", "usesNoteDirectory", "recordReadingDetails"].map((name) => declaration("../static-app.js", name)).join("\n"), staticContext);
 react.noteEntries = () => [];
 function findHeaderElement(node, className) {
   if (!node || typeof node !== "object") return null;
@@ -243,20 +243,21 @@ for (const section of ["projects", "games", "logs"]) {
   const controls = findHeaderElement(localHeader, "window-control-group");
   const gear = findHeaderElement(controls, "window-edit-action");
   assert.ok(gear && findHeaderElement(controls, "window-actions"), `${section} places the gear beside window controls`);
-  gear.props.onClick(); assert.equal(editedContent, "overview", "Moving the gear retains the active-content edit action");
+  gear.props.onClick(); assert.equal(editedContent, section === "logs" ? "notes" : "overview", "The gear opens the active content in the existing editor");
   assert.equal(gear.props["aria-label"], "Edit this record locally");
   assert.ok(!reactHeader.includes("window-edit-action"), "Public/readonly entries gain no edit control");
   for (const html of [reactHeader, staticHeader]) {
     assert.ok(html.includes(imageFraming.headerFrameCss(headerFrame)), "React and Pages render the saved header crop, not overview framing");
     assert.ok(html.includes("Header &lt;fixture&gt;"));
     assert.ok(html.includes(recordLinks.traceId(record.id, section)), "Both readers show the same reference in the entry header");
+    assert.ok(html.includes('class="record-window-caption">// Header &lt;fixture&gt;'), "The record title replaces the generic dialog caption");
   }
 }
 const tabs = ["overview", "notes", "recommendation"];
 react.getRecordContents = staticContext.getRecordContents = () => tabs.map(key => ({ key, label: key }));
 react.contentOrdinal = staticContext.contentOrdinal = () => "01";
 react.NoteSearchBox = () => null;
-react.NotesPage = () => null;
+react.RecordNoteFiles = () => null;
 staticContext.renderNoteSearch = () => "";
 react.noteEntries = staticContext.noteEntries = () => [{ title: "First" }, { title: "Second" }];
 staticContext.state.noteSearchQuery = "";
@@ -270,9 +271,9 @@ for (const tab of tabs) {
   assert.doesNotMatch(html, /is-notes-heading/, "Game artwork remains visible in the file browser");
   assert.equal(findHeaderElement(local, "record-window-caption").props.children, `// ${legacyGame.title}`);
   assert.ok(html.includes(`class="record-window-caption">// ${legacyGame.title}</span>`));
-  assert.ok(html.includes('class="game-record-tabs"') && findHeaderElement(local, "game-record-tabs"));
-  assert.ok(findHeaderElement(local, "game-note-search"), `React keeps search on the ${tab} tab`);
-  assert.ok(html.includes('aria-expanded="false" aria-controls="game-note-search-input"'), `Pages keeps search on the ${tab} tab`);
+  assert.ok(html.includes('class="record-view-tabs"') && findHeaderElement(local, "record-view-tabs"));
+  assert.ok(findHeaderElement(local, "record-note-search"), `React keeps search on the ${tab} tab`);
+  assert.ok(html.includes('aria-expanded="false" aria-controls="record-note-search-input"'), `Pages keeps search on the ${tab} tab`);
   assert.equal(image?.props.src, landscape, `The React ${tab} tab keeps the shared header`);
   assert.ok(html.includes(`class="heading-banner-image" src="${landscape}" data-steam-cover="${steamCover}"`), `The static ${tab} tab keeps the shared header`);
   const failed = { src: landscape, dataset: {} };

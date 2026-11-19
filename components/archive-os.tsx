@@ -487,7 +487,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       setRecordAccessComplete(true);
     } else startRecordAccess();
     setSelectedId(record.id);
-    setInitialContent(handheld ? pocket.readingView(record.section, content) : content);
+    setInitialContent(pocket.readingView(record.section, content));
     setInitialNoteIndex(noteIndex);
     setPanelOpen(true);
     setPanelMinimized(false);
@@ -501,7 +501,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const openDashboardNote = (record: RecordEntry, index: number) => {
     const note = noteEntries(record.body)[index];
-    if (note?.body.trim()) openRecord(record, "notes", index, note.id, undefined, { dashboardNote: true });
+    if (note?.body.trim()) openRecord(record, "notes", index, note.id, undefined, { dashboardNote: record.section !== "logs" });
     else openRecord(record);
   };
 

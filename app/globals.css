@@ -5266,10 +5266,6 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry--indexed > summary > i::before { font-size: calc(10px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry--indexed > .note-entry-body { margin: 0 calc(10px * var(--desktop-size)) calc(16px * var(--desktop-size)) calc(46px * var(--desktop-size)); padding: calc(24px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window:not(.is-setup-record) .note-entry-body > .record-body { padding: 0; }
-  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview { padding: calc(30px * var(--desktop-size)); gap: calc(22px * var(--desktop-size)); }
-  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview-meta { font-size: calc(12px * var(--desktop-size)); }
-  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview h2 { font-size: calc(24px * var(--desktop-size)); }
-  .archive-shell > .workspace > .record-window:not(.is-setup-record) .log-entry-preview p { font-size: calc(16px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window .note-media figcaption { font-size: calc(12px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window .note-media { inline-size: min(100%, calc(760px * var(--desktop-size))); gap: calc(7px * var(--desktop-size)); margin-block: calc(6px * var(--desktop-size)) calc(16px * var(--desktop-size)); }
   .archive-shell > .workspace > .record-window :is(.note-media--wide, .note-media--banner) { inline-size: min(100%, calc(920px * var(--desktop-size))); }
@@ -7682,58 +7678,9 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   margin-block-start: 0;
 }
 
-.log-entry-preview {
-  display: grid;
-  align-content: start;
-  gap: clamp(14px, 2vh, 22px);
-  min-inline-size: 0;
-  padding: clamp(18px, 2.6vw, 30px);
-  border: 1px solid var(--line);
-  background:
-    linear-gradient(110deg, rgba(var(--tone-ink, 217, 213, 193), 0.045), transparent 62%),
-    rgba(var(--tone-highlight, 255, 255, 255), 0.018);
-}
-
-.log-entry-preview-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px 20px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-}
-
-.log-entry-preview h2 {
-  margin: 0;
-  color: var(--text-strong);
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1.25;
-}
-
-.log-entry-preview p {
-  max-inline-size: 82ch;
-  margin: 0;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.72;
-}
-
-@media (max-width: 760px) {
-  .log-entry-preview {
-    padding: 16px;
-  }
-
-  .log-entry-preview h2 {
-    font-size: 20px;
-  }
-
-  .log-entry-preview p {
-    font-size: 15px;
-  }
+@media (min-width: 761px) and (max-height: 850px) {
+  .record-layout:has(.overview-stack--project) { padding-block: 20px; }
+  .overview-stack--project { gap: 18px; }
 }
 
 .sample-kicker {
@@ -10302,7 +10249,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 .record-heading.is-notes-heading::after,
 .record-heading.is-notes-heading > :not(.heading-banner-image) { display: none; }
 .record-window .record-window-caption { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.record-window:is(.is-notes-view, .is-note-reader, .has-game-files) .record-window-caption { letter-spacing: 0; text-transform: uppercase; }
+.record-window:is(.is-notes-view, .is-note-reader, .has-reading-layout) .record-window-caption { letter-spacing: 0; text-transform: uppercase; }
 .record-heading.has-heading-banner:not(.is-notes-heading) .heading-banner-image { clip-path: inset(0); }
 .record-heading.is-notes-heading .heading-banner-image { clip-path: inset(0 0 100%); pointer-events: none; }
 
@@ -10311,26 +10258,26 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   .record-heading.has-heading-banner .heading-banner-image { transition: clip-path 245ms ease; }
 }
 
-.archive-shell > .workspace > .record-window:is(.is-note-reader, .has-game-files):not(.is-setup-record) .record-layout:not(.is-editing-record) {
+.archive-shell > .workspace > .record-window:is(.is-note-reader, .has-reading-layout):not(.is-setup-record) .record-layout:not(.is-editing-record) {
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
 }
 .record-window.is-note-reader::before { content: none; }
-.game-record-tabs {
-  --game-tab-control: 38px;
+.record-view-tabs {
+  --record-tab-control: 38px;
   position: relative;
-  container: game-record-nav / inline-size;
+  container: record-view-nav / inline-size;
   border-block-end: 1px solid var(--line);
   margin-block-end: calc(15px * var(--desktop-size, 1));
 }
-.game-record-tab-links {
+.record-view-tab-links {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
-.game-record-tabs:has(.game-note-search) .game-record-tab-links { padding-inline-end: var(--game-tab-control); }
-.game-record-tab-links button {
-  min-block-size: var(--game-tab-control);
+.record-view-tabs:has(.record-note-search) .record-view-tab-links { padding-inline-end: var(--record-tab-control); }
+.record-view-tab-links button {
+  min-block-size: var(--record-tab-control);
   padding: 5px 12px;
   border: 0;
   border-block-end: 2px solid transparent;
@@ -10338,19 +10285,19 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   color: var(--text);
   cursor: pointer;
 }
-.game-record-tab-links button[aria-current="true"] { border-block-end-color: var(--accent); color: var(--text-strong); }
-.game-note-search {
+.record-view-tab-links button[aria-current="true"] { border-block-end-color: var(--accent); color: var(--text-strong); }
+.record-note-search {
   position: absolute;
   inset: 0 0 auto auto;
   display: flex;
   justify-content: flex-end;
-  block-size: var(--game-tab-control);
-  inline-size: var(--game-tab-control);
+  block-size: var(--record-tab-control);
+  inline-size: var(--record-tab-control);
   max-inline-size: 100%;
   transition: inline-size 230ms ease;
 }
-.game-note-search[data-expanded] { inline-size: min(100%, calc(222px * var(--desktop-size, 1))); }
-.game-note-search[data-expanded]::before {
+.record-note-search[data-expanded] { inline-size: min(100%, calc(222px * var(--desktop-size, 1))); }
+.record-note-search[data-expanded]::before {
   content: "";
   position: absolute;
   inset: 4px 0;
@@ -10358,9 +10305,9 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   background: rgb(var(--tone-well, 12, 16, 14));
   pointer-events: none;
 }
-.game-note-search[data-expanded]:focus-within::before { border-color: var(--line-strong); }
-.game-note-search > * { position: relative; }
-.game-note-search input {
+.record-note-search[data-expanded]:focus-within::before { border-color: var(--line-strong); }
+.record-note-search > * { position: relative; }
+.record-note-search input {
   visibility: hidden;
   flex: 1 1 0;
   min-inline-size: 0;
@@ -10371,33 +10318,51 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   color: var(--text-strong);
   font: inherit;
 }
-.game-note-search[data-expanded] input { visibility: visible; padding-inline: 10px 2px; }
-.game-note-search[data-expanded] input:focus-visible { outline: none; }
-.game-note-search input::-webkit-search-cancel-button { appearance: none; }
-.game-note-search button {
+.record-note-search[data-expanded] input { visibility: visible; padding-inline: 10px 2px; }
+.record-note-search[data-expanded] input:focus-visible { outline: none; }
+.record-note-search input::-webkit-search-cancel-button { appearance: none; }
+.record-note-search button {
   display: grid;
   flex: none;
   place-items: center;
-  inline-size: var(--game-tab-control);
+  inline-size: var(--record-tab-control);
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--text);
   cursor: pointer;
 }
-.game-note-search button:hover, .game-note-search button:focus-visible { color: var(--text-strong); }
-.game-note-search button svg { inline-size: 17px; block-size: 17px; }
-@container game-record-nav (width < 490px) {
-  .game-record-tabs:has(.game-note-search[data-expanded]) .game-record-tab-links { visibility: hidden; }
+.record-note-search button:hover, .record-note-search button:focus-visible { color: var(--text-strong); }
+.record-note-search button svg { inline-size: 17px; block-size: 17px; }
+@container record-view-nav (width < 490px) {
+  .record-view-tabs:has(.record-note-search[data-expanded]) .record-view-tab-links { visibility: hidden; }
 }
-.game-record-dates:not([hidden]) { display: flex; flex-wrap: wrap; gap: 10px 24px; margin: 16px 0 0; color: var(--muted); }
-.game-record-dates > div { display: flex; flex-wrap: wrap; gap: 5px 8px; }
-.game-record-dates dd { margin: 0; color: var(--text); }
-.game-note-files .terminal-title { margin-block-end: 0; }
-.game-note-files .notes-page-header { margin-block-end: 12px; }
-.game-note-files .note-stack { border-block-start: 0; gap: 9px; }
-.game-note-file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(135px * var(--desktop-size, 1))), 1fr)); gap: 9px; }
-.game-note-file {
+.record-reading-details { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; margin-block: 16px 0; }
+.record-reading-details .update-history { margin: 0; }
+.record-reading-dates { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; color: var(--muted); }
+.record-reading-dates > div { display: flex; flex-wrap: wrap; gap: 5px 8px; }
+.record-reading-dates dd { margin: 0; color: var(--text); }
+.is-log-record .record-reading-details { margin-block: 0 16px; }
+.log-reading-notes { display: grid; gap: calc(24px * var(--desktop-size, 1)); max-inline-size: calc(760px * var(--desktop-size, 1)); }
+.log-reading-note { min-inline-size: 0; }
+.log-reading-note + .log-reading-note { padding-block-start: calc(20px * var(--desktop-size, 1)); border-block-start: 1px solid var(--line); }
+.log-reading-note-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 15px; margin-block-end: 10px; color: var(--muted); }
+.log-reading-note-meta h3 { margin: 0; color: var(--text-strong); font-weight: 500; }
+.log-reading-note-meta time { font: calc(12px * var(--desktop-size, 1)) / 1.3 var(--mono); }
+.log-reading-note-meta .note-link-tools { margin: 0 0 0 auto; }
+.record-note-files-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-block-end: 14px; }
+.record-note-files-header .terminal-title { margin: 0; font-weight: 400; }
+.record-note-file-count { margin: 0; color: var(--muted); font: calc(11px * var(--desktop-size, 1)) / 1.3 var(--mono); }
+.record-note-file-grid {
+  --file-column: calc(160px * var(--desktop-size, 1));
+  --file-gap: calc(9px * var(--desktop-size, 1));
+  display: grid;
+  max-inline-size: calc(6 * var(--file-column) + 5 * var(--file-gap));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--file-column)), 1fr));
+  gap: var(--file-gap);
+}
+.record-note-file-grid > .notes-empty { grid-column: 1 / -1; }
+.record-note-file {
   display: grid;
   align-content: start;
   justify-items: center;
@@ -10412,18 +10377,18 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-.game-note-file svg { inline-size: calc(36px * var(--desktop-size, 1)); block-size: calc(36px * var(--desktop-size, 1)); stroke-width: 1.3; color: var(--muted); }
-.game-note-file:is(:hover, :focus-visible) svg { color: var(--accent); }
-.game-note-file strong { color: var(--text-strong); font-weight: 500; }
-.game-note-file time { color: var(--muted); font: 12px / 1.25 var(--mono); }
+.record-note-file svg { inline-size: calc(36px * var(--desktop-size, 1)); block-size: calc(36px * var(--desktop-size, 1)); stroke-width: 1.3; color: var(--muted); }
+.record-note-file:is(:hover, :focus-visible) svg { color: var(--accent); }
+.record-note-file strong { min-inline-size: 0; max-inline-size: 100%; color: var(--text-strong); font-weight: 500; }
+.record-note-file time { color: var(--muted); font: 12px / 1.25 var(--mono); }
 @media (hover: hover) and (pointer: fine) {
-  .game-note-file time { opacity: 0; transition: opacity 220ms ease; }
-  .game-note-file:is(:hover, :focus-visible) time { opacity: 1; }
+  .record-note-file time { opacity: 0; transition: opacity 220ms ease; }
+  .record-note-file:is(:hover, :focus-visible) time { opacity: 1; }
 }
 @media (max-width: 760px) {
-  .game-record-tabs { --game-tab-control: 44px; }
-  .game-record-tab-links button { padding-inline: 8px; }
-  .game-note-file-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .record-view-tabs { --record-tab-control: 44px; }
+  .record-view-tab-links button { padding-inline: 8px; }
+  .record-note-file-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .focused-note { inline-size: min(100%, calc(760px * var(--desktop-size, 1))); margin-inline: auto; min-inline-size: 0; }
 .focused-note-header {
@@ -10439,7 +10404,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 .focused-note-header :is(p, time) { color: var(--muted); font-size: calc(13px * var(--desktop-size, 1)); }
 .focused-note-header h2 { margin: 5px 0; color: var(--text-strong); font: 400 calc(29px * var(--desktop-size, 1)) / 1.16 var(--sans); }
 .focused-note-header p { margin: 0; }
-.archive-shell > .workspace > .record-window.is-note-reader .focused-note > .record-body {
+.archive-shell > .workspace > .record-window :is(.focused-note, .log-reading-note) > .record-body {
   padding: 0;
   border: 0;
   background: none;

@@ -140,8 +140,8 @@
     padding-block-end: max(12px, var(--pocket-safe-bottom));
   }
   .record-window .window-actions, .record-window .window-title-group, .record-window > .window-bar > span { display: none; }
-  .record-window:is(.is-notes-view, .is-note-reader, .has-game-files) .window-title-group { display: flex; }
-  .record-window:is(.is-notes-view, .is-note-reader, .has-game-files) > .window-bar > .record-window-caption { display: block; }
+  .record-window:is(.is-notes-view, .is-note-reader, .has-reading-layout) .window-title-group { display: flex; }
+  .record-window:is(.is-notes-view, .is-note-reader, .has-reading-layout) > .window-bar > .record-window-caption { display: block; }
   .record-window .window-bar { justify-content: space-between; }
   .record-window .pocket-record-back { justify-self: start; justify-content: start; padding-inline-start: 0; }
   .record-window .pocket-record-contents {

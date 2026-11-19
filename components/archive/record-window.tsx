@@ -7,10 +7,10 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import {
   contentOrdinal,
   FocusedNotePanel,
+  RecordNoteFiles,
   getRecordContents,
   noteReaderTitle,
   NoteSearchBox,
-  NotesPage,
   RecordBody,
   RecordContentPanel,
   UpdateHistory,
@@ -74,30 +74,32 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
 
 function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize, onOpenFullEntry }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
+  const logs = record.section === "logs";
+  const noteDirectory = record.section === "games" || record.section === "projects";
+  const readingLayout = noteDirectory || logs;
   const contents = getRecordContents(record);
   const readingContents = pocket.readingContents(record.section, contents);
   const [requestedContent, setActiveContent] = useState<ContentKey>(initialContent);
-  const availableContent = contents.some((item) => item.key === requestedContent) ? requestedContent : "overview";
+  const availableContent = contents.some((item) => item.key === requestedContent) ? requestedContent : logs ? "notes" : "overview";
   const activeContent = handheld ? pocket.readingView(record.section, availableContent) : availableContent;
   const [keepArtwork, setKeepArtwork] = useState(false);
   const [noteSearchQuery, setNoteSearchQuery] = useState("");
-  const [gameNoteSearchOpen, setGameNoteSearchOpen] = useState(false);
-  const gameSearchInput = useRef<HTMLInputElement>(null);
-  const gameSearchButton = useRef<HTMLButtonElement>(null);
+  const [noteFileSearchOpen, setNoteFileSearchOpen] = useState(false);
+  const fileSearchInput = useRef<HTMLInputElement>(null);
+  const fileSearchButton = useRef<HTMLButtonElement>(null);
   const [focusedNoteIndex, setFocusedNoteIndex] = useState(initialNoteIndex);
-  const [gameNoteOpen, setGameNoteOpen] = useState(initialNoteIndex !== undefined && !onOpenFullEntry);
+  const [noteFileOpen, setNoteFileOpen] = useState(initialNoteIndex !== undefined && !onOpenFullEntry);
   const returnToFile = useRef<number | undefined>(undefined);
   const [updateHistoryOpen, setUpdateHistoryOpen] = useState(false);
   const updateHistoryRef = useRef<HTMLDivElement | null>(null);
   const artwork = imageFraming.recordHeadingArtwork(record, steamBannerImage);
   const readingNotes = activeContent === "notes";
-  const games = record.section === "games";
-  const retractArtwork = readingNotes && !games;
-  const canSearchGameNotes = games && noteEntries(record.body).length > 1;
+  const retractArtwork = readingNotes && !readingLayout;
+  const canSearchNoteFiles = noteDirectory && noteEntries(record.body).length > 1;
   const dashboardNote = onOpenFullEntry && initialNoteIndex !== undefined ? noteEntries(record.body)[initialNoteIndex] : undefined;
-  const gameNote = games && readingNotes && gameNoteOpen && focusedNoteIndex !== undefined ? noteEntries(record.body)[focusedNoteIndex] : undefined;
-  const focusedNote = editor ? undefined : dashboardNote ?? gameNote;
-  const caption = focusedNote ? `// ${noteReaderTitle(focusedNote.title, record.title)}` : games || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const directoryNote = noteDirectory && readingNotes && noteFileOpen && focusedNoteIndex !== undefined ? noteEntries(record.body)[focusedNoteIndex] : undefined;
+  const focusedNote = editor ? undefined : dashboardNote ?? directoryNote;
+  const caption = focusedNote ? `// ${noteReaderTitle(focusedNote.title, record.title)}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
   const focusReading = () => {
     windowRef.current?.focus({ preventScroll: true });
     const layout = windowRef.current?.querySelector(".record-layout");
@@ -109,35 +111,35 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
     if (key !== activeContent) {
       const layout = windowRef.current?.querySelector(".record-layout");
       if (layout && !handheld) layout.scrollTop = 0;
-      if (key === "notes" && !games) setKeepArtwork(true);
+      if (key === "notes" && !readingLayout) setKeepArtwork(true);
     }
     setActiveContent(key);
     if (handheld || key !== "notes") {
       setNoteSearchQuery("");
       setFocusedNoteIndex(undefined);
-      setGameNoteOpen(false);
+      setNoteFileOpen(false);
     }
-    if (key !== "notes") setGameNoteSearchOpen(false);
+    if (key !== "notes") setNoteFileSearchOpen(false);
     setUpdateHistoryOpen(false);
   };
-  const noteSearch = readingNotes && !games ? <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} /> : null;
+  const noteSearch = readingNotes && !readingLayout ? <NoteSearchBox query={noteSearchQuery} record={record} onQueryChange={setNoteSearchQuery} /> : null;
 
-  const toggleGameNoteSearch = (open: boolean) => {
+  const toggleNoteFileSearch = (open: boolean) => {
     if (open && !readingNotes) selectContent("notes");
-    setGameNoteSearchOpen(open);
-    if (open) window.requestAnimationFrame(() => gameSearchInput.current?.focus());
+    setNoteFileSearchOpen(open);
+    if (open) window.requestAnimationFrame(() => fileSearchInput.current?.focus());
     else {
       setNoteSearchQuery("");
-      gameSearchButton.current?.focus({ preventScroll: true });
+      fileSearchButton.current?.focus({ preventScroll: true });
     }
   };
 
   useEffect(() => {
     setActiveContent(initialContent);
     setNoteSearchQuery("");
-    setGameNoteSearchOpen(false);
+    setNoteFileSearchOpen(false);
     setFocusedNoteIndex(initialNoteIndex);
-    setGameNoteOpen(initialNoteIndex !== undefined && !onOpenFullEntry);
+    setNoteFileOpen(initialNoteIndex !== undefined && !onOpenFullEntry);
     setUpdateHistoryOpen(false);
   }, [initialContent, initialNoteIndex, record.id]);
 
@@ -145,7 +147,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
     const index = returnToFile.current;
     if (!focusedNote && index !== undefined) {
       returnToFile.current = undefined;
-      windowRef.current?.querySelector<HTMLElement>(`[data-game-note-index="${index}"]`)?.focus();
+      windowRef.current?.querySelector<HTMLElement>(`[data-note-file-index="${index}"]`)?.focus();
     }
   }, [focusedNote, windowRef]);
 
@@ -172,6 +174,14 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
     return () => document.removeEventListener("mousedown", closeUpdateHistory);
   }, [updateHistoryOpen]);
 
+  const readingDetails = <div className="record-reading-details">
+    <dl className="record-reading-dates">
+      <div><dt>Created</dt><dd>{record.started ? formatReadableDate(record.started) : "Unknown"}</dd></div>
+      <div><dt>Last Updated</dt><dd>{formatReadableDate(recordLastUpdated(record))}</dd></div>
+    </dl>
+    {record.section !== "games" ? <UpdateHistory body={record.body} containerRef={updateHistoryRef} isOpen={updateHistoryOpen} onToggle={() => setUpdateHistoryOpen((current) => !current)} /> : null}
+  </div>;
+
   return (
     <>
     <article
@@ -181,7 +191,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       tabIndex={-1}
       hidden={minimized}
       inert={minimized}
-      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${games ? " has-game-files" : ""}${focusedNote ? " is-note-reader" : readingNotes ? " is-notes-view" : ""}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${readingLayout ? " has-reading-layout" : ""}${logs ? " is-log-record" : ""}${focusedNote ? " is-note-reader" : readingNotes ? " is-notes-view" : ""}`}
       data-state={recordStateKey(record.status)}
       aria-label={`${record.title} ${focusedNote ? "note reader" : "archive entry"}`}
       onKeyDown={(event) => {
@@ -190,7 +200,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
           if (updateHistoryOpen) {
             setUpdateHistoryOpen(false);
             updateHistoryRef.current?.querySelector("button")?.focus({ preventScroll: true });
-          } else if (!focusedNote && canSearchGameNotes && gameNoteSearchOpen) toggleGameNoteSearch(false);
+          } else if (!focusedNote && canSearchNoteFiles && noteFileSearchOpen) toggleNoteFileSearch(false);
           else if (noteSearchQuery && !focusedNote) setNoteSearchQuery("");
           else onClose();
         });
@@ -221,27 +231,27 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
 
       {shareable ? <RecordLinkFeedback note={Boolean(focusedNote?.id)} unavailable={Boolean(linkedNoteId && initialNoteIndex === undefined)} /> : null}
       <div className={editor ? "record-layout is-editing-record" : "record-layout"} aria-busy={editorBusy || undefined}>
-        {editor ?? (focusedNote ? <FocusedNotePanel note={focusedNote} recordTitle={record.title} toFiles={Boolean(gameNote && !dashboardNote)} onReturn={() => {
+        {editor ?? (focusedNote ? <FocusedNotePanel note={focusedNote} recordTitle={record.title} toFiles={Boolean(directoryNote && !dashboardNote)} onReturn={() => {
           focusReading();
-          if (games) returnToFile.current = focusedNoteIndex;
+          if (noteDirectory) returnToFile.current = focusedNoteIndex;
           if (dashboardNote) {
-            if (games && shareable) recordLinks.open(window, record.id);
+            if (noteDirectory && shareable) recordLinks.open(window, record.id);
             onOpenFullEntry?.();
           }
           else {
-            setGameNoteOpen(false);
+            setNoteFileOpen(false);
             if (shareable) recordLinks.open(window, record.id);
           }
         }} /> : <>
         <div className="record-main">
-          {games ? <nav className="game-record-tabs" aria-label="Entry contents">
-            <div className="game-record-tab-links">
+          {readingLayout && contents.length > 1 ? <nav className="record-view-tabs" aria-label="Entry contents">
+            <div className="record-view-tab-links">
               {contents.map(({ key, label }) => <button type="button" key={key} aria-current={key === activeContent ? "true" : undefined} onClick={() => selectContent(key)}>{label}</button>)}
             </div>
-            {canSearchGameNotes ? <div className="game-note-search" data-expanded={gameNoteSearchOpen ? "" : undefined}>
-              <input ref={gameSearchInput} id="game-note-search-input" type="search" autoComplete="off" placeholder="Title or date" aria-label="Search notes" value={noteSearchQuery} onChange={(event) => setNoteSearchQuery(event.target.value)} />
-              <button ref={gameSearchButton} type="button" aria-label={gameNoteSearchOpen ? "Close note search" : "Search notes"} aria-expanded={gameNoteSearchOpen} aria-controls="game-note-search-input" onClick={() => toggleGameNoteSearch(!gameNoteSearchOpen)}>
-                {gameNoteSearchOpen ? <X size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
+            {canSearchNoteFiles ? <div className="record-note-search" data-expanded={noteFileSearchOpen ? "" : undefined}>
+              <input ref={fileSearchInput} id="record-note-search-input" type="search" autoComplete="off" placeholder="Title or date" aria-label="Search notes" value={noteSearchQuery} onChange={(event) => setNoteSearchQuery(event.target.value)} />
+              <button ref={fileSearchButton} type="button" aria-label={noteFileSearchOpen ? "Close note search" : "Search notes"} aria-expanded={noteFileSearchOpen} aria-controls="record-note-search-input" onClick={() => toggleNoteFileSearch(!noteFileSearchOpen)}>
+                {noteFileSearchOpen ? <X size={17} aria-hidden="true" /> : <Search size={17} aria-hidden="true" />}
               </button>
             </div> : null}
           </nav> : null}
@@ -278,7 +288,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             </p>
           </div>
 
-          {!games && readingContents.length > 1 ? <label className="pocket-record-contents">
+          {!readingLayout && readingContents.length > 1 ? <label className="pocket-record-contents">
             <span>Contents</span>
             <span className="pocket-record-select">
               <select value={activeContent} onChange={(event) => {
@@ -289,22 +299,20 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
               </select>
             </span>
           </label> : null}
+          {logs ? readingDetails : null}
           <div className="record-content-view">
-            {games && readingNotes ? <NotesPage focusedIndex={focusedNoteIndex} query={noteSearchQuery} record={record} openFile={(index) => {
+            {noteDirectory && readingNotes ? <RecordNoteFiles query={noteSearchQuery} record={record} onOpen={(index) => {
               focusReading();
               setFocusedNoteIndex(index);
-              setGameNoteOpen(true);
+              setNoteFileOpen(true);
               if (shareable) recordLinks.open(window, record.id, noteEntries(record.body)[index]?.id);
               memoryState.record("note.expand", { index: index + 1 });
             }} /> : <RecordContentPanel activeContent={activeContent} focusedNoteIndex={focusedNoteIndex} noteSearchQuery={noteSearchQuery} record={record} shareable={shareable} handheld={handheld} noteSearch={handheld ? noteSearch : undefined} />}
           </div>
-          {games && activeContent === "overview" ? <dl className="game-record-dates">
-            <div><dt>Created</dt><dd>{record.started ? formatReadableDate(record.started) : "Unknown"}</dd></div>
-            <div><dt>Last Updated</dt><dd>{formatReadableDate(recordLastUpdated(record))}</dd></div>
-          </dl> : null}
+          {noteDirectory && activeContent === "overview" ? readingDetails : null}
         </div>
 
-        {!games ? <aside className="record-aside">
+        {!readingLayout ? <aside className="record-aside">
           <div className="record-contents-list">
             <h3>CONTENTS</h3>
             <ol>
