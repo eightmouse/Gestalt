@@ -11,6 +11,8 @@ const recordsData = readFileSync(path.join(root, "public", "data", "records.js")
 const publishScript = readFileSync(path.join(root, "scripts", "publish-site.mjs"), "utf8");
 const errors = [];
 
+const cipherCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-cipher-decode.mjs")], { encoding: "utf8" });
+if (cipherCheck.status !== 0) errors.push(`Cipher regression failed: ${(cipherCheck.stderr || cipherCheck.stdout || "").trim()}`);
 const assetCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-pages-assets.mjs")], { encoding: "utf8" });
 if (assetCheck.status !== 0) errors.push(`Prepared Pages asset regression failed: ${(assetCheck.stderr || assetCheck.stdout || "").trim()}`);
 const appearanceCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-appearance.mjs")], { encoding: "utf8" });

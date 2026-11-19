@@ -12,7 +12,7 @@ import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
 import { ArchiveDashboard } from "@/components/archive/dashboard";
-import { renderHeadlineLetters } from "@/components/archive/headline-text";
+import { renderCipherLetters } from "@/components/archive/headline-text";
 import { PocketBoot, PocketHeader, PocketIndex } from "@/components/archive/pocket-index";
 import pocket, { type PocketBootMode } from "@/public/pocket-index.js";
 import { RecordWindow } from "@/components/archive/record-window";
@@ -887,14 +887,15 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <h1
               aria-label={headline}
               onAnimationEnd={(event) => {
-                if (event.animationName === "headline-letter-readable" && event.target instanceof HTMLElement && event.target.parentElement?.style.getPropertyValue("--headline-index") === String(headline.length - 1)) setHeadlineAnimating(false);
+                if (event.animationName === "cipher-ink-lock" && event.target instanceof HTMLElement && event.target.hasAttribute("data-cipher-last")) setHeadlineAnimating(false);
               }}
               className={headlineAnimating ? "headline-decode-text is-resolving" : "headline-decode-text"}
               key={activeSection}
               style={{ "--headline-chars": headline.length } as CSSProperties}
             >
-              {renderHeadlineLetters(headline)}
+              <span>{renderCipherLetters(headline)}</span>
               <span
+                aria-hidden="true"
                 className={headlineAnimating ? "cursor headline-cursor is-delayed" : "cursor headline-cursor"}
                 key={`${activeSection}-cursor`}
                 style={{ "--headline-chars": headline.length } as CSSProperties}
@@ -948,6 +949,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             handheld={handheld}
             records={activeSection === "archive" ? archivePageRecords : recordsBySection[activeSection]}
             section={activeSectionConfig}
+            onBack={openHome}
             onOpenRecord={openRecord}
             onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}
             onCreateSetupRecord={process.env.NODE_ENV === "development" ? (group) => createLocalRecord("setup", group) : undefined}

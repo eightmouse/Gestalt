@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { renderCipherLetters } from "@/components/archive/headline-text";
 import { formatDate, formatReadableDate, type ArchiveMetrics } from "@/components/archive/record-utils";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
@@ -9,15 +10,14 @@ export const sections: Array<{
   id: RecordSection;
   code: string;
   label: string;
-  cipher: string;
   icon: string;
 }> = [
-  { id: "system", code: "01_SYSTEM", label: "Dashboard", cipher: "\u2316\u2573\u2575\u2301\u27D0\u2330\u2573\u27DF", icon: "system" },
-  { id: "projects", code: "02_PROJECTS", label: "Active Processes", cipher: "\u27D0\u2330\u2573\u2316\u2575 / \u2301\u27DF\u2316\u2573\u2330", icon: "projects" },
-  { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "\u2573\u2301\u27DF\u27D0\u2330 / \u2575\u2316\u2301\u2573", icon: "games" },
-  { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "\u2330\u2573\u2575\u2316 / \u27DF\u2301\u2330\u2573\u2575", icon: "logs" },
-  { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "\u2316\u27DF\u2330\u2573\u2575 / \u2301\u27D0\u2316", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Archive", cipher: "\u2575\u2316\u27D0\u2330\u2301 / \u2573\u27DF\u2316\u2575", icon: "archive" }
+  { id: "system", code: "01_SYSTEM", label: "Dashboard", icon: "system" },
+  { id: "projects", code: "02_PROJECTS", label: "Active Processes", icon: "projects" },
+  { id: "games", code: "03_GAMES", label: "Session Logs", icon: "games" },
+  { id: "logs", code: "04_LOGS", label: "Field Notes", icon: "logs" },
+  { id: "setup", code: "05_SETUP", label: "Hardware & Software", icon: "setup" },
+  { id: "archive", code: "06_ARCHIVE", label: "Archive", icon: "archive" }
 ];
 
 type SidebarProps = {
@@ -66,7 +66,7 @@ export function Sidebar({
     <aside className="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
       <div className="brand-block">
         <div className="mobile-brand-meta">
-          <span>v1.83.1</span>
+          <span>v1.84.0</span>
           <span>HANDHELD FIELD MODE</span>
         </div>
         <div className="mobile-clock" aria-label="Archive date">
@@ -79,7 +79,7 @@ export function Sidebar({
           {localReview ? <div className="brand-local-actions">{localReview}{menuToggle}</div> : menuToggle}
         </div>
         <div className="desktop-brand-meta">
-          <span className="version-label">v1.83.1</span>
+          <span className="version-label">v1.84.0</span>
           <span className="desktop-mode-label">OPERATOR DESK MODE</span>
         </div>
         <i aria-hidden="true">-</i>
@@ -103,8 +103,7 @@ export function Sidebar({
                 <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
                 <span className="nav-label">
                   <strong>{section.code}</strong>
-                  <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
-                  <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
+                  <small className="nav-readable">{renderCipherLetters(section.label)}</small>
                 </span>
                 <span className="section-signal" aria-hidden="true" />
               </button>
@@ -142,7 +141,7 @@ export function Sidebar({
           </div>
           <div>
             <dt>OS VERSION</dt>
-            <dd>GESTALT OS v1.83.1</dd>
+            <dd>GESTALT OS v1.84.0</dd>
           </div>
         </dl>
       </div>
@@ -190,8 +189,7 @@ export function ArchiveNavigationMenu({
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <span className="nav-label">
           <strong>{section.code}</strong>
-          <small className="nav-readable" data-cipher={section.cipher}>{section.label}</small>
-          <small className="nav-cipher" aria-hidden="true">{section.cipher}</small>
+          <small className="nav-readable">{renderCipherLetters(section.label)}</small>
         </span>
         <span className="section-signal" aria-hidden="true" />
       </button>

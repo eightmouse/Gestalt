@@ -259,7 +259,7 @@ const route = vm.createContext({
   directoryArchiveDay: new Date().toISOString().slice(0, 10), navMotionTimer: 7, minimizedRecordWindow: { node: windows[0] },
   recordMotionController: { busy: false },
   stopRecordAccessSequence() {}, render: () => fallback++, workspaceContent: () => `content:${route.state.activeSection}`,
-  greeting: () => "Good morning.", dashboardSubtext: () => "Daily note", escapeHtml: String, renderHeadlineLetters: String,
+  greeting: () => "Good morning.", dashboardSubtext: () => "Daily note", escapeHtml: String, renderCipherLetters: String,
   syncRoadmapDialog() { assert.equal(route.state.roadmapOpen, false); }, syncWorkspaceFocus() {}, syncSearchPanel() { assert.equal(route.state.searchOpen, false); }, syncRecordFocus() {},
   syncMemoryMotion: () => events.push("legacy sync"), syncMemoryTrace: () => events.push("trace sync"), syncInstrumentShelf() {}
 });

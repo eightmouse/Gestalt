@@ -161,7 +161,7 @@ const require = createRequire(import.meta.url);
 const source = read("components/archive/search-panel.tsx");
 const ast = ts.createSourceFile("panel.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const declarations = ast.statements.filter(ts.isFunctionDeclaration).map((node) => node.getText(ast)).join("\n");
-const context = vm.createContext({ exports: {}, require, cipherizeText: (text) => text });
+const context = vm.createContext({ exports: {}, require, renderCipherLetters: (text) => text });
 vm.runInContext(ts.transpileModule(declarations, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, context);
 const html = renderToStaticMarkup(context.exports.SearchPanel({ results: [{ kind: "command", id: "cmd-connections", title: "Connections", detail: "External channels and social profiles", action: "connections" }], query: "", panelRef: { current: null } }));
 assert.ok(!html.includes("Web search") && !html.includes("palette-utilities") && !html.includes("@Eitomausu"), "The palette contains only the command, not web search or social content");

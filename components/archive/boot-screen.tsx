@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { renderHeadlineLetters } from "@/components/archive/headline-text";
+import { renderCipherLetters } from "@/components/archive/headline-text";
 import osBehaviour, { type StartupMode } from "@/public/os-behaviour.js";
 
 export function BootScreen({ startupMode }: { startupMode: StartupMode }) {
@@ -14,7 +14,7 @@ export function BootScreen({ startupMode }: { startupMode: StartupMode }) {
           aria-label="System initializing"
           style={{ "--headline-chars": "System initializing".length } as CSSProperties}
         >
-          {renderHeadlineLetters("System initializing")}
+          <span>{renderCipherLetters("System initializing")}</span>
         </div>
         <b className="boot-meter"><b /></b>
       </div>

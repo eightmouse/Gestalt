@@ -23,7 +23,7 @@ const heading = {
 };
 let queries = 0;
 const document = { hidden: false, querySelector(selector) { queries++; assert.equal(selector, ".workspace-header h1"); return heading; } };
-const context = vm.createContext({ state, document, renderHeadlineLetters: (text) => text, exports: {} });
+const context = vm.createContext({ state, document, renderCipherLetters: (text) => text, exports: {} });
 const reactPolicy = ts.transpileModule(declaration(react, "getGreeting"), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 vm.runInContext(`${declaration(shell, "greeting")}\n${declaration(shell, "syncDashboardGreeting")}\n${reactPolicy}`, context);
 for (const [hour, minute, second, expected] of [
@@ -59,7 +59,7 @@ let clockEffect, animationHandler, visibilityHandler;
 function walk(ast, visitor) { function visit(node) { visitor(node); ts.forEachChild(node, visit); } visit(ast); }
 walk(react, (node) => {
   if (ts.isCallExpression(node) && node.expression.getText(react) === "useEffect" && node.arguments[0]?.getText(react).includes("window.setInterval(updateClock, 30_000)")) clockEffect = node.arguments[0];
-  if (ts.isJsxAttribute(node) && node.name.getText(react) === "onAnimationEnd" && node.initializer?.getText(react).includes("headline-letter-readable")) animationHandler = node.initializer.expression;
+  if (ts.isJsxAttribute(node) && node.name.getText(react) === "onAnimationEnd" && node.initializer?.getText(react).includes("cipher-ink-lock")) animationHandler = node.initializer.expression;
 });
 walk(shell, (node) => {
   if (ts.isCallExpression(node) && node.expression.getText(shell) === 'document.addEventListener' && node.arguments[0]?.text === "visibilitychange") visibilityHandler = node.arguments[1];
@@ -87,12 +87,12 @@ resumeContext.exports.resume(); assert.equal(timeCalls, 0);
 resumeContext.document.hidden = false; resumeContext.exports.resume(); assert.equal(timeCalls, 1); assert.equal(seasonalCalls, 2);
 
 let settled = 0;
-class Element { constructor(index) { this.parentElement = { style: { getPropertyValue: () => String(index) } }; } }
+class Element { constructor(last) { this.hasAttribute = (name) => name === "data-cipher-last" && last; } }
 const endContext = vm.createContext({ exports: {}, headline: "Good morning.", HTMLElement: Element, setHeadlineAnimating: (value) => { assert.equal(value, false); settled++; } });
 vm.runInContext(ts.transpileModule(`exports.end = ${animationHandler.getText(react)};`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, endContext);
-endContext.exports.end({ animationName: "cursor-blink", target: new Element(12) });
-endContext.exports.end({ animationName: "headline-letter-readable", target: new Element(0) });
+endContext.exports.end({ animationName: "cursor-blink", target: new Element(true) });
+endContext.exports.end({ animationName: "cipher-ink-lock", target: new Element(false) });
 assert.equal(settled, 0, "Do not truncate the title effect at its first character or cursor");
-endContext.exports.end({ animationName: "headline-letter-readable", target: new Element(12) });
+endContext.exports.end({ animationName: "cipher-ink-lock", target: new Element(true) });
 assert.equal(settled, 1, "Settle the resolving state after the final readable character");
 console.log("Greeting checks passed: local boundaries, midnight, idle/tab resume, no repeated heading writes, section/boot guards, one existing timer, React cleanup and final-character settling.");

@@ -123,9 +123,9 @@ assert.match(reactSource, /motionQuery\.removeEventListener\("change", onMotionC
 const panelSource = readFileSync(new URL("../components/archive/search-panel.tsx", import.meta.url), "utf8");
 const panelAst = ts.createSourceFile("search-panel.tsx", panelSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const panel = panelAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "SearchPanel");
-const panelContext = vm.createContext({ exports: {}, require: createRequire(import.meta.url), cipherizeText: (text) => text });
+const panelContext = vm.createContext({ exports: {}, require: createRequire(import.meta.url), renderCipherLetters: (text) => text });
 vm.runInContext(ts.transpileModule(panel.getText(panelAst), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, panelContext);
-Object.assign(staticLifecycle.context, { searchResults: () => [], cipherizeText: (text) => text });
+Object.assign(staticLifecycle.context, { searchResults: () => [], renderCipherLetters: (text) => text });
 vm.runInContext(staticFunction("escapeHtml"), staticLifecycle.context);
 vm.runInContext(staticFunction("searchPanel"), staticLifecycle.context);
 for (const mode of ["first", "always", "off"]) {

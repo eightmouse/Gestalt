@@ -70,7 +70,7 @@ assert.equal(react.getSearchResults(saved, "a renamed note")[0].noteId, firstId,
 
 Object.assign(pages, {
   escapeHtml: (value) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"),
-  cipherizeText: () => "GLYPHS", recordStateKey: () => "filed"
+  renderCipherLetters: String, recordStateKey: () => "filed"
 });
 Object.assign(pages.state, { searchOpen: true, searchQuery: "distant" });
 vm.runInContext(declaration("static-app.js", "searchPanel"), pages);

@@ -37,6 +37,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Pocket libraries and a sharper cipher",
+          "detail": "Games gets full-height upright tapes with handwritten labels and search beside Back. Projects uses tall cards with vertical titles. Swipe across records or vertically to change groups. Gestalt's cipher now cycles glyphs and locks text into place, with no movement for Reduced Motion.",
+          "version": "v1.84.0",
+          "releasedOn": "2026-11-19"
+        },
+        {
           "title": "Upright tapes and a vertical Process Reader",
           "detail": "Two upright VHS tapes fit side by side in the handheld Media Cabinet, and search stays within the header. Projects scroll vertically within each group. Swipe sideways or tap either group button to switch, with no project arrows on handheld. Desktop keeps its original controls.",
           "version": "v1.83.1",

@@ -53,6 +53,8 @@ jobs:
           node --check public/memory-state.js
           node --check public/pocket-index.js
           node --check public/archive-search.js
+          node --check public/cipher-decode.js
+          node scripts/test-cipher-decode.mjs
           node scripts/test-pocket-index.mjs
           node scripts/test-memory-state.mjs
           node scripts/test-desktop-navigation.mjs

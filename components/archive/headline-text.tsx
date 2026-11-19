@@ -1,26 +1,12 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { cipherizeText } from "@/components/archive/cipher";
+import cipherDecode from "@/public/cipher-decode.js";
 
-export function renderHeadlineLetters(value: string) {
-  const cipher = cipherizeText(value).split("");
-
-  return value.split("").map((char, index) => {
-    const isSpace = char === " ";
-    const display = isSpace ? "\u00A0" : char;
-    const cipherDisplay = isSpace ? "\u00A0" : cipher[index] ?? char;
-
-    return (
-      <span
-        aria-hidden="true"
-        className={isSpace ? "headline-char is-space" : "headline-char"}
-        key={`${char}-${index}`}
-        style={{ "--headline-index": index } as CSSProperties}
-      >
-        <span className="headline-char-cipher">{cipherDisplay}</span>
-        <span className="headline-char-readable">{display}</span>
-      </span>
-    );
-  });
+export function renderCipherLetters(value: string) {
+  return cipherDecode.plan(value).map((cell, index) => !cell.glyphs ? cell.text : (
+    <span className="cipher-cell" key={index} style={{ "--cipher-index": cell.step } as CSSProperties}>
+      <span className="cipher-ink" data-cipher-last={cell.last || undefined}>{cell.text}</span><span className="cipher-glyph" aria-hidden="true" data-a={cell.glyphs[0]} data-b={cell.glyphs[1]} data-c={cell.glyphs[2]} />
+    </span>
+  ));
 }

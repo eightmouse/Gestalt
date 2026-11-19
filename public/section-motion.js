@@ -75,7 +75,7 @@
     }, () => projectPresses.delete(button));
   }
 
-  function bindProjectSwipe(section, onStep, host = globalThis.window) {
+  function bindPocketGroupSwipe(section, onStep, host = globalThis.window) {
     if (!section) return () => {};
     const handheld = host.matchMedia("(max-width: 760px)");
     let gesture, suppressClick = false;
@@ -83,7 +83,7 @@
     function start(event) {
       if (event.isPrimary) suppressClick = false;
       gesture = undefined;
-      if (!handheld.matches || event.pointerType !== "touch" || !event.isPrimary || !event.target.closest?.(".pocket-project-stack")) return;
+      if (!handheld.matches || event.pointerType !== "touch" || !event.isPrimary || !event.target.closest?.("[data-pocket-catalog]")) return;
       gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, axis: null };
     }
     function move(event) {
@@ -91,21 +91,21 @@
       const dx = Math.abs(event.clientX - gesture.x);
       const dy = Math.abs(event.clientY - gesture.y);
       if (Math.max(dx, dy) < 12) return;
-      gesture.axis = dx > dy * 1.25 ? "inline" : "block";
-      if (gesture.axis === "inline") {
+      gesture.axis = dy > dx * 1.25 ? "block" : "inline";
+      if (gesture.axis === "block") {
         suppressClick = true;
         section.setPointerCapture(event.pointerId);
       }
     }
     function finish(event) {
       if (gesture?.id !== event.pointerId) return;
-      const { x, axis } = gesture;
+      const { y, axis } = gesture;
       gesture = undefined;
-      const dx = event.clientX - x;
-      if (event.type === "pointerup" && handheld.matches && axis === "inline" && Math.abs(dx) >= 42) onStep(dx < 0 ? 1 : -1);
+      const dy = event.clientY - y;
+      if (event.type === "pointerup" && handheld.matches && axis === "block" && Math.abs(dy) >= 46) onStep(dy < 0 ? 1 : -1);
     }
     function guardClick(event) {
-      if (!suppressClick || !event.detail || !event.target.closest?.(".project-workbench-hit")) return;
+      if (!suppressClick || !event.detail || !event.target.closest?.("[data-pocket-catalog]")) return;
       suppressClick = false;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -546,5 +546,5 @@
     };
   }
 
-  return Object.freeze({ preparePlateTurn, openProjectPlate, bindProjectSwipe, bindProjectRotation, bindInstrumentShelf, openInstrumentSleeve, revealInstrumentShelf, revealProjectReader, bindSectionStandby });
+  return Object.freeze({ preparePlateTurn, openProjectPlate, bindPocketGroupSwipe, bindProjectRotation, bindInstrumentShelf, openInstrumentSleeve, revealInstrumentShelf, revealProjectReader, bindSectionStandby });
 });

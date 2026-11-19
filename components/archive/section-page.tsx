@@ -1,9 +1,10 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
+import { renderCipherLetters } from "@/components/archive/headline-text";
 import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
-import { ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import pocket from "@/public/pocket-index.js";
@@ -22,6 +23,7 @@ type SectionPageProps = {
   records: RecordEntry[];
   section: ArchiveSectionConfig;
   onOpenRecord: (record: RecordEntry, content?: ContentKey, noteIndex?: number) => void;
+  onBack: () => void;
   onCreateRecord?: () => void;
   onCreateSetupRecord?: (group: SetupGroupId) => void;
   onEditSetupTool?: (record: RecordEntry) => void;
@@ -43,7 +45,7 @@ const setupCreateLabels: Record<SetupGroupId, string> = {
   notes: "Add Setup note"
 };
 
-export function SectionPage({ handheld, records, section, onOpenRecord, onCreateRecord, onCreateSetupRecord, onEditSetupTool }: SectionPageProps) {
+export function SectionPage({ handheld, records, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool }: SectionPageProps) {
   const visibleRecords = section.id === "logs" ? records.filter((record) => !isLogArchivedByAge(record)) : records;
   const sortedRecords = [...visibleRecords].sort(compareSectionRecords);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
@@ -58,12 +60,12 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onCreate
     return <ArchiveFolders onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
   }
   if (section.id === "games" && splitSection) {
-    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} header={{ section, countLabel, readout, onCreateRecord }} />;
+    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} header={{ section, countLabel, readout, onCreateRecord, onBack }} />;
   }
 
   return (
     <section className={`section-page section-page--${section.id}${splitSection ? " section-page--selector" : ""}`} aria-label={`${section.code} records`}>
-      <SectionPageHeader section={section} countLabel={countLabel} readout={readout} onCreateRecord={onCreateRecord} />
+      <SectionPageHeader section={section} countLabel={countLabel} readout={readout} onCreateRecord={onCreateRecord} onBack={splitSection ? onBack : undefined} />
       {splitSection ? <RecordSelector groups={splitSection} handheld={handheld} onOpenRecord={onOpenRecord} /> : <div className="section-note-layout">
         <div className="section-record-grid">
           {sortedRecords.length > 0 ? (
@@ -80,17 +82,18 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onCreate
   );
 }
 
-type SectionPageHeaderProps = Pick<SectionPageProps, "section" | "onCreateRecord"> & {
+type SectionPageHeaderProps = Pick<SectionPageProps, "section" | "onCreateRecord"> & Partial<Pick<SectionPageProps, "onBack">> & {
   countLabel: string;
   readout: ReturnType<typeof sectionReadout>;
 };
 
-function SectionPageHeader({ section, countLabel, readout, onCreateRecord, actions }: SectionPageHeaderProps & { actions?: ReactNode }) {
+function SectionPageHeader({ section, countLabel, readout, onBack, onCreateRecord, actions }: SectionPageHeaderProps & { actions?: ReactNode }) {
   return <header className="section-page-header">
+    {onBack ? <button className="pocket-catalog-back" type="button" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" />Back to Index</button> : null}
     <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
     <div>
       {section.id !== "games" && section.id !== "projects" ? <p>{section.code}</p> : null}
-      <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
+      <h2 key={section.id} className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
       <SectionReadout items={readout} />
     </div>
     <div className="section-page-header-actions">
@@ -113,9 +116,16 @@ function GameShelf({ groups, handheld, onOpenRecord, header }: Pick<SectionPageP
   const normalShelf = pocket.gameShelfIndex(groups.map((group) => group.records.length), shelfPick);
   const activeShelf = query.trim() ? pocket.gameShelfIndex(shelves.map((shelf) => shelf.results.length), searchShelfPick, normalShelf) : normalShelf;
   const count = shelves.reduce((sum, shelf) => sum + shelf.results.length, 0);
-  const searchable = groups.reduce((sum, group) => sum + group.records.length, 0) >= pocket.shelfSearchMin;
+  const total = groups.reduce((sum, group) => sum + group.records.length, 0);
+  const searchable = total >= pocket.shelfSearchMin || handheld && total > 0;
+  const pickShelf = (index: number) => query.trim() ? setSearchShelfPick(index) : setShelfPick(index);
+  const swipe = useEffectEvent((direction: -1 | 1) => {
+    const next = activeShelf + direction;
+    if (shelves[next]) pickShelf(next);
+  });
 
   useLayoutEffect(() => sectionMotion.bindSectionStandby(cabinetRef.current, "games"), []);
+  useEffect(() => handheld ? sectionMotion.bindPocketGroupSwipe(cabinetRef.current, swipe) : undefined, [handheld]);
   useLayoutEffect(() => { if (searchOpen) searchRef.current?.focus({ preventScroll: true }); }, [searchOpen]);
 
   function toggleSearch(open: boolean) {
@@ -143,7 +153,7 @@ function GameShelf({ groups, handheld, onOpenRecord, header }: Pick<SectionPageP
     <section ref={cabinetRef} className="record-selector record-selector--games" aria-label="Browse games">
       <div className="record-selector-groups pocket-shelf-switch" role="group" aria-label="Game shelves">
         {shelves.map(({ results }, index) => <button type="button" key={index} aria-pressed={index === activeShelf} aria-controls={`game-shelf-panel-${index}`}
-          onClick={() => query.trim() ? setSearchShelfPick(index) : setShelfPick(index)}>
+          onClick={() => pickShelf(index)}>
           {index === 0 ? "Session Logs" : "Past Logs"}<span>{results.length}</span>
         </button>)}
       </div>
@@ -174,7 +184,7 @@ function GameShelfRail({ kind, records, shown, query, onOpenRecord }: Pick<Secti
     return sectionMotion.bindInstrumentShelf(shelf);
   }, [query, records.length]);
   return <div className="game-shelf-track">
-    <div ref={shelfRef} id={railId} className="record-media-cabinet" data-media-cabinet={kind} onScroll={(event) => { if (!query && event.currentTarget.clientWidth) offset.current = event.currentTarget.scrollLeft; }}>
+    <div ref={shelfRef} id={railId} className="record-media-cabinet" data-media-cabinet={kind} data-pocket-catalog="" onScroll={(event) => { if (!query && event.currentTarget.clientWidth) offset.current = event.currentTarget.scrollLeft; }}>
       {records.length ? records.map((record) => <RecordSelectorTile key={record.id} record={record} onOpenRecord={onOpenRecord} />) : <p className="search-empty">{query ? "No matching games." : "No records filed here yet."}</p>}
     </div>
     <button className="game-shelf-edge" type="button" data-shelf-prev="" aria-disabled="true" tabIndex={-1} aria-controls={railId} aria-label={`Scroll ${label} left`}><ChevronLeft size={20} aria-hidden="true" /></button>
@@ -209,7 +219,7 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
   useLayoutEffect(() => handheld ? undefined : sectionMotion.revealProjectReader(frameRef.current), [handheld]);
   useLayoutEffect(() => sectionMotion.bindSectionStandby(readerRef.current, "projects"), []);
   useEffect(() => sectionMotion.bindProjectRotation(readerRef.current, rotate), []);
-  useEffect(() => handheld ? sectionMotion.bindProjectSwipe(readerRef.current, swipe) : undefined, [handheld]);
+  useEffect(() => handheld ? sectionMotion.bindPocketGroupSwipe(readerRef.current, swipe) : undefined, [handheld]);
   useLayoutEffect(() => {
     commitTurn.current?.();
     commitTurn.current = null;
@@ -226,7 +236,7 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
       </nav>
     </div>
     {handheld ? <div className="pocket-project-stack">
-      {groups.map(({ title, records }, i) => <div key={title} className="pocket-project-rail" role="region" aria-label={title} tabIndex={0} hidden={index !== i}>
+      {groups.map(({ title, records }, i) => <div key={title} className="pocket-project-rail" data-pocket-catalog="" role="region" aria-label={title} tabIndex={0} hidden={index !== i}>
         {records.length ? records.map((record) => <div key={record.id} className="project-workbench">
           <ProjectWorkprint workbench={pocket.projectWorkbench([record])!} other={i === 1} compact onOpenRecord={onOpenRecord} />
         </div>) : <p className="search-empty">No records filed here yet.</p>}
@@ -332,7 +342,7 @@ function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (rec
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>
           <p>{section.code}</p>
-          <h2>{sectionRegistryLabels[section.id] ?? section.label}</h2>
+          <h2 className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
           <SectionReadout items={sectionReadout(records)} />
         </div>
         <i>{archivedLogs.length} archived logs</i>
@@ -557,7 +567,7 @@ function SetupBay({
         <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
         <div>
           <p>{section.code}</p>
-          <h2>Setup Manifest</h2>
+          <h2 className="cipher-section">{renderCipherLetters("Setup Manifest")}</h2>
           <SectionReadout items={readout} />
         </div>
         <i>{countLabel}</i>

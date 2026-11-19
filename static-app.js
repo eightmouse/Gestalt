@@ -3,12 +3,12 @@ const records = (Array.isArray(window.__GESTALT_RECORDS) ? window.__GESTALT_RECO
   .slice()
   .sort((a, b) => a.priority - b.priority || b.updated.localeCompare(a.updated));
 const sections = [
-  { id: "system", code: "01_SYSTEM", label: "Dashboard", cipher: "⌖╳╵⌁⟐⌰╳⟟", icon: "system" },
-  { id: "projects", code: "02_PROJECTS", label: "Active Processes", cipher: "⟐⌰╳⌖╵ / ⌁⟟⌖╳⌰", icon: "projects" },
-  { id: "games", code: "03_GAMES", label: "Session Logs", cipher: "╳⌁⟟⟐⌰ / ╵⌖⌁╳", icon: "games" },
-  { id: "logs", code: "04_LOGS", label: "Field Notes", cipher: "⌰╳╵⌖ / ⟟⌁⌰╳╵", icon: "logs" },
-  { id: "setup", code: "05_SETUP", label: "Hardware & Software", cipher: "⌖⟟⌰╳╵ / ⌁⟐⌖", icon: "setup" },
-  { id: "archive", code: "06_ARCHIVE", label: "Archive", cipher: "╵⌖⟐⌰⌁ / ╳⟟⌖╵", icon: "archive" }
+  { id: "system", code: "01_SYSTEM", label: "Dashboard", icon: "system" },
+  { id: "projects", code: "02_PROJECTS", label: "Active Processes", icon: "projects" },
+  { id: "games", code: "03_GAMES", label: "Session Logs", icon: "games" },
+  { id: "logs", code: "04_LOGS", label: "Field Notes", icon: "logs" },
+  { id: "setup", code: "05_SETUP", label: "Hardware & Software", icon: "setup" },
+  { id: "archive", code: "06_ARCHIVE", label: "Archive", icon: "archive" }
 ];
 
 const latinSayings = [
@@ -21,7 +21,6 @@ const latinSayings = [
   { latin: "Acta non verba.", english: "Deeds, not words.", meaning: "Let the record show what actually changed." }
 ];
 
-const cipherGlyphs = ["\u2316", "\u2573", "\u2575", "\u2301", "\u27D0", "\u2330", "\u27DF", "\u25C7", "\u25A4", "\u25CC"];
 const projectStatusOrder = ["active", "in progress", "planning", "blocked", "paused", "on hold", "completed", "filed", "archived"];
 const sectionRegistryLabels = {
   archive: "Field Archive",
@@ -30,17 +29,6 @@ const sectionRegistryLabels = {
   projects: "Process Reader",
   setup: "Setup Manifest"
 };
-
-function cipherizeText(value) {
-  return value
-    .split("")
-    .map((char, index) => {
-      if (char === " ") return " ";
-      if (char === "/" || char === "&" || char === "." || char === "-") return char;
-      return cipherGlyphs[(char.charCodeAt(0) + index) % cipherGlyphs.length];
-    })
-    .join("");
-}
 
 function projectStatusRank(status) {
   const rank = projectStatusOrder.indexOf(status.toLowerCase());
@@ -65,19 +53,10 @@ function gameActivityLabel(record) {
     : record.status;
 }
 
-function renderHeadlineLetters(value) {
-  const cipher = cipherizeText(value).split("");
-
-  return value
-    .split("")
-    .map((char, index) => {
-      const isSpace = char === " ";
-      const display = isSpace ? "&nbsp;" : escapeHtml(char);
-      const cipherDisplay = isSpace ? "&nbsp;" : escapeHtml(cipher[index] || char);
-
-      return `<span class="headline-char${isSpace ? " is-space" : ""}" style="--headline-index: ${index}" aria-hidden="true"><span class="headline-char-cipher">${cipherDisplay}</span><span class="headline-char-readable">${display}</span></span>`;
-    })
-    .join("");
+function renderCipherLetters(value) {
+  return window.GestaltCipherDecode?.plan(value).map(({ text, glyphs, step, last }) =>
+    glyphs ? `<span class="cipher-cell" style="--cipher-index:${step}"><span class="cipher-ink"${last ? ' data-cipher-last="true"' : ""}>${escapeHtml(text)}</span><span class="cipher-glyph" aria-hidden="true" data-a="${glyphs[0]}" data-b="${glyphs[1]}" data-c="${glyphs[2]}"></span></span>` : escapeHtml(text)
+  ).join("") ?? escapeHtml(value);
 }
 
 const weatherState = {
@@ -105,7 +84,7 @@ const instrumentShelves = new Map();
 let standbySection = null;
 let stopSectionStandby;
 let stopProjectRotation;
-let stopProjectSwipe;
+let stopPocketGroupSwipe;
 const bootStartedAt = performance.now();
 let bootCleanup = null;
 let osBehaviourController = null;
@@ -1604,8 +1583,7 @@ function sidebar() {
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
           <span class="nav-label">
             <strong>${section.code}</strong>
-            <small class="nav-readable" data-cipher="${escapeHtml(section.cipher)}">${escapeHtml(section.label)}</small>
-            <small class="nav-cipher" aria-hidden="true">${escapeHtml(section.cipher)}</small>
+            <small class="nav-readable">${renderCipherLetters(section.label)}</small>
           </span>
           <span class="section-signal" aria-hidden="true"></span>
         </button>
@@ -1616,7 +1594,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.83.1</span>
+        <span>v1.84.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1630,7 +1608,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.83.1</span>
+        <span class="version-label">v1.84.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1650,7 +1628,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.83.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.84.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1668,8 +1646,7 @@ function archiveNavigationMenu() {
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
           <span class="nav-label">
             <strong>${section.code}</strong>
-            <small class="nav-readable" data-cipher="${escapeHtml(section.cipher)}">${escapeHtml(section.label)}</small>
-            <small class="nav-cipher" aria-hidden="true">${escapeHtml(section.cipher)}</small>
+            <small class="nav-readable">${renderCipherLetters(section.label)}</small>
           </span>
           <span class="section-signal" aria-hidden="true"></span>
         </button>
@@ -1684,8 +1661,7 @@ function archiveNavigationMenu() {
           <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
           <span class="nav-label">
             <strong>${section.code}</strong>
-            <small class="nav-readable" data-cipher="${escapeHtml(section.cipher)}">${escapeHtml(section.label)}</small>
-            <small class="nav-cipher" aria-hidden="true">${escapeHtml(section.cipher)}</small>
+            <small class="nav-readable">${renderCipherLetters(section.label)}</small>
           </span>
           <span class="section-signal" aria-hidden="true"></span>
         </button>
@@ -1944,10 +1920,11 @@ function sectionPage(sectionId) {
 
   return `<section class="section-page section-page--${section.id}${splitSection ? " section-page--selector" : ""}" aria-label="${escapeHtml(section.code)} records">
     <header class="section-page-header">
+      ${splitSection ? `<button class="pocket-catalog-back" type="button" data-home>${pocketIcon('<path d="m12 19-7-7 7-7M5 12h14"/>')}Back to Index</button>` : ""}
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div>
         ${splitSection ? "" : `<p>${escapeHtml(section.code)}</p>`}
-          <h2>${escapeHtml(sectionRegistryLabels[section.id] || section.label)}</h2>
+          <h2 class="cipher-section">${renderCipherLetters(sectionRegistryLabels[section.id] || section.label)}</h2>
           ${renderSectionReadout(readout)}
       </div>
       ${games ? `<div class="section-page-header-actions"><i>${countLabel}</i>${renderGameShelfSearch(games.searchable, searchOpen)}</div>` : `<i>${countLabel}</i>`}
@@ -1975,7 +1952,7 @@ function gameShelfView(groups) {
     activeShelf: state.gameShelfQuery.trim()
       ? pocket.gameShelfIndex(shelves.map((shelf) => shelf.results.length), state.gameShelfSearchPick, normalShelf)
       : normalShelf,
-    searchable: groups.reduce((sum, group) => sum + group.records.length, 0) >= pocket.shelfSearchMin,
+    searchable: groups.reduce((sum, group) => sum + group.records.length, 0) >= (pocket.isHandheld() ? 1 : pocket.shelfSearchMin),
     count: shelves.reduce((sum, shelf) => sum + shelf.results.length, 0)
   };
 }
@@ -1996,7 +1973,7 @@ function renderGameShelfResults({ kind, results }) {
   const rail = `game-rail-${kind}`;
   const label = kind === "session" ? "Session Logs" : "Past Logs";
   return `<div class="game-shelf-track">
-    <div id="${rail}" class="record-media-cabinet" data-media-cabinet="${kind}">${results.length ? renderSelectorTiles(results) : empty || renderSelectorTiles([])}</div>
+    <div id="${rail}" class="record-media-cabinet" data-media-cabinet="${kind}" data-pocket-catalog>${results.length ? renderSelectorTiles(results) : empty || renderSelectorTiles([])}</div>
     <button class="game-shelf-edge" type="button" data-shelf-prev aria-disabled="true" tabindex="-1" aria-controls="${rail}" aria-label="Scroll ${label} left">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
     <button class="game-shelf-edge" type="button" data-shelf-next aria-disabled="true" tabindex="-1" aria-controls="${rail}" aria-label="Scroll ${label} right">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
   </div>`;
@@ -2035,6 +2012,7 @@ function syncPocketGameShelf(shell, view, restoreOffset = false) {
 
 function syncGameShelf({ search, query, pick } = {}) {
   if (state.activeSection !== "games") return;
+  if (pick !== undefined && pick !== 0 && pick !== 1) return;
   const shell = root.querySelector(".workspace .section-page--games");
   if (!shell) return;
   const groups = splitSectionRecords("games", recordsFor("games").sort(compareSectionRecords));
@@ -2099,7 +2077,7 @@ function renderRecordSelector(groups) {
     </div>
     <div class="record-selector-results">${renderSelectorResults(view)}</div>
     <div class="pocket-project-stack">
-      ${groups.map(({ title, records }, i) => `<div class="pocket-project-rail" role="region" aria-label="${escapeHtml(title)}" tabindex="0" ${i === index ? "" : "hidden"}>
+      ${groups.map(({ title, records }, i) => `<div class="pocket-project-rail" data-pocket-catalog role="region" aria-label="${escapeHtml(title)}" tabindex="0" ${i === index ? "" : "hidden"}>
         ${records.length ? records.map((record) => `<div class="project-workbench">${renderProjectStage(pocket.projectWorkbench([record]), i === 1, true)}</div>`).join("") : '<p class="search-empty">No records filed here yet.</p>'}
       </div>`).join("")}
     </div>
@@ -2149,11 +2127,17 @@ function syncInstrumentShelf(reveal = false) {
   if (section !== standbySection) {
     stopSectionStandby?.();
     stopProjectRotation?.();
-    stopProjectSwipe?.();
+    stopPocketGroupSwipe?.();
     standbySection = section;
     stopSectionStandby = window.GestaltSectionMotion?.bindSectionStandby(section, state.activeSection);
     stopProjectRotation = state.activeSection === "projects" ? window.GestaltSectionMotion?.bindProjectRotation(section, () => syncRecordSelector(null, true)) : undefined;
-    stopProjectSwipe = state.activeSection === "projects" ? window.GestaltSectionMotion?.bindProjectSwipe(section, (direction) => syncRecordSelector(null, false, direction)) : undefined;
+    stopPocketGroupSwipe = window.GestaltSectionMotion?.bindPocketGroupSwipe(section, (direction) => {
+      if (state.activeSection === "projects") syncRecordSelector(null, false, direction);
+      else if (state.activeSection === "games") {
+        const selected = section.querySelector('[data-pocket-shelf][aria-pressed="true"]');
+        if (selected) syncGameShelf({ pick: Number(selected.dataset.pocketShelf) + direction });
+      }
+    });
   }
   const nodes = new Set(root.querySelectorAll(".workspace [data-media-cabinet]"));
   for (const [node, release] of instrumentShelves) {
@@ -2300,7 +2284,7 @@ function renderArchiveFolders(section, sectionRecords) {
   return `<section class="section-page section-page--archive archive-folder-page${folderWindow ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} files">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
-      <div><p>${escapeHtml(section.code)}</p><h2>${escapeHtml(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(sectionRecords))}</div>
+      <div><p>${escapeHtml(section.code)}</p><h2 class="cipher-section">${renderCipherLetters(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(sectionRecords))}</div>
       <i>${archivedLogs.length} archived logs</i>
     </header>
     <div class="archive-manager">
@@ -2432,7 +2416,7 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
       <div>
         <p>${escapeHtml(section.code)}</p>
-        <h2>Setup Manifest</h2>
+        <h2 class="cipher-section">${renderCipherLetters("Setup Manifest")}</h2>
         ${renderSectionReadout(readout)}
       </div>
       <i>${countLabel}</i>
@@ -2657,7 +2641,7 @@ function workspaceContent() {
 
 function recordAccessSurfaceMarkup() {
   return `<div class="record-access-surface" aria-hidden="true">
-    <div class="record-access-identity"><small>ARCHIVE LINK // 01</small><strong>ACCESSING</strong><span class="record-access-meter"><i></i></span><small class="record-access-state">INDEXING RECORD</small></div>
+    <div class="record-access-identity"><small>ARCHIVE LINK // 01</small><strong>${renderCipherLetters("ACCESSING")}</strong><span class="record-access-meter"><i></i></span><small class="record-access-state">INDEXING RECORD</small></div>
     <div class="record-access-frame" aria-hidden="true">
       <i class="record-access-rule record-access-rule--top"></i>
       <i class="record-access-rule record-access-rule--right"></i>
@@ -2881,7 +2865,7 @@ function recordWindow(record) {
           ${artwork.src && !retractArtwork ? renderHeadingImage(record, artwork) : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">${escapeHtml(recordTraceId(record))}</span>
-          <h2><span class="${titleClass}" style="--record-title-chars: ${record.title.length}">${escapeHtml(record.title)}</span></h2>
+          <h2><span class="${titleClass}">${escapeHtml(record.title)}</span></h2>
           <p>
             Status: ${escapeHtml(record.status)}
             ${record.section === "games" && gameLogPlacement(record) === "session" && gameActivityValue(record) ? `<span>.</span> Activity: ${escapeHtml(gameActivityLabel(record))}` : ""}
@@ -2972,16 +2956,15 @@ function searchPanel() {
               const stateAttr = result.record ? ` data-state="${recordStateKey(result.record.status)}"` : "";
 
               return `<button type="button" ${commandAttrs}${stateAttr}${returnAttr}>
-                <span><strong>${escapeHtml(result.title)}</strong><small data-cipher="${escapeHtml(cipherizeText(result.detail))}">${escapeHtml(result.detail)}</small></span>
+                <span><strong>${escapeHtml(result.title)}</strong><small class="cipher-description">${renderCipherLetters(result.detail)}</small></span>
                 <i>CMD</i>
               </button>`;
             }
 
             const isNote = result.kind === "note";
             const noteAttr = isNote ? ` data-open-note-id="${escapeHtml(result.noteId)}"` : "";
-            const cipher = isNote ? "" : ` data-cipher="${escapeHtml(cipherizeText(result.detail))}"`;
             return `<button type="button" data-open-record="${escapeHtml(result.record.id)}"${noteAttr} data-state="${recordStateKey(result.record.status)}"${returnAttr}>
-            <span><strong>${escapeHtml(isNote ? result.title : result.record.title)}</strong><small${cipher}>${escapeHtml(result.detail)}</small></span>
+            <span><strong>${escapeHtml(isNote ? result.title : result.record.title)}</strong><small>${escapeHtml(result.detail)}</small></span>
             <i>${isNote ? "NOTE" : escapeHtml(result.record.section.toUpperCase())}</i>
           </button>`
           }
@@ -2990,7 +2973,7 @@ function searchPanel() {
     : `<p class="search-empty">No matching records, notes or commands.</p>`;
 
   return `<div class="search-panel command-panel" role="search">
-    <label for="archive-search" data-cipher="${escapeHtml(cipherizeText("COMMAND PALETTE"))}">~ COMMAND PALETTE</label>
+    <label for="archive-search" class="cipher-on-open">~ ${renderCipherLetters("COMMAND PALETTE")}</label>
     <input
       id="archive-search"
       type="search"
@@ -3679,7 +3662,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.83.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.84.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3694,7 +3677,7 @@ function workspaceHeading() {
   const resolving = state.headlineAnimating || !state.bootDismissed;
   return `<div>
     <p class="route-label">// ${escapeHtml(dashboard ? "DASHBOARD" : section.code)}</p>
-    <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}">${renderHeadlineLetters(headline)}<span class="cursor headline-cursor${resolving ? " is-delayed" : ""}">_</span></h1>
+    <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" style="--headline-chars: ${headline.length}" aria-label="${escapeHtml(headline)}"><span>${renderCipherLetters(headline)}</span><span class="cursor headline-cursor${resolving ? " is-delayed" : ""}" aria-hidden="true">_</span></h1>
     <p class="subtle">${dashboard ? dashboardSubtext() : section.id === "games" || section.id === "projects" ? "" : "Browse the records filed under this archive."}</p>
   </div>`;
 }
@@ -3747,7 +3730,7 @@ function syncSection() {
   if (pocket?.isHandheld()) {
     const target = state.activeSection === "system"
       ? `.pocket-directory [data-open-section="${CSS.escape(previousSection || "")}"]`
-      : ".pocket-context button";
+      : state.activeSection === "games" || state.activeSection === "projects" ? ".pocket-catalog-back" : ".pocket-context button";
     workspace.querySelector(target)?.focus({ preventScroll: true });
   } else if (document.activeElement === document.body && previousFocus && !previousFocus.isConnected) {
     const title = workspace.querySelector(".workspace-header h1");
@@ -3785,7 +3768,7 @@ function render() {
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <div class="boot-loader">
         <span>GESTALT</span>
-        <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}">${renderHeadlineLetters("System initializing")}</div>
+        <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing" style="--headline-chars: ${"System initializing".length}"><span>${renderCipherLetters("System initializing")}</span></div>
         <b class="boot-meter"><b></b></b>
       </div>
       ${state.startupMode === "full" ? `<ol class="boot-process-log">${(window.GestaltOsBehaviour?.bootProcesses || []).map(({ at, label, stamp }) => `<li style="--boot-line-time: ${at}ms"><span class="boot-process-stamp">${escapeHtml(stamp)}</span><span class="boot-process-state">[ OK ]</span>${escapeHtml(label)}</li>`).join("")}</ol>` : ""}
@@ -3909,7 +3892,7 @@ function syncDashboardGreeting(date = new Date()) {
   heading.classList.remove("is-resolving");
   heading.setAttribute("aria-label", text);
   heading.style.setProperty("--headline-chars", String(text.length));
-  heading.innerHTML = `${renderHeadlineLetters(text)}<span class="cursor headline-cursor">_</span>`;
+  heading.innerHTML = `<span>${renderCipherLetters(text)}</span><span class="cursor headline-cursor" aria-hidden="true">_</span>`;
 }
 
 function syncTime() {
@@ -4702,6 +4685,13 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     syncWeather();
     syncMemoryMotion();
     syncMemoryTrace();
+  } else if (state.activeSection === "games") {
+    const dock = root.querySelector(".section-page--games .game-search-dock");
+    const view = gameShelfView(splitSectionRecords("games", recordsFor("games").sort(compareSectionRecords)));
+    if (dock) {
+      if (!view.searchable && state.gameShelfSearch) syncGameShelf({ search: false });
+      dock.hidden = !view.searchable;
+    }
   }
   if (!event.matches && !weatherStarted) { weatherStarted = true; void requestWeather(); }
 });

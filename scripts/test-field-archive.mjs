@@ -35,7 +35,7 @@ const dates = compile(functions("components/archive/record-utils.ts", ["formatRe
 const section = { id: "archive", code: "06_ARCHIVE", label: "Archive", icon: "archive" };
 const { ArrowUp, FileText, Folder, FolderOpen, HardDrive, X } = require("lucide-react");
 const react = compile(`${functions("components/archive/section-page.tsx", ["ArchiveFolders", "ArchiveFile", "SectionReadout", "sectionReadout"])}\nexports.ArchiveFolders = ArchiveFolders;`, {
-  ArrowUp, FileText, Folder, FolderOpen, HardDrive, X, ...chronology, ...dates, useEffect, useState,
+  ArrowUp, FileText, Folder, FolderOpen, HardDrive, X, ...chronology, ...dates, useEffect, useState, renderCipherLetters: String,
   sectionRegistryLabels: { archive: "Field Archive" }
 });
 const staticSource = read("static-app.js");
@@ -47,7 +47,7 @@ const staticContext = compile(functions("static-app.js", [
 ]), {
   Date: ArchiveClock, logArchiveAfterDays: chronology.LOG_ARCHIVE_AFTER_DAYS,
   archiveRootFileLimit: chronology.ARCHIVE_ROOT_FILE_LIMIT, archiveRecentFileLimit: chronology.ARCHIVE_RECENT_FILE_LIMIT,
-  state: { archiveFolderWindow: "" }, sectionRegistryLabels: { archive: "Field Archive" }
+  state: { archiveFolderWindow: "" }, sectionRegistryLabels: { archive: "Field Archive" }, renderCipherLetters: String
 });
 
 const base = { section: "logs", type: "Field Note", priority: 50, updated: "2025-02-01", started: "2025-01-01", status: "Filed", meta: {}, body: "Unchanged content", summary: "", milestones: [], progress: 0 };

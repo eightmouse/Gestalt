@@ -2,7 +2,7 @@
 
 import type { RefObject } from "react";
 import { Settings } from "lucide-react";
-import { cipherizeText } from "@/components/archive/cipher";
+import { renderCipherLetters } from "@/components/archive/headline-text";
 import type { SearchResult } from "@/components/archive/types";
 import archiveSearch from "@/public/archive-search.js";
 
@@ -18,7 +18,7 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
   const open = (result: SearchResult) => onOpenResult(result, result.record ? archiveSearch.resultKey(result) : undefined);
   return (
     <div className="search-panel command-panel" ref={panelRef} role="search">
-      <label htmlFor="archive-search" data-cipher={cipherizeText("COMMAND PALETTE")}>~ COMMAND PALETTE</label>
+      <label htmlFor="archive-search" className="cipher-on-open">~ {renderCipherLetters("COMMAND PALETTE")}</label>
       <input
         autoComplete="off"
         autoFocus
@@ -53,8 +53,8 @@ export function SearchPanel({ panelRef, query, results, onOpenResult, onQueryCha
                 <strong>
                   {result.kind === "record" ? result.record.title : result.title}
                 </strong>
-                <small data-cipher={result.kind === "note" ? undefined : cipherizeText(result.detail)}>
-                  {result.detail}
+                <small className={result.kind === "command" ? "cipher-description" : undefined}>
+                  {result.kind === "command" ? renderCipherLetters(result.detail) : result.detail}
                 </small>
               </span>
               <i>{result.kind === "record" ? result.record.section.toUpperCase() : result.kind === "note" ? "NOTE" : "CMD"}</i>

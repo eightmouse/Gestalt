@@ -4,6 +4,7 @@ import vm from "node:vm";
 import { createRequire } from "node:module";
 import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
+import cipherDecode from "../public/cipher-decode.js";
 
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const staticSource = read("static-app.js");
@@ -234,9 +235,7 @@ assert.ok(read("lib/publish-paths.mjs").includes('"public/images/eightmouse-avat
 assert.match(reactSource, /if \(!bootComplete \|\| localMemory === "prompt"/);
 assert.match(staticSource, /if \(!state.bootDismissed \|\| state.localMemory === "prompt"\) return;/);
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.boot-screen \{\s*display: none;/);
-const cipherModule = vm.createContext({ exports: {} });
-vm.runInContext(ts.transpileModule(read("components/archive/cipher.ts"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, cipherModule);
-const headlineModule = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/cipher" ? cipherModule.exports : require(id) });
+const headlineModule = vm.createContext({ exports: {}, require: (id) => id === "@/public/cipher-decode.js" ? cipherDecode : require(id) });
 vm.runInContext(ts.transpileModule(read("components/archive/headline-text.tsx"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText, headlineModule);
 const rendered = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/headline-text" ? headlineModule.exports : id === "@/public/os-behaviour.js" ? behaviour : require(id) });
 vm.runInContext(ts.transpileModule(reactScreen, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, rendered);

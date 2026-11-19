@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { ImageLightbox } from "@/components/archive/image-lightbox";
+import { renderCipherLetters } from "@/components/archive/headline-text";
 import { gameActivityLabel, gameActivityValue, gameLogPlacement } from "@/lib/game-state";
 import { ArrowLeft, Maximize2, Minimize2, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
@@ -271,7 +272,6 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             <h2>
               <span
                 className={record.title.length > 26 ? "record-title-text is-long-title" : "record-title-text"}
-                style={{ "--record-title-chars": record.title.length } as CSSProperties}
               >
                 {record.title}
               </span>
@@ -439,7 +439,7 @@ function RecordAccessSurface() {
     <div className="record-access-surface" aria-hidden="true">
       <div className="record-access-identity">
         <small>ARCHIVE LINK // 01</small>
-        <strong>ACCESSING</strong>
+        <strong>{renderCipherLetters("ACCESSING")}</strong>
         <span className="record-access-meter"><i /></span>
         <small className="record-access-state">INDEXING RECORD</small>
       </div>

@@ -1,7 +1,7 @@
 .pocket-boot-mount { display: contents; }
 
 .pocket-header, .pocket-context, .pocket-index, .pocket-boot, .pocket-record-back, .pocket-record-contents, .pocket-note-link-label,
-.record-selector .pocket-shelf-switch, .pocket-tape-reels, .pocket-project-stack, .pocket-project-readout,
+.record-selector .pocket-shelf-switch, .pocket-tape-reels, .pocket-project-stack, .pocket-project-readout, .pocket-catalog-back,
 .os-preference[data-os-group="pocketBoot"] { display: none; }
 
 @media (max-width: 760px) {
@@ -133,14 +133,40 @@
   .workspace[data-pocket-section] .section-record-column { block-size: auto; max-block-size: none; }
   .workspace[data-pocket-section] .section-record-grid { max-block-size: none; overflow: visible; }
 
-  .section-page--games .section-page-header > div:not(.section-page-header-actions) { grid-area: 1 / 1; min-inline-size: 0; }
-  .section-page--games .section-page-header-actions { grid-area: 1 / 2; }
-  .section-page--games .section-page-header-actions:has(.game-shelf-search:not([hidden])) {
-    grid-column: 1 / -1;
-    justify-self: stretch;
+  .workspace[data-pocket-section]:is([data-pocket-section="games"], [data-pocket-section="projects"]) > .pocket-context { display: none; }
+  .section-page.section-page--selector:is(.section-page--games, .section-page--projects) {
+    --pocket-catalog-height: clamp(275px, calc(100svh - 220px - var(--pocket-safe-top) - var(--pocket-safe-bottom)), 650px);
+    --pocket-case-size: min(76%, calc(var(--pocket-catalog-height) * .60));
+    --pocket-case-edge: calc((100% - var(--pocket-case-size)) / 2);
   }
-  .section-page--games .section-page-header:has(.game-shelf-search:not([hidden])) > div:not(.section-page-header-actions) { visibility: hidden; }
-  .section-page--games .game-search-dock:not([hidden]) { display: flex; flex: 1 1 auto; min-inline-size: 0; justify-content: end; }
+  .section-page:is(.section-page--games, .section-page--projects) .section-page-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    overflow: visible;
+    padding: 4px 0 8px;
+    border: 0;
+    background: transparent;
+  }
+  .section-page:is(.section-page--games, .section-page--projects) .section-page-header > :not(.pocket-catalog-back, .section-page-header-actions),
+  .section-page:is(.section-page--games, .section-page--projects) .section-page-header-actions > i,
+  .section-page:is(.section-page--games, .section-page--projects) .section-page-header::before,
+  .section-page:is(.section-page--games, .section-page--projects) .section-page-header::after { display: none; }
+  .pocket-catalog-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    min-block-size: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--pocket-signal);
+    font: 500 13px/1.2 system-ui, sans-serif;
+  }
+  .section-page--games .section-page-header-actions { flex: 1 1 auto; justify-content: end; }
+  .section-page--games .game-search-dock:not([hidden]) { display: flex; min-inline-size: 0; }
+  .section-page--games .game-search-dock:has(.game-shelf-search:not([hidden])) { flex: 1 1 auto; }
   .section-page--games .game-shelf-search:not([hidden]) {
     position: static;
     flex: 1 1 0;
@@ -151,28 +177,68 @@
     padding: 4px 9px;
     font-size: 16px;
   }
-  .record-selector .pocket-shelf-switch { display: grid; padding-block-end: 8px; border-block-end: 1px solid var(--pocket-line); }
+  .section-page:is(.section-page--games, .section-page--projects) .record-selector {
+    padding: 0;
+    border: 0;
+    background: none;
+    gap: 12px;
+  }
+  .record-selector .pocket-shelf-switch { display: grid; }
+  .section-page:is(.section-page--games, .section-page--projects) .record-selector-groups {
+    border-block-end: 1px solid var(--pocket-line);
+    gap: 0;
+  }
+  .section-page:is(.section-page--games, .section-page--projects) .record-selector-groups button {
+    border: 0;
+    background: none;
+    padding-inline: 8px;
+    color: var(--pocket-muted);
+    box-shadow: none;
+  }
+  .section-page:is(.section-page--games, .section-page--projects) .record-selector-groups button[aria-pressed="true"] {
+    background: none;
+    box-shadow: inset 0 -2px var(--pocket-signal);
+    color: var(--pocket-ink);
+  }
   .record-selector--games .game-shelf[data-pocket-current="false"],
   .record-selector--games .game-shelf-heading,
   .record-selector--games .game-shelf-edge { display: none; }
   .record-selector--games .game-shelf + .game-shelf { border: 0; padding: 0; }
-  .record-selector--games .record-media-cabinet {
-    --cabinet-cover: min(168px, calc((100% - 40px) / 2));
-    --cabinet-gap: 10px;
-    --shelf-motion-gutter: 0px;
-    padding-block: 4px 8px;
-    mask-image: none;
+  .section-page--games .game-shelf-track, .pocket-project-stack { margin-inline: -16px; }
+  :is(.record-selector--games .record-media-cabinet, .pocket-project-rail) {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    block-size: var(--pocket-catalog-height);
+    padding: 6px 0 7px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    touch-action: pan-x pinch-zoom;
     scroll-padding-inline: 0;
-    scroll-snap-type: x proximity;
+    scroll-snap-type: x mandatory;
+    mask-image: linear-gradient(90deg, transparent, #000 10% 90%, transparent);
   }
-  .record-selector--games .record-sleeve { scroll-snap-align: start; }
+  :is(.record-selector--games .record-media-cabinet, .pocket-project-rail):has(> :is(.record-sleeve, .project-workbench))::before,
+  :is(.record-selector--games .record-media-cabinet, .pocket-project-rail):has(> :is(.record-sleeve, .project-workbench))::after {
+    content: "";
+    flex: 0 0 max(0px, calc(var(--pocket-case-edge) - 14px));
+  }
+  :is(.record-selector--games .record-media-cabinet, .pocket-project-rail) > :is(.record-sleeve, .project-workbench) {
+    flex: 0 0 var(--pocket-case-size);
+    min-inline-size: 0;
+    scroll-snap-align: center;
+  }
+  :is(.record-selector--games .record-media-cabinet, .pocket-project-rail) > .search-empty { padding-inline: 24px; }
+  .record-selector--games .record-sleeve { align-content: stretch; }
   .record-selector--games .record-sleeve-art {
     --tape-shape: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px);
-    grid-template-rows: minmax(98px, 1fr) 62px;
-    gap: 8px;
-    aspect-ratio: 2 / 3;
-    min-block-size: 191px;
-    padding: 11px 8px 12px;
+    grid-template-rows: minmax(0, 1fr) 48%;
+    align-items: center;
+    gap: 16px;
+    block-size: 100%;
+    padding: 18px 14px 20px;
     clip-path: var(--tape-shape);
   }
   .record-selector--games .record-sleeve-art::before {
@@ -180,7 +246,8 @@
     background:
       radial-gradient(circle, var(--pocket-muted) 0 1px, var(--pocket-line) 1.5px 2.5px, transparent 3px) left 7px bottom 9px / 6px 6px no-repeat,
       radial-gradient(circle, var(--pocket-muted) 0 1px, var(--pocket-line) 1.5px 2.5px, transparent 3px) right 7px bottom 9px / 6px 6px no-repeat,
-      repeating-linear-gradient(0deg, var(--pocket-line) 0 1px, transparent 1px 3px) top / 100% 6px no-repeat,
+      repeating-linear-gradient(0deg, var(--pocket-line) 0 1px, transparent 1px 3px) top / 100% 8px no-repeat,
+      linear-gradient(135deg, rgb(255 255 255 / .05), transparent 57%),
       var(--pocket-plate);
   }
   .record-selector--games .record-sleeve-art::after,
@@ -188,21 +255,27 @@
   .record-selector--games .record-sleeve-label {
     grid-template-rows: auto;
     align-content: center;
-    gap: 5px;
-    padding: 5px 8px;
-    background: color-mix(in srgb, var(--pocket-paper), var(--pocket-plate) 24%);
-    color: var(--pocket-ink);
-    font: 500 14px/1.18 var(--pocket-mono);
+    gap: 7px;
+    inline-size: 100%;
+    min-block-size: min(88%, 130px);
+    padding: 10px 12px;
+    border-inline-start: 3px solid #869e89;
+    background: repeating-linear-gradient(0deg, #dfded3 0 1px, transparent 1px 21px) #eeece2;
+    color: #242925;
+    font: 600 22px/1.16 "Segoe Print", "Noteworthy", "Segoe UI", system-ui, sans-serif;
+    font-style: italic;
   }
-  .record-selector--games .record-sleeve-label strong { -webkit-line-clamp: 4; }
+  .record-selector--games .record-sleeve-label strong { -webkit-line-clamp: 5; }
+  .record-selector--games .record-sleeve-label small { color: #35423a; border-color: #a7aca0; }
   .pocket-tape-reels {
     display: grid;
-    grid-template-rows: repeat(2, 23px);
+    grid-template-rows: repeat(2, 34px);
     align-content: space-between;
     justify-items: center;
     justify-self: center;
-    inline-size: min(56%, 58px);
-    padding-block: 4px;
+    block-size: 100%;
+    inline-size: min(49%, 75px);
+    padding-block: 10px;
     border: 1px solid var(--pocket-line);
     background:
       linear-gradient(var(--pocket-line), var(--pocket-line)) center / 1px 86% no-repeat,
@@ -225,21 +298,37 @@
   .section-page--projects .record-selector-toolbar .record-selector-pager,
   .section-page--projects .record-selector > :is(.record-selector-results, .project-workbench, .search-empty) { display: none; }
   .pocket-project-stack { display: block; min-inline-size: 0; }
-  .pocket-project-rail:not([hidden]) {
-    display: grid;
-    align-content: start;
-    gap: 8px;
-    max-block-size: clamp(238px, calc(100svh - 205px), 365px);
-    overflow-y: auto;
-    touch-action: pan-y pinch-zoom;
-    scroll-snap-type: y proximity;
-    scrollbar-width: thin;
-    scrollbar-color: var(--pocket-line) transparent;
+  .pocket-project-rail[hidden] { display: none; }
+  .pocket-project-rail > .project-workbench {
+    padding: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
   }
-  .section-page--projects .project-workbench { --reader-inset: 5px; }
-  .pocket-project-rail > .project-workbench { scroll-snap-align: start; }
-  .section-page--projects .project-workbench-record { grid-template-columns: minmax(0, 1fr); align-content: space-between; min-block-size: 190px; padding: 17px 15px 15px 18px; gap: 12px; }
-  .section-page--projects .project-workbench-brief p:not(.project-workbench-signal) { -webkit-line-clamp: 2; }
+  .section-page--projects .pocket-project-rail .project-workbench-record {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+    block-size: 100%;
+    padding: 16px;
+    gap: 14px;
+    border: 1px solid var(--line-strong);
+  }
+  .pocket-project-rail .project-workbench-brief { grid-template: auto minmax(0, 1fr) / auto minmax(0, 1fr); column-gap: 14px; }
+  .pocket-project-rail .project-workbench-signal { grid-column: 1 / -1; }
+  .pocket-project-rail .project-workbench-brief h3 {
+    writing-mode: vertical-rl;
+    justify-self: start;
+    padding-inline: 8px;
+    padding-block: 6px;
+    border-block-start: 1px solid var(--pocket-signal);
+    font-size: 27px;
+  }
+  .pocket-project-rail .project-workbench-brief p:not(.project-workbench-signal) {
+    align-self: center;
+    -webkit-line-clamp: 5;
+  }
+  .pocket-project-rail .project-state-mark { display: none; }
   .pocket-project-readout { display: block; }
   .pocket-project-readout meter { margin-block-start: 6px; }
   .pocket-project-milestone { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: baseline; column-gap: 10px; margin-block-start: 9px; overflow-wrap: anywhere; }
