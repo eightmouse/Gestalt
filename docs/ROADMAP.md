@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+19 November, v1.83.1: Handheld tapes stand upright so two labels and the next tape's edge are visible on a phone. The Media Cabinet search fits inside its header, including beside the local add button. Projects scroll vertically within each group, and a sideways swipe or either full-width group control switches groups. Desktop browsing and entry windows stay in place.
+
 19 November, v1.83.0: Handheld Media Cabinet files games as wide VHS cassettes with twin reels and a visible edge of the next tape. The Process Reader replaces its dropdown with direct group controls and swipeable plates. Arrows offer the same navigation without gestures; taps still open the existing entries. Desktop keeps floppy shelves and rotating project plates.
 
 19 November, v1.82.0: Pocket Index gets a single swipe shelf for Games and a still workplate for Projects. Switching Session/Past restores the previous shelf positions; search can show matches from the other shelf. A grouped Project picker replaces desktop arrows on handheld, leaving space for progress and one relevant milestone. Desktop browsing and the note workflow stay in place.

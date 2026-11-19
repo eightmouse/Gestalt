@@ -202,8 +202,11 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
     setProjectIds((current) => ({ ...current, [index]: group.records[next].id }));
   };
   const rotate = useEffectEvent(() => step(1, true));
-  const swipe = useEffectEvent((direction: -1 | 1) => step(direction));
-  useLayoutEffect(() => sectionMotion.revealProjectReader(frameRef.current), []);
+  const swipe = useEffectEvent((direction: -1 | 1) => {
+    const next = index + direction;
+    if (groups[next]) setGroup(next);
+  });
+  useLayoutEffect(() => handheld ? undefined : sectionMotion.revealProjectReader(frameRef.current), [handheld]);
   useLayoutEffect(() => sectionMotion.bindSectionStandby(readerRef.current, "projects"), []);
   useEffect(() => sectionMotion.bindProjectRotation(readerRef.current, rotate), []);
   useEffect(() => handheld ? sectionMotion.bindProjectSwipe(readerRef.current, swipe) : undefined, [handheld]);
@@ -222,8 +225,13 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
         <button type="button" aria-label="Next project" aria-disabled={page + 1 === count} onClick={() => step(1)}><ChevronRight size={16} aria-hidden="true" /></button>
       </nav>
     </div>
-    <span className="pocket-project-announcement" role="status">{workbench ? `${workbench.record.title}, ${page + 1} of ${count}` : "No records filed here yet."}</span>
-    {workbench ? <div className="project-workbench">
+    {handheld ? <div className="pocket-project-stack">
+      {groups.map(({ title, records }, i) => <div key={title} className="pocket-project-rail" role="region" aria-label={title} tabIndex={0} hidden={index !== i}>
+        {records.length ? records.map((record) => <div key={record.id} className="project-workbench">
+          <ProjectWorkprint workbench={pocket.projectWorkbench([record])!} other={i === 1} compact onOpenRecord={onOpenRecord} />
+        </div>) : <p className="search-empty">No records filed here yet.</p>}
+      </div>)}
+    </div> : workbench ? <div className="project-workbench">
       <div ref={frameRef} className="project-workbench-frame">
         <ProjectWorkprint workbench={workbench} other={other} onOpenRecord={onOpenRecord} />
         <span className="project-workbench-register" aria-hidden="true" />
@@ -232,7 +240,7 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
   </section>;
 }
 
-function ProjectWorkprint({ workbench, other, onOpenRecord }: { workbench: NonNullable<ReturnType<typeof pocket.projectWorkbench<RecordEntry>>>; other: boolean; onOpenRecord: (record: RecordEntry) => void }) {
+function ProjectWorkprint({ workbench, other, compact = false, onOpenRecord }: { workbench: NonNullable<ReturnType<typeof pocket.projectWorkbench<RecordEntry>>>; other: boolean; compact?: boolean; onOpenRecord: (record: RecordEntry) => void }) {
   const { record, brief, progress, stops, more, nextStop } = workbench;
   return <div className="project-workbench-record">
     {other ? <span className="project-state-mark" aria-hidden="true">{record.status}</span> : null}
@@ -242,18 +250,19 @@ function ProjectWorkprint({ workbench, other, onOpenRecord }: { workbench: NonNu
       {brief ? <p>{brief}</p> : null}
     </div>
     <div className="project-workbench-progress">
-      <div className="project-workbench-caption"><span>{stops.length ? "Milestone trace" : "Progress readout"}</span><b>{progress}% overall</b></div>
-      {stops.length ? <ol className="project-milestone-trace" role="list">
-        {stops.map(({ label, state, value }, index) => <li key={`${index}-${label}`} data-stop={state}><i className="project-milestone-node" aria-hidden="true" /><strong>{label}</strong><small>{value}</small></li>)}
-      </ol> : <meter min="0" max="100" value={progress} aria-label="Project progress" />}
-      {more ? <small className="project-milestone-more">+{more} in record</small> : null}
-      <div className="pocket-project-readout">
+      {compact ? <div className="pocket-project-readout">
         <div className="project-workbench-caption"><span>Progress</span><b>{progress}%</b></div>
         <meter min="0" max="100" value={progress} aria-label="Project progress" />
         {nextStop ? <div className="pocket-project-milestone" data-stop={nextStop.state}>
           <strong>{nextStop.label}</strong><small>{nextStop.value}</small>
         </div> : null}
-      </div>
+      </div> : <>
+        <div className="project-workbench-caption"><span>{stops.length ? "Milestone trace" : "Progress readout"}</span><b>{progress}% overall</b></div>
+        {stops.length ? <ol className="project-milestone-trace" role="list">
+          {stops.map(({ label, state, value }, index) => <li key={`${index}-${label}`} data-stop={state}><i className="project-milestone-node" aria-hidden="true" /><strong>{label}</strong><small>{value}</small></li>)}
+        </ol> : <meter min="0" max="100" value={progress} aria-label="Project progress" />}
+        {more ? <small className="project-milestone-more">+${more} in record</small> : null}
+      </>}
     </div>
     <button className="project-workbench-hit" type="button" aria-label={`Open ${record.title}`} onClick={(event) => sectionMotion.openProjectPlate(event.currentTarget, () => onOpenRecord(record))}><span className="project-workbench-light" aria-hidden="true" /></button>
   </div>;

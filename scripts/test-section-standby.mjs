@@ -123,7 +123,7 @@ assert.equal(rotation.timers.size, 0, "Disposing rotation cannot leave a queued 
 const swipeArea = new EventTarget();
 const directions = [], captures = [];
 swipeArea.setPointerCapture = (id) => captures.push(id);
-const hit = { closest: () => hit };
+const hit = { closest: (selector) => [".pocket-project-stack", ".project-workbench-hit"].includes(selector) ? hit : null };
 const fire = (type, x, y, props = {}) => {
   const event = new Event(type, { cancelable: true });
   Object.assign(event, { clientX: x, clientY: y, pointerId: 1, pointerType: "touch", isPrimary: true, detail: 1 }, props);

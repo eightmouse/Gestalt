@@ -37,6 +37,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Upright tapes and a vertical Process Reader",
+          "detail": "Two upright VHS tapes fit side by side in the handheld Media Cabinet, and search stays within the header. Projects scroll vertically within each group. Swipe sideways or tap either group button to switch, with no project arrows on handheld. Desktop keeps its original controls.",
+          "version": "v1.83.1",
+          "releasedOn": "2026-11-19"
+        },
+        {
           "title": "Pocket Index: tapes and touch controls",
           "detail": "The handheld Media Cabinet uses wide VHS cassettes with readable labels and twin reels. The next tape peeks in from the edge. The Process Reader drops its dropdown: tap a group, swipe the plate or use the arrows, and tap the plate to open the record. Desktop floppies and project rotation stay in place.",
           "version": "v1.83.0",

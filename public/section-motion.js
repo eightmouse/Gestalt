@@ -15,18 +15,6 @@
     const old = frame?.firstElementChild;
     turns.get(frame)?.();
     if (!old?.animate || !motionAllowed(host)) return () => {};
-    if (host.matchMedia("(max-width: 760px)").matches) return () => {
-      const plate = frame.firstElementChild;
-      if (!plate?.animate || !motionAllowed(host)) return;
-      const motion = plate.animate([
-        { transform: `translateX(${direction * 14}px)`, opacity: .68 },
-        { transform: "translateX(0)", opacity: 1 }
-      ], { duration: 230, easing: "cubic-bezier(.2,.7,.3,1)" });
-      const cancel = finishReveal([motion], host);
-      turns.set(frame, cancel);
-      const clear = () => { if (turns.get(frame) === cancel) turns.delete(frame); };
-      motion.finished.then(clear, clear);
-    };
     const leaving = old.cloneNode(true);
     leaving.classList.add("is-turning-out");
     leaving.setAttribute("aria-hidden", "true");
@@ -95,7 +83,7 @@
     function start(event) {
       if (event.isPrimary) suppressClick = false;
       gesture = undefined;
-      if (!handheld.matches || event.pointerType !== "touch" || !event.isPrimary || !event.target.closest?.(".project-workbench-hit")) return;
+      if (!handheld.matches || event.pointerType !== "touch" || !event.isPrimary || !event.target.closest?.(".pocket-project-stack")) return;
       gesture = { id: event.pointerId, x: event.clientX, y: event.clientY, axis: null };
     }
     function move(event) {
@@ -494,8 +482,9 @@
     if (!section || (kind !== "games" && kind !== "projects")) return () => {};
     const shell = section.closest(".archive-shell");
     const reduced = host.matchMedia("(prefers-reduced-motion: reduce)");
+    const handheld = kind === "projects" ? host.matchMedia("(max-width: 760px)") : null;
     let timer = 0, pass = 0, pulses = [];
-    const available = () => section.isConnected && !host.document.hidden && !reduced.matches
+    const available = () => section.isConnected && !host.document.hidden && !reduced.matches && !handheld?.matches
       && !shell?.matches(".has-record, .is-booting, [data-search-open], [data-workspace-tool-open]");
     function cancel() {
       if (timer) host.clearTimeout(timer);
@@ -546,12 +535,14 @@
     observer?.observe(shell, { attributes: true, attributeFilter: ["class", "data-search-open", "data-workspace-tool-open"] });
     host.document.addEventListener("visibilitychange", update);
     reduced.addEventListener("change", update);
+    handheld?.addEventListener("change", update);
     update();
     return () => {
       cancel();
       observer?.disconnect();
       host.document.removeEventListener("visibilitychange", update);
       reduced.removeEventListener("change", update);
+      handheld?.removeEventListener("change", update);
     };
   }
 

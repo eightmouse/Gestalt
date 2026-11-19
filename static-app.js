@@ -1616,7 +1616,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.83.0</span>
+        <span>v1.83.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1630,7 +1630,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.83.0</span>
+        <span class="version-label">v1.83.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1650,7 +1650,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.83.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.83.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2097,13 +2097,13 @@ function renderRecordSelector(groups) {
         <button type="button" data-selector-page="1" aria-label="Next project" aria-disabled="${page + 1 === count}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
     </div>
-    <span class="pocket-project-announcement" role="status">${escapeHtml(projectPlateStatus(view))}</span>
     <div class="record-selector-results">${renderSelectorResults(view)}</div>
+    <div class="pocket-project-stack">
+      ${groups.map(({ title, records }, i) => `<div class="pocket-project-rail" role="region" aria-label="${escapeHtml(title)}" tabindex="0" ${i === index ? "" : "hidden"}>
+        ${records.length ? records.map((record) => `<div class="project-workbench">${renderProjectStage(pocket.projectWorkbench([record]), i === 1, true)}</div>`).join("") : '<p class="search-empty">No records filed here yet.</p>'}
+      </div>`).join("")}
+    </div>
   </section>`;
-}
-
-function projectPlateStatus({ workbench, page, count }) {
-  return workbench ? `${workbench.record.title}, ${page + 1} of ${count}` : "No records filed here yet.";
 }
 
 function renderSelectorResults({ workbench, other }) {
@@ -2113,19 +2113,20 @@ function renderSelectorResults({ workbench, other }) {
   </div>`;
 }
 
-function renderProjectStage({ record, brief, progress, stops, more, nextStop }, other) {
+function renderProjectStage({ record, brief, progress, stops, more, nextStop }, other, compact = false) {
   return `<div class="project-workbench-record">
     ${other ? `<span class="project-state-mark" aria-hidden="true">${escapeHtml(record.status)}</span>` : ""}
     <div class="project-workbench-brief"><p class="project-workbench-signal">${escapeHtml(record.status)}</p><h3>${escapeHtml(record.title)}</h3>${brief ? `<p>${escapeHtml(brief)}</p>` : ""}</div>
     <div class="project-workbench-progress">
-      <div class="project-workbench-caption"><span>${stops.length ? "Milestone trace" : "Progress readout"}</span><b>${progress}% overall</b></div>
-      ${stops.length ? `<ol class="project-milestone-trace" role="list">${stops.map(({ label, state, value }) => `<li data-stop="${state}"><i class="project-milestone-node" aria-hidden="true"></i><strong>${escapeHtml(label)}</strong><small>${escapeHtml(value)}</small></li>`).join("")}</ol>` : `<meter min="0" max="100" value="${progress}" aria-label="Project progress"></meter>`}
-      ${more ? `<small class="project-milestone-more">+${more} in record</small>` : ""}
-      <div class="pocket-project-readout">
+      ${compact ? `<div class="pocket-project-readout">
         <div class="project-workbench-caption"><span>Progress</span><b>${progress}%</b></div>
         <meter min="0" max="100" value="${progress}" aria-label="Project progress"></meter>
         ${nextStop ? `<div class="pocket-project-milestone" data-stop="${nextStop.state}"><strong>${escapeHtml(nextStop.label)}</strong><small>${escapeHtml(nextStop.value)}</small></div>` : ""}
-      </div>
+      </div>` : `
+        <div class="project-workbench-caption"><span>${stops.length ? "Milestone trace" : "Progress readout"}</span><b>${progress}% overall</b></div>
+        ${stops.length ? `<ol class="project-milestone-trace" role="list">${stops.map(({ label, state, value }) => `<li data-stop="${state}"><i class="project-milestone-node" aria-hidden="true"></i><strong>${escapeHtml(label)}</strong><small>${escapeHtml(value)}</small></li>`).join("")}</ol>` : `<meter min="0" max="100" value="${progress}" aria-label="Project progress"></meter>`}
+        ${more ? `<small class="project-milestone-more">+${more} in record</small>` : ""}
+      `}
     </div>
     <button class="project-workbench-hit" type="button" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(`Open ${record.title}`)}"><span class="project-workbench-light" aria-hidden="true"></span></button>
   </div>`;
@@ -2143,7 +2144,7 @@ function renderSelectorTiles(sectionRecords) {
 }
 
 function syncInstrumentShelf(reveal = false) {
-  if (reveal && state.activeSection === "projects") window.GestaltSectionMotion?.revealProjectReader(root.querySelector(".workspace .project-workbench-frame"));
+  if (reveal && state.activeSection === "projects" && !pocket.isHandheld()) window.GestaltSectionMotion?.revealProjectReader(root.querySelector(".workspace .project-workbench-frame"));
   const section = root.querySelector(".workspace > :is(.section-page--games, .section-page--projects) > .record-selector");
   if (section !== standbySection) {
     stopSectionStandby?.();
@@ -2178,23 +2179,24 @@ function syncRecordSelector(button, automatic = false, swipeDirection) {
   const groups = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords));
   const current = selectorView(groups);
   let direction;
-  if (button?.dataset.selectorGroup !== undefined) {
-    const group = Number(button.dataset.selectorGroup);
+  if (button?.dataset.selectorGroup !== undefined || swipeDirection) {
+    const group = swipeDirection ? current.index + swipeDirection : Number(button.dataset.selectorGroup);
     if (!groups[group] || group === current.index) return;
     state.selectorGroup = group;
   } else {
     if (current.count < 2) return;
-    direction = automatic ? 1 : swipeDirection ?? Number(button?.dataset.selectorPage);
+    direction = automatic ? 1 : Number(button?.dataset.selectorPage);
     const next = automatic ? (current.page + 1) % current.count : current.page + direction;
     if ((direction !== -1 && direction !== 1) || next < 0 || next >= current.count) return;
     state.selectorProjectIds[current.index] = current.group.records[next].id;
   }
   const next = selectorView(groups);
   const { index, page, count, workbench, other } = next;
-  selector.querySelector(".pocket-project-announcement").textContent = projectPlateStatus(next);
   if (index !== current.index) {
     selector.dataset.workbench = other ? "other" : "active";
     selector.dataset.projectCount = String(count);
+    const stack = selector.querySelector(".pocket-project-stack");
+    stack.querySelectorAll(".pocket-project-rail").forEach((rail, i) => { rail.hidden = i !== index; });
   }
   selector.querySelectorAll("[data-selector-group]").forEach((control, i) => control.setAttribute("aria-pressed", String(i === index)));
   if (workbench && direction) {
@@ -3677,7 +3679,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.83.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.83.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
