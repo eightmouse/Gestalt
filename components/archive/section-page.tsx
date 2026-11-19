@@ -3,7 +3,7 @@ import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
-import { ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
+import { ArrowUp, ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import pocket from "@/public/pocket-index.js";
@@ -58,7 +58,7 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onCreate
     return <ArchiveFolders onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
   }
   if (section.id === "games" && splitSection) {
-    return <GameShelf groups={splitSection} onOpenRecord={onOpenRecord} header={{ section, countLabel, readout, onCreateRecord }} />;
+    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} header={{ section, countLabel, readout, onCreateRecord }} />;
   }
 
   return (
@@ -101,13 +101,17 @@ function SectionPageHeader({ section, countLabel, readout, onCreateRecord, actio
   </header>;
 }
 
-function GameShelf({ groups, onOpenRecord, header }: Pick<SectionPageProps, "onOpenRecord"> & { groups: SelectorGroup[]; header: SectionPageHeaderProps }) {
+function GameShelf({ groups, handheld, onOpenRecord, header }: Pick<SectionPageProps, "handheld" | "onOpenRecord"> & { groups: SelectorGroup[]; header: SectionPageHeaderProps }) {
   const cabinetRef = useRef<HTMLElement>(null);
   const [searchOpen, setSearch] = useState(false);
   const [query, setQuery] = useState("");
+  const [shelfPick, setShelfPick] = useState<number>();
+  const [searchShelfPick, setSearchShelfPick] = useState<number>();
   const searchRef = useRef<HTMLInputElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const shelves = groups.map((group) => ({ ...group, results: pocket.filterShelfGames(group.records, query) }));
+  const normalShelf = pocket.gameShelfIndex(groups.map((group) => group.records.length), shelfPick);
+  const activeShelf = query.trim() ? pocket.gameShelfIndex(shelves.map((shelf) => shelf.results.length), searchShelfPick, normalShelf) : normalShelf;
   const count = shelves.reduce((sum, shelf) => sum + shelf.results.length, 0);
   const searchable = groups.reduce((sum, group) => sum + group.records.length, 0) >= pocket.shelfSearchMin;
 
@@ -118,13 +122,17 @@ function GameShelf({ groups, onOpenRecord, header }: Pick<SectionPageProps, "onO
     setSearch(open);
     if (!open) {
       setQuery("");
+      setSearchShelfPick(undefined);
       toggleRef.current?.focus({ preventScroll: true });
     }
   }
 
   return <section className="section-page section-page--games section-page--selector" aria-label={`${header.section.code} records`}>
     <SectionPageHeader {...header} actions={searchable ? <div className="game-search-dock">
-      <input ref={searchRef} id="game-shelf-search" className="game-shelf-search" type="search" aria-label="Search Session and Past Logs" placeholder="Search game titles" autoComplete="off" hidden={!searchOpen} value={query} onChange={(event) => setQuery(event.currentTarget.value)} onKeyDown={(event) => {
+      <input ref={searchRef} id="game-shelf-search" className="game-shelf-search" type="search" aria-label="Search Session and Past Logs" placeholder="Search game titles" autoComplete="off" hidden={!searchOpen} value={query} onChange={(event) => {
+        setQuery(event.currentTarget.value);
+        setSearchShelfPick(undefined);
+      }} onKeyDown={(event) => {
         if (event.key !== "Escape" || event.nativeEvent.isComposing) return;
         event.preventDefault();
         event.stopPropagation();
@@ -133,11 +141,17 @@ function GameShelf({ groups, onOpenRecord, header }: Pick<SectionPageProps, "onO
       <button ref={toggleRef} type="button" className="archive-create-record game-shelf-search-toggle" aria-label={searchOpen ? "Close game search" : "Search games"} aria-expanded={searchOpen} aria-controls="game-shelf-search" onClick={() => toggleSearch(!searchOpen)}>{searchOpen ? <X size={16} aria-hidden="true" /> : <Search size={16} aria-hidden="true" />}</button>
     </div> : null} />
     <section ref={cabinetRef} className="record-selector record-selector--games" aria-label="Browse games">
+      <div className="record-selector-groups pocket-shelf-switch" role="group" aria-label="Game shelves">
+        {shelves.map(({ results }, index) => <button type="button" key={index} aria-pressed={index === activeShelf} aria-controls={`game-shelf-panel-${index}`}
+          onClick={() => query.trim() ? setSearchShelfPick(index) : setShelfPick(index)}>
+          {index === 0 ? "Session Logs" : "Past Logs"}<span>{results.length}</span>
+        </button>)}
+      </div>
       {shelves.map(({ title, results }, index) => {
         const kind = index === 0 ? "session" : "past";
-        return <section className="game-shelf" aria-labelledby={`game-shelf-${kind}`} key={kind}>
+        return <section className="game-shelf" id={`game-shelf-panel-${index}`} data-pocket-current={index === activeShelf} aria-labelledby={`game-shelf-${kind}`} key={kind}>
           <h3 id={`game-shelf-${kind}`} className="game-shelf-heading">{title}<span>{results.length}</span><span className="game-shelf-bus" aria-hidden="true"><i /></span></h3>
-          <GameShelfRail kind={kind} records={results} query={query} onOpenRecord={onOpenRecord} />
+          <GameShelfRail kind={kind} records={results} shown={!handheld || index === activeShelf} query={query} onOpenRecord={onOpenRecord} />
         </section>;
       })}
       <p className="game-shelf-live" role="status">{query ? `${count} ${count === 1 ? "game" : "games"} found` : ""}</p>
@@ -145,19 +159,22 @@ function GameShelf({ groups, onOpenRecord, header }: Pick<SectionPageProps, "onO
   </section>;
 }
 
-function GameShelfRail({ kind, records, query, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "session" | "past"; query: string }) {
+function GameShelfRail({ kind, records, shown, query, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "session" | "past"; shown: boolean; query: string }) {
   const shelfRef = useRef<HTMLDivElement>(null);
   const offset = useRef(0);
   const railId = `game-rail-${kind}`;
   const label = kind === "session" ? "Session Logs" : "Past Logs";
   useLayoutEffect(() => sectionMotion.revealInstrumentShelf(shelfRef.current), []);
   useLayoutEffect(() => {
+    if (shown && shelfRef.current) shelfRef.current.scrollLeft = query ? 0 : offset.current;
+  }, [shown, query]);
+  useLayoutEffect(() => {
     const shelf = shelfRef.current;
     if (shelf) shelf.scrollLeft = query ? 0 : offset.current;
     return sectionMotion.bindInstrumentShelf(shelf);
   }, [query, records.length]);
   return <div className="game-shelf-track">
-    <div ref={shelfRef} id={railId} className="record-media-cabinet" data-media-cabinet={kind} onScroll={(event) => { if (!query) offset.current = event.currentTarget.scrollLeft; }}>
+    <div ref={shelfRef} id={railId} className="record-media-cabinet" data-media-cabinet={kind} onScroll={(event) => { if (!query && event.currentTarget.clientWidth) offset.current = event.currentTarget.scrollLeft; }}>
       {records.length ? records.map((record) => <RecordSelectorTile key={record.id} record={record} onOpenRecord={onOpenRecord} />) : <p className="search-empty">{query ? "No matching games." : "No records filed here yet."}</p>}
     </div>
     <button className="game-shelf-edge" type="button" data-shelf-prev="" aria-disabled="true" tabIndex={-1} aria-controls={railId} aria-label={`Scroll ${label} left`}><ChevronLeft size={20} aria-hidden="true" /></button>
@@ -202,6 +219,24 @@ function RecordSelector({ groups, onOpenRecord }: Pick<SectionPageProps, "onOpen
         <span>{page + 1} / {count}</span>
         <button type="button" aria-label="Next project" aria-disabled={page + 1 === count} onClick={() => step(1)}><ChevronRight size={16} aria-hidden="true" /></button>
       </nav>
+      <label className="pocket-project-picker">
+        <span>Project</span>
+        <span className="pocket-project-select">
+          <select value={workbench?.record.id ?? ""} onChange={(event) => {
+            const id = event.currentTarget.value;
+            const nextGroup = groups.findIndex(({ records }) => records.some((record) => record.id === id));
+            if (nextGroup < 0) return;
+            setGroup(nextGroup);
+            setProjectIds((current) => ({ ...current, [nextGroup]: id }));
+          }} disabled={!groups.some(({ records }) => records.length)}>
+            {!workbench ? <option value="" hidden>No project selected</option> : null}
+            {groups.map(({ title, records }, i) => records.length ? <optgroup key={title} label={i === 0 ? "Active Projects" : "Other Projects"}>
+              {records.map((record) => <option key={record.id} value={record.id}>{record.title}</option>)}
+            </optgroup> : null)}
+          </select>
+          <ChevronDown size={16} aria-hidden="true" />
+        </span>
+      </label>
     </div>
     {workbench ? <div className="project-workbench">
       <div ref={frameRef} className="project-workbench-frame">
@@ -213,7 +248,7 @@ function RecordSelector({ groups, onOpenRecord }: Pick<SectionPageProps, "onOpen
 }
 
 function ProjectWorkprint({ workbench, other, onOpenRecord }: { workbench: NonNullable<ReturnType<typeof pocket.projectWorkbench<RecordEntry>>>; other: boolean; onOpenRecord: (record: RecordEntry) => void }) {
-  const { record, brief, progress, stops, more } = workbench;
+  const { record, brief, progress, stops, more, nextStop } = workbench;
   return <div className="project-workbench-record">
     {other ? <span className="project-state-mark" aria-hidden="true">{record.status}</span> : null}
     <div className="project-workbench-brief">
@@ -227,6 +262,13 @@ function ProjectWorkprint({ workbench, other, onOpenRecord }: { workbench: NonNu
         {stops.map(({ label, state, value }, index) => <li key={`${index}-${label}`} data-stop={state}><i className="project-milestone-node" aria-hidden="true" /><strong>{label}</strong><small>{value}</small></li>)}
       </ol> : <meter min="0" max="100" value={progress} aria-label="Project progress" />}
       {more ? <small className="project-milestone-more">+{more} in record</small> : null}
+      <div className="pocket-project-readout">
+        <div className="project-workbench-caption"><span>Progress</span><b>{progress}%</b></div>
+        <meter min="0" max="100" value={progress} aria-label="Project progress" />
+        {nextStop ? <div className="pocket-project-milestone" data-stop={nextStop.state}>
+          <strong>{nextStop.label}</strong><small>{nextStop.value}</small>
+        </div> : null}
+      </div>
     </div>
     <button className="project-workbench-hit" type="button" aria-label={`Open ${record.title}`} onClick={(event) => sectionMotion.openProjectPlate(event.currentTarget, () => onOpenRecord(record))}><span className="project-workbench-light" aria-hidden="true" /></button>
   </div>;

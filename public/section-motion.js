@@ -80,13 +80,14 @@
     const shell = section.closest(".archive-shell");
     const doc = host.document;
     const reduced = host.matchMedia("(prefers-reduced-motion: reduce)");
+    const handheld = host.matchMedia("(max-width: 760px)");
     const blockers = ".has-record, .is-booting, [data-search-open], [data-nav-open], [data-nav-blocked], [data-workspace-tool-open]";
     const observed = ["class", "data-search-open", "data-nav-open", "data-nav-blocked", "data-workspace-tool-open"];
     let timer = 0;
     let bound = true;
     let hovering = Boolean(section.querySelector(".project-workbench-frame:hover")) && host.matchMedia("(any-hover: hover)").matches;
     const available = () => bound && section.isConnected && Number(section.dataset.projectCount) > 1
-      && !doc.hidden && !reduced.matches
+      && !doc.hidden && !reduced.matches && !handheld.matches
       && !hovering && !projectPresses.has(doc.activeElement)
       && !(section.contains(doc.activeElement) && doc.activeElement?.matches(":focus-visible"))
       && !shell?.matches(blockers);
@@ -118,6 +119,7 @@
     section.addEventListener("focusout", refocus);
     doc.addEventListener("visibilitychange", schedule);
     reduced.addEventListener("change", schedule);
+    handheld.addEventListener("change", schedule);
     schedule();
     return () => {
       bound = false;
@@ -128,6 +130,7 @@
       section.removeEventListener("focusout", refocus);
       doc.removeEventListener("visibilitychange", schedule);
       reduced.removeEventListener("change", schedule);
+      handheld.removeEventListener("change", schedule);
       cancel();
     };
   }

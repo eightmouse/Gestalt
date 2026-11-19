@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.81.0`. Previous site-code release: `v1.80.0` (1238e65f).
+Release target: `v1.82.0`. Previous site-code release: `v1.81.0` (e7f48e8b).
+
+`v1.82.0` gives handheld Games one swipe shelf with Session and Past selectors, independent scroll positions and search across both. Handheld Projects uses a grouped picker over a still workplate with progress and a prioritized milestone. Desktop keeps both shelves and rotating project plates. Entries, editing, publishing, records, media and dependencies are unchanged.
 
 `v1.81.0` gives Projects, Games, Logs and Setup Notes a shared writing panel in the local archive. The gear opens the exact Project or Game note; single-note Logs go straight to writing, while longer records keep their file directory. Formatting, media, draft recovery, local saves and the publish bell remain in place. Both readers use inset focus marks instead of outer rectangles. Public reading layouts, authored records, media and dependencies are unchanged.
 

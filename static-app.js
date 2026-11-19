@@ -263,6 +263,8 @@ const state = {
   selectorProjectIds: [],
   gameShelfQuery: "",
   gameShelfSearch: false,
+  gameShelfPick: undefined,
+  gameShelfSearchPick: undefined,
   gameShelfOffsets: { session: 0, past: 0 },
   recordSearchReturn: null,
   panelMinimized: false,
@@ -392,6 +394,7 @@ function openSection(sectionId) {
   state.selectorProjectIds = [];
   state.gameShelfQuery = "";
   state.gameShelfSearch = false;
+  state.gameShelfPick = state.gameShelfSearchPick = undefined;
   state.gameShelfOffsets = { session: 0, past: 0 };
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -445,6 +448,7 @@ function openHome() {
   state.selectorProjectIds = [];
   state.gameShelfQuery = "";
   state.gameShelfSearch = false;
+  state.gameShelfPick = state.gameShelfSearchPick = undefined;
   state.gameShelfOffsets = { session: 0, past: 0 };
   state.panelOpen = false;
   state.panelMinimized = false;
@@ -1611,7 +1615,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.81.0</span>
+        <span>v1.82.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1625,7 +1629,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.81.0</span>
+        <span class="version-label">v1.82.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1645,7 +1649,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.81.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.82.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1964,8 +1968,12 @@ function gameShelfView(groups) {
     kind: i === 0 ? "session" : "past",
     results: pocket.filterShelfGames(group.records, state.gameShelfQuery)
   }));
+  const normalShelf = pocket.gameShelfIndex(groups.map((group) => group.records.length), state.gameShelfPick);
   return {
     shelves,
+    activeShelf: state.gameShelfQuery.trim()
+      ? pocket.gameShelfIndex(shelves.map((shelf) => shelf.results.length), state.gameShelfSearchPick, normalShelf)
+      : normalShelf,
     searchable: groups.reduce((sum, group) => sum + group.records.length, 0) >= pocket.shelfSearchMin,
     count: shelves.reduce((sum, shelf) => sum + shelf.results.length, 0)
   };
@@ -1999,7 +2007,10 @@ function gameShelfStatus(count) {
 
 function renderGameShelf(view) {
   return `<section class="record-selector record-selector--games" aria-label="Browse games">
-    ${view.shelves.map((shelf) => `<section class="game-shelf" aria-labelledby="game-shelf-${shelf.kind}">
+    <div class="record-selector-groups pocket-shelf-switch" role="group" aria-label="Game shelves">
+      ${view.shelves.map((shelf, index) => `<button type="button" data-pocket-shelf="${index}" aria-pressed="${index === view.activeShelf}" aria-controls="game-shelf-panel-${index}">${index === 0 ? "Session Logs" : "Past Logs"}<span>${shelf.results.length}</span></button>`).join("")}
+    </div>
+    ${view.shelves.map((shelf, index) => `<section class="game-shelf" id="game-shelf-panel-${index}" data-pocket-current="${index === view.activeShelf}" aria-labelledby="game-shelf-${shelf.kind}">
       <h3 id="game-shelf-${shelf.kind}" class="game-shelf-heading">${escapeHtml(shelf.title)}<span>${shelf.results.length}</span><span class="game-shelf-bus" aria-hidden="true"><i></i></span></h3>
       ${renderGameShelfResults(shelf)}
     </section>`).join("")}
@@ -2007,16 +2018,43 @@ function renderGameShelf(view) {
   </section>`;
 }
 
-function syncGameShelf({ search, query } = {}) {
+function syncPocketGameShelf(shell, view, restoreOffset = false) {
+  view.shelves.forEach(({ kind, results }, i) => {
+    const control = shell.querySelector(`[data-pocket-shelf="${i}"]`);
+    const panel = shell.querySelector(`#game-shelf-panel-${i}`);
+    const active = i === view.activeShelf;
+    control.setAttribute("aria-pressed", String(active));
+    control.querySelector("span").textContent = String(results.length);
+    panel.dataset.pocketCurrent = String(active);
+    if (active && restoreOffset && pocket.isHandheld()) {
+      panel.querySelector("[data-media-cabinet]").scrollLeft = state.gameShelfQuery ? 0 : state.gameShelfOffsets[kind];
+    }
+  });
+}
+
+function syncGameShelf({ search, query, pick } = {}) {
   if (state.activeSection !== "games") return;
   const shell = root.querySelector(".workspace .section-page--games");
   if (!shell) return;
   const groups = splitSectionRecords("games", recordsFor("games").sort(compareSectionRecords));
+  if (pick === 0 || pick === 1) {
+    if (state.gameShelfQuery.trim()) state.gameShelfSearchPick = pick;
+    else state.gameShelfPick = pick;
+    syncPocketGameShelf(shell, gameShelfView(groups), true);
+    return;
+  }
   if (search !== undefined) {
     state.gameShelfSearch = search;
-    if (!search) state.gameShelfQuery = "";
-  } else if (query !== undefined) state.gameShelfQuery = query;
+    if (!search) {
+      state.gameShelfQuery = "";
+      state.gameShelfSearchPick = undefined;
+    }
+  } else if (query !== undefined) {
+    state.gameShelfQuery = query;
+    state.gameShelfSearchPick = undefined;
+  }
   const view = gameShelfView(groups);
+  syncPocketGameShelf(shell, view);
   const open = view.searchable && state.gameShelfSearch;
   const toggle = shell.querySelector("[data-shelf-search-toggle]");
   toggle.parentElement.hidden = !view.searchable;
@@ -2057,6 +2095,16 @@ function renderRecordSelector(groups) {
         <span>${page + 1} / ${count}</span>
         <button type="button" data-selector-page="1" aria-label="Next project" aria-disabled="${page + 1 === count}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
+      <label class="pocket-project-picker">
+        <span>Project</span>
+        <span class="pocket-project-select">
+          <select data-project-picker ${groups.some((group) => group.records.length) ? "" : "disabled"}>
+            <option value="" hidden ${view.workbench ? "" : "selected"}>No project selected</option>
+            ${groups.map(({ records }, i) => records.length ? `<optgroup label="${i === 0 ? "Active Projects" : "Other Projects"}">${records.map((record) => `<option value="${escapeHtml(record.id)}" ${record.id === view.workbench?.record.id ? "selected" : ""}>${escapeHtml(record.title)}</option>`).join("")}</optgroup>` : "").join("")}
+          </select>
+          ${pocketIcon('<path d="m6 9 6 6 6-6"/>')}
+        </span>
+      </label>
     </div>
     <div class="record-selector-results">${renderSelectorResults(view)}</div>
   </section>`;
@@ -2069,7 +2117,7 @@ function renderSelectorResults({ workbench, other }) {
   </div>`;
 }
 
-function renderProjectStage({ record, brief, progress, stops, more }, other) {
+function renderProjectStage({ record, brief, progress, stops, more, nextStop }, other) {
   return `<div class="project-workbench-record">
     ${other ? `<span class="project-state-mark" aria-hidden="true">${escapeHtml(record.status)}</span>` : ""}
     <div class="project-workbench-brief"><p class="project-workbench-signal">${escapeHtml(record.status)}</p><h3>${escapeHtml(record.title)}</h3>${brief ? `<p>${escapeHtml(brief)}</p>` : ""}</div>
@@ -2077,6 +2125,11 @@ function renderProjectStage({ record, brief, progress, stops, more }, other) {
       <div class="project-workbench-caption"><span>${stops.length ? "Milestone trace" : "Progress readout"}</span><b>${progress}% overall</b></div>
       ${stops.length ? `<ol class="project-milestone-trace" role="list">${stops.map(({ label, state, value }) => `<li data-stop="${state}"><i class="project-milestone-node" aria-hidden="true"></i><strong>${escapeHtml(label)}</strong><small>${escapeHtml(value)}</small></li>`).join("")}</ol>` : `<meter min="0" max="100" value="${progress}" aria-label="Project progress"></meter>`}
       ${more ? `<small class="project-milestone-more">+${more} in record</small>` : ""}
+      <div class="pocket-project-readout">
+        <div class="project-workbench-caption"><span>Progress</span><b>${progress}%</b></div>
+        <meter min="0" max="100" value="${progress}" aria-label="Project progress"></meter>
+        ${nextStop ? `<div class="pocket-project-milestone" data-stop="${nextStop.state}"><strong>${escapeHtml(nextStop.label)}</strong><small>${escapeHtml(nextStop.value)}</small></div>` : ""}
+      </div>
     </div>
     <button class="project-workbench-hit" type="button" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(`Open ${record.title}`)}"><span class="project-workbench-light" aria-hidden="true"></span></button>
   </div>`;
@@ -2113,7 +2166,7 @@ function syncInstrumentShelf(reveal = false) {
     if (instrumentShelves.has(node)) continue;
     const group = node.dataset.mediaCabinet;
     node.scrollLeft = state.gameShelfQuery ? 0 : state.gameShelfOffsets[group];
-    const remember = () => { if (!state.gameShelfQuery) state.gameShelfOffsets[group] = node.scrollLeft; };
+    const remember = () => { if (!state.gameShelfQuery && node.clientWidth) state.gameShelfOffsets[group] = node.scrollLeft; };
     const unbind = window.GestaltSectionMotion?.bindInstrumentShelf(node);
     const cancelReveal = reveal ? window.GestaltSectionMotion?.revealInstrumentShelf(node) : null;
     node.addEventListener("scroll", remember, { passive: true });
@@ -2127,7 +2180,13 @@ function syncRecordSelector(button, automatic = false) {
   const groups = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords));
   const current = selectorView(groups);
   let direction;
-  if (button?.dataset.selectorGroup !== undefined) {
+  if (button?.dataset.projectPicker !== undefined) {
+    const id = button.value;
+    const group = groups.findIndex(({ records }) => records.some((record) => record.id === id));
+    if (group === -1 || current.workbench?.record.id === id) return;
+    state.selectorGroup = group;
+    state.selectorProjectIds[group] = id;
+  } else if (button?.dataset.selectorGroup !== undefined) {
     const group = Number(button.dataset.selectorGroup);
     if (!groups[group] || group === current.index) return;
     state.selectorGroup = group;
@@ -2140,6 +2199,7 @@ function syncRecordSelector(button, automatic = false) {
   }
   const next = selectorView(groups);
   const { index, page, count, workbench, other } = next;
+  selector.querySelector("[data-project-picker]").value = workbench?.record.id ?? "";
   if (index !== current.index) {
     selector.dataset.workbench = other ? "other" : "active";
     selector.dataset.projectCount = String(count);
@@ -3625,7 +3685,7 @@ function desktopDirectory() {
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.81.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.82.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -4256,6 +4316,10 @@ document.addEventListener("click", (event) => {
     syncGameShelf({ search: !state.gameShelfSearch });
     return;
   }
+  if (target.dataset.pocketShelf !== undefined) {
+    syncGameShelf({ pick: Number(target.dataset.pocketShelf) });
+    return;
+  }
 
   if (target.dataset.home !== undefined) {
     openHome();
@@ -4418,6 +4482,7 @@ document.addEventListener("change", (event) => {
   if (picker instanceof HTMLSelectElement && picker.hasAttribute("data-record-content-picker") && pocket?.isHandheld()) {
     selectRecordContent(picker.value, picker.closest(".record-layout"));
   }
+  if (picker instanceof HTMLSelectElement && picker.hasAttribute("data-project-picker") && pocket?.isHandheld()) syncRecordSelector(picker);
 });
 
 document.addEventListener("input", (event) => {

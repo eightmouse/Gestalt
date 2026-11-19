@@ -78,13 +78,18 @@ assert.equal(pocket.filterShelfGames(shelf, "   "), shelf);
 assert.deepEqual(pocket.filterShelfGames(shelf, "HEARTS"), [shelf[0], shelf[2]]);
 assert.deepEqual(pocket.filterShelfGames(shelf, " pokemon "), [shelf[1]]);
 assert.deepEqual(pocket.filterShelfGames(shelf, "not found"), []);
+assert.equal(pocket.gameShelfIndex([0, 3]), 1, "Open a populated shelf first");
+assert.equal(pocket.gameShelfIndex([0, 3], 0), 0, "Respect a direct tap even when its shelf is empty");
+assert.equal(pocket.gameShelfIndex([2, 3], undefined, 1), 1, "Search stays on the chosen shelf if it has a match");
+assert.equal(pocket.gameShelfIndex([2, 0], undefined, 1), 0, "Search reveals matches on the other shelf");
 const workbenchProjects = [
   { id: "shell", progress: 70, summary: "A brief", milestones: [{ label: "Ready", status: "Done", progress: 100 }] },
   { id: "editor", progress: 112, milestones: [{ label: "Review", status: "Planning", progress: 0 }, { label: "Draft", status: "In Progress", progress: 50 }] },
   { id: "reader", progress: -1, milestones: [{ label: "Layout", status: "In Progress", progress: 70 }, { label: "  Assets ", status: "Blocked", progress: 0 }] }
 ];
 assert.equal(pocket.projectWorkbench([]), null);
-assert.deepEqual(pocket.projectWorkbench(workbenchProjects, "removed"), { record: workbenchProjects[0], index: 0, progress: 70, brief: "A brief", stops: [{ label: "Ready", state: "ready", value: "Done" }], more: 0 });
+const ready = { label: "Ready", state: "ready", value: "Done" };
+assert.deepEqual(pocket.projectWorkbench(workbenchProjects, "removed"), { record: workbenchProjects[0], index: 0, progress: 70, brief: "A brief", stops: [ready], more: 0, nextStop: ready });
 assert.equal(pocket.projectWorkbench(workbenchProjects, "editor").progress, 100);
 assert.deepEqual(pocket.projectWorkbench(workbenchProjects, "editor").stops, [{ label: "Review", state: "queued", value: "Planning" }, { label: "Draft", state: "working", value: "50%" }]);
 assert.equal(pocket.projectWorkbench(workbenchProjects, "reader").progress, 0);
@@ -93,6 +98,8 @@ assert.deepEqual(pocket.projectWorkbench([{ id: "only", progress: 0 }]).stops, [
 const crowded = { ...workbenchProjects[2], milestones: [...workbenchProjects[1].milestones, ...workbenchProjects[1].milestones, ...workbenchProjects[2].milestones] };
 assert.equal(pocket.projectWorkbench([crowded]).more, 2, "The fixed reader reserves space for at most four stops");
 assert.equal(pocket.projectWorkbench([crowded]).stops.at(-1).state, "blocked", "A blocker remains visible beyond the first four steps");
+assert.equal(pocket.projectWorkbench([crowded]).nextStop.state, "blocked", "The compact readout prioritizes a blocker over the rest");
+assert.equal(pocket.projectWorkbench(workbenchProjects, "editor").nextStop.label, "Draft", "A running milestone comes before queued work");
 const testingProject = { id: "prism", progress: 67, milestones: [{ label: "Client testing", status: "In Progress", progress: 0 }] };
 assert.deepEqual(pocket.projectWorkbench([testingProject]).stops, [{ label: "Client testing", state: "working", value: "In Progress" }], "Qualitative milestones do not need invented percentages");
 const dispatch = (id, day, section, recordId = id, content = "notes") => ({ id, date: `2026-11-${day}`, record: { id: recordId, section }, content });

@@ -13,10 +13,6 @@
           "completed": true
         },
         {
-          "title": "Projects & Games: selector redesign",
-          "detail": "The desktop Process Reader and Media Cabinet are live. Handheld needs its own browsing treatment; layout and interaction are open for design discussion."
-        },
-        {
           "title": "Align minimized windows with the content",
           "detail": "The desktop restore controls and System Tips align with the workspace's right rail, above the footer. Existing restore behavior is unchanged."
         }
@@ -40,6 +36,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Pocket Index: a shelf and a workplate",
+          "detail": "Games uses one swipeable shelf with Session Logs and Past Logs switches. Each shelf remembers its position, and search checks both. Projects uses a grouped picker and a stationary plate with progress and its most relevant milestone. Desktop keeps its original controls and rotation.",
+          "version": "v1.82.0",
+          "releasedOn": "2026-11-19"
+        },
         {
           "title": "Write in place across the archive",
           "detail": "The local gear opens the exact Project or Game note for editing. Single-note Logs and Setup Notes go straight to a framed writer with formatting and media tools. Multi-note records keep their files. Save Record writes locally; the bell still reviews and publishes separately. Pages stays read-only.",

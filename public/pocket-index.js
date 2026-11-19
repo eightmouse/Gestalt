@@ -37,6 +37,11 @@
     const term = key(query);
     return term ? records.filter(({ title }) => key(title).includes(term)) : records;
   }
+  function gameShelfIndex(counts, selected, fallback = 0) {
+    if (selected === 0 || selected === 1) return selected;
+    const other = 1 - fallback;
+    return counts[fallback] || !counts[other] ? fallback : other;
+  }
   function projectWorkbench(records, selectedId) {
     const index = Math.max(0, records.findIndex((record) => record.id === selectedId));
     const record = records[index];
@@ -52,7 +57,9 @@
     const visible = stops.slice(0, 4);
     const blocker = stops.find((item) => item.state === "blocked");
     if (blocker && !visible.includes(blocker)) visible[3] = blocker;
-    return { record, index, progress: percent(record.progress), brief: record.summary?.trim() || "", stops: visible, more: stops.length - visible.length };
+    const nextStop = blocker ?? stops.find((item) => item.state === "working")
+      ?? stops.find((item) => item.state === "queued") ?? stops.at(-1);
+    return { record, index, progress: percent(record.progress), brief: record.summary?.trim() || "", stops: visible, more: stops.length - visible.length, nextStop };
   }
   function recentDispatches(featuredId, activity, now = Date.now()) {
     const day = 86_400_000;
@@ -144,5 +151,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, projectWorkbench, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, projectWorkbench, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+19 November, v1.82.0: Pocket Index gets a single swipe shelf for Games and a still workplate for Projects. Switching Session/Past restores the previous shelf positions; search can show matches from the other shelf. A grouped Project picker replaces desktop arrows on handheld, leaving space for progress and one relevant milestone. Desktop browsing and the note workflow stay in place.
+
 19 November, v1.81.0: Local note editing now uses the same framed writing panel in Projects, Games, Logs and Setup Notes. Games keep placement, activity and Steam fields in Overview; single-note Logs open straight to the writer. Tab and Escape use an inset focus mark in both readers. Next design discussion: how the Media Cabinet and Process Reader should work on handheld without shrinking the desktop experience.
 
 19 November, v1.80.0: Game and Project notes share a continuous directory with up to six files per desktop row. Project windows keep their Overview and contextual tabs; Logs open directly to the writing. The previous release is filed in more detail by section. The editor rework remains a separate discussion.

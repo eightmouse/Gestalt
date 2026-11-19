@@ -76,11 +76,21 @@ rotation.host.MutationObserver = class {
   disconnect() { changed = undefined; }
 };
 rotation.host.queueMicrotask = queueMicrotask;
+const handheld = Object.assign(new EventTarget(), { matches: true });
+rotation.host.matchMedia = (query) => query === "(max-width: 760px)" ? handheld : rotation.motion;
 const unbind = sectionMotion.bindProjectRotation(plate, () => turns++, rotation.host);
+assert.equal(rotation.timers.size, 0, "Handheld never arms the project rotation timer");
+handheld.matches = false;
+handheld.dispatchEvent(new Event("change"));
 assert.equal([...rotation.timers.values()][0][1], 6600);
 rotation.run();
 assert.equal(turns, 1, "Idle projects advance automatically");
 assert.equal(rotation.timers.size, 1, "Only one rotation timer is pending");
+handheld.matches = true;
+handheld.dispatchEvent(new Event("change"));
+assert.equal(rotation.timers.size, 0, "Switching to handheld cancels the pending turn");
+handheld.matches = false;
+handheld.dispatchEvent(new Event("change"));
 plate.closest = () => plate;
 plate.dispatchEvent(new Event("pointerover"));
 assert.equal(rotation.timers.size, 0);
