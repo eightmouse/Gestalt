@@ -46,11 +46,15 @@ export async function validatePagesAssets(destination) {
   if (!memoryStylesheet) throw new Error("The Memory State stylesheet must be linked in the static head.");
   if (!pocketStylesheet) throw new Error("The Pocket Index stylesheet must be linked in the static head.");
   let appearanceBootstrap;
+  let appearanceTag;
   for (const match of html.slice(0, headEnd).matchAll(/<script\b[^>]*>/gi)) {
     const source = attribute(match[0], "src");
     if (!source) continue;
     const entry = await asset(source);
-    if (entry.url.pathname.endsWith("/public/appearance.js")) appearanceBootstrap = match.index;
+    if (entry.url.pathname.endsWith("/public/appearance.js")) {
+      appearanceBootstrap = match.index;
+      appearanceTag = match[0];
+    }
   }
   const firstStyle = links.find((link) => link.rel === "stylesheet")?.at;
   if (appearanceBootstrap === undefined || firstStyle === undefined || appearanceBootstrap > firstStyle) {
@@ -77,12 +81,19 @@ export async function validatePagesAssets(destination) {
   if (archiveSearchAt === undefined || archiveSearchAt > runtimeAt) throw new Error("The archive search helper must load before the static reader.");
   const css = await readFile(stylesheet.file, "utf8");
   if (!css.includes("var(--archive-image)")) throw new Error("The archive stylesheet no longer consumes the background variable.");
-  const background = html.match(/--archive-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];
-  if (!background) throw new Error("The static background override is missing.");
-  const { url: backgroundUrl } = await asset(background, stylesheet.url);
+  const nightImage = html.match(/--archive-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];
+  const dayImage = html.match(/--archive-day-image:\s*url\(\s*(["'])(.*?)\1\s*\)/)?.[2];
+  for (const [mode, image] of [["night", nightImage], ["day", dayImage]]) {
+    if (!image) throw new Error(`The static ${mode} background override is missing.`);
+    const { url: backgroundUrl } = await asset(image, stylesheet.url);
+    const hint = attribute(appearanceTag, `data-backdrop-${mode}`);
+    if (!hint || new URL(hint, base).href !== backgroundUrl.href) {
+      throw new Error(`The ${mode} backdrop preload must resolve to the image used by the archive stylesheet.`);
+    }
+  }
   const preloads = links.filter((link) => link.rel === "preload" && link.as === "image");
-  if (!preloads.some((link) => new URL(link.href, base).href === backgroundUrl.href)) {
-    throw new Error("The backdrop preload must resolve to the image used by the archive stylesheet.");
+  if (preloads.some((link) => /\/archive-(?:banner\.png|backdrop(?:-day)?\.webp)$/.test(new URL(link.href, base).pathname))) {
+    throw new Error("Only the active appearance may preload the backdrop.");
   }
   if (!preloads.some((link) => link.href === "public/images/eightmouse-avatar.png")) throw new Error("The local welcome portrait preload is missing.");
   for (const link of preloads) await asset(link.href);

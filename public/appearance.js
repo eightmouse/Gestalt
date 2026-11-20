@@ -65,6 +65,15 @@
     }
     sync(doc, new (host.Date || Date)());
     if (!observers.has(doc) && doc.addEventListener) {
+      const backdrop = doc.currentScript?.getAttribute(`data-backdrop-${doc.documentElement.getAttribute("data-appearance")}`);
+      if (backdrop) {
+        const hint = doc.createElement("link");
+        hint.rel = "preload";
+        hint.as = "image";
+        hint.media = "(min-width: 761px)";
+        hint.href = backdrop;
+        doc.head.append(hint);
+      }
       observers.set(doc, { host, timer: null });
       doc.addEventListener("visibilitychange", () => {
         if (!doc.hidden) sync(doc, new (host.Date || Date)());

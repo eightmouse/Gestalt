@@ -38,7 +38,7 @@ function fixture(observer = true) {
       disconnect() { intersection = null; }
     } } : {})
   };
-  return { host, doc, motion, node, frames, attributes, properties,
+  return { host, doc, motion, node, frames, attributes, properties, events,
     get writes() { return writes; }, get reads() { return reads; },
     block(value, state = ".has-record") { if (value) blocked.add(state); else blocked.delete(state); },
     move(x = 650, y = 650) { host.emit("pointermove", { clientX: x, clientY: y }); },
@@ -105,6 +105,49 @@ consent.block(false, "[data-nav-blocked]");
 consent.move(); consent.flush(); assert.equal(consent.writes, 8);
 cleanupConsent();
 
+const pilot = fixture();
+pilot.doc.defaultView = pilot.host;
+pilot.motion.matches = true;
+Object.assign(pilot.node, pilot.events());
+const target = { closest: () => pilot.node };
+pilot.node.contains = (element) => element === target;
+pilot.node.setAttribute = (name) => pilot.attributes.set(name, true);
+Object.assign(pilot.node, { offsetLeft: 10, offsetTop: 15, offsetWidth: 100, offsetHeight: 100,
+  offsetParent: { getBoundingClientRect: () => ({ left: 94, top: 94 }), clientLeft: 1, clientTop: 1, scrollLeft: 5, scrollTop: 10, clientWidth: 120, clientHeight: 120 } });
+const trace = (pointerType = "mouse", clientX = 199, clientY = 101) => pilot.doc.emit("pointermove", { pointerType, target, clientX, clientY });
+ambient.initialize(pilot.doc);
+ambient.initialize(pilot.doc);
+assert.equal(pilot.doc.handlers.get("pointermove").size, 1, "Both render paths get one delegated pilot listener");
+trace("touch"); assert.equal(pilot.frames.size, 0);
+for (let index = 0; index < 20; index++) trace();
+assert.equal(pilot.frames.size, 1);
+assert.equal(pilot.reads, 0);
+pilot.flush();
+assert.ok(pilot.attributes.get("data-plate-hover"));
+assert.equal(pilot.reads, 0, "Pose uses the untouched grid seat, never the shifted article rectangle");
+assert.equal(pilot.properties.get("--plate-hover-x"), "2px");
+assert.equal(pilot.properties.get("--plate-hover-y"), "1px");
+pilot.node.emit("pointerleave", { relatedTarget: target, clientX: 199, clientY: 101 });
+assert.ok(pilot.attributes.get("data-plate-hover"), "A transformed edge cannot drop hover inside the original seat");
+pilot.node.emit("pointerleave"); assert.ok(!pilot.attributes.has("data-plate-hover"));
+assert.equal(pilot.node.handlers.get("pointerleave").size, 0, "A seated plate releases its local listener");
+pilot.doc.emit("pointermove", { pointerType: "mouse", target: { closest: () => null } });
+assert.equal(pilot.frames.size, 0, "Moving outside a pilot plate schedules no work");
+trace(); pilot.block(true); pilot.flush(); assert.equal(pilot.writes, 2, "An opened window prevents the pending plate update");
+pilot.block(false);
+pilot.node.offsetLeft = 5;
+pilot.node.offsetParent.clientWidth = 100;
+trace("mouse", 194); pilot.flush();
+assert.equal(pilot.properties.get("--plate-hover-x"), "0px", "A full-width plate never pushes past the right clipping edge");
+pilot.node.emit("pointerleave");
+Object.assign(pilot.node, { offsetLeft: 30, offsetTop: 35, offsetWidth: 80, offsetHeight: 80 });
+Object.assign(pilot.node.offsetParent, { clientWidth: 105, clientHeight: 105 });
+trace("mouse", 199, 121); pilot.flush();
+assert.equal(pilot.properties.get("--plate-hover-x"), "-2px", "A right-aligned plate moves inward");
+assert.equal(pilot.properties.get("--plate-hover-y"), "-1px", "A bottom-aligned plate moves inward");
+pilot.motion.matches = false; pilot.motion.emit("change");
+trace(); assert.equal(pilot.frames.size, 0, "Disabled media query schedules no hover work");
+
 // The static reader must retain its watcher across ordinary shell renders.
 const source = read("static-app.js");
 const ast = ts.createSourceFile("static-app.js", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
@@ -164,6 +207,11 @@ assert.ok(!/infinite|backdrop-filter|\bfilter:|will-change/.test(traceCss.toStri
 const traceRoot = traceCss.nodes.find((node) => node.selector === ".memory-trace");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "grid-template-rows" && node.value === "minmax(0, 1fr)"), "The code stream uses the panel height without an extra heading row");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "box-shadow" && node.value.startsWith("inset ")), "The stream has an inset outline without another layout border");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "background" && node.value.includes("linear-gradient(var(--trace-screen-glow), var(--trace-screen-glow))")), "Even glass tint replaces the background hotspot");
+const codeGlow = (selector) => traceCss.nodes.find((node) => node.selector === selector).nodes.find((node) => node.prop === "text-shadow").value;
+assert.equal(codeGlow(".memory-trace-lines code"), "0 0 3px var(--trace-phosphor)", "The letters emit a tight glow without blurring the text layer");
+assert.match(codeGlow(".memory-trace-lines [data-writing] code"), /0 0 7px var\(--trace-glow\)/, "The live line emits a brighter halo");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "box-shadow" && node.value.includes("inset 0 0 0 1px var(--trace-rim)") && !node.value.includes("inset 0 2px")), "All four edges share one thin bezel");
 const traceComponent = reactAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "SessionTrace");
 const traceContext = vm.createContext({ require, exports: {}, useRef: () => ({ current: null }), useEffect() {} });
 vm.runInContext(ts.transpileModule(`${traceComponent.getText(reactAst)}\nexports.SessionTrace = SessionTrace;`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText, traceContext);

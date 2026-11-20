@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.84.2`. Previous site-code release: `v1.84.1` (39a57a78).
+Release target: `v1.84.3`. Previous site-code release: `v1.84.2` (6b9cc188).
+
+`v1.84.3` gives all six desktop Dashboard plates a raised finish, clearer text hierarchy and a small, bounded mouse response. Projects and Latest Log use tighter reader signals, Current Game gets an LCD treatment, and Memory State's code has a phosphor glow. Day gets its own lightweight backdrop; startup preloads the active appearance only. Night keeps its original backdrop. The Pocket Index, authored records and dependencies are unchanged.
 
 `v1.84.2` gives handheld tape titles room to wrap in portrait and short landscape views. Public document navigations revalidate the HTML that selects the versioned runtime, without clearing cached media. The patch does not change authored content or desktop shelves.
 

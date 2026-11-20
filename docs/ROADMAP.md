@@ -1,5 +1,9 @@
 # Gestalt Roadmap
 
+20 November, v1.84.3: The six Dashboard plates share a raised finish and respond to the mouse with a small, bounded nudge. Current Game has a recessed LCD, Memory State glows at the characters, and the Projects and Latest Log signals follow their rails. Day has its own spillway backdrop; Night keeps its original scenery.
+
+20 November, queued design passes: The Dashboard's clock, footer and System Tips ideas are still open. Give Logs its own browsing experience without changing writing order, direct reading, or Field Archive behavior. Revisit the Setup device bay after Logs, preserving its four groups and in-place editing. The designs are still open.
+
 20 November, v1.84.2: Handheld VHS labels wrap without clipping the handwritten lettering. The public worker revalidates the archive's HTML on return visits while keeping the existing media cache and offline fallback.
 
 19 November, v1.84.1: Cipher text now uses a separate, evenly spaced signal and a stepped reveal across the line, without animating each glyph independently. Setup categorizes tiles once and only reads hardware specs when a terminal opens. Handheld Games gives search a bare icon and a slimmer field.

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Gestalt Archive",
   description: "A personal operating-system style archive for projects, games, setup notes, and field logs.",
   icons: {
-    icon: "/favicon.ico?v=1.84.2"
+    icon: "/favicon.ico?v=1.84.3"
   }
 };
 
@@ -21,9 +21,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script src="/appearance.js" />
+        <script src="/appearance.js" data-backdrop-night="/images/archive-backdrop.webp" data-backdrop-day="/images/archive-backdrop-day.webp" />
         <script src="/os-behaviour.js" />
-        <link rel="preload" as="image" href="/images/archive-backdrop.webp" media="(min-width: 761px)" />
         <link rel="preload" as="image" href="/images/eightmouse-avatar.png" media="(min-width: 761px)" />
       </head>
       <body>{children}</body>

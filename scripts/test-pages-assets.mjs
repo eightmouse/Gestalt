@@ -13,12 +13,14 @@ const sourceBefore = await readFile(path.join(root, "index.html"), "utf8");
 try {
   await preparePages({ root, destination, baseUrl: "https://fixture.github.io/Gestalt", fetchImpl: async () => new Response("missing", { status: 404 }) });
   const checked = await validatePagesAssets(destination);
-  for (const file of ["public/images/archive-backdrop.webp", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/october-glow.svg", ...["winter-frost", "winter-fir", "winter-pendant", "january-ribbon", "january-seal", "january-star"].map((name) => `public/images/seasonal/${name}.svg`)]) assert.ok(checked.includes(file));
+  for (const file of ["public/images/archive-backdrop.webp", "public/images/archive-backdrop-day.webp", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/october-glow.svg", ...["winter-frost", "winter-fir", "winter-pendant", "january-ribbon", "january-seal", "january-star"].map((name) => `public/images/seasonal/${name}.svg`)]) assert.ok(checked.includes(file));
   const index = path.join(destination, "index.html");
   await writeFile(index, sourceBefore.replace('url("../public/images/archive-backdrop.webp")', 'url("public/images/archive-backdrop.webp")'));
   await assert.rejects(validatePagesAssets(destination), /app\/public\/images\/archive-backdrop\.webp/, "The previous stylesheet-relative URL bug must fail the prepared-artifact check");
-  await writeFile(index, sourceBefore.replace('href="public/images/archive-backdrop.webp"', 'href="public/images/archive-banner.png"'));
-  await assert.rejects(validatePagesAssets(destination), /backdrop preload must resolve/, "An old PNG preload must not double the new backdrop transfer");
+  await writeFile(index, sourceBefore.replace('data-backdrop-day="public/images/archive-backdrop-day.webp"', 'data-backdrop-day="public/images/archive-backdrop.webp"'));
+  await assert.rejects(validatePagesAssets(destination), /day backdrop preload must resolve/, "A Day preload must match the Day image");
+  await writeFile(index, sourceBefore.replace('</head>', '<link rel="preload" as="image" href="public/images/archive-backdrop.webp" /></head>'));
+  await assert.rejects(validatePagesAssets(destination), /active appearance may preload/, "A hardcoded preload must not fetch the Night image for Day readers");
   await writeFile(index, sourceBefore);
   const bootstrapTag = sourceBefore.match(/<script\b[^>]*src="public\/appearance\.js[^"]*"[^>]*><\/script>/)?.[0];
   const appearanceLink = sourceBefore.match(/<link\b[^>]*href="app\/appearance\.css[^"]*"[^>]*>/)?.[0];
@@ -37,7 +39,7 @@ try {
   await writeFile(index, sourceBefore.replace(ambientTag, "").replace("</body>", `${ambientTag}</body>`));
   await assert.rejects(validatePagesAssets(destination), /ambient helper must load before/, "A late runtime helper must fail deployment");
   await writeFile(index, sourceBefore);
-  for (const file of ["public/data/roadmap.json", "public/appearance.js", "public/ambient-motion.js", "public/memory-state.js", "app/memory-state.css", "app/appearance.css", "public/images/archive-backdrop.webp", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
+  for (const file of ["public/data/roadmap.json", "public/appearance.js", "public/ambient-motion.js", "public/memory-state.js", "app/memory-state.css", "app/appearance.css", "public/images/archive-backdrop.webp", "public/images/archive-backdrop-day.webp", "public/images/eightmouse-avatar.png", "public/images/seasonal/halloween-hanging.svg", "public/images/seasonal/winter-pendant.svg", "public/images/seasonal/january-star.svg", "public/images/ui/notebook-next.svg", "public/images/ui/notebook-index.svg"]) {
     await unlink(path.join(destination, file));
     await assert.rejects(validatePagesAssets(destination), /Missing prepared Pages asset/);
     await copyFile(path.join(root, file), path.join(destination, file));

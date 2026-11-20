@@ -27,6 +27,14 @@
           "detail": "Explore a hologram-style time and date readout, with distinct cipher and glitch resolves for the Dashboard and footer. Replace the public System Tips button with a bell at the same location as the local publish bell; the public bell keeps tips available even if the welcome prompt is missed. Local publishing stays unchanged."
         },
         {
+          "title": "Logs overhaul",
+          "detail": "After the Dashboard, give field notes a browsing experience of their own. Keep writing order, direct note reading and automatic filing in the Field Archive. Design to be discussed."
+        },
+        {
+          "title": "Setup overhaul",
+          "detail": "The last section design pass, after Logs. Revisit the device bay while keeping Systems, Tools, Peripherals and Notes, along with their in-place editing. Design to be discussed."
+        },
+        {
           "title": "Archive Relay",
           "detail": "Discuss after Setup editing. A writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
         }
@@ -36,6 +44,18 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Dashboard plates and live readouts",
+          "detail": "All six plates share a raised finish and a small mouse response that stays inside the grid. Projects gets a short scanner, Latest Log keeps its excerpt steady, Current Game has a recessed LCD, and Memory State's code glows at the characters. Touch and Reduced Motion skip the hover movement.",
+          "version": "v1.84.3",
+          "releasedOn": "2026-11-20"
+        },
+        {
+          "title": "A new backdrop for Day",
+          "detail": "A misty hydroelectric spillway gives Day its own scenery. Night keeps the original image, and startup only preloads the backdrop for the selected appearance.",
+          "version": "v1.84.3",
+          "releasedOn": "2026-11-20"
+        },
         {
           "title": "Clearer tape labels and fresher starts",
           "detail": "Handheld VHS titles wrap without clipped letters, even in a short viewport. Pages revalidates the shell on return visits without discarding cached media.",

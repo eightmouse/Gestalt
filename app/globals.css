@@ -29,6 +29,7 @@
   --mono: "Bahnschrift Light", "Bahnschrift", "DIN Alternate", "Cascadia Mono", "IBM Plex Mono", "Consolas", monospace;
   --sans: "Bahnschrift Light Condensed", "Bahnschrift SemiCondensed", "Bahnschrift", "Agency FB", "Segoe UI", Arial, sans-serif;
   --archive-image: url("/images/archive-backdrop.webp");
+  --archive-day-image: url("/images/archive-backdrop-day.webp");
 }
 
 * {
@@ -3981,20 +3982,31 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .dashboard-panel {
+  --dashboard-plate-contact: rgb(0 0 0 / .62);
+  --dashboard-plate-rim: rgba(var(--tone-strong, 236, 230, 211), .3);
+  --dashboard-plate-finish: rgba(var(--tone-highlight, 255, 255, 255), .075);
+  --dashboard-plate-edge: rgba(var(--tone-ink, 217, 213, 193), .22);
+  --dashboard-plate-mark: rgba(var(--tone-accent, 200, 189, 159), .42);
+  --dashboard-caption-edge: 0 1px rgb(0 0 0 / .6);
+  --dashboard-readout-ink: #b5c9bd;
+  --dashboard-plate-grain:
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(var(--tone-ink, 217, 213, 193), 0.014) 35px, transparent 36px 78px),
+    linear-gradient(90deg, rgba(var(--tone-highlight, 255, 255, 255), 0.028), transparent 52%);
   position: relative;
   min-block-size: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(9px, 1.25vh, 13px);
   padding: clamp(10px, 1.45vh, 14px) 20px clamp(8px, 1.25vh, 12px);
-  border: 1px solid var(--line);
   overflow: hidden;
+  border: 1px solid var(--dashboard-plate-edge);
+  border-block-start-color: var(--dashboard-plate-rim);
+  border-block-end-color: var(--dashboard-plate-bottom, var(--dashboard-plate-edge));
   background:
-    linear-gradient(180deg, rgba(var(--tone-ink, 217, 213, 193), 0.038), transparent 26%),
-    repeating-linear-gradient(90deg, transparent 0 34px, rgba(var(--tone-ink, 217, 213, 193), 0.014) 35px, transparent 36px 78px),
-    linear-gradient(90deg, rgba(var(--tone-highlight, 255, 255, 255), 0.028), transparent 52%),
-    rgba(var(--tone-surface, 8, 9, 8), 0.5);
-  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.48);
+    linear-gradient(180deg, var(--dashboard-plate-finish), transparent 42%),
+    var(--dashboard-plate-grain);
+  background-color: rgba(var(--tone-surface, 8, 9, 8), 0.71);
+  box-shadow: 0 5px 8px -4px var(--dashboard-plate-contact), inset 0 -1px 0 var(--dashboard-plate-contact);
 }
 
 .dashboard-panel::before,
@@ -4036,6 +4048,19 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   align-items: center;
 }
 
+@media (min-width: 761px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .dashboard-grid > .dashboard-panel {
+    transform: translate(var(--plate-shift-x, 0px), var(--plate-shift-y, 0px));
+    transition: transform 420ms cubic-bezier(.23,.64,.32,1);
+  }
+
+  .archive-shell:not(:is(.has-record, .is-booting, [data-nav-blocked], [data-nav-open], [data-workspace-tool-open], [data-search-open])) .dashboard-grid > .dashboard-panel[data-plate-hover] {
+    --plate-shift-x: var(--plate-hover-x, 0px);
+    --plate-shift-y: var(--plate-hover-y, 0px);
+    transition-duration: 220ms;
+  }
+}
+
 .wide-panel {
   grid-column: span 2;
 }
@@ -4045,14 +4070,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .activity-panel {
+  --dashboard-plate-grain: linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.04), transparent 30% 76%, rgba(var(--tone-ink, 217, 213, 193), 0.025));
   align-self: stretch;
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(7px, 1vh, 10px);
   padding-block: clamp(10px, 1.3vh, 13px) clamp(8px, 1vh, 10px);
-  background:
-    linear-gradient(180deg, rgba(var(--tone-ink, 217, 213, 193), 0.026), transparent 30%),
-    linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.04), transparent 30% 76%, rgba(var(--tone-ink, 217, 213, 193), 0.025)),
-    rgba(var(--tone-surface, 7, 8, 7), 0.46);
 }
 
 .activity-panel .activity-feed {
@@ -4089,35 +4111,27 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .weather-panel {
+  --dashboard-plate-grain: repeating-linear-gradient(0deg, transparent 0 19px, rgba(var(--tone-ink, 217, 213, 193), 0.018) 20px, transparent 21px 58px);
   grid-column: 3;
   grid-row: 1;
   grid-template-rows: auto minmax(0, 1fr);
-  background:
-    linear-gradient(160deg, rgba(var(--tone-ink, 217, 213, 193), 0.034), transparent 42%),
-    repeating-linear-gradient(0deg, transparent 0 19px, rgba(var(--tone-ink, 217, 213, 193), 0.018) 20px, transparent 21px 58px),
-    rgba(var(--tone-surface, 7, 8, 7), 0.45);
 }
 
 .memory-panel {
+  --dashboard-plate-grain: radial-gradient(ellipse at 50% 72%, rgba(var(--tone-ink, 217, 213, 193), 0.05), transparent 44%);
   grid-column: 3;
   grid-row: 2 / span 2;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border-color: rgba(var(--tone-ink, 217, 213, 193), 0.17);
-  background:
-    radial-gradient(ellipse at 50% 72%, rgba(var(--tone-ink, 217, 213, 193), 0.05), transparent 44%),
-    linear-gradient(180deg, rgba(var(--tone-ink, 217, 213, 193), 0.032), transparent 42%),
-    rgba(var(--tone-surface, 8, 9, 8), 0.5);
 }
 
 .active-projects-panel {
+  --project-scan-ink: 178, 203, 189;
+  --dashboard-plate-grain:
+    linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.048), transparent 28%),
+    repeating-linear-gradient(180deg, transparent 0 36px, rgba(var(--tone-ink, 217, 213, 193), 0.02) 37px, transparent 38px 76px);
   gap: clamp(12px, 1.75vh, 16px);
   padding-block: clamp(13px, 1.8vh, 16px);
-  border-color: rgba(var(--tone-ink, 217, 213, 193), 0.22);
-  background:
-    linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.058), transparent 24%),
-    repeating-linear-gradient(180deg, transparent 0 36px, rgba(var(--tone-ink, 217, 213, 193), 0.02) 37px, transparent 38px 76px),
-    rgba(var(--tone-surface, 8, 9, 8), 0.56);
 }
 
 .active-projects-panel::after {
@@ -4132,12 +4146,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .latest-log-panel {
+  --dashboard-plate-grain: linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.05), transparent 16%);
   padding-inline-end: 24px;
-  border-color: rgba(var(--tone-ink, 217, 213, 193), 0.145);
-  background:
-    linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), 0.05), transparent 16%),
-    linear-gradient(180deg, rgba(var(--tone-highlight, 255, 255, 255), 0.028), transparent 54%),
-    rgba(var(--tone-surface, 9, 10, 8), 0.48);
 }
 
 .dashboard-panel h2,
@@ -4153,6 +4163,9 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--text);
+  font-variation-settings: "wght" 475, "wdth" 82;
+  text-shadow: var(--dashboard-caption-edge);
 }
 
 .dashboard-panel h2::before {
@@ -4161,8 +4174,14 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   block-size: auto;
   flex: 0 0 auto;
   border: 0;
-  opacity: 0.56;
+  color: var(--accent);
+  opacity: 0.76;
   transform: none;
+}
+
+.dashboard-panel :is(.record-list i, .latest-log > span, .activity-feed > li > span, .weather-temp) {
+  color: var(--dashboard-readout-ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .panel-title-action {
@@ -4314,18 +4333,14 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .active-projects-panel .record-list button::after {
   content: "";
   position: absolute;
-  inset-inline-start: 31px;
+  inset-inline: 31px 0;
   inset-block-end: 0;
-  inline-size: clamp(104px, 32%, 218px);
-  block-size: 1px;
+  block-size: 3px;
   opacity: 0;
   pointer-events: none;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent 0%, rgba(var(--tone-strong, 236, 230, 211), 0.18) 14%, rgba(var(--tone-strong, 236, 230, 211), 0.76) 50%, rgba(var(--tone-strong, 236, 230, 211), 0.18) 86%, transparent 100%);
-  box-shadow: 0 0 4px rgba(var(--tone-strong, 236, 230, 211), 0.22);
-  transform-origin: left center;
-  transform: translateX(-135%) scaleX(0.48);
-  will-change: opacity, transform;
+  background:
+    linear-gradient(rgba(var(--project-scan-ink), .9) 0 0) 40px bottom / 2px 3px no-repeat,
+    linear-gradient(90deg, transparent, rgba(var(--project-scan-ink), .26) 72%, rgba(var(--project-scan-ink), .56)) left bottom / 40px 1px no-repeat;
   animation: dashboard-project-line var(--project-line-duration, 54s) linear infinite;
   animation-delay: var(--project-line-delay, 0s);
 }
@@ -4352,13 +4367,17 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   box-shadow: inset 2px 0 0 var(--dashboard-signal);
 }
 
-.active-projects-panel .record-list button:hover {
-  background: linear-gradient(180deg, transparent, var(--dashboard-signal), transparent) 31px 50% / 1px calc(100% - 8px) no-repeat;
-  box-shadow: none;
+:root .active-projects-panel .record-list button:is(:hover, :focus-visible) i {
+  color: var(--text);
 }
 
-.active-projects-panel .record-list button:hover::after {
-  background: linear-gradient(90deg, transparent 0%, rgba(var(--tone-strong, 236, 230, 211), 0.22) 14%, rgba(var(--tone-strong, 236, 230, 211), 0.84) 50%, rgba(var(--tone-strong, 236, 230, 211), 0.22) 86%, transparent 100%);
+.active-projects-panel .record-list button:is(:hover, :focus-visible)::after {
+  visibility: hidden;
+  animation-play-state: paused;
+}
+
+.active-projects-panel .record-list button:hover:not(:focus-visible) {
+  box-shadow: none;
 }
 
 .current-game-create {
@@ -4425,14 +4444,6 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   min-block-size: 118px;
 }
 
-.current-game[data-state] .game-cover {
-  border-color: rgba(var(--tone-strong, 236, 230, 211), 0.42);
-  box-shadow:
-    0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), 0.075),
-    0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.1),
-    0 14px 24px rgba(0, 0, 0, 0.26);
-}
-
 .game-cover {
   position: relative;
   aspect-ratio: 3 / 4;
@@ -4440,28 +4451,27 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   place-items: center;
   gap: 7px;
   border: 1px solid var(--line);
+  border-block-start-color: var(--dashboard-plate-contact);
+  border-block-end-color: var(--dashboard-plate-rim);
   background: rgba(var(--tone-highlight, 255, 255, 255), 0.05);
   color: var(--muted);
   text-align: center;
   font-size: 9px;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), 0.055), 0 14px 24px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), 0.09);
 }
 
 .game-cover::before {
   content: "";
   position: absolute;
-  inset: 7px;
-  z-index: 2;
+  inset: 0;
+  z-index: 1;
   pointer-events: none;
-  border: 0;
-  opacity: 0.58;
-  filter: blur(5px);
-  mix-blend-mode: screen;
+  opacity: 0.72;
   background:
-    radial-gradient(ellipse at 50% 48%, rgba(var(--tone-strong, 236, 230, 211), 0.3), transparent 58%),
-    linear-gradient(135deg, transparent 16%, rgba(var(--tone-ink, 217, 213, 193), 0.16) 48%, transparent 78%);
-  animation: dashboard-cover-signal 29s ease-in-out -3.9s infinite;
+    radial-gradient(ellipse at 50% 44%, rgb(172 230 214 / .38), rgb(145 208 191 / .12) 55%, transparent 85%),
+    linear-gradient(180deg, rgb(177 235 219 / .3), transparent 14% 84%, rgb(112 215 192 / .38));
+  animation: dashboard-cover-signal 10s ease-in-out -0.8s infinite;
 }
 
 .game-cover img {
@@ -4471,18 +4481,16 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   block-size: 100%;
   object-fit: cover;
   object-position: center 56%;
-  filter: saturate(1.08) contrast(1.03);
 }
 
 .game-cover::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(var(--tone-strong, 236, 230, 211), 0.045), transparent 28%),
-    linear-gradient(180deg, transparent 58%, rgba(0, 0, 0, 0.18));
+  box-shadow: inset 0 2px 4px -1px var(--dashboard-plate-contact);
+  background: linear-gradient(155deg, rgb(182 218 208 / .14), transparent 46%, rgb(8 29 27 / .12));
 }
 
 .game-cover.is-steam-artwork img {
@@ -4520,6 +4528,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: inset 1px 0 0 var(--dashboard-signal);
+  padding-inline-start: 6px;
 }
 
 .current-game:has(.current-game-summary) span:not(.current-game-summary) {
@@ -4537,12 +4547,13 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .latest-log {
-  --dashboard-log-tick-size: 24px;
-  --dashboard-log-tick-start: -24px;
+  --dashboard-log-tick-size: 15px;
+  --dashboard-log-inset: calc(12px * var(--desktop-size, 1));
+  --dashboard-log-reader-tint: rgb(0 0 0 / .32);
   position: relative;
   display: grid;
   gap: 12px;
-  padding-inline-start: 12px;
+  padding-inline-start: var(--dashboard-log-inset);
   border-inline-start: 0;
   box-shadow: inset 1px 0 0 var(--dashboard-signal);
   overflow: hidden;
@@ -4550,29 +4561,46 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .latest-log-signal {
   position: absolute;
-  inset-inline-start: 0;
-  inset-block: 0;
-  inline-size: 2px;
+  inset: 0;
   pointer-events: none;
   opacity: 0;
   animation: dashboard-log-tick 48s linear -2.1s infinite;
 }
 
-/* Move a full-height track; its small painted light keeps the exact original path. */
+/* The marker starts just above the rail and its leading edge stops at the bottom. */
 .latest-log-signal::before {
   content: "";
   position: absolute;
-  inset-inline: 0;
-  inset-block-start: var(--dashboard-log-tick-start);
+  inset-inline-start: 0;
+  inline-size: 2px;
+  inset-block-start: calc(-1 * var(--dashboard-log-tick-size));
   block-size: var(--dashboard-log-tick-size);
-  background: linear-gradient(180deg, transparent, rgba(var(--tone-strong, 236, 230, 211), 0.78), transparent);
-  box-shadow: 0 0 12px rgba(var(--tone-ink, 217, 213, 193), 0.34);
+  background:
+    linear-gradient(rgba(var(--tone-accent, 200, 189, 159), .95) 0 0) left bottom / 2px 2px no-repeat,
+    linear-gradient(180deg, transparent, rgba(var(--tone-accent, 200, 189, 159), .55)) left top / 1px calc(100% - 2px) no-repeat;
+}
+
+.latest-log-signal::after {
+  content: "";
+  position: absolute;
+  inset-inline: calc(var(--dashboard-log-inset) - 4px) 0;
+  inset-block-start: calc(-1 * var(--dashboard-log-tick-size));
+  block-size: var(--dashboard-log-tick-size);
+  max-inline-size: 42ch;
+  background: radial-gradient(ellipse at 36% 54%, var(--dashboard-log-reader-tint), transparent 74%);
+}
+
+.latest-log > :is(span, p) { position: relative; }
+
+.latest-log > span {
+  justify-self: start;
+  box-shadow: 0 1px 0 var(--dashboard-plate-mark);
 }
 
 .latest-log p {
   margin: 0;
   max-inline-size: 42ch;
-  color: var(--subtle-text, #a9a391);
+  color: var(--text);
   font-size: 14.5px;
   line-height: 1.62;
   display: -webkit-box;
@@ -4631,10 +4659,6 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   text-align: left;
 }
 
-.activity-feed button:hover {
-  color: var(--text-strong);
-}
-
 .activity-feed strong,
 .activity-feed small {
   min-width: 0;
@@ -4644,20 +4668,18 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .activity-feed strong {
-  color: var(--text);
+  color: var(--text-strong);
   font-size: 15px;
   font-weight: 400;
 }
+
+.activity-feed button:is(:hover, :focus-visible) strong { color: var(--accent); }
 
 .activity-feed small {
   color: var(--subtle-text, #a09b8c);
   font-size: 13px;
   letter-spacing: 0;
   text-transform: none;
-}
-
-.activity-feed button:hover strong {
-  color: var(--text-strong);
 }
 
 .activity-badge {
@@ -4682,6 +4704,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .activity-feed li[data-activity-age="new"] .activity-badge {
   border-color: rgba(var(--tone-ink, 217, 213, 193), 0.28);
   color: rgba(var(--tone-strong, 236, 230, 211), 0.9);
+  box-shadow: inset 2px 0 0 var(--dashboard-plate-mark);
   text-shadow: 0 0 5px rgba(var(--tone-strong, 236, 230, 211), 0.14);
 }
 
@@ -4837,7 +4860,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .archive-shell > .workspace > .dashboard-grid .record-list button { padding-block: calc(6px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .record-list button > span { gap: calc(3px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .current-game strong { margin-block-end: calc(var(--current-game-title-gap, 9px) * var(--desktop-size)); }
-  .archive-shell > .workspace > .dashboard-grid .latest-log { gap: calc(12px * var(--desktop-size)); padding-inline-start: calc(12px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .latest-log { gap: calc(12px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .latest-log p { font-size: calc(14.5px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .activity-feed {
     column-gap: calc(32px * var(--desktop-size));
@@ -5120,6 +5143,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   gap: 3px;
   padding-block-end: 5px;
   border-bottom: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.1);
+  background: repeating-linear-gradient(90deg, var(--dashboard-plate-mark) 0 1px, transparent 1px 6px) right bottom / 31px 4px no-repeat;
 }
 
 .weather-temp {
@@ -8351,93 +8375,37 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 @keyframes dashboard-project-line {
   0%,
-  4% {
-    opacity: 0;
-    transform: translateX(-135%) scaleX(0.48);
-  }
-
-  5.55% {
-    opacity: 0.34;
-  }
-
-  9.43% {
-    opacity: 0.56;
-    transform: translateX(245%) scaleX(0.92);
-  }
-
-  11.5%,
-  34.99% {
-    opacity: 0;
-    transform: translateX(330%) scaleX(0.54);
-  }
-
-  /* Each return happens during a fully dark rest, never a visible reverse trip. */
-  35% {
-    opacity: 0;
-    transform: translateX(-135%) scaleX(0.48);
-  }
-
-  36.86% {
-    opacity: 0.34;
-  }
-
-  41.52% {
-    opacity: 0.56;
-    transform: translateX(245%) scaleX(0.92);
-  }
-
-  44%,
-  71.99% {
-    opacity: 0;
-    transform: translateX(330%) scaleX(0.54);
-  }
-
+  4%,
+  35%,
   72% {
     opacity: 0;
-    transform: translateX(-135%) scaleX(0.48);
+    transform: translateX(0);
   }
 
-  73.45% {
-    opacity: 0.34;
+  5.15%, 10.6%,
+  36.4%, 42.9%,
+  73.05%, 78.15% {
+    opacity: 0.82;
   }
 
-  77.07% {
-    opacity: 0.56;
-    transform: translateX(245%) scaleX(0.92);
-  }
-
+  /* Park at the far end while dark before the next pass. */
+  11.5%, 34.99%,
+  44%, 71.99%,
   79%,
   100% {
     opacity: 0;
-    transform: translateX(330%) scaleX(0.54);
+    transform: translateX(100%);
   }
 }
 
 @keyframes dashboard-cover-signal {
-  0%,
-  5%,
-  30%,
-  51%,
-  82%,
-  100% {
-    opacity: 0.42;
-    transform: scale(0.96);
-  }
-
-  14% {
-    opacity: 0.78;
-    transform: scale(1.03);
-  }
-
-  24% {
-    opacity: 0.5;
-    transform: scale(0.99);
-  }
-
-  66% {
-    opacity: 0.66;
-    transform: scale(1.02);
-  }
+  0%, 100% { opacity: 0.72; }
+  27% { opacity: 0.83; }
+  46% { opacity: 0.77; }
+  46.9% { opacity: 0.24; }
+  48.8% { opacity: 0.89; }
+  50.5% { opacity: 0.76; }
+  75% { opacity: 0.81; }
 }
 
 @keyframes dashboard-new-badge {
@@ -8465,9 +8433,9 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     transform: translateY(0);
   }
 
-  8.27%,
-  12.09% {
-    opacity: 0.62;
+  8.1%,
+  13.3% {
+    opacity: 0.78;
   }
 
   14%,
@@ -8481,8 +8449,8 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     transform: translateY(0);
   }
 
-  40.45%,
-  44.82% { opacity: 0.62; }
+  40.25%,
+  46.2% { opacity: 0.78; }
 
   47%,
   75.99% {
@@ -8495,8 +8463,8 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     transform: translateY(0);
   }
 
-  77.18%,
-  80.73% { opacity: 0.62; }
+  77%,
+  81.85% { opacity: 0.78; }
 
   82.5%,
   100% {
@@ -9540,7 +9508,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     position: relative;
     padding: 15px;
     overflow: hidden;
-    box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
   }
 
   .dashboard-panel::before {
@@ -9823,8 +9790,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
 /* Reading labels need more contrast than ornamental counters and signal marks. */
 :root:not([data-appearance="day"]) :is(
-  .dashboard-panel h2, .record-list small, .record-list i, .current-game span:not(.current-game-summary),
-  .activity-feed > li > span, .activity-feed small,
+  .record-list small, .current-game span:not(.current-game-summary), .activity-feed small,
   .section-record-kind, .section-record-kind small, .section-record > span:not(.section-record-kind), .section-record i,
   .section-record-column > header small, .section-record-column > header span, .section-record-column h3,
   .record-meta dt, .record-heading p, .record-id, .record-aside h3, .record-aside li:not(.is-active),
@@ -10061,5 +10027,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     opacity: 0 !important;
   }
 
+  .game-cover::before { animation: none; }
   .activity-feed li[data-activity-age="new"] .activity-badge::after { display: none; }
 }

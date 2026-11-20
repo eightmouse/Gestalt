@@ -72,13 +72,25 @@ assert.equal(chrome.content, "#eeefe9", "The mobile browser chrome follows Day m
 appearance.setMode("night", false, switching);
 assert.equal(chrome.content, "#171a1b", "The mobile browser chrome returns to Night mode");
 
-const early = fixture(); early.stored.set("gestalt.local-memory", "granted"); early.stored.set("gestalt.appearance", "day");
-vm.runInNewContext(read("public/appearance.js"), early);
-assert.equal(early.attributes.get("data-appearance"), "day", "Parser-time head script applies the choice before boot/body rendering");
+for (const mode of ["day", "night"]) {
+  const early = fixture();
+  early.stored.set("gestalt.local-memory", "granted");
+  early.stored.set("gestalt.appearance", mode);
+  const hints = [];
+  early.document.currentScript = { getAttribute(key) {
+    return { "data-backdrop-day": "public/images/archive-backdrop-day.webp", "data-backdrop-night": "public/images/archive-backdrop.webp" }[key];
+  } };
+  early.document.createElement = () => ({});
+  early.document.head = { append: (hint) => hints.push(hint) };
+  vm.runInNewContext(read("public/appearance.js"), early);
+  assert.equal(early.attributes.get("data-appearance"), mode, "Parser-time head script applies the choice before boot/body rendering");
+  early.GestaltAppearance.initialize(early);
+  assert.deepEqual(hints, [{ rel: "preload", as: "image", media: "(min-width: 761px)", href: `public/images/archive-backdrop${mode === "day" ? "-day" : ""}.webp` }]);
+}
 const index = read("index.html");
 assert.ok(index.indexOf("public/appearance.js") < index.indexOf("app/globals.css"));
 assert.ok(index.indexOf("public/appearance.js") < index.indexOf("<body>"));
-assert.ok(read("app/layout.tsx").includes('<script src="/appearance.js" />'));
+assert.ok(read("app/layout.tsx").includes('<script src="/appearance.js" data-backdrop-night='));
 assert.ok(read("app/layout.tsx").includes("suppressHydrationWarning"));
 assert.ok(read("components/archive-os.tsx").includes("appearance.sync(document, date)"));
 assert.ok(read("static-app.js").includes("GestaltAppearance?.sync(document)"));
@@ -137,13 +149,14 @@ for (const level of ["panel", "popover", "window"]) {
   assert.ok(variables.has(`--elevation-${level}`), "Day uses a shared depth hierarchy");
   assert.match(variables.get(`--elevation-${level}`), /-\d+px rgba/, "Negative spread keeps shadows from flooding neighbouring surfaces");
 }
-for (const [selector, level] of [[".dashboard-panel", "panel"], [".studio-section-copy", "panel"], [".search-panel", "popover"], [".studio-notification-panel", "popover"], [".record-window", "window"], [".timeline-window", "window"], [".archive-folder-window", "window"], [".studio-record-copy", "window"]]) {
+for (const [selector, level] of [[".studio-section-copy", "panel"], [".search-panel", "popover"], [".studio-notification-panel", "popover"], [".record-window", "window"], [".timeline-window", "window"], [".archive-folder-window", "window"], [".studio-record-copy", "window"]]) {
   assert.ok([...shadowRoles].some(([rule, value]) => rule.includes(selector) && value === `var(--elevation-${level})`), `${selector} must not inherit a broad Night shadow`);
 }
 assert.equal(shadowRoles.get(':root[data-appearance="day"] .workspace::before'), "none", "The scenery is not buried under the old inset vignette");
 const scenery = day.nodes.find((node) => node.selector === ':root[data-appearance="day"] body::before');
-assert.equal(scenery.nodes.find((d) => d.prop === "opacity").value, "0.18");
-assert.equal(scenery.nodes.find((d) => d.prop === "filter").value, "grayscale(1) contrast(0.98) brightness(1.12)");
+assert.equal(variables.get("--archive-image"), "var(--archive-day-image)");
+assert.equal(scenery.nodes.find((d) => d.prop === "opacity").value, "0.28");
+assert.equal(scenery.nodes.find((d) => d.prop === "filter").value, "saturate(0.65)");
 assert.ok(!/invert\(|backdrop-filter|!important/.test(read("app/appearance.css")), "No media inversion, heavier blur or global overrides");
 for (const file of ["app/globals.css", "app/desktop-navigation.css", "app/studio/studio.css"]) {
   postcss.parse(read(file)).walkDecls((d) => {
@@ -169,9 +182,14 @@ const contrast = (text, surface) => {
 };
 const dayPrefix = ':root[data-appearance="day"]';
 assert.equal(variables.get("--record-focus-scrim"), "rgba(49, 60, 52, 0.34)");
-const panelEdges = [...dayRules].find(([selector]) => selector.includes(".dashboard-panel,") && selector.includes(".setup-group"))?.[1];
+const panelEdges = [...dayRules].find(([selector]) => selector.includes(".section-record-column,") && selector.includes(".setup-group"))?.[1];
 assert.equal(panelEdges?.["border-block-start-color"], "var(--surface-edge-light)");
 assert.equal(panelEdges?.["border-block-end-color"], "var(--surface-edge-low)");
+const dashboardPlate = dayRules.get(`${dayPrefix} .dashboard-panel`);
+for (const token of ["contact", "rim", "finish"]) assert.ok(dashboardPlate[`--dashboard-plate-${token}`]);
+assert.equal(dashboardPlate["--dashboard-plate-bottom"], "var(--surface-edge-low)");
+assert.ok(![...shadowRoles.keys()].some((selector) => selector.includes(".dashboard-panel")), "Day tunes the shared plate material without replacing its shadow geometry");
+assert.ok(contrast(dashboardPlate["--dashboard-readout-ink"], variables.get("--surface-raised")) >= 4.5, "The instrument text keeps readable Day contrast");
 for (const selector of [".note-media figcaption", ".record-meta dt", ".system-status dt"]) {
   assert.ok([...dayRules].some(([rule, values]) => rule.includes(selector) && values.color === "var(--muted)"), `${selector} has a readable metadata treatment`);
 }
@@ -270,7 +288,7 @@ assert.equal(night.get("--window-outline"), "rgba(226, 220, 196, 0.5)", "Night k
 assert.equal(variables.get("--window-outline"), "rgba(37, 44, 41, 0.42)", "Accepted Day frame stays unchanged");
 const readableNight = archiveSheet.nodes.find((node) => node.selector?.startsWith(':root:not([data-appearance="day"]) :is('));
 assert.deepEqual(decls(readableNight), { color: "var(--reading-muted)" }, "Night legibility tuning changes no geometry, background, focus or animation");
-for (const label of [".note-media figcaption", ".record-meta dt", ".record-aside li:not(.is-active)", ".current-game span", ".activity-feed > li > span", ".section-record i", ".archive-file small"]) assert.ok(readableNight.selector.includes(label), `Night reading role covers ${label}`);
+for (const label of [".note-media figcaption", ".record-meta dt", ".record-aside li:not(.is-active)", ".current-game span", ".activity-feed small", ".section-record i", ".archive-file small"]) assert.ok(readableNight.selector.includes(label), `Night reading role covers ${label}`);
 assert.equal(night.get("--muted"), "#827f74", "Decorative muted palette stays intact");
 assert.equal(night.get("--muted-2"), "#5f5e57");
 assert.ok(!variables.has("--reading-muted"), "The Night-only role cannot override the accepted Day text treatments");
@@ -348,5 +366,5 @@ assert.equal(desktopRoles.get(".archive-shell[data-nav-wide] > .desktop-nav-back
 assert.ok(!/backdrop-filter|\bfilter:/.test(read("app/desktop-navigation.css")), "Terminal separation adds no blur/filter work");
 const reduced = archiveSheet.nodes.find((node) => node.name === "media" && node.params === "(prefers-reduced-motion: reduce)" && node.toString().includes("transition-duration: 0.001ms"));
 assert.ok(reduced, "Existing reduced-motion transition guard still covers the edge response");
-assert.ok([...shadowRoles].some(([selector, value]) => selector.includes(".active-projects-panel .record-list button::after") && selector.includes(".latest-log-signal::before") && value === "none"), "Day travelling traces do not inherit luminous halos");
+assert.ok(dayRules.get(`${dayPrefix} .active-projects-panel`)["--project-scan-ink"], "The Day Projects scanner has a separate ink color for the light plate");
 console.log("Appearance passed: theme/storage/clock guards, Day/Night reading/control contrast, continuous single frames, inset-only bar shading, preserved geometry/construction/focus, reduced motion and Pages/cache inclusion.");

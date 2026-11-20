@@ -1,25 +1,65 @@
 .memory-trace {
   --trace-size: var(--desktop-size, 1);
+  --trace-screen: #121c1c;
+  --trace-reflection: #1b2928;
+  --trace-screen-glow: rgb(110 210 186 / .075);
+  --trace-rim: #405351;
+  --trace-inset: #080e0e;
+  --trace-ink: #cdd8d0;
+  --trace-command: #a5d8d6;
+  --trace-value: #e6be88;
+  --trace-comment: #9aafa1;
+  --trace-index: #91a39d;
+  --trace-live: #dafff1;
+  --trace-phosphor: rgb(116 240 210 / .43);
+  --trace-glow: rgb(158 235 216 / .32);
   min-block-size: 0;
   block-size: 100%;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  padding: calc(5px * var(--trace-size)) calc(8px * var(--trace-size));
+  padding: calc(7px * var(--trace-size)) calc(10px * var(--trace-size));
   overflow: hidden;
-  background: rgba(var(--tone-well, 0, 0, 0), 0.16);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background:
+    linear-gradient(var(--trace-screen-glow), var(--trace-screen-glow)),
+    linear-gradient(155deg, var(--trace-reflection), transparent 68%),
+    var(--trace-screen);
+  box-shadow: inset 0 0 0 1px var(--trace-rim), inset 0 0 14px -5px var(--trace-inset), 0 1px 0 rgb(255 255 255 / .10);
 }
 .memory-trace-lines { min-block-size: 0; margin: 0; padding: 0; overflow: hidden; overflow-anchor: none; list-style: none; }
-.memory-trace-lines:empty::before { content: "// awaiting signal"; color: var(--muted); font: calc(12px * var(--trace-size))/1.9 var(--mono); }
-.memory-trace-lines > li { display: grid; grid-template-columns: minmax(3ch, max-content) minmax(0, 1fr); gap: calc(8px * var(--trace-size)); font: calc(12px * var(--trace-size))/1.9 "Cascadia Mono", "Consolas", monospace; }
+.memory-trace-lines:empty::before { content: "// awaiting signal"; color: var(--trace-comment); font: calc(12px * var(--trace-size))/1.9 var(--mono); }
+.memory-trace-lines > li { display: grid; grid-template-columns: minmax(4ch, max-content) minmax(0, 1fr); gap: calc(7px * var(--trace-size)); font: calc(12px * var(--trace-size))/1.9 "Cascadia Mono", "Consolas", monospace; }
 .memory-trace-lines > .memory-code-block:not(:first-child) { margin-block-start: calc(12px * var(--trace-size)); }
-.memory-code-number { color: var(--muted); font-size: 0.85em; text-align: end; user-select: none; }
-.memory-trace-lines code { min-inline-size: 0; color: var(--reading-text, var(--text)); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
-.memory-trace-lines .memory-code-keyword { color: var(--text-strong); }
-.memory-trace-lines .memory-code-string { color: var(--accent); }
-.memory-trace-lines .memory-code-comment { color: var(--reading-muted, var(--muted)); }
-.memory-trace-lines [data-writing] code::after { content: "_"; color: var(--accent); }
-:root[data-appearance="day"] .memory-trace { --reading-muted: var(--muted); }
+.memory-code-number { color: var(--trace-index); font-size: 0.85em; text-align: end; user-select: none; }
+.memory-trace-lines code { min-inline-size: 0; color: var(--trace-ink); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; text-shadow: 0 0 3px var(--trace-phosphor); }
+.memory-trace-lines .memory-code-keyword { color: var(--trace-command); }
+.memory-trace-lines .memory-code-string { color: var(--trace-value); }
+.memory-trace-lines .memory-code-comment { color: var(--trace-comment); }
+.memory-trace-lines [data-writing] code { color: var(--trace-live); text-shadow: 0 0 3px var(--trace-phosphor), 0 0 7px var(--trace-glow); }
+.memory-trace-lines [data-writing] code::after {
+  content: "";
+  display: inline-block;
+  margin-inline-start: .18ch;
+  inline-size: .6ch;
+  block-size: .85em;
+  vertical-align: -.08em;
+  background: var(--trace-command);
+  box-shadow: 0 0 5px var(--trace-glow);
+}
+:root[data-appearance="day"] .memory-trace {
+  --trace-screen: #cbd6cc;
+  --trace-reflection: #dce6d9;
+  --trace-screen-glow: rgb(243 255 241 / .19);
+  --trace-rim: #8c9c91;
+  --trace-inset: #a2aea2;
+  --trace-ink: #293c36;
+  --trace-command: #195653;
+  --trace-value: #624017;
+  --trace-comment: #40594d;
+  --trace-index: #4f625a;
+  --trace-live: #194940;
+  --trace-phosphor: rgb(255 255 255 / .62);
+  --trace-glow: rgb(255 255 255 / .68);
+}
 @media (max-width: 760px) {
   .memory-trace { --trace-size: 1; block-size: 250px; }
 }

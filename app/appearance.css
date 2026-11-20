@@ -2,6 +2,7 @@
   color-scheme: light;
   --control-scheme: light;
   --bg: #bbc0bb;
+  --archive-image: var(--archive-day-image);
   --panel: rgba(208, 212, 204, 0.86);
   --panel-strong: rgba(221, 224, 217, 0.96);
   --glass-panel: rgba(208, 212, 204, 0.8);
@@ -54,8 +55,8 @@
 
 /* The scenery is washed with light at its existing layer, never over the text. */
 :root[data-appearance="day"] body::before {
-  opacity: 0.18;
-  filter: grayscale(1) contrast(0.98) brightness(1.12);
+  opacity: 0.28;
+  filter: saturate(0.65);
 }
 :root[data-appearance="day"] .archive-shell::before { opacity: 0.42; }
 :root[data-appearance="day"] .grain-layer { opacity: 0.035; }
@@ -63,18 +64,26 @@
 :root[data-appearance="day"] .archive-shell { background: linear-gradient(180deg, transparent, rgba(70, 86, 73, 0.08)); }
 /* Keep nearby panels close to the surface; reserve a wider lift for windows. */
 :root[data-appearance="day"] .workspace::before { box-shadow: none; }
-:root[data-appearance="day"] :is(.dashboard-panel, .studio-panel, .studio-nav-copy, .studio-section-copy) { box-shadow: var(--elevation-panel); }
+:root[data-appearance="day"] :is(.studio-panel, .studio-nav-copy, .studio-section-copy) { box-shadow: var(--elevation-panel); }
 :root[data-appearance="day"] :is(.search-panel, .command-panel, .latin-tooltip > span, .studio-notification-panel) { box-shadow: var(--elevation-popover); }
 :root[data-appearance="day"] :is(.record-window, .timeline-window, .roadmap-note, .os-behaviour-frame, .archive-folder-window, .archive-nav-panel, .update-history-window, .studio-record-copy, .static-data-error, .local-memory-consent > div) { box-shadow: var(--elevation-window); }
 :root[data-appearance="day"] .studio-panel :is(.studio-nav-copy, .studio-section-copy) { box-shadow: none; }
 /* Reuse existing borders: no extra frame, changing dimensions or stacked shadow. */
-:root[data-appearance="day"] :is(.dashboard-panel, .section-record-column, .setup-group, .studio-panel, .studio-nav-copy, .studio-section-copy) {
+:root[data-appearance="day"] :is(.section-record-column, .setup-group, .studio-panel, .studio-nav-copy, .studio-section-copy) {
   border-block-start-color: var(--surface-edge-light);
   border-block-end-color: var(--surface-edge-low);
 }
+:root[data-appearance="day"] .dashboard-panel {
+  --dashboard-plate-contact: rgb(43 55 48 / .28);
+  --dashboard-plate-rim: rgb(255 255 255 / .66);
+  --dashboard-plate-finish: rgb(255 255 255 / .34);
+  --dashboard-caption-edge: 0 1px rgb(255 255 255 / .56);
+  --dashboard-readout-ink: #3e5950;
+  --dashboard-plate-bottom: var(--surface-edge-low);
+}
+:root[data-appearance="day"] .latest-log { --dashboard-log-reader-tint: rgb(255 255 255 / .42); }
 :root[data-appearance="day"] :is(.dashboard-panel h2, .section-record-column h3, .record-aside h3) { color: var(--text-strong); }
 :root[data-appearance="day"] :is(.note-media figcaption, .record-id, .record-meta dt, .system-status dt) { color: var(--muted); }
-:root[data-appearance="day"] :is(.game-cover, .current-game[data-state] .game-cover) { box-shadow: 0 0 0 1px rgba(37, 44, 41, 0.075), 0 3px 7px -3px rgba(35, 43, 38, 0.12); }
 :root[data-appearance="day"] :is(.connections-dialog, .web-search-dialog, .roadmap-dialog, .os-behaviour-dialog, .studio-review-dialog)::backdrop { background: rgba(49, 60, 52, 0.4); }
 :root[data-appearance="day"] :is(.archive-folder-backdrop, .local-memory-consent, .archive-nav-backdrop) { background: rgba(49, 60, 52, 0.34); }
 :root[data-appearance="day"] .notebook-binding { background: rgba(100, 116, 103, 0.13); }
@@ -95,9 +104,7 @@
     rgba(var(--tone-surface), 0.84) 76%,
     rgba(var(--tone-surface), 0.9));
 }
-/* Day signals are ink traces; Night retains its existing luminous treatment. */
-:root[data-appearance="day"] .active-projects-panel .record-list button::after,
-:root[data-appearance="day"] .latest-log-signal::before { box-shadow: none; }
+:root[data-appearance="day"] .active-projects-panel { --project-scan-ink: 53, 88, 74; }
 :root[data-appearance="day"] .section-record:is(:hover, :focus-visible)::after { box-shadow: none; }
 :root[data-appearance="day"] :is(.notebook-pagination button img, .notebook-release-index button img) { filter: brightness(0.25); }
 
