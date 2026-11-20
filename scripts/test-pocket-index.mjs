@@ -118,6 +118,7 @@ const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf
 assert.match(read("index.html"), /name="viewport"[^>]+viewport-fit=cover/);
 assert.match(read("app/page.tsx"), /viewportFit:\s*"cover"/);
 const css = read("app/pocket-index.css");
+assert.match(css, /\.record-selector--games \.record-sleeve-label strong\s*\{[^}]*display: block;[^}]*overflow: visible;[^}]*padding-inline:/, "Tape labels wrap with clearance for handwritten glyphs");
 for (const side of ["top", "right", "bottom", "left"]) assert.ok(css.includes(`env(safe-area-inset-${side}, 0px)`));
 assert.match(css, /\.pocket-header \{[^}]*padding: calc\(9px \+ var\(--pocket-safe-top\)\)/);
 assert.match(css, /\.archive-shell:has\(> \.pocket-header\) > \.workspace \{[^}]*calc\(24px \+ var\(--pocket-safe-bottom\)\)/);

@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "19 / 11 / 2026",
+  "updated": "20 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -36,6 +36,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Clearer tape labels and fresher starts",
+          "detail": "Handheld VHS titles wrap without clipped letters, even in a short viewport. Pages revalidates the shell on return visits without discarding cached media.",
+          "version": "v1.84.2",
+          "releasedOn": "2026-11-20"
+        },
         {
           "title": "Steadier cipher and lighter Setup",
           "detail": "The signal has its own character spacing and reveals the readable line in steps. Setup tiles no longer parse terminal specs. Handheld Games search keeps its tap target with a bare icon and a slim input.",

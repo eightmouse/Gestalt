@@ -47,11 +47,14 @@ function harness(scope = "https://archive.example/Gestalt/") {
   });
   vm.runInContext(source, context, { filename: "sw.js" });
 
-  function dispatch(url, options) {
+  function dispatch(url, { navigation = false, ...options } = {}) {
     const tasks = [];
     let response;
+    const request = new Request(new URL(url, scope), options);
+    // Node does not construct browser navigation requests.
+    if (navigation) Object.defineProperty(request, "mode", { value: "navigate" });
     handlers.get("fetch")({
-      request: new Request(new URL(url, scope), options),
+      request,
       respondWith(promise) { response = Promise.resolve(promise); },
       waitUntil(promise) { tasks.push(promise); }
     });
@@ -70,6 +73,33 @@ function harness(scope = "https://archive.example/Gestalt/") {
 const image = "https://archive.example/Gestalt/public/media/record.webp";
 const h = harness();
 assert.equal(h.requests.length, 0, "No eager media downloads");
+
+const shell = harness();
+shell.network(async () => new Response("current shell"));
+for (const path of ["./", "./index.html?visit=1"]) {
+  assert.equal(await (await shell.dispatch(path, { navigation: true }).response).text(), "current shell");
+  assert.equal(shell.requests.at(-1).cache, "no-cache", "Revalidate the public HTML on navigation");
+}
+assert.equal(shell.entries.size, 0, "Do not put the document in the media cache");
+shell.network(async (request) => {
+  if (request.cache === "force-cache") return new Response("cached shell");
+  throw new Error("Offline");
+});
+assert.equal(await (await shell.dispatch("./", { navigation: true }).response).text(), "cached shell");
+assert.deepEqual(shell.requests.slice(-2).map(({ cache }) => cache), ["no-cache", "force-cache"], "Offline may use the existing HTTP cache");
+for (const [url, options] of [
+  ["./", {}],
+  ["./index.html", { navigation: true, cache: "reload" }],
+  ["./index.html", { navigation: true, cache: "no-cache" }],
+  ["./index.html", { navigation: true, cache: "no-store" }],
+  ["./index.html", { navigation: true, headers: { Authorization: "fixture-only" } }],
+  ["./app/pocket-index.css?v=old", {}],
+  ["./api/studio/entry", { navigation: true }],
+  ["/another-site/", { navigation: true }],
+  ["https://other.example/Gestalt/", { navigation: true }]
+]) {
+  assert.equal(shell.dispatch(url, options).response, undefined, `Do not intercept ${url}`);
+}
 
 for (const [url, options] of [
   ["https://other.example/Gestalt/public/media/record.webp"],
@@ -158,6 +188,8 @@ offlineMiss.network(async () => { throw new Error("Offline"); });
 assert.equal((await offlineMiss.dispatch(image).response).status, 504);
 
 const root = harness("https://archive.example/");
+assert.equal(await (await root.dispatch("/", { navigation: true }).response).text(), "fresh");
+assert.equal(root.requests.at(-1).cache, "no-cache");
 assert.equal(await (await root.dispatch("/public/images/background.webp").response).text(), "fresh");
 let activation;
 h.handlers.get("activate")({ waitUntil(promise) { activation = promise; } });
@@ -170,4 +202,4 @@ for (let index = 0; index < 260; index += 1) {
 }
 assert.equal(vm.runInContext("mediaRefreshAfter.size <= 256 && mediaRefreshes.size === 0", h.context), true, "Refresh bookkeeping is bounded");
 
-console.log("Media cache tests passed: refresh, throttling, concurrency, versions, scope, offline and storage failures.");
+console.log("Cache tests passed: shell revalidation, media refresh, throttling, concurrency, versions, scope, offline and storage failures.");

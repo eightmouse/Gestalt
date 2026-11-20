@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+20 November, v1.84.2: Handheld VHS labels wrap without clipping the handwritten lettering. The public worker revalidates the archive's HTML on return visits while keeping the existing media cache and offline fallback.
+
 19 November, v1.84.1: Cipher text now uses a separate, evenly spaced signal and a stepped reveal across the line, without animating each glyph independently. Setup categorizes tiles once and only reads hardware specs when a terminal opens. Handheld Games gives search a bare icon and a slimmer field.
 
 19 November, v1.84.0: Handheld Games and Projects become open, edge-to-edge libraries. A single upright VHS cassette or project card takes center stage. Swipe across records and vertically between groups; both group labels stay tappable. The game search sits beside Back. A shared cipher cycles through glyphs, then locks readable text in place across the boot, headings, navigation, palette and entry reveal without adding a motion dependency.

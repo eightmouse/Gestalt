@@ -24,6 +24,22 @@ function isCacheableMediaRequest(request) {
   return mediaRoots.some((root) => url.pathname.startsWith(scopedPath(root)));
 }
 
+function isShellNavigation(request) {
+  if (request.mode !== "navigate" || request.method !== "GET" ||
+      ["reload", "no-cache", "no-store"].includes(request.cache) || request.headers.has("authorization")) {
+    return false;
+  }
+  const url = new URL(request.url);
+  return url.origin === self.location.origin &&
+    (url.pathname === scopedPath("/") || url.pathname === scopedPath("/index.html"));
+}
+
+function refreshShell(request) {
+  // Revalidate the document that selects asset versions. Keep the HTTP cache's offline fallback.
+  return fetch(new Request(request, { cache: "no-cache" }))
+    .catch(() => fetch(new Request(request, { cache: "force-cache" })));
+}
+
 function rememberMediaRefresh(url, delay) {
   mediaRefreshAfter.delete(url);
   mediaRefreshAfter.set(url, Date.now() + delay);
@@ -117,7 +133,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (isCacheableMediaRequest(event.request)) {
+  if (isShellNavigation(event.request)) {
+    event.respondWith(refreshShell(event.request));
+  } else if (isCacheableMediaRequest(event.request)) {
     event.respondWith(serveMedia(event));
   }
 });

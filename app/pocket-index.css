@@ -271,10 +271,28 @@
     border-inline-start: 3px solid #869e89;
     background: repeating-linear-gradient(0deg, #dfded3 0 1px, transparent 1px 21px) #eeece2;
     color: #242925;
-    font: 600 22px/1.16 "Segoe Print", "Noteworthy", "Segoe UI", system-ui, sans-serif;
+    font: 600 var(--pocket-tape-title-size, 22px)/1.28 "Segoe Print", "Noteworthy", "Segoe UI", system-ui, sans-serif;
     font-style: italic;
   }
-  .record-selector--games .record-sleeve-label strong { -webkit-line-clamp: 5; }
+  .record-selector--games .record-sleeve-label strong {
+    display: block;
+    overflow: visible;
+    min-inline-size: 0;
+    padding-inline: 3px 5px;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 360px), (max-height: 640px) {
+    .record-selector--games .record-sleeve-label {
+      --pocket-tape-title-size: 18px;
+      min-block-size: min(88%, 108px);
+      padding-inline: 10px;
+    }
+  }
+  @media (max-height: 480px) {
+    .record-selector--games .record-sleeve-art { grid-template-rows: minmax(0, 1fr) 36%; gap: 10px; }
+    .record-selector--games .record-sleeve-label { --pocket-tape-title-size: 17px; }
+    .record-selector--games .pocket-tape-reels { grid-template-rows: repeat(2, 25px); padding-block: 6px; }
+  }
   .record-selector--games .record-sleeve-label small { color: #35423a; border-color: #a7aca0; }
   .pocket-tape-reels {
     display: grid;
