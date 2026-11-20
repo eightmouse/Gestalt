@@ -93,7 +93,7 @@
     let followedHeight = -1, followedViewport = -1, followedWidth = -1;
     const random = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
     const active = () => !disposed && visible && !doc.hidden && node.isConnected &&
-      !shell?.matches(".has-record, .is-booting, [data-nav-blocked], [data-nav-open], [data-search-open], [data-workspace-tool-open]");
+      !shell?.matches(".has-record, .is-booting, [data-nav-blocked], [data-search-open], [data-workspace-tool-open]");
     function cancel() {
       if (timer !== null) host.clearTimeout(timer);
       timer = null;
@@ -219,7 +219,7 @@
     const observer = host.IntersectionObserver ? new host.IntersectionObserver(([entry]) => { visible = entry.isIntersecting; availability(); }) : null;
     observer?.observe(node);
     const coverObserver = host.MutationObserver && shell ? new host.MutationObserver(availability) : null;
-    coverObserver?.observe(shell, { attributes: true, attributeFilter: ["class", "data-nav-blocked", "data-nav-open", "data-search-open", "data-workspace-tool-open"] });
+    coverObserver?.observe(shell, { attributes: true, attributeFilter: ["class", "data-nav-blocked", "data-search-open", "data-workspace-tool-open"] });
     const resizeObserver = host.ResizeObserver ? new host.ResizeObserver(() => { if (active()) follow(); }) : null;
     resizeObserver?.observe(list);
     state.listeners.add(update);

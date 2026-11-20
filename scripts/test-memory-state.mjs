@@ -7,7 +7,7 @@ import { updateStaticCacheTokens } from "./static-cache.mjs";
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 function fixture() {
   const listeners = new Map(), timers = new Map(), motionListeners = new Set();
-  let intersection, mutation, resize, writes = 0, covered = false, now = 0, nextTimer = 0, rectReads = 0, scrollWrites = 0;
+  let intersection, mutation, resize, writes = 0, cover = null, now = 0, nextTimer = 0, rectReads = 0, scrollWrites = 0;
   class Element {
     children = []; dataset = {}; text = ""; top = 0; clientHeight = 240; clientWidth = 320; blockHeight = 40; isConnected = true; handlers = new Map();
     set textContent(value) { writes++; this.text = value; this.children = []; }
@@ -27,7 +27,7 @@ function fixture() {
     removeEventListener(name) { this.handlers.delete(name); }
   }
   const list = new Element();
-  const node = { isConnected: true, closest: () => ({ matches: () => covered }), querySelector: () => list };
+  const node = { isConnected: true, closest: () => ({ matches: (selectors) => selectors.split(", ").includes(cover) }), querySelector: () => list };
   const document = { hidden: false, createElement: () => new Element(),
     addEventListener(name, fn) { listeners.set(name, fn); }, removeEventListener(name) { listeners.delete(name); } };
   const motion = { matches: false, addEventListener(name, fn) { motionListeners.add(fn); }, removeEventListener(name, fn) { motionListeners.delete(fn); } };
@@ -54,7 +54,7 @@ function fixture() {
     },
     resize(height, width = list.clientWidth) { list.clientHeight = height; list.clientWidth = width; resize?.(); },
     reduce(value) { motion.matches = value; for (const fn of motionListeners) fn(); },
-    cover(value) { covered = value; mutation?.(); }, intersect(value) { intersection([{ isIntersecting: value }]); },
+    cover(value, selector = ".has-record") { cover = value ? selector : null; mutation?.(); }, intersect(value) { intersection([{ isIntersecting: value }]); },
     visibility(value) { document.hidden = value; listeners.get("visibilitychange")?.(); } };
 }
 const a = fixture(), b = fixture();
@@ -131,6 +131,16 @@ assert.equal(a.listeners.size, 0);
 assert.equal(a.timers.size, 0); assert.equal(a.motionListeners.size, 0); assert.equal(a.list.handlers.size, 0);
 const remount = memory.watchTrace(a.node, a.host);
 assert.equal(a.listeners.size, 1); assert.ok(a.list.children.length <= 12, "Strict Mode remount replaces the snapshot, not duplicate history"); remount();
+
+const terminal = fixture();
+memory.record("workspace.ready", {}, terminal.host);
+const stopTerminal = memory.watchTrace(terminal.node, terminal.host);
+terminal.cover(true, "[data-nav-open]");
+memory.record("terminal.open", { source: "keyboard" }, terminal.host);
+assert.ok(terminal.list.children.some((row) => "writing" in row.dataset), "Terminal activity writes a visible burst without waiting for the window to close");
+terminal.advance(4000);
+assert.match(terminal.text(), /await terminal\.reveal\(\);/);
+stopTerminal();
 
 const burst = fixture();
 memory.record("workspace.ready", {}, burst.host);

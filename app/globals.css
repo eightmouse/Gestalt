@@ -5451,13 +5451,13 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   animation-play-state: paused;
 }
 
-/* Ambient work rests without restarting when the reader is covered or offscreen. */
+/* Ambient work rests in blocked views, but the desktop Terminal leaves the workspace visibly running. */
 :root[data-archive-hidden] :is(.dashboard-grid, .seasonal-accent) *,
 :root[data-archive-hidden] :is(.dashboard-grid, .seasonal-accent) *::before,
 :root[data-archive-hidden] :is(.dashboard-grid, .seasonal-accent) *::after,
-.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *,
-.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *::before,
-.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-nav-open], [data-workspace-tool-open]) .dashboard-grid *::after,
+.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-workspace-tool-open]) .dashboard-grid *,
+.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-workspace-tool-open]) .dashboard-grid *::before,
+.archive-shell:is(.is-booting, [data-nav-blocked], [data-search-open], [data-workspace-tool-open]) .dashboard-grid *::after,
 .memory-loop[data-memory-offscreen],
 .memory-loop[data-memory-offscreen] *,
 .memory-loop[data-memory-offscreen]::before,

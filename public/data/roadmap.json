@@ -45,6 +45,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "The Dashboard lives behind Terminal",
+          "detail": "Open Terminal with T and the surrounding signals keep moving. Memory State writes the action while the Terminal is still open. The workspace stays non-interactive behind it, and Reduced Motion still applies.",
+          "version": "v1.84.4",
+          "releasedOn": "2026-11-20"
+        },
+        {
           "title": "Dashboard plates and live readouts",
           "detail": "All six plates share a raised finish and a small mouse response that stays inside the grid. Projects gets a short scanner, Latest Log keeps its excerpt steady, Current Game has a recessed LCD, and Memory State's code glows at the characters. Touch and Reduced Motion skip the hover movement.",
           "version": "v1.84.3",

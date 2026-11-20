@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.84.3`. Previous site-code release: `v1.84.2` (6b9cc188).
+Release target: `v1.84.4`. Previous site-code release: `v1.84.3` (146522d9).
+
+`v1.84.4` keeps the Dashboard's ambient motion and Memory State code running while the desktop Terminal is open. The underlying workspace still cannot receive clicks or plate hover. Record windows, hidden tabs, and Reduced Motion keep their existing guards.
 
 `v1.84.3` gives all six desktop Dashboard plates a raised finish, clearer text hierarchy and a small, bounded mouse response. Projects and Latest Log use tighter reader signals, Current Game gets an LCD treatment, and Memory State's code has a phosphor glow. Day gets its own lightweight backdrop; startup preloads the active appearance only. Night keeps its original backdrop. The Pocket Index, authored records and dependencies are unchanged.
 

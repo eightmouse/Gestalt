@@ -9,13 +9,6 @@
 .section-note-layout { display: contents; }
 .section-note-preview { display: none; }
 .command-preferences--desktop-nav .command-preference-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.archive-shell[data-nav-open] .memory-loop,
-.archive-shell[data-nav-open] .memory-loop *,
-.archive-shell[data-nav-open] .memory-loop::before,
-.archive-shell[data-nav-open] .memory-loop::after,
-.archive-shell[data-nav-open] .memory-loop *::before,
-.archive-shell[data-nav-open] .memory-loop *::after,
-.archive-shell[data-nav-open] .seasonal-decoration img { animation-play-state: paused; }
 @media (max-width: 1180px), (max-height: 699px), (hover: none), (pointer: coarse) {
   .command-preferences--desktop-nav { display: none; }
 }
