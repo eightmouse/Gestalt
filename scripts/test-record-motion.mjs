@@ -154,6 +154,22 @@ assert.equal(animations.at(-1).frames.at(1).opacity, animations.at(-1).frames.at
 animations.at(-1).resolve(); await Promise.resolve();
 assert.equal(completed, 17); assert.equal(node.hidden, true);
 assert.equal(doc.listeners.size, 0); assert.equal(node.attributes.size, 0);
+// With a sheet on the desk, closing puts the paper back on it: it travels to the sheet, takes its size
+// and lean, and only fades as it lands.
+const face = { offsetWidth: 450, offsetHeight: 350, getBoundingClientRect: () => ({ left: 200, top: 300, width: 470, height: 370 }) };
+doc.querySelector = (selector) => selector === ".field-paper-front" ? { querySelector: () => face } : null;
+const deskHost = host.getComputedStyle;
+host.getComputedStyle = (element) => element === face || element?.querySelector ? { rotate: "-2.2deg", transform: "none", opacity: "1" } : deskHost(element);
+node.hidden = false;
+const landStart = animations.length;
+close();
+const land = animations.at(-1);
+assert.equal(animations.length, landStart + 1);
+assert.equal(land.options.duration, 520, "The paper is set back down, not folded away");
+assert.match(land.frames.at(-1).transform, /^translate\(-115px, 35px\) .*rotate\(-2\.2deg\) scale\(0\.5, 0\.5\)$/, "It lands on the front sheet's centre, at the sheet's own size and lean");
+assert.equal(land.frames.at(-2).opacity, 1, "It stays solid until it lands");
+land.resolve(); await Promise.resolve();
+delete doc.querySelector; host.getComputedStyle = deskHost;
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const react = read("components/archive-os.tsx"), shell = read("static-app.js"), css = read("app/globals.css");
 assert.ok(react.includes("(panelOpen || panelMinimized) && selectedRecord"), "React retains the same keyed record/editor while minimized");

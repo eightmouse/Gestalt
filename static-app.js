@@ -1621,7 +1621,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.88.1</span>
+        <span>v1.88.2</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1635,7 +1635,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.88.1</span>
+        <span class="version-label">v1.88.2</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1655,7 +1655,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.2</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1912,7 +1912,6 @@ function renderFieldPaperFace(record) {
       <span class="field-paper-meta"><span>FIELD NOTE</span><time datetime="${escapeHtml(date)}">${escapeHtml(readableDate(date))}</time></span>
       <strong class="field-paper-title">${escapeHtml(record.title)}</strong>
       ${excerpt ? `<span class="field-paper-excerpt">${escapeHtml(excerpt)}</span>` : ""}
-      <span class="field-paper-open" aria-hidden="true">${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}</span>
     </span>`;
 }
 
@@ -2100,7 +2099,8 @@ function gameDrivePanel() {
       <p class="game-drive-label">Latest note${drive.latest.date ? `<span>${escapeHtml(drive.latest.date)}</span>` : ""}</p>
       <h5>${escapeHtml(drive.latest.title)}</h5>
       ${drive.latest.excerpt ? `<p>${escapeHtml(drive.latest.excerpt)}</p>` : ""}
-      ${drive.earlier ? `<small>+ ${drive.earlier} earlier</small>` : ""}
+      ${drive.earlierNotes.length ? `<ol class="game-drive-history" aria-label="Earlier notes">${drive.earlierNotes.map((note) => `<li><time>${escapeHtml(note.date)}</time><span>${escapeHtml(note.title)}</span></li>`).join("")}</ol>` : ""}
+      ${drive.earlier > drive.earlierNotes.length ? `<small>+ ${drive.earlier - drive.earlierNotes.length} more in the record</small>` : ""}
     </section>` : ""}
     ${record ? `<button class="game-drive-hit" type="button" data-open-record="${escapeHtml(record.id)}" data-open-content="notes" aria-label="${escapeHtml(`Open ${record.title} notes`)}"></button>` : ""}
   </aside>`;
@@ -3848,7 +3848,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>

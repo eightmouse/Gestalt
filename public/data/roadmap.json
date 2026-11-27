@@ -18,10 +18,6 @@
       "title": "On the desk",
       "items": [
         {
-          "title": "Field Desk: a deliberate desk",
-          "detail": "Keep how the papers read, but make the desk feel arranged rather than empty, with details on and around it that fit Gestalt. Design to be discussed."
-        },
-        {
           "title": "Dashboard: digital chrome and system tips",
           "detail": "Explore a hologram-style time and date readout, with distinct cipher and glitch resolves for the Dashboard and footer. Replace the public System Tips button with a bell at the same location as the local publish bell; the public bell keeps tips available even if the welcome prompt is missed. Local publishing stays unchanged."
         },
@@ -35,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "A fuller drive and a lived-in desk",
+          "detail": "The Games drive uses its full height for the latest note and lists the notes before it. Closing a field paper puts it back on the desk instead of folding it away. The desk gets a blotter with a ruler edge, a pencil and an old cup ring, and the papers lose their corner arrow.",
+          "version": "v1.88.2",
+          "releasedOn": "2026-11-28"
+        },
         {
           "title": "Benches and disks line up",
           "detail": "Every project bench starts at the same height and has the same two cards: the latest note or a blank card, and the screen or dark glass marked No sample filed, with the build sheet underneath. Game disk pictures all sit at the same place on the disk.",

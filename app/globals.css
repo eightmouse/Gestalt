@@ -2742,6 +2742,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   }
   :root:not([data-appearance="day"]) .game-cover { --bloom-reach: 14px; --bloom-blur: 12px; --bloom-strength: .55; }
   :root:not([data-appearance="day"]) .project-screen-glass { --bloom-reach: 20px; --bloom-strength: .42; }
+  :root:not([data-appearance="day"]) .project-screen-glass[data-shape="tall"] > img.screen-bloom { object-fit: contain; }
 }
 
 /* Games drive: the current game sits loaded beside the shelves. */
@@ -2779,6 +2780,15 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .game-drive-note h5 { margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font: 500 calc(14px * var(--selector-scale)) / 1.2 var(--sans); }
 .game-drive-note p:not(.game-drive-label) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin: 0; color: var(--text); font: calc(13px * var(--selector-scale)) / 1.45 var(--sans); }
 .game-drive-note small { color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+/* The drive's lower half: more of the latest note, then the notes filed before it. */
+.game-drive:not([data-empty]) { grid-template-rows: auto auto auto auto minmax(0, 1fr); align-content: stretch; }
+.game-drive-note { grid-template-rows: auto auto minmax(0, 1fr) auto auto; align-self: stretch; min-block-size: 0; overflow: hidden; }
+/* The note fills whatever height the drive has and fades out at the foot, so no bay leaves a gap. */
+.game-drive:not([data-empty]) .game-drive-note p:not(.game-drive-label) { display: block; -webkit-line-clamp: none; min-block-size: 2lh; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 1.6lh), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 1.6lh), transparent); }
+.game-drive-history { display: grid; gap: 0; margin: calc(4px * var(--selector-scale)) 0 0; padding: 0; list-style: none; border-block-start: 1px solid var(--line); }
+.game-drive-history li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: calc(10px * var(--selector-scale)); align-items: baseline; padding-block: calc(5px * var(--selector-scale)); border-block-end: 1px dashed var(--line); font: calc(12px * var(--selector-scale)) / 1.3 var(--sans); color: var(--text); }
+.game-drive-history time { color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.3 var(--mono); font-variant-numeric: tabular-nums; }
+.game-drive-history span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .game-drive-hit { position: absolute; inset: 0; z-index: 1; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .record-selector .game-drive-hit:hover, .record-selector .game-drive-hit:active { background: rgba(var(--tone-ink, 217, 213, 193), .05); }
 .game-drive-hit:focus-visible { outline: 1px solid var(--text-strong); outline-offset: -4px; }
@@ -2805,7 +2815,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .game-drive-figures div { padding-block: 3px; }
   .game-drive-note { gap: 4px; }
   .game-drive-note p:not(.game-drive-label) { -webkit-line-clamp: 2; }
-  .game-drive-note small { display: none; }
+  .game-drive-note small,
+  .game-drive-history { display: none; }
 }
 
 /* At Night a lit project screen spills a little cool light onto the plate around it. */
@@ -2880,6 +2891,48 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
       color-mix(in srgb, rgb(var(--tone-surface, 8, 9, 8)), rgb(var(--tone-ink, 217, 213, 193)) 3%);
     box-shadow: inset 0 0 0 1px rgb(0 0 0 / .2);
   }
+  /* Things on the desk, all painted, none of them interactive: a blotter under the papers with a
+     ruler edge along its foot, a pencil set down at the right, and an old cup ring at the left. */
+  .section-page--logs > .field-paper-desk { position: relative; isolation: isolate; }
+  .section-page--logs > .field-paper-desk > * { position: relative; z-index: 1; }
+  .section-page--logs > .field-paper-desk::before,
+  .section-page--logs > .field-paper-desk::after { content: ""; position: absolute; z-index: 0; pointer-events: none; }
+  .section-page--logs > .field-paper-desk::before {
+    inset: 6% 18% 5%;
+    border: 1px solid rgba(var(--tone-ink, 217, 213, 193), .07);
+    background:
+      repeating-linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), .22) 0 1px, transparent 1px 10px) left bottom / 100% 5px no-repeat,
+      repeating-linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), .3) 0 1px, transparent 1px 50px) left bottom / 100% 10px no-repeat,
+      radial-gradient(ellipse at 50% 40%, rgba(var(--tone-ink, 217, 213, 193), .035), transparent 70%),
+      rgb(0 0 0 / .16);
+    box-shadow: inset 0 1px 0 rgba(var(--tone-ink, 217, 213, 193), .04), 0 1px 0 rgb(0 0 0 / .25);
+  }
+  .section-page--logs > .field-paper-desk::after {
+    inset: auto 5% 13% auto;
+    inline-size: min(17%, calc(190px * var(--desktop-size, 1)));
+    block-size: calc(7px * var(--desktop-size, 1));
+    rotate: -24deg;
+    clip-path: polygon(0 50%, 8% 0, 100% 0, 100% 100%, 8% 100%);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / .18), transparent 45%, rgb(0 0 0 / .3)),
+      linear-gradient(90deg, rgb(40 37 33) 0 3%, rgb(196 172 132) 3% 8%, rgb(58 74 62) 8% 84%, rgb(170 166 154) 84% 89%, rgb(150 112 100) 89%);
+    filter: drop-shadow(0 3px 2px rgb(0 0 0 / .45));
+  }
+  .section-page--logs > .field-paper-desk > .field-paper-deck::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-block-end: 4%;
+    inset-inline-start: calc(-1 * min(22cqw, calc(200px * var(--desktop-size, 1))));
+    inline-size: calc(84px * var(--desktop-size, 1));
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, transparent 60%, rgb(120 86 52 / .16) 63%, rgb(120 86 52 / .07) 67%, transparent 70%);
+    -webkit-mask-image: conic-gradient(from 40deg, #000 0 72%, transparent 80% 88%, #000 96%);
+    mask-image: conic-gradient(from 40deg, #000 0 72%, transparent 80% 88%, #000 96%);
+    pointer-events: none;
+  }
+  :root[data-appearance="day"] .section-page--logs > .field-paper-desk::before { background-color: rgb(43 55 48 / .05); }
   :root[data-appearance="day"] .section-page--logs > .field-paper-desk {
     background:
       linear-gradient(180deg, rgb(43 55 48 / .1), transparent 22px),
@@ -3030,8 +3083,6 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .field-paper-desk time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .field-paper-title { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font: 500 calc(29px * var(--desktop-size, 1))/1.17 var(--field-prose); overflow-wrap: anywhere; }
 .field-paper-excerpt { flex: 1 1 0; min-block-size: 0; overflow: hidden; overflow-wrap: anywhere; white-space: pre-line; mask-image: linear-gradient(#000 calc(100% - 22px), transparent); font: 400 calc(16px * var(--desktop-size, 1))/1.65 var(--field-prose); }
-.field-paper-open { align-self: end; margin-block-start: auto; color: var(--field-muted); line-height: 0; }
-.field-paper-front:hover .field-paper-open, .field-paper-front:focus-visible .field-paper-open { color: var(--field-ink); }
 
 .field-paper-peek {
   --field-edge-angle: .45deg;

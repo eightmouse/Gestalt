@@ -226,7 +226,8 @@ function GameDrive({ state, records, onOpenRecord }: { state?: { ready: boolean;
       <p className="game-drive-label">Latest note{drive.latest.date ? <span>{drive.latest.date}</span> : null}</p>
       <h5>{drive.latest.title}</h5>
       {drive.latest.excerpt ? <p>{drive.latest.excerpt}</p> : null}
-      {drive.earlier ? <small>+ {drive.earlier} earlier</small> : null}
+      {drive.earlierNotes.length ? <ol className="game-drive-history" aria-label="Earlier notes">{drive.earlierNotes.map((note) => <li key={note.id || note.title}><time>{note.date}</time><span>{note.title}</span></li>)}</ol> : null}
+      {drive.earlier > drive.earlierNotes.length ? <small>+ {drive.earlier - drive.earlierNotes.length} more in the record</small> : null}
     </section> : null}
     {record ? <button className="game-drive-hit" type="button" aria-label={`Open ${record.title} notes`} onClick={() => onOpenRecord(record, "notes")} /> : null}
   </aside>;

@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.88.1`. Previous site-code release: `v1.88.0` (56e85178).
+Release target: `v1.88.2`. Previous site-code release: `v1.88.1` (fb4a4273).
+
+`v1.88.2` fills the Games drive: the latest note now uses the drive's full height and fades out at the foot, with up to three earlier notes (date and title) listed underneath; short bays keep a two-line note. A tall project sample's glow keeps the picture's shape instead of lighting the empty glass. Closing a field paper now puts it back on the desk: it lifts, travels to the front sheet's place, takes its size and lean, and fades only as it lands. The Field Desk gains a blotter with a ruler edge, a pencil and an old cup ring, and the papers lose their corner arrow. Authored records, media and dependencies are unchanged.
 
 `v1.88.1` lines up every Projects bench and every game disk. A project's description always holds its three lines and its title stays on one, so the bench starts at the same height for every project. Every bench has the same two cards: the latest note, or a blank card when none is filed, and the 16:9 screen, or dark glass marked No sample filed, with the build sheet always underneath. Game disk labels share one height, so every picture sticker sits at the same place whatever the title's length. Authored records, media and dependencies are unchanged.
 

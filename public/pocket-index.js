@@ -72,7 +72,7 @@
   }
   // Everything the desktop workbench shows beyond the plate itself. Renderers pass their own
   // parsed notes, image source and stack list; nothing here is invented when a field is empty.
-  function projectBench(record, notes = [], { screen = "", stack = [] } = {}) {
+  function projectBench(record, notes = [], { screen = "", stack = [], excerpt = 180, history = 0 } = {}) {
     const filed = notes.filter((note) => note && note.id !== "main");
     const plain = (text) => String(text || "").split(/\n\s*\n/)
       .map((block) => block.split(/\r?\n/).filter((line) => !/^\s*(?:!\[|<|:::|```|#{1,6}\s)/.test(line)).join(" "))
@@ -83,18 +83,19 @@
       const [year, month, day] = String(value || "").split("-");
       return year && month && day ? `${day} / ${month} / ${year}` : "";
     };
-    let latest = null;
-    if (filed[0]) {
-      const heading = /^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*[-–—]\s*(.*)$/.exec(filed[0].title || "");
-      latest = {
-        id: filed[0].id || "",
-        date: heading ? `${heading[1].padStart(2, "0")} / ${heading[2].padStart(2, "0")} / ${heading[3]}` : "",
-        title: (heading ? heading[4] : filed[0].title || "").trim() || "Untitled note",
-        excerpt: clip(plain(filed[0].body))
+    const heading = (note) => {
+      const match = /^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*[-–—]\s*(.*)$/.exec(note.title || "");
+      return {
+        id: note.id || "",
+        date: match ? `${match[1].padStart(2, "0")} / ${match[2].padStart(2, "0")} / ${match[3]}` : "",
+        title: (match ? match[4] : note.title || "").trim() || "Untitled note"
       };
-    }
+    };
+    const latest = filed[0] ? { ...heading(filed[0]), excerpt: clip(plain(filed[0].body), excerpt) } : null;
+    // The notes filed before the latest, newest first, when asked for: date and title only.
+    const earlierNotes = filed.slice(1, 1 + Math.max(0, history)).map(heading);
     const lines = (Array.isArray(stack) ? stack : []).map((item) => String(item).trim()).filter(Boolean);
-    return { started: date(record?.started), noteCount: filed.length, latest, earlier: Math.max(0, filed.length - 1), screen: String(screen || "").trim(), stack: lines.slice(0, 6), moreStack: Math.max(0, lines.length - 6) };
+    return { started: date(record?.started), noteCount: filed.length, latest, earlier: Math.max(0, filed.length - 1), earlierNotes, screen: String(screen || "").trim(), stack: lines.slice(0, 6), moreStack: Math.max(0, lines.length - 6) };
   }
   // The picture in a game disk's window: one landscape source for every disk, so they all read the
   // same way. Steam's store header (always the same layout, with the game's logo) when the game has a
@@ -130,8 +131,9 @@
       { label: "Last played", value: String(display.lastPlayed || "").trim() || "—" },
       { label: "Achievements", value: share ? `${share[1]}%` : "—" }
     ];
-    const { latest, earlier } = projectBench(record, record ? notes : []);
-    return { title: String(display.title || record?.title || "").trim() || "Untitled game", status: String(record?.status || display.status || "").trim(), recordId: record?.id || "", figures, latest, earlier };
+    // The drive has room for more of the latest note and a short list of the notes before it.
+    const { latest, earlier, earlierNotes } = projectBench(record, record ? notes : [], { excerpt: 1200, history: 3 });
+    return { title: String(display.title || record?.title || "").trim() || "Untitled game", status: String(record?.status || display.status || "").trim(), recordId: record?.id || "", figures, latest, earlier, earlierNotes };
   }
   function recentDispatches(featuredId, activity, now = Date.now()) {
     const day = 86_400_000;

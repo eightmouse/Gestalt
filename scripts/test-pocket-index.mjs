@@ -106,8 +106,8 @@ const bench = pocket.projectBench({ started: "2026-04-05" }, [
   { id: "n-new", title: "27 / 11 / 2026 - Field Papers (v1.85)", body: "### Heading\n![shot](/media/a.png)\nLogs became **Field Papers**: see [the desk](https://example.com).\n\nSecond paragraph." },
   { id: "n-old", title: "1 / 5 / 2026 - Older", body: "Old." }
 ], { screen: " /media/shot.png ", stack: ["JavaScript", " ", "CSS"] });
-assert.deepEqual(bench, { started: "05 / 04 / 2026", noteCount: 2, latest: { id: "n-new", date: "27 / 11 / 2026", title: "Field Papers (v1.85)", excerpt: "Logs became Field Papers: see the desk." }, earlier: 1, screen: "/media/shot.png", stack: ["JavaScript", "CSS"], moreStack: 0 }, "The bench reads the newest note as plain text, without headings, images or markup");
-assert.deepEqual(pocket.projectBench({}, [{ id: "main", title: "Current note", body: "Loose body" }]), { started: "", noteCount: 0, latest: null, earlier: 0, screen: "", stack: [], moreStack: 0 }, "An undated body is not presented as a filed note, and empty fields stay empty");
+assert.deepEqual(bench, { started: "05 / 04 / 2026", noteCount: 2, latest: { id: "n-new", date: "27 / 11 / 2026", title: "Field Papers (v1.85)", excerpt: "Logs became Field Papers: see the desk." }, earlier: 1, earlierNotes: [], screen: "/media/shot.png", stack: ["JavaScript", "CSS"], moreStack: 0 }, "The bench reads the newest note as plain text, without headings, images or markup");
+assert.deepEqual(pocket.projectBench({}, [{ id: "main", title: "Current note", body: "Loose body" }]), { started: "", noteCount: 0, latest: null, earlier: 0, earlierNotes: [], screen: "", stack: [], moreStack: 0 }, "An undated body is not presented as a filed note, and empty fields stay empty");
 assert.ok(pocket.projectBench({}, [{ id: "n-a", title: "Untimed", body: "x ".repeat(200) }]).latest.excerpt.length <= 181, "Long notes are clipped to a short excerpt");
 assert.equal(pocket.projectBench({}, [{ id: "n-a", title: "Untimed", body: "" }]).latest.date, "", "Notes without a date heading do not get one invented");
 assert.equal(pocket.projectBench({}, [], { stack: Array.from({ length: 8 }, (_, i) => `S${i}`) }).moreStack, 2);
@@ -115,6 +115,9 @@ assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive emp
 const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);
 assert.deepEqual(steamDrive.figures.map(({ value }) => value), ["1088.0h", "26 / 11 / 2026", "42%"]);
 assert.deepEqual([steamDrive.recordId, steamDrive.latest.title, steamDrive.earlier], ["ff", "Phantom", 1]);
+assert.deepEqual(steamDrive.earlierNotes, [{ id: "n-b", date: "", title: "Older" }], "The drive lists the notes before the latest, date and title only");
+assert.ok(pocket.gameDrive({ title: "Long" }, { id: "l" }, [{ id: "n-a", title: "x", body: "word ".repeat(200) }]).latest.excerpt.length > 400, "The drive shows more of the latest note than a bench does");
+assert.equal(pocket.gameDrive({ title: "Many" }, { id: "m" }, Array.from({ length: 6 }, (_, i) => ({ id: "n-" + i, title: "Note " + i, body: "" }))).earlierNotes.length, 3, "At most three earlier notes");
 const authoredDrive = pocket.gameDrive({ title: "Deadlock", status: "Playing", completion: "100% Complete", playtime: null, lastPlayed: "" }, { id: "dl", status: "Playing" });
 assert.deepEqual(authoredDrive.figures, [{ label: "Play time", value: "—" }, { label: "Last played", value: "—" }, { label: "Achievements", value: "—" }], "Unknown figures read as a dash, and a record's generic progress is never shown as completion");
 assert.equal(pocket.gameDrive({ title: "Unfiled" }, undefined, [{ id: "n-a", title: "x", body: "y" }]).latest, null, "A Steam game without a record shows no borrowed notes");

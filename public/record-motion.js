@@ -131,7 +131,24 @@
       doc.addEventListener("visibilitychange", onVisibility);
       motion.addEventListener("change", onMotion);
       try {
-        if (closing && node.classList.contains("is-field-paper-reader")) {
+        const sheet = closing && node.classList.contains("is-field-paper-reader") ? doc.querySelector?.(".field-paper-front") : null;
+        const face = sheet?.querySelector?.(".field-paper-face");
+        const spot = face?.getBoundingClientRect?.();
+        if (spot?.width && spot.height) {
+          // Put back on the desk: the paper lifts a touch, travels down to the front sheet's place,
+          // shrinks to its size and takes its lean, then is gone as it lands on it.
+          const lean = Number.parseFloat(host.getComputedStyle(sheet).rotate) || 0;
+          const tx = spot.left + spot.width / 2 - rect.left - rect.width / 2;
+          const ty = spot.top + spot.height / 2 - rect.top - rect.height / 2;
+          // The sheet leans, so its box is a little larger than the sheet: scale to its own size.
+          const sx = (face.offsetWidth || spot.width) / Math.max(1, rect.width), sy = (face.offsetHeight || spot.height) / Math.max(1, rect.height);
+          animation = node.animate([
+            { offset: 0, transform: `translate(0px, 0px) ${base} rotate(0deg) scale(1, 1)`, opacity, easing: "cubic-bezier(.3, 0, .5, 1)" },
+            { offset: 0.18, transform: `translate(0px, -6px) ${base} rotate(0deg) scale(1.01, 1.01)`, opacity, easing: "cubic-bezier(.35, 0, .2, 1)" },
+            { offset: 0.9, transform: `translate(${tx}px, ${ty}px) ${base} rotate(${lean}deg) scale(${sx}, ${sy})`, opacity },
+            { offset: 1, transform: `translate(${tx}px, ${ty}px) ${base} rotate(${lean}deg) scale(${sx}, ${sy})`, opacity: 0 }
+          ], { duration: 520, easing: "linear", fill: "forwards" });
+        } else if (closing && node.classList.contains("is-field-paper-reader")) {
           // The unfold run backwards: the sheet folds down along its length and settles back onto
           // the desk, tilting as it goes. Only the last stretch fades.
           animation = node.animate([

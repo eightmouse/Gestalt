@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+28 November, v1.88.2: The Games drive shows more of the latest note and the notes before it. Field papers are put back on the desk when closed, and the desk gets a blotter, a pencil and a cup ring.
+
 28 November, v1.88.1: Every Projects bench and every game disk lines up: same heights, the same two cards on every bench, and placeholders when a note or sample is missing.
 
 28 November, v1.88.0: One masthead per section. A calmer power-on. Screens that feel switched on. Projects shares one 16:9 screen. Games gets real glass floppies. Legacy Mode fills the bay, and field papers fold back onto the desk.

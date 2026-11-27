@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { fieldPaperExcerpt, formatReadableDate } from "@/components/archive/record-utils";
 import { logArchiveDate } from "@/lib/log-archive";
 import type { RecordEntry } from "@/lib/types";
@@ -12,7 +12,6 @@ function FieldPaperFace({ record }: { record: RecordEntry }) {
     <span className="field-paper-meta"><span>FIELD NOTE</span><time dateTime={date}>{formatReadableDate(date)}</time></span>
     <strong className="field-paper-title">{record.title}</strong>
     {excerpt && <span className="field-paper-excerpt">{excerpt}</span>}
-    <span className="field-paper-open" aria-hidden="true"><ArrowUpRight size={18} /></span>
   </span>;
 }
 
