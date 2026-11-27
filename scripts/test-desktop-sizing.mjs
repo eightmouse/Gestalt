@@ -78,4 +78,24 @@ assert.ok(shelves.includes("grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);")
 assert.match(shelves, /--cabinet-cover: min\(calc\(178px \* var\(--selector-scale\)\), max\(calc\(110px \* var\(--selector-scale\)\), calc\(\(100cqh/, "Disks grow with their shelf, between a readable floor and the existing ceiling");
 assert.ok(!shelves.includes("grid-auto-flow: row"), "Shelves stay single side-scrolling rows");
 for (const source of ["../components/archive/section-page.tsx", "../static-app.js"]) assert.ok(!readFileSync(new URL(source, import.meta.url), "utf8").includes("--rack-columns"));
-console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing, one shared section frame.");
+// Masthead: one header per section on desktop.
+const masthead = css.slice(css.indexOf("/* Masthead: one header per section"));
+assert.ok(masthead.includes(".archive-shell > .workspace > .section-page > .section-page-header { display: none; }"), "The in-container section plates are retired on desktop");
+assert.ok(masthead.includes(".archive-shell > .workspace > .workspace-header.masthead::before { display: none; }"), "The ticking rule is retired");
+assert.match(masthead, /\.masthead-digit > i \{[^}]*transform: translateY\(calc\(var\(--digit, 0\) \* -1em\)\); transition: transform 620ms/, "The section number rolls like a counter");
+assert.match(masthead, /prefers-reduced-motion: reduce\) \{\s*\.masthead-digit > i \{ transition: none; \}/, "Reduced Motion sets the number without rolling");
+assert.ok(masthead.includes("block-size: calc(104px * var(--masthead-size));"), "Every section's masthead has the same height, so the frame never shifts");
+for (const [file, needles] of [["components/archive-os.tsx", ["MastheadCounter", "data-masthead-readout", "data-masthead-actions", "sectionRegistryLabels[activeSection]"]], ["static-app.js", ["mastheadCounter()", "data-masthead-readout", "data-masthead-actions", "sectionRegistryLabels[section.id]"]]]) {
+  const source = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+  for (const needle of needles) assert.ok(source.includes(needle), `${file} renders ${needle}`);
+  assert.ok(!source.includes('className="route-label"') && !source.includes('<p class="route-label">'), `${file} no longer repeats the section code above the title`);
+}
+const mastheadPlate = masthead.slice(masthead.indexOf(".archive-shell > .workspace > .workspace-header.masthead {"), masthead.indexOf("}", masthead.indexOf(".archive-shell > .workspace > .workspace-header.masthead {")));
+assert.ok(mastheadPlate.includes("background: none;") && mastheadPlate.includes("box-shadow: none;") && mastheadPlate.includes("border: 0;"), "The masthead is lighter than the content: no plate, no box");
+assert.ok(masthead.includes(".workspace-header.masthead h1:not(.is-resolving) .headline-cursor { visibility: hidden; }"), "The cursor shows only while a title resolves");
+assert.ok(masthead.includes('grid-template-areas: "index title time actions";'), "Time comes first, then one continuous row of controls");
+assert.match(masthead, /:is\(\.time-block > button, \.icon-button, \.local-review-button, \.archive-create-record:not\(\.game-shelf-search\)\) \{\s*flex: none;\s*inline-size: var\(--masthead-button\);\s*block-size: var\(--masthead-button\);/, "Every control is the same square button");
+const navCss = readFileSync(new URL("../app/desktop-navigation.css", import.meta.url), "utf8");
+assert.match(navCss, /\.archive-shell:not\(\[data-nav-wide\]\) \{\s*--dashboard-max-inline: min\(calc\(1480px \* var\(--desktop-size, 1\)\), calc\(100vw - var\(--sidebar-width\) - var\(--window-rail-pad\) \* 2\)\);/, "Legacy Mode fills the room beside the sidebar, so there is no empty strip on the right");
+assert.match(navCss, /\.archive-shell:not\(\[data-nav-wide\]\) > \.workspace > \.workspace-header \{ max-inline-size: var\(--dashboard-max-inline\); \}/, "The masthead ends where the bay does");
+console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing, one shared section frame and one masthead.");

@@ -132,10 +132,13 @@
       motion.addEventListener("change", onMotion);
       try {
         if (closing && node.classList.contains("is-field-paper-reader")) {
+          // The unfold run backwards: the sheet folds down along its length and settles back onto
+          // the desk, tilting as it goes. Only the last stretch fades.
           animation = node.animate([
-            { transform: `${base} translateY(0) rotate(0deg)`, opacity },
-            { transform: `${base} translateY(16px) rotate(-2deg)`, opacity: 0 }
-          ], { duration: 240, easing: "cubic-bezier(.4,0,.6,1)", fill: "forwards" });
+            { offset: 0, transform: `${base} translateY(0) rotate(0deg) scale(1, 1)`, opacity, transformOrigin: "center bottom" },
+            { offset: 0.55, transform: `${base} translateY(14px) rotate(-1.2deg) scale(.95, .62)`, opacity, transformOrigin: "center bottom" },
+            { offset: 1, transform: `${base} translateY(40px) rotate(-3deg) scale(.86, .43)`, opacity: 0, transformOrigin: "center bottom" }
+          ], { duration: 380, easing: "cubic-bezier(.55, 0, .75, .2)", fill: "forwards" });
         } else if (closing) {
           // The open run backwards: each content surface folds into its centre line (no dissolve),
           // then the frame closes to a two-pixel line and the line retracts to a point. Only the

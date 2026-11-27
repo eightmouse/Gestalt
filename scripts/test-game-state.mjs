@@ -28,8 +28,8 @@ function compile(source, globals = {}) {
 }
 const policy = compile(read("lib/game-state.ts")).exports;
 const names = ["gameLogPlacement", "gameActivityValue", "gameActivityLabel"];
-const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "renderSelectorTiles", "recordStateKey", "recordTraceId", "escapeHtml"]), { window: { GestaltRecordLinks: recordLinks } });
-const react = compile(`${functions("components/archive/section-page.tsx", ["splitSectionRecords", "RecordSelectorTile", "recordStateKey"])}\nexports.split = splitSectionRecords; exports.Card = RecordSelectorTile;`, { ...policy, recordLinks });
+const staticContext = compile(functions("static-app.js", [...names, "splitSectionRecords", "renderSelectorTiles", "gameDiskWindow", "recordStateKey", "recordTraceId", "escapeHtml"]), { window: { GestaltRecordLinks: recordLinks } });
+const react = compile(`${functions("components/archive/section-page.tsx", ["splitSectionRecords", "RecordSelectorTile", "GameDiskWindow", "recordStateKey"])}\nexports.split = splitSectionRecords; exports.Card = RecordSelectorTile;`, { ...policy, recordLinks, pocket: { gameDiskArt: () => "" } });
 const studio = compile(`${functions("components/studio-client.tsx", ["splitStudioSectionRecords", "toRecordPreview", "readStudioDrafts"])}\nexports.split = splitStudioSectionRecords; exports.preview = toRecordPreview; exports.drafts = readStudioDrafts;`, {
   ...policy, imageFraming, studioDraftStorageKey: "fixture-drafts", mediaListFromText: () => []
 });

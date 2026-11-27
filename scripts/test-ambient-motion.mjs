@@ -217,7 +217,7 @@ const traceRoot = traceCss.nodes.find((node) => node.selector === ".memory-trace
 assert.ok(traceRoot.nodes.some((node) => node.prop === "grid-template-rows" && node.value === "minmax(0, 1fr)"), "The code stream uses the panel height without an extra heading row");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "box-shadow" && node.value.startsWith("var(--trace-bezel),")), "The night stream spills light beyond its inset outline");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "background" && node.value.includes("radial-gradient(ellipse at 50% 44%, var(--trace-screen-glow), transparent 78%)")), "A faint phosphor haze lifts the centre of the tube, not a flat tint");
-assert.ok(traceRoot.nodes.some((node) => node.prop === "--trace-screen" && node.value === "#050b0a"), "The tube glass is near black, so only the written text gives light");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "--trace-screen" && node.value === "#06110e"), "The tube glass is near black with a faint phosphor glow: a screen that is on");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "background" && node.value.includes("repeating-linear-gradient(180deg, transparent 0 2px, var(--trace-scanline) 2px 3px)")), "The CRT scanlines sit behind the code");
 const traceGlass = traceCss.nodes.find((node) => node.selector === ".memory-trace::after");
 assert.ok(traceGlass && traceGlass.nodes.some((node) => node.prop === "background" && node.value === "var(--screen-glare)") && traceGlass.nodes.some((node) => node.prop === "pointer-events" && node.value === "none"), "The shared glare sits in front of the code without catching the pointer");
@@ -248,5 +248,10 @@ assert.ok(warm[2] >= 0.2 * 188, "A fifth of a neutral keeps vivid artwork plausi
 const ambientSource = read("public/ambient-motion.js");
 assert.ok(ambientSource.includes('doc.createElement("canvas")') && /function read\(source\) \{\s*\/\/ A fresh canvas/.test(ambientSource), "Each sample uses a fresh canvas, so a tainted read cannot poison the CORS fallback");
 assert.ok(ambientSource.includes('{ mode: "cors", credentials: "omit" }'), "Cross-origin artwork is read through CORS without cookies");
+// Every project screen is 16:9: near-wide pictures fill it, much taller ones stand whole in the middle.
+assert.equal(ambient.screenShape(1865 / 1039), "wide");
+assert.equal(ambient.screenShape(16 / 10), "wide");
+assert.equal(ambient.screenShape(0.62), "tall", "A phone-shaped sample is shown whole, not zoomed");
+for (const bad of [0, NaN, -1]) assert.equal(ambient.screenShape(bad), null);
 console.log("Screen light passed: weighted, lifted cover colour with empty/transparent guards and an isolated CORS fallback.");
 console.log("Ambient lifecycle passed: bounded five-layer reader parity, per-layer sizing, retired loops removed, coalesced input, pause guards, cleanup/remount and packaging.");

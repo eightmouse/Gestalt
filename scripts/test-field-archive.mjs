@@ -36,7 +36,9 @@ const section = { id: "archive", code: "06_ARCHIVE", label: "Archive", icon: "ar
 const { ArrowUp, FileText, Folder, FolderOpen, HardDrive, X } = require("lucide-react");
 const react = compile(`${functions("components/archive/section-page.tsx", ["ArchiveFolders", "ArchiveFile", "SectionReadout", "sectionReadout"])}\nexports.ArchiveFolders = ArchiveFolders;`, {
   ArrowUp, FileText, Folder, FolderOpen, HardDrive, X, ...chronology, ...dates, useEffect, useState, renderCipherLetters: String,
-  sectionRegistryLabels: { archive: "Field Archive" }
+  sectionRegistryLabels: { archive: "Field Archive" },
+  // Desktop hands the readout to the masthead through a portal; markup parity is checked on the header itself.
+  MastheadParts: () => null
 });
 const staticSource = read("static-app.js");
 for (const [name, value] of [["archiveRootFileLimit", chronology.ARCHIVE_ROOT_FILE_LIMIT], ["archiveRecentFileLimit", chronology.ARCHIVE_RECENT_FILE_LIMIT], ["logDeskKeep", chronology.LOG_DESK_KEEP]]) {

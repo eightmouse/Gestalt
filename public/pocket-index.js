@@ -96,6 +96,16 @@
     const lines = (Array.isArray(stack) ? stack : []).map((item) => String(item).trim()).filter(Boolean);
     return { started: date(record?.started), noteCount: filed.length, latest, earlier: Math.max(0, filed.length - 1), screen: String(screen || "").trim(), stack: lines.slice(0, 6), moreStack: Math.max(0, lines.length - 6) };
   }
+  // The picture in a game disk's window: one landscape source for every disk, so they all read the
+  // same way. Steam's store header (always the same layout, with the game's logo) when the game has a
+  // Steam ID, then the record's own header image, its banner, then its dashboard art. No art, no picture.
+  function gameDiskArt(fields = {}) {
+    const text = (value) => typeof value === "string" ? value.trim() : "";
+    const appId = Number(fields.steamAppId);
+    const steam = Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff
+      ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg` : "";
+    return steam || text(fields.headerImage) || text(fields.banner) || text(fields.dashboardImage);
+  }
   // A thermograph line for the Weather plate: the next hours' forecast, drawn in a 100 x 30 box.
   // Fewer than two readings draws nothing rather than a flat or guessed line.
   function weatherTrace(values) {
@@ -213,5 +223,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, weatherTrace, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gameDiskArt, weatherTrace, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

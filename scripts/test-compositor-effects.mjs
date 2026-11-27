@@ -67,7 +67,9 @@ assert.match(css, /--screen-recess: inset /, "The shared recess is an inset edge
 for (const glass of [".game-cover::after", ".game-drive-screen::after", ".project-screen-glass::after"]) {
   assert.equal(rule(glass).background, "var(--screen-glare), var(--lcd-mask), var(--screen-vignette)", `${glass} shares the one glass: same glare angle, pixel mask and falloff`);
 }
-assert.match(rule(".game-cover")["box-shadow"], /^0 0 0 1px rgb\(var\(--lcd-light\) \/ \.2\), 0 0 9px -2px rgb\(var\(--lcd-light\) \/ \.38\)$/, "The cover keeps a tight bloom; its light lands on the plates instead of the air");
+assert.match(rule(".game-cover")["box-shadow"], /^0 0 14px -4px rgb\(var\(--lcd-light\) \/ \.26\), 0 0 34px -8px rgb\(var\(--lcd-light\) \/ \.14\)$/, "The cover spills soft light with no ring at the bezel; most of it lands on the plates");
+assert.doesNotMatch(rule(".game-cover")["box-shadow"], /0 0 0 1px/, "No hard ring around a lit screen");
+assert.equal(rule(".game-cover::before")["mix-blend-mode"], "screen", "The cover is lit from behind: its own colour is added as light");
 assert.doesNotMatch(rule(".game-cover::before").background, /rgb\((?:1[0-9]{2}) 2[0-3][0-9] [12][0-9]{2}/, "The glass never tints the artwork teal");
 assert.match(css, /@property --memory-light-gain \{\s*syntax: "<number>";/, "Memory State's brightness can ease between idle and writing");
 assert.match(css, /:root:not\(\[data-appearance="day"\]\) \.dashboard-grid > \.dashboard-panel \{[\s\S]*?at var\(--memory-light-x, -9999px\) var\(--memory-light-y, -9999px\)[\s\S]*?at var\(--cover-light-x, -9999px\) var\(--cover-light-y, -9999px\)[\s\S]*?var\(--dashboard-plate-grain\);/, "Night plates receive light from both screens, under their existing finish");
@@ -173,7 +175,7 @@ assert.deepEqual(pointsFor("dashboard-new-badge").filter((point) => Number(point
 const cover = rule(".game-cover::before"), coverPoints = pointsFor("dashboard-cover-signal");
 assert.equal(cover.animation, "dashboard-cover-signal 10s ease-in-out -0.8s infinite");
 assert.equal(cover.filter, undefined, "Paint the glow with a soft gradient instead of a blur filter");
-assert.equal(cover["mix-blend-mode"], undefined);
+assert.equal(cover["mix-blend-mode"], "screen", "The backlight is added as light over a small, contained screen");
 assert.equal(cover.inset, "0");
 assert.match(css, /--lcd-mask: repeating-linear-gradient\(90deg, rgb\(0 0 0 \/ \.1\) 0 1px, transparent 1px 3px\);/, "The LCD pixel mask stays faint: visible up close, never a busy texture");
 assert.equal(rule(".game-cover::after").animation, undefined, "The LCD coating is stationary");

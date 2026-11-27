@@ -261,13 +261,16 @@ const route = vm.createContext({
   stopRecordAccessSequence() {}, render: () => fallback++, workspaceContent: () => `content:${route.state.activeSection}`,
   greeting: () => "Good morning.", dashboardSubtext: () => "Daily note", escapeHtml: String, renderCipherLetters: String,
   syncRoadmapDialog() { assert.equal(route.state.roadmapOpen, false); }, syncWorkspaceFocus() {}, syncSearchPanel() { assert.equal(route.state.searchOpen, false); }, syncRecordFocus() {},
-  syncMemoryMotion: () => events.push("legacy sync"), syncMemoryTrace: () => events.push("trace sync"), syncInstrumentShelf() {}
+  syncMemoryMotion: () => events.push("legacy sync"), syncMemoryTrace: () => events.push("trace sync"), syncInstrumentShelf() {}, syncMasthead() {},
+  sectionRegistryLabels: { projects: "Process Reader", games: "Media Cabinet", logs: "Field Desk", setup: "Setup Manifest", archive: "Field Archive" }
 });
 vm.runInContext(functions, route);
 document.activeElement = menuItem;
 vm.runInContext('openSection("projects")', route);
 assert.equal(fallback, 0);
-assert.match(oldTitle.outerHTML, /02_PROJECTS.*\s+<h1 class="headline-decode-text is-resolving"/);
+assert.match(oldTitle.outerHTML, /^<div class="masthead-title">\s+<h1 class="headline-decode-text is-resolving" aria-label="Process Reader">/, "The masthead carries the section's one name");
+assert.ok(!oldTitle.outerHTML.includes("02_PROJECTS") && !oldTitle.outerHTML.includes("route-label"), "The route label that repeated the number is gone");
+assert.ok(oldTitle.outerHTML.includes('data-masthead-readout'), "Sections leave room for their readout in the masthead");
 assert.equal(oldContent.outerHTML, "content:projects");
 for (const [selector, value] of [[".archive-shell", shellRoute], [".workspace", routeWorkspace], [".sidebar", sidebar], [".workspace-footer", footer], [".grain-layer", grain]]) assert.equal(routeElements.get(selector), value);
 assert.equal(routeHeader.clock, clock);

@@ -1621,7 +1621,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.87.0</span>
+        <span>v1.88.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1635,7 +1635,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.87.0</span>
+        <span class="version-label">v1.88.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1655,7 +1655,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.87.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2006,7 +2006,7 @@ function sectionPage(sectionId) {
           <h2 class="cipher-section">${renderCipherLetters(sectionRegistryLabels[section.id] || section.label)}</h2>
           ${renderSectionReadout(readout)}
       </div>
-      ${games ? `<div class="section-page-header-actions"><i>${countLabel}</i>${renderGameShelfSearch(games.searchable, searchOpen)}</div>` : `<i>${countLabel}</i>`}
+      ${games ? `<div class="section-page-header-actions"><i class="section-page-count">${countLabel}</i>${renderGameShelfSearch(games.searchable, searchOpen)}</div>` : `<i>${countLabel}</i>`}
     </header>
       ${games ? renderGameShelf(games) : splitSection ? renderRecordSelector(splitSection) : `<div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>`}
   </section>`;
@@ -2145,12 +2145,12 @@ function syncGameShelf({ search, query, pick } = {}) {
   const view = gameShelfView(groups);
   syncPocketGameShelf(shell, view);
   const open = view.searchable && state.gameShelfSearch;
-  const toggle = shell.querySelector("[data-shelf-search-toggle]");
+  const toggle = root.querySelector("[data-shelf-search-toggle]");
   toggle.parentElement.hidden = !view.searchable;
   if (toggle.getAttribute("aria-expanded") !== String(open)) toggle.innerHTML = gameShelfIcon(open);
   toggle.setAttribute("aria-expanded", String(open));
   toggle.setAttribute("aria-label", open ? "Close game search" : "Search games");
-  const input = shell.querySelector("#game-shelf-search");
+  const input = root.querySelector("#game-shelf-search");
   input.hidden = !open;
   if (input.value !== state.gameShelfQuery) input.value = state.gameShelfQuery;
   if (search !== true) {
@@ -2226,13 +2226,16 @@ function renderProjectStage({ record, brief, progress, stops, more, nextStop }, 
         <h4>${escapeHtml(bench.latest.title)}</h4>
         ${bench.latest.excerpt ? `<p>${escapeHtml(bench.latest.excerpt)}</p>` : ""}
         ${bench.earlier ? `<small>+ ${bench.earlier} earlier</small>` : ""}
+      </section>` : bench.screen ? `<section class="project-dispatch" data-empty aria-label="Latest note">
+        <p class="project-bench-label">Latest note</p>
+        <p>No notes filed yet.</p>
       </section>` : bench.stack.length ? `<section class="project-dispatch project-build-sheet" aria-label="Build sheet">
         <p class="project-bench-label">Build sheet</p>
         <ul>${bench.stack.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}${bench.moreStack ? `<li>+${bench.moreStack} more</li>` : ""}</ul>
       </section>` : ""}
       ${bench.screen ? `<figure class="project-screen" data-lit>
         <div class="project-screen-glass"><img src="${escapeHtml(bench.screen)}" alt="" decoding="async" loading="lazy" /><img class="screen-bloom" src="${escapeHtml(bench.screen)}" alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>
-        ${bench.latest && bench.stack.length ? `<figcaption><span class="project-bench-label">Build sheet</span>${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption>` : ""}
+        ${bench.stack.length ? `<figcaption><span class="project-bench-label">Build sheet</span>${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption>` : ""}
       </figure>` : ""}
     </div>` : "";
   return `<div class="project-workbench-record"${bench ? " data-bench" : ""}>
@@ -2254,6 +2257,14 @@ function renderProjectStage({ record, brief, progress, stops, more, nextStop }, 
   </div>`;
 }
 
+// The glass window on a disk: the game's art behind smoked glass, or etched glass when there is none.
+function gameDiskWindow(record) {
+  const art = window.GestaltPocketIndex?.gameDiskArt?.(record) || "";
+  return art
+    ? `<span class="game-disk-window"><img src="${escapeHtml(art)}" alt="" decoding="async" loading="lazy" referrerpolicy="no-referrer"></span>`
+    : `<span class="game-disk-window" data-empty data-title="${escapeHtml(record.title)}"></span>`;
+}
+
 function renderSelectorTiles(sectionRecords, loadedId = "") {
   if (!sectionRecords.length) return '<p class="search-empty">No records filed here yet.</p>';
   return sectionRecords.map((record) => {
@@ -2262,7 +2273,7 @@ function renderSelectorTiles(sectionRecords, loadedId = "") {
     const loaded = record.id === loadedId;
     const label = [record.title, activity, loaded ? "in drive" : ""].filter(Boolean).join(", ");
     return `<button class="record-sleeve" data-game-sleeve type="button" data-state="${recordStateKey(status)}"${loaded ? " data-in-drive" : ""} data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(label)}">
-      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${loaded ? "<small>In drive</small>" : activity ? `<small>${activity}</small>` : ""}</span><span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span><span class="pocket-tape-reels"></span></span>
+      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${loaded ? "<small>In drive</small>" : activity ? `<small>${activity}</small>` : ""}</span>${gameDiskWindow(record)}<span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span><span class="pocket-tape-reels"></span></span>
     </button>`;
   }).join("");
 }
@@ -3838,7 +3849,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.87.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3846,16 +3857,41 @@ function desktopDirectory() {
   </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Tips"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Tips" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM TIPS</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Tips">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>S</kbd></dt><dd>Web search</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
 }
 
+// One name per section: the instrument name. The sidebar keeps the short descriptions.
 function workspaceHeading() {
   const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
   const dashboard = state.activeSection === "system";
-  const headline = dashboard ? greeting() : section.label;
+  const headline = dashboard ? greeting() : sectionRegistryLabels[section.id] || section.label;
   const resolving = state.headlineAnimating || !state.bootDismissed;
-  return `<div>
-    <p class="route-label">// ${escapeHtml(dashboard ? "DASHBOARD" : section.code)}</p>
+  return `<div class="masthead-title">
     <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" aria-label="${escapeHtml(headline)}"><span>${renderCipherLetters(headline)}</span><span class="cursor headline-cursor${resolving ? " is-delayed" : ""}" aria-hidden="true">_</span></h1>
-    <p class="subtle">${dashboard ? dashboardSubtext() : section.id === "games" || section.id === "projects" || section.id === "logs" ? "" : "Browse the records filed under this archive."}</p>
+    ${dashboard ? `<p class="subtle">${dashboardSubtext()}</p>` : '<div class="masthead-readout" data-masthead-readout></div>'}
   </div>`;
+}
+
+// The section number rolls like a mechanical counter when you move between sections.
+function mastheadCounter() {
+  const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
+  return `<span class="masthead-index" aria-hidden="true">${[...section.code.slice(0, 2)].map((digit) => `<span class="masthead-digit" style="--digit: ${Number(digit) || 0}"><i>${"0123456789".split("").map((face) => `<b>${face}</b>`).join("")}</i></span>`).join("")}</span>`;
+}
+
+// Desktop: the section's readout and buttons sit in the masthead; handheld keeps them in the
+// in-container header, which carries Back to Index there.
+function syncMasthead() {
+  const header = root.querySelector(".workspace > .workspace-header");
+  if (!header) return;
+  const section = sections.find((entry) => entry.id === state.activeSection) || sections[0];
+  [...section.code.slice(0, 2)].forEach((digit, index) => header.querySelectorAll(".masthead-digit")[index]?.style.setProperty("--digit", String(Number(digit) || 0)));
+  const readoutSlot = header.querySelector("[data-masthead-readout]");
+  const actionSlot = header.querySelector("[data-masthead-actions]");
+  // The section content was just rendered fresh: anything left in the button slot belongs to the last section.
+  actionSlot?.replaceChildren();
+  const plate = root.querySelector(".workspace > .section-page > .section-page-header");
+  if (!plate || pocket?.isHandheld()) return;
+  const readout = plate.querySelector(".section-page-readout");
+  if (readout && readoutSlot) readoutSlot.append(readout);
+  const actions = plate.querySelector(".section-page-header-actions");
+  if (actions && actionSlot) actionSlot.append(actions);
 }
 
 function syncSection() {
@@ -3872,6 +3908,7 @@ function syncSection() {
   heading.outerHTML = workspaceHeading();
   content.outerHTML = workspaceContent();
   syncInstrumentShelf(previousSection !== state.activeSection);
+  syncMasthead();
   removeReadingWindows(workspace);
   const menuToggle = dismissArchiveMenu();
 
@@ -3954,7 +3991,7 @@ function render() {
         <span class="boot-session-user">Eightmouse</span>
         <span class="boot-session-detail">Opening the archive</span>
       </div>
-    </div><i class="boot-thread" aria-hidden="true"></i>`}
+    </div>`}
     ${localMemoryPrompt()}
     <div class="grain-layer"></div>
     <div class="scanline-layer"></div>
@@ -3964,8 +4001,10 @@ function render() {
     <section class="${hasFocusWindow ? "workspace has-record" : "workspace"}" data-pocket-section="${state.activeSection}" aria-label="Gestalt archive">
       <p class="record-link-notice" data-record-link-notice role="status">${state.recordLinkMissing ? "This record is not available in the archive." : ""}</p>
       ${pocketIndex()}
-      <header class="workspace-header">
+      <header class="workspace-header masthead">
         ${workspaceHeading()}
+        ${mastheadCounter()}
+        <div class="masthead-actions" data-masthead-actions></div>
         <div class="time-block" aria-label="Local time">
           <span>◷</span>
           <span data-time-clock>${formatClock()}</span>
@@ -3993,6 +4032,7 @@ function render() {
 
   root.innerHTML = markup;
   syncInstrumentShelf(state.previousActiveSection !== state.activeSection);
+  syncMasthead();
   if (retained) root.querySelector(".workspace")?.append(retained);
   if (state.webSearchOpen || state.connectionsOpen) root.querySelector(".archive-shell")?.setAttribute("data-workspace-tool-open", "");
   root.querySelector(".archive-shell")?.toggleAttribute("data-search-open", state.searchOpen);
@@ -4011,7 +4051,6 @@ function render() {
     }, 520);
   }
 
-  if (!state.bootDismissed) window.GestaltOsBehaviour?.measureBootThread?.(root.querySelector(".archive-shell"));
   if (!state.bootDismissed && !bootCleanup) {
     bootCleanup = pocket?.isHandheld()
       ? pocket.runBoot(root.querySelector(".archive-shell"), completeBoot, { mode: state.pocketBootMode, remember: state.localMemory === "granted" })
@@ -4050,7 +4089,6 @@ function completeBoot() {
   shell.removeAttribute("aria-busy");
   shell.style.removeProperty("--boot-elapsed");
   root.querySelector(".boot-screen")?.remove();
-  root.querySelector(".boot-thread")?.remove();
   if (state.localMemory === "granted") window.GestaltOsBehaviour?.saveLastSession?.();
   root.querySelector(".pocket-boot")?.remove();
   const gamePanel = shell.querySelector(".current-game-panel");
@@ -4878,12 +4916,23 @@ window.matchMedia("(max-width: 760px)").addEventListener("change", (event) => {
     syncMemoryMotion();
     syncMemoryTrace();
   } else if (state.activeSection === "games") {
-    const dock = root.querySelector(".section-page--games .game-search-dock");
+    const dock = root.querySelector(".game-search-dock");
     const view = gameShelfView(splitSectionRecords("games", recordsFor("games").sort(compareSectionRecords)));
     if (dock) {
       if (!view.searchable && state.gameShelfSearch) syncGameShelf({ search: false });
       dock.hidden = !view.searchable;
     }
+  }
+  if (state.activeSection !== "system") {
+    // Crossing into handheld returns the readout and buttons to the section's own header.
+    const plate = root.querySelector(".workspace > .section-page > .section-page-header");
+    const masthead = root.querySelector(".workspace > .workspace-header");
+    if (event.matches && plate && masthead) {
+      const readout = masthead.querySelector("[data-masthead-readout] .section-page-readout");
+      if (readout) plate.querySelector(":scope > div")?.append(readout);
+      const actions = masthead.querySelector("[data-masthead-actions] .section-page-header-actions");
+      if (actions) plate.append(actions);
+    } else if (!event.matches) syncMasthead();
   }
   if (!event.matches && !weatherStarted) { weatherStarted = true; void requestWeather(); }
 });

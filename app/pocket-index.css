@@ -37,7 +37,7 @@
   }
   body:has(#root, .pocket-header)::before,
   .archive-shell:has(> .pocket-header)::before,
-  .archive-shell:has(> .pocket-header) > :is(.grain-layer, .scanline-layer, .sidebar, .boot-screen, .boot-thread),
+  .archive-shell:has(> .pocket-header) > :is(.grain-layer, .scanline-layer, .sidebar, .boot-screen),
   .archive-shell:has(> .pocket-header) > .workspace::before,
   .archive-shell:has(> .pocket-header) > .workspace::after,
   .archive-shell:has(> .pocket-header) > .workspace > :is(.dashboard-grid, .workspace-footer, .workspace-window-tray) { display: none; }

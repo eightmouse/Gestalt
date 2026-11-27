@@ -8,6 +8,7 @@ import { setupGroupFor, setupGroupRegistry, type SetupGroupId } from "@/componen
 import { ArrowLeft, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS, LOG_DESK_KEEP } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import pocket from "@/public/pocket-index.js";
 import { currentGameCover, steamBannerImage, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import recordLinks from "@/public/record-links.js";
@@ -35,7 +36,7 @@ type SectionPageProps = {
 };
 type SelectorGroup = { title: string; records: RecordEntry[] };
 
-const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
+export const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
   archive: "Field Archive",
   games: "Media Cabinet",
   logs: "Field Desk",
@@ -53,13 +54,13 @@ const setupCreateLabels: Record<SetupGroupId, string> = {
 export function SectionPage({ handheld, records, filingDay, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool, currentGame, filedLogCount = 0 }: SectionPageProps) {
   if (section.id === "logs") {
     return <section className="section-page section-page--logs" aria-label="Field Notes">
-      <SectionPageHeader section={section} countLabel={`${records.length} ${records.length === 1 ? "paper" : "papers"}`} readout={fieldDeskReadout(records, filedLogCount)} onCreateRecord={onCreateRecord} />
+      <SectionPageHeader handheld={handheld} section={section} countLabel={`${records.length} ${records.length === 1 ? "paper" : "papers"}`} readout={fieldDeskReadout(records, filedLogCount)} onCreateRecord={onCreateRecord} />
       {onCreateRecord ? <div className="field-paper-tools"><CreateRecordButton label="Add field note" onClick={onCreateRecord} /></div> : null}
       <FieldPapers records={records} onOpenRecord={(record) => onOpenRecord(record, "notes")} />
     </section>;
   }
   if (section.id === "archive") {
-    return <ArchiveFolders onOpenRecord={onOpenRecord} records={records} section={section} filingDay={filingDay} />;
+    return <ArchiveFolders handheld={handheld} onOpenRecord={onOpenRecord} records={records} section={section} filingDay={filingDay} />;
   }
   const sortedRecords = [...records].sort(compareSectionRecords);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
@@ -67,16 +68,16 @@ export function SectionPage({ handheld, records, filingDay, section, onOpenRecor
   const readout = sectionReadout(sortedRecords, splitSection, section.id);
 
   if (section.id === "setup") {
-    return <SetupBay countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} onEditTool={onEditSetupTool} readout={readout} records={sortedRecords} section={section} />;
+    return <SetupBay handheld={handheld} countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} onEditTool={onEditSetupTool} readout={readout} records={sortedRecords} section={section} />;
   }
 
   if (section.id === "games" && splitSection) {
-    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} currentGame={currentGame} records={sortedRecords} header={{ section, countLabel, readout, onCreateRecord, onBack }} />;
+    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} currentGame={currentGame} records={sortedRecords} header={{ section, countLabel, readout, onCreateRecord, onBack, handheld }} />;
   }
 
   return (
     <section className={`section-page section-page--${section.id}${splitSection ? " section-page--selector" : ""}`} aria-label={`${section.code} records`}>
-      <SectionPageHeader section={section} countLabel={countLabel} readout={readout} onCreateRecord={onCreateRecord} onBack={splitSection ? onBack : undefined} />
+      <SectionPageHeader handheld={handheld} section={section} countLabel={countLabel} readout={readout} onCreateRecord={onCreateRecord} onBack={splitSection ? onBack : undefined} />
       {splitSection ? <RecordSelector groups={splitSection} handheld={handheld} onOpenRecord={onOpenRecord} /> : (
         <div className="section-record-grid">
           {sortedRecords.length > 0 ? (
@@ -92,26 +93,43 @@ export function SectionPage({ handheld, records, filingDay, section, onOpenRecor
   );
 }
 
-type SectionPageHeaderProps = Pick<SectionPageProps, "section" | "onCreateRecord"> & Partial<Pick<SectionPageProps, "onBack">> & {
+type SectionPageHeaderProps = Pick<SectionPageProps, "section" | "onCreateRecord"> & Partial<Pick<SectionPageProps, "onBack" | "handheld">> & {
   countLabel: string;
   readout: ReturnType<typeof sectionReadout>;
 };
 
-function SectionPageHeader({ section, countLabel, readout, onBack, onCreateRecord, actions }: SectionPageHeaderProps & { actions?: ReactNode }) {
-  return <header className="section-page-header">
-    {onBack ? <button className="pocket-catalog-back" type="button" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" />Back to Index</button> : null}
-    <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
-    <div>
-      {section.id !== "games" && section.id !== "projects" && section.id !== "logs" ? <p>{section.code}</p> : null}
-      <h2 key={section.id} className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
-      <SectionReadout items={readout} />
-    </div>
-    <div className="section-page-header-actions">
-      <i>{countLabel}</i>
-      {actions}
-      {onCreateRecord ? <CreateRecordButton onClick={onCreateRecord} /> : null}
-    </div>
-  </header>;
+// Desktop: one masthead per section. The section's readout and buttons render into the masthead;
+// the in-container header stays only for handheld, where it carries Back to Index.
+function MastheadParts({ handheld = false, readout, actions }: { handheld?: boolean; readout?: ReactNode; actions?: ReactNode }) {
+  const [slots, setSlots] = useState<{ readout: Element | null; actions: Element | null } | null>(null);
+  useLayoutEffect(() => {
+    setSlots(handheld ? null : { readout: document.querySelector("[data-masthead-readout]"), actions: document.querySelector("[data-masthead-actions]") });
+  }, [handheld]);
+  if (!slots) return null;
+  return <>
+    {slots.readout && readout ? createPortal(readout, slots.readout) : null}
+    {slots.actions && actions ? createPortal(actions, slots.actions) : null}
+  </>;
+}
+
+function SectionPageHeader({ section, countLabel, readout, onBack, onCreateRecord, actions, handheld = false }: SectionPageHeaderProps & { actions?: ReactNode; handheld?: boolean }) {
+  const controls = <div className="section-page-header-actions">
+    {handheld ? <i>{countLabel}</i> : null}
+    {actions}
+    {onCreateRecord ? <CreateRecordButton onClick={onCreateRecord} /> : null}
+  </div>;
+  return <>
+    <header className="section-page-header">
+      {onBack ? <button className="pocket-catalog-back" type="button" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" />Back to Index</button> : null}
+      <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
+      <div>
+        <h2 key={section.id} className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
+        {handheld ? <SectionReadout items={readout} /> : null}
+      </div>
+      {handheld ? controls : null}
+    </header>
+    <MastheadParts handheld={handheld} readout={<SectionReadout items={readout} />} actions={actions || onCreateRecord ? controls : null} />
+  </>;
 }
 
 function GameShelf({ groups, handheld, onOpenRecord, header, currentGame, records }: Pick<SectionPageProps, "handheld" | "onOpenRecord" | "currentGame" | "records"> & { groups: SelectorGroup[]; header: SectionPageHeaderProps }) {
@@ -358,17 +376,28 @@ function ProjectWorkprint({ workbench, bench, other, compact = false, onOpenReco
         <h4>{bench.latest.title}</h4>
         {bench.latest.excerpt ? <p>{bench.latest.excerpt}</p> : null}
         {bench.earlier ? <small>+ {bench.earlier} earlier</small> : null}
+      </section> : bench.screen ? <section className="project-dispatch" data-empty="" aria-label="Latest note">
+        <p className="project-bench-label">Latest note</p>
+        <p>No notes filed yet.</p>
       </section> : bench.stack.length ? <section className="project-dispatch project-build-sheet" aria-label="Build sheet">
         <p className="project-bench-label">Build sheet</p>
         <ul>{bench.stack.map((item) => <li key={item}>{item}</li>)}{bench.moreStack ? <li>+{bench.moreStack} more</li> : null}</ul>
       </section> : null}
       {bench.screen ? <figure className="project-screen" data-lit="">
         <div className="project-screen-glass"><img src={bench.screen} alt="" decoding="async" loading="lazy" /><img className="screen-bloom" src={bench.screen} alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>
-        {bench.latest && bench.stack.length ? <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption> : null}
+        {bench.stack.length ? <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption> : null}
       </figure> : null}
     </div> : null}
     <button className="project-workbench-hit" type="button" aria-label={`Open ${record.title}`} onClick={(event) => sectionMotion.openProjectPlate(event.currentTarget, () => onOpenRecord(record))}><span className="project-workbench-light" aria-hidden="true" /></button>
   </div>;
+}
+
+// The glass window on a disk: the game's art behind smoked glass, or etched glass when there is none.
+function GameDiskWindow({ record }: { record: RecordEntry }) {
+  const art = pocket.gameDiskArt({ ...record.meta, banner: record.banner });
+  return art
+    ? <span className="game-disk-window"><img src={art} alt="" decoding="async" loading="lazy" referrerPolicy="no-referrer" /></span>
+    : <span className="game-disk-window" data-empty="" data-title={record.title} />;
 }
 
 function RecordSelectorTile({ record, loaded = false, onOpenRecord }: { record: RecordEntry; loaded?: boolean; onOpenRecord: (record: RecordEntry) => void }) {
@@ -378,6 +407,7 @@ function RecordSelectorTile({ record, loaded = false, onOpenRecord }: { record: 
   return <button className="record-sleeve" data-game-sleeve="" data-state={recordStateKey(status)} data-in-drive={loaded ? "" : undefined} type="button" aria-label={label} onClick={(event) => sectionMotion.openInstrumentSleeve(event.currentTarget, () => onOpenRecord(record), event.detail > 0)}>
     <span className="record-sleeve-art" aria-hidden="true">
       <span className="record-sleeve-label"><strong>{record.title}</strong>{loaded ? <small>In drive</small> : activity ? <small>{activity}</small> : null}</span>
+      <GameDiskWindow record={record} />
       <span className="game-disk-well"><span className="game-disk-hub" /></span>
       <span className="game-disk-contacts" />
       <span className="pocket-tape-reels" />
@@ -385,7 +415,7 @@ function RecordSelectorTile({ record, loaded = false, onOpenRecord }: { record: 
   </button>;
 }
 
-function ArchiveFolders({ onOpenRecord, records, section, filingDay }: { onOpenRecord: (record: RecordEntry) => void; records: RecordEntry[]; section: ArchiveSectionConfig; filingDay?: string }) {
+function ArchiveFolders({ onOpenRecord, records, section, filingDay, handheld = false }: { onOpenRecord: (record: RecordEntry) => void; records: RecordEntry[]; section: ArchiveSectionConfig; filingDay?: string; handheld?: boolean }) {
   const { archivedLogs, folders, looseGroups } = buildFieldArchive(records, filingDay ? new Date(filingDay) : undefined);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const filedRecords = [...looseGroups, ...folders].flatMap((group) => group.records);
@@ -420,10 +450,11 @@ function ArchiveFolders({ onOpenRecord, records, section, filingDay }: { onOpenR
         <div>
           <p>{section.code}</p>
           <h2 className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
-          <SectionReadout items={sectionReadout(filedRecords)} />
+          {handheld ? <SectionReadout items={sectionReadout(filedRecords)} /> : null}
         </div>
         <i>{archivedLogs.length} archived logs</i>
       </header>
+      <MastheadParts handheld={handheld} readout={<SectionReadout items={sectionReadout(filedRecords)} />} />
       <div className="archive-manager">
         <aside className="archive-manager-side" aria-label="Archive locations and details">
           <div className="archive-manager-section">
@@ -624,6 +655,7 @@ function splitSectionRecords(section: RecordSection, records: RecordEntry[]): Ar
 }
 
 function SetupBay({
+  handheld = false,
   countLabel,
   onCreateRecord,
   onEditTool,
@@ -632,6 +664,7 @@ function SetupBay({
   records,
   section
 }: {
+  handheld?: boolean;
   countLabel: string;
   onCreateRecord?: (group: SetupGroupId) => void;
   onEditTool?: (record: RecordEntry) => void;
@@ -657,10 +690,11 @@ function SetupBay({
         <div>
           <p>{section.code}</p>
           <h2 className="cipher-section">{renderCipherLetters("Setup Manifest")}</h2>
-          <SectionReadout items={readout} />
+          {handheld ? <SectionReadout items={readout} /> : null}
         </div>
         <i>{countLabel}</i>
       </header>
+      <MastheadParts handheld={handheld} readout={<SectionReadout items={readout} />} />
 
       <div className="setup-bay-grid">
         {groups.map((group) => (

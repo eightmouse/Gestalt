@@ -1,20 +1,15 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "27 / 11 / 2026",
+  "updated": "28 / 11 / 2026",
   "groups": [
     {
       "id": "working",
       "title": "In progress",
       "items": [
         {
-          "title": "Desktop performance and display pass",
-          "detail": "Compact through 4K layouts and 200% browser zoom checked in Firefox, Edge and Chrome. Timeline can reopen and filter without rebuilding its data. These checks do not certify frame pacing on physical displays or screen-reader behavior.",
-          "completed": true
-        },
-        {
-          "title": "Align minimized windows with the content",
-          "detail": "The desktop restore controls and System Tips align with the workspace's right rail, above the footer. Existing restore behavior is unchanged."
+          "title": "Setup overhaul",
+          "detail": "The last section design pass, after Logs. Revisit the device bay while keeping Systems, Tools, Peripherals and Notes, along with their in-place editing. Design to be discussed."
         }
       ]
     },
@@ -23,12 +18,12 @@
       "title": "On the desk",
       "items": [
         {
-          "title": "Dashboard: digital chrome and system tips",
-          "detail": "Explore a hologram-style time and date readout, with distinct cipher and glitch resolves for the Dashboard and footer. Replace the public System Tips button with a bell at the same location as the local publish bell; the public bell keeps tips available even if the welcome prompt is missed. Local publishing stays unchanged."
+          "title": "Field Desk: a deliberate desk",
+          "detail": "Keep how the papers read, but make the desk feel arranged rather than empty, with details on and around it that fit Gestalt. Design to be discussed."
         },
         {
-          "title": "Setup overhaul",
-          "detail": "The last section design pass, after Logs. Revisit the device bay while keeping Systems, Tools, Peripherals and Notes, along with their in-place editing. Design to be discussed."
+          "title": "Dashboard: digital chrome and system tips",
+          "detail": "Explore a hologram-style time and date readout, with distinct cipher and glitch resolves for the Dashboard and footer. Replace the public System Tips button with a bell at the same location as the local publish bell; the public bell keeps tips available even if the welcome prompt is missed. Local publishing stays unchanged."
         },
         {
           "title": "Archive Relay",
@@ -40,6 +35,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "One masthead, real floppies and lit screens",
+          "detail": "Every section has one lighter masthead. Gestalt powers on with a slow, dim glow instead of a flash. Screen light is softer outside and stronger inside the glass. Every project bench shares a 16:9 screen with its build sheet. Game disks are 3.5\" floppies in clear smoked glass, with a sliding shutter and a disc that turns in the drive. Legacy Mode fills the bay, and field papers fold back onto the desk.",
+          "version": "v1.88.0",
+          "releasedOn": "2026-11-28"
+        },
         {
           "title": "Power-on, one beat and the Field Desk",
           "detail": "Gestalt powers on in about three seconds and reports what it actually read, including your last session when local memory is on. The power-on line becomes the header rule, and Memory State logs the boot. Records open and close on one clean beat. Logs sits on a lamp-lit Field Desk, and every section shares the Dashboard's plates.",

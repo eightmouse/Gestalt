@@ -1,9 +1,9 @@
 .memory-trace {
   --trace-size: var(--desktop-size, 1);
   /* A phosphor tube: near-black glass, light only where the beam writes. */
-  --trace-screen: #050b0a;
-  --trace-screen-glow: rgb(64 168 140 / .12);
-  --trace-edge-falloff: rgb(0 0 0 / .55);
+  --trace-screen: #06110e;
+  --trace-screen-glow: rgb(70 186 154 / .2);
+  --trace-edge-falloff: rgb(0 0 0 / .48);
   --trace-scanline: rgb(0 0 0 / .3);
   --trace-rim: rgb(171 230 216 / .16);
   --trace-inset: #000;
@@ -29,12 +29,12 @@
     radial-gradient(ellipse at 50% 47%, transparent 50%, var(--trace-edge-falloff) 112%),
     radial-gradient(ellipse at 50% 44%, var(--trace-screen-glow), transparent 78%),
     var(--trace-screen);
-  /* A tight bloom at the glass edge; the light it casts lands on the plates (globals.css, Night screen light). */
-  box-shadow: var(--trace-bezel), 0 0 4px var(--trace-halo), 0 0 22px 2px rgb(110 230 200 / .14);
+  /* A soft spill at the glass edge, no ring; the light it casts lands on the plates (globals.css, Night screen light). */
+  box-shadow: var(--trace-bezel), 0 0 16px -4px rgb(110 230 200 / .18), 0 0 40px -8px rgb(110 230 200 / .1);
 }
 /* Glass in front of the phosphor: the shared screen glare and a recessed edge (globals.css, Screens). */
 /* The lit tube hazes its own glass: a soft phosphor veil, added as light over the code. */
-.memory-trace::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, rgb(96 226 192 / .12), rgb(96 226 192 / .04) 58%, transparent 82%); mix-blend-mode: screen; }
+.memory-trace::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse 85% 75% at 50% 46%, rgb(96 226 192 / .2), rgb(96 226 192 / .08) 55%, rgb(96 226 192 / .02) 85%, transparent); mix-blend-mode: screen; }
 .memory-trace::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--screen-glare); box-shadow: var(--screen-recess); }
 .memory-trace-lens { position: absolute; overflow: hidden; pointer-events: none; }
 .memory-trace-raster { min-block-size: 0; min-inline-size: 0; display: grid; grid-template-rows: minmax(0, 1fr); }

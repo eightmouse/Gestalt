@@ -14,7 +14,6 @@ declare const behaviour: {
   readLastSession(storage?: Pick<Storage, "getItem">): string | null | undefined;
   saveLastSession(now?: Date, storage?: Pick<Storage, "getItem" | "setItem">): boolean;
   lastSessionLabel(previous: string | null | undefined, now?: Date): string | null;
-  measureBootThread(shell: HTMLElement | null, host?: Window): boolean;
   bootModules: Readonly<Partial<Record<string, { readonly id: string; readonly order: number; readonly label: string }>>>;
   initializeBootPresentation(doc?: Document, random?: () => number): string;
   normalizeStartupMode(value: unknown): StartupMode;

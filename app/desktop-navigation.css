@@ -58,6 +58,15 @@
     --window-rail-start: var(--window-rail-pad);
     grid-template-columns: minmax(0, 1fr);
   }
+  /* Legacy Mode: the bay fills the room beside the sidebar (up to the Terminal bay's width), so the
+     plates end where the masthead does and the window tray lines up with them. */
+  .archive-shell:not([data-nav-wide]) {
+    --dashboard-max-inline: min(calc(1480px * var(--desktop-size, 1)), calc(100vw - var(--sidebar-width) - var(--window-rail-pad) * 2));
+    --section-split-max-inline: var(--dashboard-max-inline);
+    --archive-content-max-inline: var(--dashboard-max-inline);
+  }
+  .archive-shell:not([data-nav-wide]) > .workspace > .workspace-header { max-inline-size: var(--dashboard-max-inline); }
+  .archive-shell:not([data-nav-wide]) > .workspace > .setup-bay { inline-size: min(100%, var(--dashboard-max-inline)); max-inline-size: var(--dashboard-max-inline); }
   .archive-shell[data-desktop-nav][data-nav-wide]::before {
     background-image: linear-gradient(90deg, rgba(var(--tone-base, 5, 6, 5), 0.58), rgba(var(--tone-base, 5, 6, 5), 0.2) 48%, rgba(var(--tone-base, 5, 6, 5), 0.58));
   }

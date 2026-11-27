@@ -137,7 +137,9 @@ assert.match(staticSource, /if \(!state\.bootDismissed && !bootCleanup\)/);
 // Power-on timeline: tube 0-440ms, readiness 520-1040ms, cut 1280ms, session 1300ms, handoff 2200ms (quick 760ms).
 assert.match(css, /\.archive-shell\.is-booting \{ --boot-on: 240ms; --boot-workspace-at: 2200ms; \}/);
 assert.match(css, /\.archive-shell\.is-quick-boot \{ --boot-workspace-at: 760ms; \}/);
-assert.match(css, /\.boot-tube \{[^}]*animation: boot-tube-on 440ms linear var\(--boot-elapsed, 0ms\) both;/, "The tube warms up first, on the boot clock");
+assert.match(css, /\.boot-tube \{[^}]*animation: boot-tube-glow 1100ms cubic-bezier\(0\.33, 0, 0\.2, 1\) var\(--boot-elapsed, 0ms\) both;/, "The tube warms up slowly and dimly, on the boot clock");
+const glowFrames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === "boot-tube-glow");
+glowFrames.walkDecls((decl) => assert.equal(decl.prop, "opacity", "The soft glow only fades: a scaled-up gradient shows as blocks"));
 assert.match(css, /boot-shutter 200ms [^;]*calc\(var\(--boot-workspace-at, 2200ms\) \+ var\(--boot-elapsed, 0ms\)\) both/, "The screen leaves by shuttering into a line");
 assert.match(css, /\.archive-shell:not\(\.is-quick-boot\) \.boot-loader \{\s*animation: boot-cut 1ms linear calc\(1280ms \+ var\(--boot-elapsed, 0ms\)\) forwards;/, "The loader cuts, it never dissolves");
 assert.match(css, /\.archive-shell\.is-quick-boot :is\(\.boot-session, \.boot-readiness\) \{ display: none; \}/, "Quick start skips the readiness and session");
@@ -162,7 +164,7 @@ assert.match(css, /\[data-boot-module="activity"\] \{ --boot-row: 2; \}/);
 assert.match(css, /boot-screen-flare 420ms ease-out calc\(var\(--boot-workspace-at\) \+ 360ms/, "The screens power on last");
 assert.ok(2200 + 360 + 420 <= 3000 && 760 + 360 + 420 <= 1600 && 2200 + 560 <= 3000, "The last flare settles before controls are released");
 assert.ok(2200 + 60 + 2 * 80 + 240 <= 3000, "The last plate settles before releasing inert");
-for (const name of ["boot-tube-on", "boot-shutter", "boot-plate-unfold"]) {
+for (const name of ["boot-shutter", "boot-plate-unfold"]) {
   const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
   assert.ok(frames, name);
   frames.walkDecls((decl) => assert.ok(["transform", "opacity", "visibility"].includes(decl.prop), `${name} animates only transform and opacity`));
@@ -205,11 +207,9 @@ assert.ok(read("lib/publish-paths.mjs").includes('"public/images/archive-backdro
 assert.ok(read("lib/publish-paths.mjs").includes('"public/images/eightmouse-avatar.png"'), "Content-only publishing cannot omit a changed profile asset");
 assert.match(reactSource, /if \(!bootComplete \|\| localMemory === "prompt"/);
 assert.match(staticSource, /if \(!state.bootDismissed \|\| state.localMemory === "prompt"\) return;/);
-assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.boot-screen,\s*\.boot-thread \{\s*display: none;/, "Reduced Motion skips the whole power-on, including the thread");
-// Signature touches: the thread becomes the header rule, the last visit is remembered locally, and
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.boot-screen \{\s*display: none;/, "Reduced Motion skips the whole power-on");
+// Signature touches: the last visit is remembered locally, and Memory State's first lines are the boot itself.
 // Memory State's first lines are the boot itself.
-assert.match(css, /\.boot-thread \{[^}]*animation: boot-thread 560ms [^;]*calc\(var\(--boot-workspace-at\) \+ var\(--boot-elapsed, 0ms\)\) both;/);
-assert.match(css, /80% \{ opacity: 1; transform: translate\(var\(--thread-x, 0px\), var\(--thread-y, 0px\)\) scaleX\(var\(--thread-scale, 1\)\); \}/, "The thread lands on the measured header rule");
 assert.equal(behaviour.lastSessionLabel(undefined), null, "No local memory, no last-session line");
 assert.equal(behaviour.lastSessionLabel(null), "First session");
 const sessionNow = new Date(2026, 10, 27, 18, 0);
@@ -330,4 +330,6 @@ for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) 
 const steamInit = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "initializeSteamDisplay").getText(ast);
 assert.match(steamInit, /if \(steamDisplayStarted\) return;/);
 assert.ok(!steamInit.includes("!state.bootDismissed"), "The existing one-shot Steam read can prepare during boot");
+assert.ok(!/boot-tube-(?:line|band)|boot-tube::/.test(css), "No line and no full-screen band: the power-on never flashes");
+assert.ok(!css.includes("boot-thread") && !read("components/archive-os.tsx").includes("boot-thread") && !staticSource.includes("boot-thread"), "The travelling line is retired");
 console.log("Boot passed: tube warm-up, stable wordmark rhythms, real readiness lines, plain operator profile, shutter handoff, row-by-row plates, screen flare, and quick/reduced startup.");

@@ -13,7 +13,31 @@
     sync();
     doc.addEventListener("visibilitychange", sync);
     if (doc.defaultView?.matchMedia) bindDashboardHover(doc, doc.defaultView);
-    if (doc.defaultView?.ResizeObserver && doc.defaultView.MutationObserver && doc.body) bindScreenLight(doc, doc.defaultView);
+    if (doc.defaultView?.ResizeObserver && doc.defaultView.MutationObserver && doc.body) {
+      bindScreenLight(doc, doc.defaultView);
+      bindBenchScreens(doc);
+    }
+  }
+
+  // Every project screen is 16:9. A picture near that shape fills it (a sliver may crop); a much
+  // taller one (a phone app, a narrow window) stands whole in the middle with dark glass either side.
+  function screenShape(ratio) {
+    if (!(ratio > 0)) return null;
+    return ratio >= 1.3 ? "wide" : "tall";
+  }
+
+  // Marks each project screen with its picture's shape once the picture has loaded.
+  function bindBenchScreens(doc) {
+    const mark = (image) => {
+      const glass = image?.closest?.(".project-screen-glass");
+      if (!glass || image.classList.contains("screen-bloom") || !image.naturalWidth) return;
+      const shape = screenShape(image.naturalWidth / image.naturalHeight);
+      if (shape) glass.setAttribute("data-shape", shape);
+    };
+    doc.addEventListener("load", (event) => mark(event.target), true);
+    const scan = () => { for (const image of doc.querySelectorAll(".project-screen-glass:not([data-shape]) img:not(.screen-bloom)")) if (image.complete) mark(image); };
+    new doc.defaultView.MutationObserver(scan).observe(doc.body, { childList: true, subtree: true });
+    scan();
   }
 
   // Averages a small RGBA sample into the colour a lit screen would cast. Bright pixels
@@ -272,5 +296,5 @@
       node.removeAttribute("data-memory-offscreen");
     };
   }
-  return { initialize, watchMemory, screenLightColour };
+  return { initialize, watchMemory, screenLightColour, screenShape };
 });

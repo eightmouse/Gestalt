@@ -7,7 +7,7 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
@@ -23,7 +23,7 @@ import {
   noteEntries,
   recentActivity,
 } from "@/components/archive/record-utils";
-import { SectionPage } from "@/components/archive/section-page";
+import { SectionPage, sectionRegistryLabels } from "@/components/archive/section-page";
 import { setupGroupFor, setupNarrativeNotes, type SetupGroupId } from "@/components/archive/setup-utils";
 import { compareLogWritingOrder, partitionFieldLogs } from "@/lib/log-archive";
 import { SearchPanel } from "@/components/archive/search-panel";
@@ -256,9 +256,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (!bootComplete || localMemory !== "granted" || lastSessionSaved.current) return;
     lastSessionSaved.current = behaviour.saveLastSession();
   }, [bootComplete, localMemory]);
-  useLayoutEffect(() => {
-    if (!bootComplete) behaviour.measureBootThread(shellRef.current);
-  }, [bootComplete]);
 
   const recordsBySection = useMemo(() => {
     return sections.reduce<Record<RecordSection, RecordEntry[]>>(
@@ -785,7 +782,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   const activeSectionConfig = sections.find((section) => section.id === activeSection) ?? sections[0];
   const routeTitle = activeSection === "system" ? "DASHBOARD" : activeSectionConfig.code;
-  const headline = activeSection === "system" ? getGreeting(now) : activeSectionConfig.label;
+  // One name per section: the instrument name. The sidebar keeps the short descriptions.
+  const headline = activeSection === "system" ? getGreeting(now) : sectionRegistryLabels[activeSection] ?? activeSectionConfig.label;
+  const sectionIndex = activeSectionConfig.code.slice(0, 2);
   const saying = dailyLatinSaying(now);
   const subtext = activeSection === "system" ? (
     <span className="latin-tooltip" tabIndex={0}>
@@ -848,7 +847,6 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} filedLogs={fieldLogs.archived} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen startupMode={startupMode} readiness={{ records: archiveRecords.length, appearance: appearance.resolveMode(appearanceMode), steam: steamReady ? (steamSnapshot ? "ready" : "offline") : "reading", lastSession }} /> : null}
-      {showBoot ? <i className="boot-thread" aria-hidden="true" /> : null}
       {showBoot ? <PocketBoot /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
@@ -901,9 +899,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
           if (dispatch?.noteId) openAddressedRecord(record, dispatch.noteId);
           else openRecord(record, dispatch?.content, dispatch?.noteIndex);
         }} />
-        <header className="workspace-header">
-          <div>
-            <p className="route-label">// {routeTitle}</p>
+        <header className="workspace-header masthead">
+          <div className="masthead-title">
             <h1
               aria-label={headline}
               onAnimationEnd={(event) => {
@@ -921,8 +918,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
                 _
               </span>
             </h1>
-            <p className="subtle">{subtext}</p>
+            {activeSection === "system" ? <p className="subtle">{subtext}</p> : <div className="masthead-readout" data-masthead-readout="" />}
           </div>
+          <MastheadCounter value={sectionIndex} />
+          <div className="masthead-actions" data-masthead-actions="" />
           <div className="time-block" aria-label="Local time">
             <Clock size={15} />
             <span>{formatClock(now)}</span>
@@ -1150,4 +1149,13 @@ function dailyLatinSaying(date: Date | null) {
   const seed = source.getFullYear() * 372 + (source.getMonth() + 1) * 31 + source.getDate();
 
   return latinSayings[seed % latinSayings.length];
+}
+
+// The section number rolls like a mechanical counter when you move between sections.
+function MastheadCounter({ value }: { value: string }) {
+  return <span className="masthead-index" aria-hidden="true">
+    {[...value].map((digit, index) => <span className="masthead-digit" key={index} style={{ "--digit": Number(digit) || 0 } as CSSProperties}>
+      <i>{"0123456789".split("").map((face) => <b key={face}>{face}</b>)}</i>
+    </span>)}
+  </span>;
 }

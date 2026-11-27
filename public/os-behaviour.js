@@ -45,17 +45,6 @@
     if (days < 30) return `${days} days ago`;
     return [then.getDate(), then.getMonth() + 1].map((value) => String(value).padStart(2, "0")).join(" / ") + ` / ${then.getFullYear()}`;
   }
-  // The power-on line ends as the rule above the workspace header: measure where that rule sits.
-  function measureBootThread(shell, host = globalThis.window) {
-    const header = shell?.querySelector?.(".workspace > .workspace-header");
-    if (!header || !host?.innerWidth) return false;
-    const box = header.getBoundingClientRect();
-    if (!box.width) return false;
-    shell.style.setProperty("--thread-x", `${Math.round(box.left)}px`);
-    shell.style.setProperty("--thread-y", `${Math.round(box.top - 18)}px`);
-    shell.style.setProperty("--thread-scale", (box.width / host.innerWidth).toFixed(4));
-    return true;
-  }
   const bootModules = Object.freeze({
     PROJECTS: Object.freeze({ id: "projects", order: 0, label: "Mounting process table" }),
     "LOCAL WEATHER": Object.freeze({ id: "weather", order: 1, label: "Checking local sensors" }),
@@ -183,5 +172,5 @@
     }
     return { open, update, close, destroy: close };
   }
-  return { bootProfiles, bootReadiness, readLastSession, saveLastSession, lastSessionLabel, measureBootThread, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
+  return { bootProfiles, bootReadiness, readLastSession, saveLastSession, lastSessionLabel, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
 });

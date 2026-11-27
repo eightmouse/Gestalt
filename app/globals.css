@@ -269,18 +269,16 @@ button {
   --boot-status-delay: 240ms;
 }
 
-/* The tube warms up: a bright line draws across the middle, opens to fill the glass, flashes and
-   settles to the dark screen. Transform and opacity only. */
+/* The tube warms up: no flash, no line. A dim phosphor glow gathers in the middle of the glass,
+   the way an old screen comes on in a dark room, and settles into the resting screen. The glow
+   only fades (opacity), so it never rasterises small and shows as blocks. */
 .boot-tube {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  transform-origin: center;
-  background:
-    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(var(--tone-strong, 236, 230, 211), 0.55), rgba(var(--tone-ink, 217, 213, 193), 0.14) 58%, transparent 86%),
-    rgba(var(--tone-ink, 217, 213, 193), 0.06);
+  background: radial-gradient(ellipse 62% 52% at 50% 47%, rgba(var(--tone-ink, 217, 213, 193), 0.085), rgba(var(--tone-ink, 217, 213, 193), 0.03) 50%, transparent 82%);
   opacity: 0;
-  animation: boot-tube-on 440ms linear var(--boot-elapsed, 0ms) both;
+  animation: boot-tube-glow 1100ms cubic-bezier(0.33, 0, 0.2, 1) var(--boot-elapsed, 0ms) both;
 }
 
 .boot-loader,
@@ -376,29 +374,6 @@ button {
 
 .archive-shell.is-quick-boot :is(.boot-session, .boot-readiness) { display: none; }
 
-/* The thread: the power-on line does not vanish. As the screen shutters it shows as a bright line
-   across the middle, then rises and settles exactly onto the rule above the workspace header
-   (measured by measureBootThread), handing over to the real rule underneath. */
-.boot-thread {
-  position: fixed;
-  z-index: 61;
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  inline-size: 100vw;
-  block-size: 1px;
-  pointer-events: none;
-  transform-origin: left top;
-  background: linear-gradient(90deg, transparent, rgba(var(--tone-strong, 236, 230, 211), 0.9) 10% 90%, transparent);
-  box-shadow: 0 0 6px rgba(var(--tone-strong, 236, 230, 211), 0.45);
-  opacity: 0;
-  animation: boot-thread 560ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--boot-workspace-at) + var(--boot-elapsed, 0ms)) both;
-}
-@keyframes boot-thread {
-  0% { opacity: 0; transform: translate(0, 50vh) scaleX(1); }
-  32% { opacity: 1; transform: translate(0, 50vh) scaleX(1); }
-  80% { opacity: 1; transform: translate(var(--thread-x, 0px), var(--thread-y, 0px)) scaleX(var(--thread-scale, 1)); }
-  100% { opacity: 0; transform: translate(var(--thread-x, 0px), var(--thread-y, 0px)) scaleX(var(--thread-scale, 1)); }
-}
 
 @keyframes boot-surface {
   from { opacity: 0; visibility: hidden; }
@@ -421,11 +396,10 @@ button {
   }
 }
 
-@keyframes boot-tube-on {
-  0% { opacity: 1; transform: scale(0, 0.004); }
-  24% { opacity: 1; transform: scale(1, 0.004); }
-  58% { opacity: 1; transform: scale(1, 1); }
-  100% { opacity: 0; transform: scale(1, 1); }
+@keyframes boot-tube-glow {
+  0% { opacity: 0; }
+  55% { opacity: 1; }
+  100% { opacity: 0.35; }
 }
 @keyframes boot-line-in {
   0% { opacity: 0; }
@@ -447,7 +421,7 @@ button {
   to { opacity: 1; transform: scaleY(1); }
 }
 @keyframes boot-screen-flare {
-  0% { opacity: 0; filter: brightness(2.4); }
+  0% { opacity: 0; filter: brightness(1.35); }
   25% { opacity: 1; }
   100% { opacity: 1; filter: brightness(1); }
 }
@@ -2632,8 +2606,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px calc(8px * var(--selector-scale));
-  min-block-size: calc(46px * var(--selector-scale));
-  padding: calc(8px * var(--selector-scale)) calc(10px * var(--selector-scale)) calc(11px * var(--selector-scale)) calc(16px * var(--selector-scale));
+  min-block-size: calc(56px * var(--selector-scale));
+  padding: calc(10px * var(--selector-scale)) calc(12px * var(--selector-scale)) calc(14px * var(--selector-scale)) calc(18px * var(--selector-scale));
   border: 1px solid var(--line);
   background: rgba(var(--tone-surface, 8, 9, 8), .36);
   color: var(--text);
@@ -2642,10 +2616,10 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   cursor: pointer;
   transition: background-color 110ms ease, border-color 110ms ease;
 }
-.project-spine::before { content: ""; position: absolute; inset-block: calc(7px * var(--selector-scale)); inset-inline-start: calc(6px * var(--selector-scale)); inline-size: 2px; background: var(--line-strong); transition: background-color 110ms ease; }
-.project-spine-title { overflow: hidden; color: var(--text-strong); text-overflow: ellipsis; white-space: nowrap; font: 500 calc(14px * var(--selector-scale)) / 1.15 var(--sans); }
-.project-spine small { color: var(--muted); font-size: calc(11px * var(--selector-scale)); font-variant-numeric: tabular-nums; }
-.project-spine-meter { position: absolute; inset: auto calc(10px * var(--selector-scale)) calc(5px * var(--selector-scale)) calc(16px * var(--selector-scale)); block-size: 2px; background: linear-gradient(var(--text), var(--text)) left / var(--spine-progress, 0%) 100% no-repeat, var(--line); }
+.project-spine::before { content: ""; position: absolute; inset-block: calc(7px * var(--selector-scale)); inset-inline-start: calc(6px * var(--selector-scale)); inline-size: 3px; background: var(--line-strong); transition: background-color 110ms ease; }
+.project-spine-title { overflow: hidden; color: var(--text-strong); text-overflow: ellipsis; white-space: nowrap; font: 500 calc(16px * var(--selector-scale)) / 1.2 var(--sans); }
+.project-spine small { color: var(--muted); font-size: calc(12px * var(--selector-scale)); font-variant-numeric: tabular-nums; }
+.project-spine-meter { position: absolute; inset: auto calc(12px * var(--selector-scale)) calc(6px * var(--selector-scale)) calc(18px * var(--selector-scale)); block-size: 2px; background: linear-gradient(var(--text), var(--text)) left / var(--spine-progress, 0%) 100% no-repeat, var(--line); }
 .project-spine-group[data-group="other"] .project-spine { border-style: dashed; background-color: transparent; }
 .project-spine-group[data-group="other"] .project-spine-title { color: var(--text); }
 .project-spine-group[data-group="other"] .project-spine-meter { opacity: .55; }
@@ -2664,6 +2638,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .project-dispatch h4 { margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font: 500 calc(17px * var(--selector-scale)) / 1.2 var(--sans); }
 .project-dispatch p:not(.project-bench-label) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; margin: 0; color: var(--text); font: calc(14px * var(--selector-scale)) / 1.45 var(--sans); }
 .project-dispatch small { color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+.project-dispatch[data-empty] p:not(.project-bench-label) { color: var(--muted); font-family: var(--mono); font-size: calc(12px * var(--selector-scale)); }
 /* The screen always keeps the right half, the same size for every project, note or not. */
 .project-build-sheet ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; color: var(--text); font: calc(12px * var(--selector-scale)) / 1.35 var(--mono); overflow-wrap: anywhere; }
 .project-build-sheet li { padding-block: 3px; border-block-end: 1px dashed var(--line); }
@@ -2671,13 +2646,16 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .project-screen { position: relative; display: grid; grid-template-rows: minmax(calc(70px * var(--selector-scale)), 1fr) auto; gap: calc(8px * var(--selector-scale)); min-inline-size: 0; margin: 0; padding: calc(7px * var(--selector-scale)); border: 1px solid var(--line-strong); background: var(--reader-well); }
 .project-screen:not([data-lit]) { grid-template-rows: auto; align-self: start; justify-self: start; inline-size: min(100%, calc(340px * var(--selector-scale))); padding: calc(12px * var(--selector-scale)) calc(14px * var(--selector-scale)); border-color: var(--line); background: rgba(var(--tone-well, 12, 16, 14), .42); }
 .project-screen-glass { position: relative; overflow: hidden; min-block-size: 0; background: rgb(6 8 7); box-shadow: inset 0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), .1), inset 0 2px 10px rgb(0 0 0 / .5); }
-.project-screen-glass img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: top center; opacity: .9; }
+/* The screen fills its half of the bench; the sample covers the glass from the top down. */
+.project-screen-glass img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center; opacity: .9; }
+/* A much taller picture stands whole in the middle of the glass, dark either side (ambient-motion.js marks it). */
+.project-screen-glass[data-shape="tall"] img { object-fit: contain; }
 .project-screen-glass::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--screen-glare), var(--lcd-mask), var(--screen-vignette); box-shadow: var(--screen-recess); }
 .project-screen figcaption { display: grid; gap: 5px; color: var(--text); overflow-wrap: anywhere; font: calc(12px * var(--selector-scale)) / 1.35 var(--mono); }
 :root[data-appearance="day"] .project-screen-glass { background: rgb(28 31 29); }
 
 @media (min-width: 761px) {
-  .section-page--projects .record-selector { grid-template-columns: calc(200px * var(--selector-scale)) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  .section-page--projects .record-selector { grid-template-columns: calc(264px * var(--selector-scale)) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; }
   .section-page--projects .record-selector > .record-selector-toolbar { display: none; }
   .section-page--projects .record-selector > :is(.record-selector-results, .project-workbench, .search-empty) { grid-column: 2; min-block-size: 0; }
   .section-page--projects .record-selector-results { display: grid; }
@@ -2685,13 +2663,18 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .section-page--projects .project-workbench-frame { display: grid; min-block-size: 0; }
   .project-workbench-record[data-bench] { grid-template-rows: auto minmax(0, 1fr); align-items: start; row-gap: calc(22px * var(--selector-scale)); min-block-size: 0; }
   .project-dispatch { overflow: hidden; }
+  /* Every bench is the same: a 16:9 screen with its build sheet underneath, the latest note beside it. */
+  .project-bench-deck { align-items: start; align-content: start; }
+  .project-bench-deck > .project-screen[data-lit] { grid-template-rows: auto auto; }
+  .project-bench-deck > .project-screen .project-screen-glass { aspect-ratio: 16 / 9; }
+  .project-bench-deck > .project-dispatch { align-self: stretch; }
 }
 
 /* Shorter desktop bays keep every part of the bench, just tighter: two-line copy, slimmer spines. */
 @media (min-width: 761px) and (max-height: 850px) {
   .project-spines { gap: 10px; }
   .project-spine-group { gap: 4px; }
-  .record-selector .project-spine { min-block-size: calc(36px * var(--selector-scale)); padding-block: calc(5px * var(--selector-scale)) calc(9px * var(--selector-scale)); }
+  .record-selector .project-spine { min-block-size: calc(44px * var(--selector-scale)); padding-block: calc(7px * var(--selector-scale)) calc(11px * var(--selector-scale)); }
   .project-workbench-record[data-bench] { padding: calc(14px * var(--selector-scale)) calc(20px * var(--selector-scale)); row-gap: calc(12px * var(--selector-scale)); }
   .project-workbench-record[data-bench] .project-workbench-brief { gap: calc(5px * var(--selector-scale)); }
   .project-workbench-record[data-bench] .project-workbench-brief h3 { font-size: calc(26px * var(--selector-scale)); }
@@ -2700,7 +2683,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .project-dispatch { gap: calc(5px * var(--selector-scale)); padding: calc(10px * var(--selector-scale)) calc(12px * var(--selector-scale)); }
   .project-dispatch h4 { font-size: calc(15px * var(--selector-scale)); }
   .project-milestone-trace { margin-block-start: calc(10px * var(--selector-scale)); }
-  .project-screen[data-lit] { grid-template-rows: minmax(calc(52px * var(--selector-scale)), 1fr) auto; gap: 6px; }
+  .project-screen[data-lit] { gap: 6px; }
   .project-screen[data-lit] figcaption { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .project-screen[data-lit] figcaption .project-bench-label { display: none; }
 }
@@ -2722,7 +2705,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   --screen-vignette: radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(0 0 0 / .14) 125%);
   --lcd-mask: repeating-linear-gradient(90deg, rgb(0 0 0 / .05) 0 1px, transparent 1px 3px);
 }
-:root:not([data-appearance="day"]) .game-cover img,
+:root:not([data-appearance="day"]) .game-cover img:not(.screen-bloom) { filter: brightness(1.16) contrast(1.05) saturate(1.1); }
 :root:not([data-appearance="day"]) .game-drive-screen img,
 :root:not([data-appearance="day"]) .project-screen-glass img { filter: brightness(1.08) contrast(1.06) saturate(1.06); }
 
@@ -4509,23 +4492,29 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   }
 
   :root:not([data-appearance="day"]) .dashboard-grid > .dashboard-panel {
-    --memory-light-reach: calc(220px * var(--desktop-size, 1));
-    --cover-light-reach: calc(150px * var(--desktop-size, 1));
+    --memory-light-reach: calc(300px * var(--desktop-size, 1));
+    --cover-light-reach: calc(210px * var(--desktop-size, 1));
     background:
       radial-gradient(
         calc(var(--memory-light-rx, 0px) + var(--memory-light-reach)) calc(var(--memory-light-ry, 0px) + var(--memory-light-reach))
         at var(--memory-light-x, -9999px) var(--memory-light-y, -9999px),
-        rgb(var(--memory-light-rgb) / calc(.42 * var(--memory-light-gain))),
-        rgb(var(--memory-light-rgb) / calc(.2 * var(--memory-light-gain))) 50%,
-        rgb(var(--memory-light-rgb) / calc(.075 * var(--memory-light-gain))) 72%,
+        rgb(var(--memory-light-rgb) / calc(.3 * var(--memory-light-gain))),
+        rgb(var(--memory-light-rgb) / calc(.2 * var(--memory-light-gain))) 34%,
+        rgb(var(--memory-light-rgb) / calc(.12 * var(--memory-light-gain))) 47%,
+        rgb(var(--memory-light-rgb) / calc(.066 * var(--memory-light-gain))) 59%,
+        rgb(var(--memory-light-rgb) / calc(.03 * var(--memory-light-gain))) 71%,
+        rgb(var(--memory-light-rgb) / calc(.01 * var(--memory-light-gain))) 85%,
         transparent
       ),
       radial-gradient(
         calc(var(--cover-light-rx, 0px) + var(--cover-light-reach)) calc(var(--cover-light-ry, 0px) + var(--cover-light-reach))
         at var(--cover-light-x, -9999px) var(--cover-light-y, -9999px),
-        rgb(var(--cover-light-rgb, 188 194 188) / .38),
-        rgb(var(--cover-light-rgb, 188 194 188) / .17) 50%,
-        rgb(var(--cover-light-rgb, 188 194 188) / .06) 72%,
+        rgb(var(--cover-light-rgb, 188 194 188) / .3),
+        rgb(var(--cover-light-rgb, 188 194 188) / .2) 34%,
+        rgb(var(--cover-light-rgb, 188 194 188) / .12) 47%,
+        rgb(var(--cover-light-rgb, 188 194 188) / .066) 59%,
+        rgb(var(--cover-light-rgb, 188 194 188) / .03) 71%,
+        rgb(var(--cover-light-rgb, 188 194 188) / .01) 85%,
         transparent
       ),
       linear-gradient(180deg, var(--dashboard-plate-finish), transparent 42%),
@@ -4958,8 +4947,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   text-align: center;
   font-size: 9px;
   overflow: hidden;
-  /* A tight bloom at the panel edge; the light it casts lands on the plates (see Night screen light). */
-  box-shadow: 0 0 0 1px rgb(var(--lcd-light) / .2), 0 0 9px -2px rgb(var(--lcd-light) / .38);
+  /* A soft spill at the glass edge; the light it casts lands on the plates (see Night screen light). */
+  box-shadow: 0 0 14px -4px rgb(var(--lcd-light) / .26), 0 0 34px -8px rgb(var(--lcd-light) / .14);
 }
 
 /* Glass over the picture: a neutral sheen and edge falloff, never a tint over the artwork. */
@@ -4971,8 +4960,10 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   pointer-events: none;
   opacity: 0.72;
   background:
-    radial-gradient(ellipse at 50% 44%, rgb(255 255 255 / .07), transparent 62%, rgb(0 0 0 / .26) 112%),
-    linear-gradient(180deg, rgb(255 255 255 / .1), transparent 12% 88%, rgb(0 0 0 / .16));
+    radial-gradient(ellipse 80% 70% at 50% 46%, rgb(var(--lcd-light) / .2), rgb(var(--lcd-light) / .07) 55%, transparent 85%),
+    radial-gradient(ellipse at 50% 44%, rgb(255 255 255 / .09), transparent 62%),
+    linear-gradient(180deg, rgb(255 255 255 / .1), transparent 12%);
+  mix-blend-mode: screen;
   animation: dashboard-cover-signal 10s ease-in-out -0.8s infinite;
 }
 
@@ -10475,8 +10466,9 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 .record-window.is-field-paper-reader::before,
 .record-window.is-field-paper-reader::after { content: none; }
+/* The caption lines up with the text; the window controls sit in the corner like every window's. */
 .archive-shell > .workspace > .record-window.is-field-paper-reader > .window-bar {
-  padding-inline: var(--paper-gutter);
+  padding-inline: var(--paper-gutter) calc(14px * var(--desktop-size, 1));
   border: 0;
   border-block-end: 1px solid var(--line);
   background: none;
@@ -10579,8 +10571,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     visibility: visible;
   }
 
-  .boot-screen,
-  .boot-thread {
+  .boot-screen {
     display: none;
   }
 
@@ -10681,4 +10672,348 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     border-block-start-color: var(--plate-rim);
     box-shadow: var(--card-lift);
   }
+}
+
+/* Masthead: one header per section, lighter than the content it introduces. No plate: the name
+   and its readouts sit on the backdrop, an engraved section number rolls like a mechanical counter
+   between sections, and one lit seam runs beneath (the boot line lands on it). Time is plain text;
+   every control is the same square button in one row. Handheld keeps its own pocket header. */
+.masthead-index, .masthead-actions { display: none; }
+@media (min-width: 761px) {
+  .archive-shell > .workspace > .workspace-header.masthead {
+    --masthead-size: var(--desktop-size, 1);
+    --masthead-button: calc(32px * var(--masthead-size));
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "index title time actions";
+    align-items: center;
+    column-gap: calc(22px * var(--masthead-size));
+    block-size: calc(104px * var(--masthead-size));
+    min-block-size: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  /* The ticking rule is retired; one lit seam runs beneath the masthead instead. */
+  .archive-shell > .workspace > .workspace-header.masthead::before { display: none; }
+  .archive-shell > .workspace > .workspace-header.masthead::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    block-size: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(var(--tone-strong, 236, 230, 211), .5), rgba(var(--tone-ink, 217, 213, 193), .22) 38%, rgba(var(--tone-ink, 217, 213, 193), .1) 82%, transparent);
+    box-shadow: 0 1px 0 rgb(0 0 0 / .45);
+  }
+  .workspace-header.masthead > .masthead-title { grid-area: title; display: grid; align-content: center; gap: calc(6px * var(--masthead-size)); min-inline-size: 0; }
+  .workspace-header.masthead h1 { font-size: calc(40px * var(--masthead-size)); line-height: 1.05; white-space: nowrap; }
+  .workspace-header.masthead .subtle { margin: 0; min-block-size: 0; }
+  .workspace-header.masthead .masthead-readout:empty { display: none; }
+  .workspace-header.masthead .masthead-readout .section-page-readout { margin: 0; }
+
+  /* The engraved number: two digit wheels behind a window, set off from the name by a hairline. */
+  .workspace-header.masthead > .masthead-index {
+    grid-area: index;
+    display: flex;
+    align-items: center;
+    gap: 0.04em;
+    padding-inline-end: calc(22px * var(--masthead-size));
+    border-inline-end: 1px solid rgba(var(--tone-ink, 217, 213, 193), .18);
+    color: rgba(var(--tone-strong, 236, 230, 211), .82);
+    font: 200 calc(56px * var(--masthead-size)) / 1 var(--sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-shadow: 0 1px 0 rgb(0 0 0 / .7), 0 -1px 0 rgba(var(--tone-highlight, 255, 255, 255), .06);
+  }
+  .masthead-digit { display: block; block-size: 1em; overflow: hidden; }
+  .masthead-digit > i { display: grid; font-style: normal; transform: translateY(calc(var(--digit, 0) * -1em)); transition: transform 620ms cubic-bezier(0.3, 1.3, 0.5, 1); }
+  .masthead-digit b { display: block; block-size: 1em; font-weight: inherit; }
+
+  /* Time is information: plain muted text. Controls follow in one row, set apart by a hairline. */
+  .workspace-header.masthead > .time-block {
+    grid-area: time;
+    align-self: center;
+    margin: 0;
+    padding: 0;
+    gap: calc(10px * var(--masthead-size));
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--muted);
+    font-size: calc(14px * var(--masthead-size));
+  }
+  .workspace-header.masthead > .time-block > :is(button, .icon-button):first-of-type {
+    margin-inline-start: calc(10px * var(--masthead-size));
+    position: relative;
+  }
+  /* One even 10px rhythm between controls: no inherited margins. */
+  .archive-shell > .workspace > .workspace-header.masthead > .time-block > :is(button, .icon-button):not(:first-of-type) { margin-inline-start: 0; }
+  .workspace-header.masthead > .time-block > :is(button, .icon-button):first-of-type::before {
+    content: "";
+    position: absolute;
+    inset-block: 4px;
+    inset-inline-start: calc(-11px * var(--masthead-size));
+    inline-size: 1px;
+    background: rgba(var(--tone-ink, 217, 213, 193), .18);
+  }
+  .workspace-header.masthead > .masthead-actions { grid-area: actions; display: flex; align-items: center; gap: calc(10px * var(--masthead-size)); margin-inline-start: calc(-12px * var(--masthead-size)); }
+  .workspace-header.masthead > .masthead-actions:empty { display: none; }
+  .workspace-header.masthead > .masthead-actions .section-page-header-actions { display: flex; align-items: center; gap: calc(10px * var(--masthead-size)); }
+  .workspace-header.masthead > .masthead-actions .section-page-count { display: none; }
+  /* Every control is the same square button. */
+  .archive-shell > .workspace > .workspace-header.masthead :is(.time-block > button, .icon-button, .local-review-button, .archive-create-record:not(.game-shelf-search)) {
+    flex: none;
+    inline-size: var(--masthead-button);
+    block-size: var(--masthead-button);
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(var(--tone-ink, 217, 213, 193), .2);
+    background: rgba(var(--tone-surface, 8, 9, 8), .35);
+    color: var(--text);
+  }
+  .workspace-header.masthead :is(.time-block > button, .icon-button, .local-review-button, .archive-create-record):is(:hover, :focus-visible) { border-color: var(--line-strong); color: var(--text-strong); }
+
+  /* The cursor means "writing": it shows while a title resolves and leaves once the name settles. */
+  .workspace-header.masthead h1:not(.is-resolving) .headline-cursor { visibility: hidden; }
+
+  /* One header per section: the in-container plates are retired on desktop. */
+  .archive-shell > .workspace > .section-page > .section-page-header { display: none; }
+  /* With its header gone, every section body takes the whole frame (beats the shared-frame row rule). */
+  .archive-shell > .workspace > .section-page.section-page { grid-template-rows: minmax(0, 1fr); }
+  .archive-shell > .workspace > .setup-bay.section-page { flex: 1 1 0%; }
+  /* The Dashboard fills the same frame as every section, down to the footer. */
+  .archive-shell > .workspace > .dashboard-grid { flex: 1 1 0%; block-size: auto; }
+  .archive-shell > .workspace > .setup-bay > .setup-bay-grid { grid-auto-rows: minmax(0, 1fr); }
+  .archive-shell > .workspace > .section-page > :is(.record-selector, .field-paper-desk) { border-block-start: 1px solid var(--plate-rim); }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: reduce) {
+  .masthead-digit > i { transition: none; }
+}
+
+/* Glass floppies: Gestalt's own disk, a 3.5" floppy in a clear smoked case. The whole disc sits
+   inside the glass, behind a smoke tint, never faded out. A brushed-metal shutter covers its read
+   window and slides back when you reach for the disk, or while it is in the drive, and the disc
+   turns. The picture and the title are one sticker across the lower half: every game gets the same
+   landscape frame, and the title is always printed. Floppy details: an insert arrow, a write-protect
+   slider and the HD hole. State is light, not badges: the disk in the drive is the brightest, session
+   disks are lit, past disks are stored and dim. Desktop only: handheld keeps its upright tapes. */
+.game-disk-window { display: none; }
+@media (min-width: 761px) {
+  .record-selector--games .record-sleeve-art {
+    --disk-ink: var(--tone-ink, 217, 213, 193);
+    aspect-ratio: 0.66;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 0;
+    padding: 8% 7% 11%;
+    background: rgba(var(--disk-ink), .32);
+  }
+  /* The clear case: a smoke tint, a long diagonal sheen, a lit top edge and an inner moulded rim. */
+  .record-selector--games .record-sleeve-art::before {
+    background:
+      linear-gradient(180deg, rgba(var(--disk-ink), .18), transparent 2%),
+      linear-gradient(112deg, rgb(255 255 255 / .09), rgb(255 255 255 / .02) 26%, transparent 44%, rgb(255 255 255 / .03) 70%, transparent 86%),
+      linear-gradient(rgba(var(--disk-ink), .07), rgba(var(--disk-ink), .07)) 4% 4% / 92% 1px no-repeat,
+      linear-gradient(rgba(var(--disk-ink), .07), rgba(var(--disk-ink), .07)) 4% 96% / 92% 1px no-repeat,
+      linear-gradient(180deg, rgba(var(--tone-recessed, 25, 31, 27), .86), rgba(var(--tone-well, 12, 16, 14), .94));
+  }
+
+  /* The disc, whole, inside the case. */
+  .record-selector--games .game-disk-well {
+    position: absolute;
+    z-index: 0;
+    inset-block-start: 9%;
+    inset-inline-start: 50%;
+    inline-size: 80%;
+    block-size: auto;
+    aspect-ratio: 1;
+    translate: -50% 0;
+    display: block;
+    overflow: visible;
+    border: 0;
+    background: none;
+  }
+  .record-selector--games .game-disk-hub {
+    display: block;
+    position: absolute;
+    inset: 0;
+    inline-size: auto;
+    block-size: auto;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 50%;
+    background:
+      /* the metal hub: spindle hole, steel ring, its rim */
+      radial-gradient(circle, rgb(8 9 9) 0 3.5%, rgb(196 200 198) 4% 11%, rgb(120 126 124) 11.5% 15%, rgb(24 26 25) 15.5% 17%, transparent 17.5%),
+      /* the recording surface: fine grooves and a slow sheen that turns with the disc */
+      repeating-radial-gradient(circle, rgb(255 255 255 / .03) 0 1px, transparent 1px 3px),
+      conic-gradient(from 30deg, rgb(255 255 255 / .12), transparent 10%, rgb(255 255 255 / .03) 26%, transparent 40%, rgb(255 255 255 / .1) 54%, transparent 66%, rgb(255 255 255 / .04) 82%, rgb(255 255 255 / .12)),
+      radial-gradient(circle, transparent 46%, rgb(0 0 0 / .35) 50%, transparent 52%),
+      rgb(32 27 24);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / .4);
+    transition: filter 240ms ease;
+  }
+  /* The drive pin hole: the mark that shows the disc turning. */
+  .record-selector--games .game-disk-hub::after {
+    inset: 41% 38% auto auto;
+    inline-size: 6%;
+    aspect-ratio: 1 / 1.5;
+    background: rgb(8 9 9);
+  }
+  /* Smoke between you and the disc: the case is clear, not empty. */
+  .record-selector--games .game-disk-well::after {
+    content: "";
+    position: absolute;
+    inset: -2%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 30%, rgb(255 255 255 / .07), transparent 55%), rgba(var(--tone-well, 12, 16, 14), .32);
+    pointer-events: none;
+  }
+
+  /* The shutter: brushed metal over the read window, sliding back to show the disc. */
+  .record-selector--games .record-sleeve-art::after {
+    z-index: 2;
+    inset: 0 22% auto 30%;
+    inline-size: auto;
+    block-size: 27%;
+    aspect-ratio: auto;
+    border: 1px solid rgba(var(--disk-ink), .3);
+    border-block-start: 0;
+    background:
+      linear-gradient(90deg, transparent 38%, rgba(var(--tone-well, 12, 16, 14), .9) 38% 62%, transparent 62%) center 62% / 100% 46% no-repeat,
+      repeating-linear-gradient(90deg, rgb(255 255 255 / .05) 0 1px, transparent 1px 3px),
+      linear-gradient(90deg, rgb(255 255 255 / .1), transparent 30% 70%, rgb(0 0 0 / .12)),
+      linear-gradient(180deg, rgb(146 151 149), rgb(104 110 108) 55%, rgb(82 88 86));
+    box-shadow: 1px 0 0 rgb(0 0 0 / .35);
+    transition: transform 360ms cubic-bezier(.22, .7, .31, 1);
+  }
+  .record-selector--games .record-sleeve:is([data-sleeve-hover], :focus-visible, [data-in-drive]) .record-sleeve-art::after { transform: translateX(-52%); }
+
+  /* Insert arrow, top left. */
+  .record-selector--games .game-disk-contacts {
+    z-index: 1;
+    inset: 4% auto auto 8%;
+    inline-size: 9%;
+    block-size: auto;
+    aspect-ratio: 1.3;
+    color: rgba(var(--disk-ink), .38);
+    background: currentColor;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  /* Write-protect slider (left) and the HD hole (right), along the bottom edge. */
+  .record-selector--games .pocket-tape-reels {
+    display: block;
+    position: absolute;
+    z-index: 1;
+    inset: auto 7% 3.5% 7%;
+    block-size: 4.5%;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .record-selector--games .pocket-tape-reels::before,
+  .record-selector--games .pocket-tape-reels::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    aspect-ratio: auto;
+    border: 1px solid rgba(var(--disk-ink), .32);
+    border-radius: 0;
+  }
+  .record-selector--games .pocket-tape-reels::before {
+    inset-inline-start: 0;
+    inline-size: 14%;
+    background: linear-gradient(90deg, rgba(var(--disk-ink), .4) 0 50%, rgb(var(--tone-well, 12, 16, 14)) 50%);
+  }
+  .record-selector--games .pocket-tape-reels::after {
+    inset-inline-end: 0;
+    inline-size: 8%;
+    background: rgb(var(--tone-well, 12, 16, 14));
+  }
+
+  /* The sticker: picture and title as one label across the lower half. */
+  .record-selector--games .game-disk-window {
+    grid-row: 2;
+    position: relative;
+    z-index: 1;
+    display: block;
+    aspect-ratio: 16 / 9;
+    min-block-size: 0;
+    overflow: hidden;
+    border: 1px solid rgba(var(--disk-ink), .3);
+    border-block-end: 0;
+    background: rgb(6 8 7);
+    transition: border-color 240ms ease, box-shadow 240ms ease;
+  }
+  .record-selector--games .game-disk-window img {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    max-inline-size: none;
+    object-fit: cover;
+    object-position: center;
+    opacity: .88;
+    filter: saturate(.92);
+    transition: opacity 240ms ease, filter 240ms ease;
+  }
+  .record-selector--games .game-disk-window::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: var(--screen-glare), linear-gradient(180deg, transparent 60%, rgb(0 0 0 / .28));
+  }
+  /* No picture: etched glass with the title pressed into it. */
+  .record-selector--games .game-disk-window[data-empty]::before {
+    content: attr(data-title);
+    display: grid;
+    place-items: center;
+    padding: 6% 10%;
+    color: rgba(var(--disk-ink), .34);
+    text-align: center;
+    overflow-wrap: anywhere;
+    font: 500 calc(12px * var(--selector-scale)) / 1.15 var(--sans);
+    text-shadow: 0 1px 0 rgb(0 0 0 / .8), 0 -1px 0 rgb(255 255 255 / .05);
+    background: var(--screen-glare), repeating-linear-gradient(135deg, transparent 0 5px, rgb(255 255 255 / .018) 5px 6px);
+  }
+  .record-selector--games .record-sleeve-label {
+    grid-row: 3;
+    position: relative;
+    z-index: 1;
+    min-block-size: 2.6lh;
+    border: 1px solid rgba(var(--disk-ink), .3);
+    border-block-start: 0;
+    border-inline-start: 2px solid var(--section-accent);
+    font-size: calc(13px * var(--selector-scale));
+    padding: 5% 6%;
+  }
+  .record-selector--games .record-sleeve-label strong { -webkit-line-clamp: 2; }
+
+  /* Light by state. */
+  .record-selector--games [data-media-cabinet="past"] .game-disk-window img { opacity: .78; filter: grayscale(.85) brightness(.62); }
+  .record-selector--games [data-media-cabinet="past"] .game-disk-hub { filter: grayscale(.6) brightness(.75); }
+  .record-selector--games .record-sleeve:is([data-sleeve-hover], :focus-visible) .game-disk-window img { opacity: 1; filter: saturate(1.02); }
+  .record-selector--games .record-sleeve:is([data-sleeve-hover], :focus-visible, [data-in-drive]) .game-disk-hub { filter: brightness(1.15); }
+  .record-selector--games .record-sleeve[data-in-drive] .game-disk-window { border-color: rgba(var(--tone-strong, 236, 230, 211), .5); box-shadow: inset 0 0 14px rgba(var(--tone-strong, 236, 230, 211), .12); }
+  .record-selector--games .record-sleeve[data-in-drive] .game-disk-window img { opacity: 1; filter: saturate(1.06) brightness(1.06); }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  /* The disk in the drive turns slowly on its own; any disk turns while you reach for it. */
+  .record-selector--games .record-sleeve[data-in-drive] .game-disk-hub { animation: floppy-hub-turn 9s linear infinite; }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: reduce) {
+  .record-selector--games .record-sleeve-art::after { transition: none; }
+}
+/* Shelf sizing for the taller disk: on tall bays the disks grow to fill their shelf. */
+@media (min-width: 761px) and (min-height: 851px) {
+  .section-page--games > .record-selector--games:has(> .game-drive) .record-media-cabinet {
+    --cabinet-cover: min(calc(210px * var(--selector-scale)), max(calc(92px * var(--selector-scale)), calc((100cqh - 57px * var(--selector-scale)) * 0.66)));
+  }
+}
+@media (min-width: 761px) and (max-height: 850px) {
+  .record-media-cabinet { --cabinet-cover: 92px; }
 }
