@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+28 November, v1.88.1: Every Projects bench and every game disk lines up: same heights, the same two cards on every bench, and placeholders when a note or sample is missing.
+
 28 November, v1.88.0: One masthead per section. A calmer power-on. Screens that feel switched on. Projects shares one 16:9 screen. Games gets real glass floppies. Legacy Mode fills the bay, and field papers fold back onto the desk.
 
 27 November, v1.87.0: Gestalt powers on: a three-second boot that reports real readiness, remembers your last session, and hands over through a single line that becomes the header rule. Records open and close on one clean beat. Logs gets a Field Desk, and every section shares the Dashboard's plate material.

@@ -2255,6 +2255,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .project-workbench-brief :is(h3, p) { margin: 0; overflow-wrap: anywhere; }
 .project-workbench-brief h3 { color: var(--text-strong); font: 500 calc(34px * var(--selector-scale)) / 1.08 var(--sans); }
 .project-workbench-brief p:not(.project-workbench-signal) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font: calc(15px * var(--selector-scale)) / 1.4 var(--sans); color: var(--text); }
+.project-workbench-record[data-bench] .project-workbench-brief h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-workbench-record[data-bench] .project-workbench-brief p:not(.project-workbench-signal) { block-size: 3lh; }
 .project-workbench-signal { text-transform: uppercase; color: var(--accent); font: calc(12px * var(--selector-scale)) / 1.2 var(--mono); }
 
 .project-workbench-progress {
@@ -2665,7 +2667,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .project-dispatch { overflow: hidden; }
   /* Every bench is the same: a 16:9 screen with its build sheet underneath, the latest note beside it. */
   .project-bench-deck { align-items: start; align-content: start; }
-  .project-bench-deck > .project-screen[data-lit] { grid-template-rows: auto auto; }
+  .project-bench-deck > .project-screen { grid-template-rows: auto auto; }
+  /* No sample: the same frame and glass, switched off, with its label etched in. */
+  .project-bench-deck > .project-screen[data-empty] { align-self: start; justify-self: stretch; inline-size: auto; padding: calc(7px * var(--selector-scale)); border-color: var(--line-strong); background: var(--reader-well); }
+  .project-screen[data-empty] .project-screen-glass { display: grid; place-items: center; background: var(--screen-glare), repeating-linear-gradient(135deg, transparent 0 5px, rgb(255 255 255 / .02) 5px 6px), rgb(6 8 7); }
+  .project-screen-empty { color: rgba(var(--tone-ink, 217, 213, 193), .32); text-transform: uppercase; letter-spacing: .12em; font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); text-shadow: 0 1px 0 rgb(0 0 0 / .8); }
   .project-bench-deck > .project-screen .project-screen-glass { aspect-ratio: 16 / 9; }
   .project-bench-deck > .project-dispatch { align-self: stretch; }
 }
@@ -2680,12 +2686,13 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   .project-workbench-record[data-bench] .project-workbench-brief h3 { font-size: calc(26px * var(--selector-scale)); }
   .project-workbench-record[data-bench] .project-workbench-brief p:not(.project-workbench-signal),
   .project-dispatch p:not(.project-bench-label) { -webkit-line-clamp: 2; }
+  .project-workbench-record[data-bench] .project-workbench-brief p:not(.project-workbench-signal) { block-size: 2lh; }
   .project-dispatch { gap: calc(5px * var(--selector-scale)); padding: calc(10px * var(--selector-scale)) calc(12px * var(--selector-scale)); }
   .project-dispatch h4 { font-size: calc(15px * var(--selector-scale)); }
   .project-milestone-trace { margin-block-start: calc(10px * var(--selector-scale)); }
-  .project-screen[data-lit] { gap: 6px; }
-  .project-screen[data-lit] figcaption { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .project-screen[data-lit] figcaption .project-bench-label { display: none; }
+  .project-bench-deck > .project-screen { gap: 6px; }
+  .project-bench-deck > .project-screen figcaption { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .project-bench-deck > .project-screen figcaption .project-bench-label { display: none; }
 }
 
 /* Screens: every display in the archive shares one glass. One light, from the upper left, gives
@@ -10984,7 +10991,10 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     grid-row: 3;
     position: relative;
     z-index: 1;
-    min-block-size: 2.6lh;
+    /* One label height for every disk (two title lines and the status line), so every sticker sits
+       at the same height whatever the title. */
+    block-size: 4.2lh;
+    align-items: start;
     border: 1px solid rgba(var(--disk-ink), .3);
     border-block-start: 0;
     border-inline-start: 2px solid var(--section-accent);

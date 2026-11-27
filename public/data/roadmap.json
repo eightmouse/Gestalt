@@ -36,6 +36,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Benches and disks line up",
+          "detail": "Every project bench starts at the same height and has the same two cards: the latest note or a blank card, and the screen or dark glass marked No sample filed, with the build sheet underneath. Game disk pictures all sit at the same place on the disk.",
+          "version": "v1.88.1",
+          "releasedOn": "2026-11-28"
+        },
+        {
           "title": "One masthead, real floppies and lit screens",
           "detail": "Every section has one lighter masthead. Gestalt powers on with a slow, dim glow instead of a flash. Screen light is softer outside and stronger inside the glass. Every project bench shares a 16:9 screen with its build sheet. Game disks are 3.5\" floppies in clear smoked glass, with a sliding shutter and a disc that turns in the drive. Legacy Mode fills the bay, and field papers fold back onto the desk.",
           "version": "v1.88.0",

@@ -370,23 +370,20 @@ function ProjectWorkprint({ workbench, bench, other, compact = false, onOpenReco
         {more ? <small className="project-milestone-more">+{more} in record</small> : null}
       </>}
     </div>
-    {bench && (bench.latest || bench.screen || bench.stack.length) ? <div className="project-bench-deck">
+    {bench ? <div className="project-bench-deck">
       {bench.latest ? <section className="project-dispatch" aria-label="Latest note">
         <p className="project-bench-label">Latest note{bench.latest.date ? <span>{bench.latest.date}</span> : null}</p>
         <h4>{bench.latest.title}</h4>
         {bench.latest.excerpt ? <p>{bench.latest.excerpt}</p> : null}
         {bench.earlier ? <small>+ {bench.earlier} earlier</small> : null}
-      </section> : bench.screen ? <section className="project-dispatch" data-empty="" aria-label="Latest note">
+      </section> : <section className="project-dispatch" data-empty="" aria-label="Latest note">
         <p className="project-bench-label">Latest note</p>
         <p>No notes filed yet.</p>
-      </section> : bench.stack.length ? <section className="project-dispatch project-build-sheet" aria-label="Build sheet">
-        <p className="project-bench-label">Build sheet</p>
-        <ul>{bench.stack.map((item) => <li key={item}>{item}</li>)}{bench.moreStack ? <li>+{bench.moreStack} more</li> : null}</ul>
-      </section> : null}
-      {bench.screen ? <figure className="project-screen" data-lit="">
-        <div className="project-screen-glass"><img src={bench.screen} alt="" decoding="async" loading="lazy" /><img className="screen-bloom" src={bench.screen} alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>
-        {bench.stack.length ? <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption> : null}
-      </figure> : null}
+      </section>}
+      <figure className="project-screen" data-lit={bench.screen ? "" : undefined} data-empty={bench.screen ? undefined : ""}>
+        <div className="project-screen-glass">{bench.screen ? <><img src={bench.screen} alt="" decoding="async" loading="lazy" /><img className="screen-bloom" src={bench.screen} alt="" aria-hidden="true" decoding="async" loading="lazy" /></> : <span className="project-screen-empty">No sample filed</span>}</div>
+        <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.length ? <>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</> : "Not filed yet"}</figcaption>
+      </figure>
     </div> : null}
     <button className="project-workbench-hit" type="button" aria-label={`Open ${record.title}`} onClick={(event) => sectionMotion.openProjectPlate(event.currentTarget, () => onOpenRecord(record))}><span className="project-workbench-light" aria-hidden="true" /></button>
   </div>;

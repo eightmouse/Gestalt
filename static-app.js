@@ -1621,7 +1621,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.88.0</span>
+        <span>v1.88.1</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1635,7 +1635,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.88.0</span>
+        <span class="version-label">v1.88.1</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1655,7 +1655,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.1</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2220,23 +2220,22 @@ function renderSelectorResults({ workbench, other }) {
 
 function renderProjectStage({ record, brief, progress, stops, more, nextStop }, other, compact = false, bench) {
   const meta = bench ? [bench.started && `Started ${bench.started}`, bench.noteCount && `${bench.noteCount} ${bench.noteCount === 1 ? "note" : "notes"}`].filter(Boolean) : [];
-  const deck = bench && (bench.latest || bench.screen || bench.stack.length) ? `<div class="project-bench-deck">
+  // Every bench has the same two parts: the latest note (or a blank card) and the screen (or an
+  // empty glass) with the build sheet underneath, so no project sits higher or lower than another.
+  const deck = bench ? `<div class="project-bench-deck">
       ${bench.latest ? `<section class="project-dispatch" aria-label="Latest note">
         <p class="project-bench-label">Latest note${bench.latest.date ? `<span>${escapeHtml(bench.latest.date)}</span>` : ""}</p>
         <h4>${escapeHtml(bench.latest.title)}</h4>
         ${bench.latest.excerpt ? `<p>${escapeHtml(bench.latest.excerpt)}</p>` : ""}
         ${bench.earlier ? `<small>+ ${bench.earlier} earlier</small>` : ""}
-      </section>` : bench.screen ? `<section class="project-dispatch" data-empty aria-label="Latest note">
+      </section>` : `<section class="project-dispatch" data-empty aria-label="Latest note">
         <p class="project-bench-label">Latest note</p>
         <p>No notes filed yet.</p>
-      </section>` : bench.stack.length ? `<section class="project-dispatch project-build-sheet" aria-label="Build sheet">
-        <p class="project-bench-label">Build sheet</p>
-        <ul>${bench.stack.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}${bench.moreStack ? `<li>+${bench.moreStack} more</li>` : ""}</ul>
-      </section>` : ""}
-      ${bench.screen ? `<figure class="project-screen" data-lit>
-        <div class="project-screen-glass"><img src="${escapeHtml(bench.screen)}" alt="" decoding="async" loading="lazy" /><img class="screen-bloom" src="${escapeHtml(bench.screen)}" alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>
-        ${bench.stack.length ? `<figcaption><span class="project-bench-label">Build sheet</span>${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption>` : ""}
-      </figure>` : ""}
+      </section>`}
+      <figure class="project-screen"${bench.screen ? " data-lit" : " data-empty"}>
+        <div class="project-screen-glass">${bench.screen ? `<img src="${escapeHtml(bench.screen)}" alt="" decoding="async" loading="lazy" /><img class="screen-bloom" src="${escapeHtml(bench.screen)}" alt="" aria-hidden="true" decoding="async" loading="lazy" />` : '<span class="project-screen-empty">No sample filed</span>'}</div>
+        <figcaption><span class="project-bench-label">Build sheet</span>${bench.stack.length ? `${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}` : "Not filed yet"}</figcaption>
+      </figure>
     </div>` : "";
   return `<div class="project-workbench-record"${bench ? " data-bench" : ""}>
     ${other ? `<span class="project-state-mark" aria-hidden="true">${escapeHtml(record.status)}</span>` : ""}
@@ -3849,7 +3848,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>

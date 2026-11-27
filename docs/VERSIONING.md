@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.88.0`. Previous site-code release: `v1.87.0` (234b171e).
+Release target: `v1.88.1`. Previous site-code release: `v1.88.0` (56e85178).
+
+`v1.88.1` lines up every Projects bench and every game disk. A project's description always holds its three lines and its title stays on one, so the bench starts at the same height for every project. Every bench has the same two cards: the latest note, or a blank card when none is filed, and the 16:9 screen, or dark glass marked No sample filed, with the build sheet always underneath. Game disk labels share one height, so every picture sticker sits at the same place whatever the title's length. Authored records, media and dependencies are unchanged.
 
 `v1.88.0` gives every section one masthead: the section number, title, live counters and its own controls sit on a single lighter line, and the second header inside the bay is gone. The power-on is a slow, dim phosphor warm-up with no flash and no travelling line, and the Dashboard screens come on gently. Screen light falls off softly with no ring at the bezel, and the cover and Memory State glow from inside the glass. Projects gives every bench the same layout: a 16:9 screen with its build sheet underneath and the latest note beside it; much taller samples stand whole in the middle, and the project spines are wider and easier to read. Games disks become 3.5" floppies in a clear smoked case: the whole disc is visible inside, a brushed-metal shutter slides back and the disc turns when you reach for one or while it is in the drive, and every game's picture sits in the same landscape sticker with its title (Steam's store header when the game has a Steam ID). Legacy Mode's bay now reaches the masthead's right edge, with System Tips aligned to it. Field papers fold back onto the desk when closed, and their window controls sit in the corner. Authored records, media and dependencies are unchanged.
 
