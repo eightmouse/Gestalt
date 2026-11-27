@@ -63,6 +63,12 @@ export function escapeFrontmatter(value: string): string {
   return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
 }
 
+// Every frontmatter parser reads one field per line, so a raw line break would end the
+// value early and let the following text become a field of its own (e.g. `status:`).
+export function frontmatterLine(value: string): string {
+  return escapeFrontmatter(String(value).replace(/\s*[\r\n\p{Zl}\p{Zp}]\s*/gu, " "));
+}
+
 export function isStudioSection(value: unknown): value is StudioSection {
   return typeof value === "string" && studioSections.includes(value as StudioSection);
 }

@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.85.0`. Previous site-code release: `v1.84.4` (5cff7b3a).
+Release target: `v1.86.0`. Previous site-code release: `v1.85.0` (88f06433).
+
+`v1.86.0` gives every desktop section the same frame as the Dashboard, so switching sections no longer moves or shrinks the bay. Projects becomes a workbench: every project sits on a spine at the left, and the selected one fills the bay with its brief, milestone track, newest note and a lit screen with its build sheet. A manual pick now restarts the auto-rotation wait. Games gains a drive beside the shelves that holds the current game with its cover, Steam figures and newest note, and marks its disk In drive; on tall screens both shelves share the cabinet height and their disks grow to fill it. At Night the plates are solid again, and Memory State and the game covers light the plates around them. Every screen shares one glass and blooms with its own picture; Memory State becomes a near-black tube whose code glows. Recent Activity uses indicator lamps, and Weather draws a 12-hour temperature line from the same forecast request. Studio keeps summaries and other single-line fields on one line when saving. Authored records, media and dependencies are unchanged.
 
 `v1.85.0` turns Logs into Field Papers: the newest field notes lie on the desk as a short paper stack. The front sheet opens a slim paper reader; peeking edges bring a note forward, and Newer/Older steps appear once more than three notes are on the desk. Handheld shows one sheet with readable spines. The newest three logs always stay on the desk, and older ones are still filed in the Field Archive after seven days. The old Reading Desk preview is retired. The desktop Terminal gets its own green phosphor surface and a shorter window; Memory State gains a slight lens curve and drops only complete rows, and keeps running while search is open. Day game covers lose their drop shadow. Writing order, note links, authored records, media and dependencies are unchanged.
 

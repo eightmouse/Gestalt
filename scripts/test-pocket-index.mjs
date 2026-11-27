@@ -102,6 +102,29 @@ assert.equal(pocket.projectWorkbench([crowded]).nextStop.state, "blocked", "The 
 assert.equal(pocket.projectWorkbench(workbenchProjects, "editor").nextStop.label, "Draft", "A running milestone comes before queued work");
 const testingProject = { id: "prism", progress: 67, milestones: [{ label: "Client testing", status: "In Progress", progress: 0 }] };
 assert.deepEqual(pocket.projectWorkbench([testingProject]).stops, [{ label: "Client testing", state: "working", value: "In Progress" }], "Qualitative milestones do not need invented percentages");
+const bench = pocket.projectBench({ started: "2026-04-05" }, [
+  { id: "n-new", title: "27 / 11 / 2026 - Field Papers (v1.85)", body: "### Heading\n![shot](/media/a.png)\nLogs became **Field Papers**: see [the desk](https://example.com).\n\nSecond paragraph." },
+  { id: "n-old", title: "1 / 5 / 2026 - Older", body: "Old." }
+], { screen: " /media/shot.png ", stack: ["JavaScript", " ", "CSS"] });
+assert.deepEqual(bench, { started: "05 / 04 / 2026", noteCount: 2, latest: { id: "n-new", date: "27 / 11 / 2026", title: "Field Papers (v1.85)", excerpt: "Logs became Field Papers: see the desk." }, earlier: 1, screen: "/media/shot.png", stack: ["JavaScript", "CSS"], moreStack: 0 }, "The bench reads the newest note as plain text, without headings, images or markup");
+assert.deepEqual(pocket.projectBench({}, [{ id: "main", title: "Current note", body: "Loose body" }]), { started: "", noteCount: 0, latest: null, earlier: 0, screen: "", stack: [], moreStack: 0 }, "An undated body is not presented as a filed note, and empty fields stay empty");
+assert.ok(pocket.projectBench({}, [{ id: "n-a", title: "Untimed", body: "x ".repeat(200) }]).latest.excerpt.length <= 181, "Long notes are clipped to a short excerpt");
+assert.equal(pocket.projectBench({}, [{ id: "n-a", title: "Untimed", body: "" }]).latest.date, "", "Notes without a date heading do not get one invented");
+assert.equal(pocket.projectBench({}, [], { stack: Array.from({ length: 8 }, (_, i) => `S${i}`) }).moreStack, 2);
+assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive empty");
+const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);
+assert.deepEqual(steamDrive.figures.map(({ value }) => value), ["1088.0h", "26 / 11 / 2026", "42%"]);
+assert.deepEqual([steamDrive.recordId, steamDrive.latest.title, steamDrive.earlier], ["ff", "Phantom", 1]);
+const authoredDrive = pocket.gameDrive({ title: "Deadlock", status: "Playing", completion: "100% Complete", playtime: null, lastPlayed: "" }, { id: "dl", status: "Playing" });
+assert.deepEqual(authoredDrive.figures, [{ label: "Play time", value: "—" }, { label: "Last played", value: "—" }, { label: "Achievements", value: "—" }], "Unknown figures read as a dash, and a record's generic progress is never shown as completion");
+assert.equal(pocket.gameDrive({ title: "Unfiled" }, undefined, [{ id: "n-a", title: "x", body: "y" }]).latest, null, "A Steam game without a record shows no borrowed notes");
+assert.equal(pocket.weatherTrace(undefined), null, "No forecast draws no line");
+assert.equal(pocket.weatherTrace([18, "x"]), null, "One usable reading is not a trend");
+const thermo = pocket.weatherTrace([14, 16, 30, "x", 22]);
+assert.deepEqual([thermo.hours, thermo.low, thermo.high, thermo.now], [4, 14, 30, [0, 26]], "Unreadable hours are skipped; now is the first point");
+assert.equal(thermo.points, "0,26 33.3,23.3 66.7,4 100,15", "The line spans the box: highs near the top, lows near the bottom");
+assert.equal(pocket.weatherTrace([9, 9, 9]).points, "0,15 50,15 100,15", "A steady day is a level line through the middle");
+assert.equal(pocket.weatherTrace(Array.from({ length: 30 }, (_, i) => i)).hours, 12, "Only the next 12 hours are drawn");
 const dispatch = (id, day, section, recordId = id, content = "notes") => ({ id, date: `2026-11-${day}`, record: { id: recordId, section }, content });
 const today = Date.parse("2026-11-17T12:00:00Z");
 const firstNote = dispatch("note-1", 17, "games", "game", "notes");

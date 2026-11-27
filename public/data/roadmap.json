@@ -41,6 +41,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Workbench, drive and lit screens",
+          "detail": "Every section fills the same frame. Projects keeps every project on a spine and spreads the selected one across the bay, with its milestones, newest note and a lit screen. Games loads the current game into a drive beside the shelves. At Night the plates are solid and the screens glow with their own pictures; Weather draws the next twelve hours.",
+          "version": "v1.86.0",
+          "releasedOn": "2026-11-27"
+        },
+        {
           "title": "Field Papers",
           "detail": "Logs lie on the desk as a short stack of papers. Open the front sheet to read it, or bring another forward by its edge. Handheld shows one sheet with readable spines. The newest three stay on the desk; older logs still file into the Field Archive after seven days.",
           "version": "v1.85.0",

@@ -211,7 +211,8 @@
   }
   .record-selector--games .game-shelf[data-pocket-current="false"],
   .record-selector--games .game-shelf-heading,
-  .record-selector--games .game-shelf-edge { display: none; }
+  .record-selector--games .game-shelf-edge,
+  .record-selector--games .game-drive { display: none; }
   .record-selector--games .game-shelf + .game-shelf { border: 0; padding: 0; }
   .section-page--games .game-shelf-track, .pocket-project-stack { margin-inline: -16px; }
   :is(.record-selector--games .record-media-cabinet, .pocket-project-rail) {
@@ -323,7 +324,7 @@
   .section-page--projects .record-selector-toolbar { padding-block-end: 0; border-block-end: 0; }
   .section-page--projects .record-selector-groups { flex-basis: 100%; }
   .section-page--projects .record-selector-toolbar .record-selector-pager,
-  .section-page--projects .record-selector > :is(.record-selector-results, .project-workbench, .search-empty) { display: none; }
+  .section-page--projects .record-selector > :is(.record-selector-results, .project-workbench, .project-spines, .search-empty) { display: none; }
   .pocket-project-stack { display: block; min-inline-size: 0; }
   .pocket-project-rail[hidden] { display: none; }
   .pocket-project-rail > .project-workbench {

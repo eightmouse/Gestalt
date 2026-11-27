@@ -134,7 +134,7 @@
     const observed = ["class", "data-search-open", "data-nav-open", "data-nav-blocked", "data-workspace-tool-open"];
     let timer = 0;
     let bound = true;
-    let hovering = Boolean(section.querySelector(".project-workbench-frame:hover")) && host.matchMedia("(any-hover: hover)").matches;
+    let hovering = Boolean(section.querySelector(":is(.project-workbench-frame, .project-spines):hover")) && host.matchMedia("(any-hover: hover)").matches;
     const available = () => bound && section.isConnected && Number(section.dataset.projectCount) > 1
       && !doc.hidden && !reduced.matches && !handheld.matches
       && !hovering && !projectPresses.has(doc.activeElement)
@@ -151,14 +151,16 @@
     };
     const track = (event) => {
       if (event.pointerType === "touch") return;
-      const inside = Boolean(event.target?.closest?.(".project-workbench-frame"));
+      const inside = Boolean(event.target?.closest?.(".project-workbench-frame, .project-spines"));
       if (inside !== hovering) { hovering = inside; schedule(); }
     };
     const leave = (event) => {
-      if (event.pointerType === "touch" || event.relatedTarget?.closest?.(".project-workbench-frame")) return;
+      if (event.pointerType === "touch" || event.relatedTarget?.closest?.(".project-workbench-frame, .project-spines")) return;
       hovering = false; schedule();
     };
     const refocus = () => host.queueMicrotask(schedule);
+    // A manual pick restarts the wait, so the plate you chose is never turned away a moment later.
+    const restart = () => { cancel(); host.queueMicrotask(schedule); };
     const observer = typeof host.MutationObserver === "function" ? new host.MutationObserver(schedule) : null;
     observer?.observe(section, { attributes: true, attributeFilter: ["data-workbench", "data-project-count"] });
     if (shell) observer?.observe(shell, { attributes: true, attributeFilter: observed });
@@ -166,6 +168,7 @@
     section.addEventListener("pointerout", leave);
     section.addEventListener("focusin", schedule);
     section.addEventListener("focusout", refocus);
+    section.addEventListener("click", restart);
     doc.addEventListener("visibilitychange", schedule);
     reduced.addEventListener("change", schedule);
     handheld.addEventListener("change", schedule);
@@ -177,6 +180,7 @@
       section.removeEventListener("pointerout", leave);
       section.removeEventListener("focusin", schedule);
       section.removeEventListener("focusout", refocus);
+      section.removeEventListener("click", restart);
       doc.removeEventListener("visibilitychange", schedule);
       reduced.removeEventListener("change", schedule);
       handheld.removeEventListener("change", schedule);

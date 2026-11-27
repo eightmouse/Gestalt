@@ -951,6 +951,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             section={activeSectionConfig}
             onBack={openHome}
             onOpenRecord={openRecord}
+            currentGame={activeSection === "games" ? { ready: steamReady, display: currentGameDisplay } : undefined}
             onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}
             onCreateSetupRecord={process.env.NODE_ENV === "development" ? (group) => createLocalRecord("setup", group) : undefined}
             onEditSetupTool={process.env.NODE_ENV === "development" ? (record) => openRecord(record, "overview", undefined, undefined, undefined, { editSetupTool: true }) : undefined}

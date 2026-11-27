@@ -15,6 +15,9 @@ declare const pocket: {
   gameShelfIndex(counts: number[], selected?: number, fallback?: number): number;
   fieldPaperStack<T extends { id: string }>(records: readonly T[], selectedId?: string): { record?: T; index: number; total: number; edges: T[]; previous?: string; next?: string };
   projectWorkbench<T extends WorkbenchProject>(records: readonly T[], selectedId?: string): { record: T; index: number; progress: number; brief: string; stops: MilestoneStop[]; more: number; nextStop?: MilestoneStop } | null;
+  projectBench(record: { started?: string } | null | undefined, notes?: readonly { id?: string; title: string; body: string }[], options?: { screen?: string; stack?: readonly string[] }): { started: string; noteCount: number; latest: { id: string; date: string; title: string; excerpt: string } | null; earlier: number; screen: string; stack: string[]; moreStack: number };
+  gameDrive(display: { title?: string; status?: string; completion?: string | null; playtime?: string | null; lastPlayed?: string | null } | null | undefined, record?: { id: string; title?: string; status?: string; started?: string } | null, notes?: readonly { id?: string; title: string; body: string }[]): { title: string; status: string; recordId: string; figures: { label: string; value: string }[]; latest: { id: string; date: string; title: string; excerpt: string } | null; earlier: number } | null;
+  weatherTrace(values: readonly unknown[] | null | undefined): { points: string; now: [number, number]; low: number; high: number; hours: number } | null;
   recentDispatches<T extends { id: string; record: { id: string; section: string }; date: string; content?: string }>(featuredId: string | undefined, activity: readonly T[], now?: number): T[];
   normalizeBootMode(value: unknown): PocketBootMode;
   readBootMode(host?: Window): PocketBootMode;

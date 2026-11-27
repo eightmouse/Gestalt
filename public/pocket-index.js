@@ -70,6 +70,59 @@
       ?? stops.find((item) => item.state === "queued") ?? stops.at(-1);
     return { record, index, progress: percent(record.progress), brief: record.summary?.trim() || "", stops: visible, more: stops.length - visible.length, nextStop };
   }
+  // Everything the desktop workbench shows beyond the plate itself. Renderers pass their own
+  // parsed notes, image source and stack list; nothing here is invented when a field is empty.
+  function projectBench(record, notes = [], { screen = "", stack = [] } = {}) {
+    const filed = notes.filter((note) => note && note.id !== "main");
+    const plain = (text) => String(text || "").split(/\n\s*\n/)
+      .map((block) => block.split(/\r?\n/).filter((line) => !/^\s*(?:!\[|<|:::|```|#{1,6}\s)/.test(line)).join(" "))
+      .map((block) => block.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/(\*\*|__|`)/g, "").replace(/^\s*(?:[-*>]|\d+\.)\s+/, "").replace(/\s+/g, " ").trim())
+      .find(Boolean) || "";
+    const clip = (text, size = 180) => text.length <= size ? text : `${text.slice(0, text.lastIndexOf(" ", size) > size * .6 ? text.lastIndexOf(" ", size) : size).trim()}…`;
+    const date = (value) => {
+      const [year, month, day] = String(value || "").split("-");
+      return year && month && day ? `${day} / ${month} / ${year}` : "";
+    };
+    let latest = null;
+    if (filed[0]) {
+      const heading = /^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*[-–—]\s*(.*)$/.exec(filed[0].title || "");
+      latest = {
+        id: filed[0].id || "",
+        date: heading ? `${heading[1].padStart(2, "0")} / ${heading[2].padStart(2, "0")} / ${heading[3]}` : "",
+        title: (heading ? heading[4] : filed[0].title || "").trim() || "Untitled note",
+        excerpt: clip(plain(filed[0].body))
+      };
+    }
+    const lines = (Array.isArray(stack) ? stack : []).map((item) => String(item).trim()).filter(Boolean);
+    return { started: date(record?.started), noteCount: filed.length, latest, earlier: Math.max(0, filed.length - 1), screen: String(screen || "").trim(), stack: lines.slice(0, 6), moreStack: Math.max(0, lines.length - 6) };
+  }
+  // A thermograph line for the Weather plate: the next hours' forecast, drawn in a 100 x 30 box.
+  // Fewer than two readings draws nothing rather than a flat or guessed line.
+  function weatherTrace(values) {
+    const readings = (Array.isArray(values) ? values : []).map(Number).filter(Number.isFinite).slice(0, 12);
+    if (readings.length < 2) return null;
+    const low = Math.min(...readings), high = Math.max(...readings), span = high - low;
+    const point = (value, index) => [
+      Math.round(index / (readings.length - 1) * 1000) / 10,
+      span ? Math.round((26 - (value - low) / span * 22) * 10) / 10 : 15
+    ];
+    const points = readings.map(point);
+    return { points: points.map((xy) => xy.join(",")).join(" "), now: points[0], low: Math.round(low), high: Math.round(high), hours: readings.length };
+  }
+  // The Games drive holds the current game only. Figures come from the Steam snapshot (or the
+  // record when there is none); a figure that is not known reads as a dash, never an estimate.
+  // Only Steam's achievement share is shown: a record's generic progress is not a game completion.
+  function gameDrive(display, record, notes = []) {
+    if (!display) return null;
+    const share = /^(\d{1,3})%\s+Achievements$/i.exec(String(display.completion || "").trim());
+    const figures = [
+      { label: "Play time", value: String(display.playtime || "").trim() || "—" },
+      { label: "Last played", value: String(display.lastPlayed || "").trim() || "—" },
+      { label: "Achievements", value: share ? `${share[1]}%` : "—" }
+    ];
+    const { latest, earlier } = projectBench(record, record ? notes : []);
+    return { title: String(display.title || record?.title || "").trim() || "Untitled game", status: String(record?.status || display.status || "").trim(), recordId: record?.id || "", figures, latest, earlier };
+  }
   function recentDispatches(featuredId, activity, now = Date.now()) {
     const day = 86_400_000;
     const today = Math.floor(now / day) * day;
@@ -160,5 +213,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, weatherTrace, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

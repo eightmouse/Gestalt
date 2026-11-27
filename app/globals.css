@@ -2474,6 +2474,17 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   padding: calc(12px * var(--selector-scale)) var(--shelf-motion-gutter) calc(10px * var(--selector-scale));
 }
 .record-media-cabinet::-webkit-scrollbar { display: none; }
+/* Tall desktop bays: both shelves share the cabinet height and their disks grow to fill it,
+   so the shelves stay single side-scrolling rows with no empty floor below. */
+@media (min-width: 761px) and (min-height: 851px) {
+  .section-page--games > .record-selector--games:has(> .game-drive) { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .section-page--games > .record-selector--games:has(> .game-drive) > .game-shelf { container: game-shelf / size; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .section-page--games > .record-selector--games:has(> .game-drive) > .game-shelf:has(+ .game-shelf) { padding-block-end: calc(12px * var(--selector-scale)); }
+  .section-page--games > .record-selector--games:has(> .game-drive) .game-shelf-track { min-block-size: 0; min-inline-size: 0; }
+  .section-page--games > .record-selector--games:has(> .game-drive) .record-media-cabinet {
+    --cabinet-cover: min(calc(178px * var(--selector-scale)), max(calc(110px * var(--selector-scale)), calc((100cqh - 57px * var(--selector-scale)) * 1.08)));
+  }
+}
 .game-shelf-track:has([data-shelf-prev][aria-disabled="false"]) .record-media-cabinet { --shelf-fade-start: var(--shelf-edge-fade); }
 .game-shelf-track:has([data-shelf-next][aria-disabled="false"]) .record-media-cabinet { --shelf-fade-end: var(--shelf-edge-fade); }
 .record-media-cabinet:not(:has(.record-sleeve)) { display: block; }
@@ -2648,6 +2659,220 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 @media (min-width: 761px) {
   .section-page--games.section-page--selector { grid-template-rows: auto minmax(0, 1fr); }
   .record-selector--games { align-self: start; min-block-size: 0; max-block-size: 100%; overflow-y: auto; overscroll-behavior-block: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+}
+
+/* Shared workspace frame: every desktop section starts and ends where the Dashboard does,
+   so switching sections never shifts or shrinks the bay. An empty subtitle keeps its line. */
+@media (min-width: 761px) {
+  .archive-shell > .workspace > .workspace-header .subtle { min-block-size: 1lh; }
+  .archive-shell > .workspace > .section-page--selector:is(.section-page--games, .section-page--projects) { flex: 1 1 0%; grid-template-rows: auto minmax(0, 1fr); }
+  .archive-shell > .workspace > .section-page--selector .record-selector { align-self: stretch; }
+}
+
+/* Projects workbench: every project stays on a spine at the left, the selected one fills the bay. */
+.project-spines { display: grid; align-content: start; gap: calc(16px * var(--selector-scale)); min-block-size: 0; min-inline-size: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.project-spine-group { display: grid; gap: calc(6px * var(--selector-scale)); }
+.project-spines-label { display: flex; justify-content: space-between; margin: 0; padding-block-end: calc(5px * var(--selector-scale)); border-block-end: 1px solid var(--line); color: var(--muted); text-transform: uppercase; font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+.project-spines-label span { font-variant-numeric: tabular-nums; }
+.record-selector .project-spine {
+  appearance: none;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px calc(8px * var(--selector-scale));
+  min-block-size: calc(46px * var(--selector-scale));
+  padding: calc(8px * var(--selector-scale)) calc(10px * var(--selector-scale)) calc(11px * var(--selector-scale)) calc(16px * var(--selector-scale));
+  border: 1px solid var(--line);
+  background: rgba(var(--tone-surface, 8, 9, 8), .36);
+  color: var(--text);
+  text-align: start;
+  font: calc(12px * var(--selector-scale)) / 1.2 var(--mono);
+  cursor: pointer;
+  transition: background-color 110ms ease, border-color 110ms ease;
+}
+.project-spine::before { content: ""; position: absolute; inset-block: calc(7px * var(--selector-scale)); inset-inline-start: calc(6px * var(--selector-scale)); inline-size: 2px; background: var(--line-strong); transition: background-color 110ms ease; }
+.project-spine-title { overflow: hidden; color: var(--text-strong); text-overflow: ellipsis; white-space: nowrap; font: 500 calc(14px * var(--selector-scale)) / 1.15 var(--sans); }
+.project-spine small { color: var(--muted); font-size: calc(11px * var(--selector-scale)); font-variant-numeric: tabular-nums; }
+.project-spine-meter { position: absolute; inset: auto calc(10px * var(--selector-scale)) calc(5px * var(--selector-scale)) calc(16px * var(--selector-scale)); block-size: 2px; background: linear-gradient(var(--text), var(--text)) left / var(--spine-progress, 0%) 100% no-repeat, var(--line); }
+.project-spine-group[data-group="other"] .project-spine { border-style: dashed; background-color: transparent; }
+.project-spine-group[data-group="other"] .project-spine-title { color: var(--text); }
+.project-spine-group[data-group="other"] .project-spine-meter { opacity: .55; }
+.record-selector .project-spine[aria-current="true"] { border-style: solid; border-color: var(--section-accent); background-color: rgba(var(--tone-ink, 217, 213, 193), .1); }
+.project-spine[aria-current="true"]::before { background: var(--accent); }
+.project-spine-group[data-group="other"] .project-spine[aria-current="true"]::before { background: var(--text-strong); }
+
+.project-workbench-signal span::before { content: "·"; margin-inline: .6em; color: var(--muted); }
+.project-workbench-signal span { color: var(--muted); }
+.project-milestone-trace li[data-stop="ready"] { border-block-start-color: var(--text); }
+
+.project-bench-deck { grid-column: 1 / -1; align-self: stretch; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: calc(14px * var(--selector-scale)); min-block-size: 0; }
+.project-bench-label { display: flex; justify-content: space-between; gap: 8px; margin: 0; color: var(--muted); text-transform: uppercase; font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+.project-bench-label span { font-variant-numeric: tabular-nums; }
+.project-dispatch { display: grid; align-content: start; gap: calc(8px * var(--selector-scale)); min-inline-size: 0; padding: calc(14px * var(--selector-scale)) calc(16px * var(--selector-scale)); border: 1px solid var(--line); background: rgba(var(--tone-well, 12, 16, 14), .42); }
+.project-dispatch h4 { margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font: 500 calc(17px * var(--selector-scale)) / 1.2 var(--sans); }
+.project-dispatch p:not(.project-bench-label) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; margin: 0; color: var(--text); font: calc(14px * var(--selector-scale)) / 1.45 var(--sans); }
+.project-dispatch small { color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+.project-screen { position: relative; display: grid; grid-template-rows: minmax(calc(70px * var(--selector-scale)), 1fr) auto; gap: calc(8px * var(--selector-scale)); min-inline-size: 0; margin: 0; padding: calc(7px * var(--selector-scale)); border: 1px solid var(--line-strong); background: var(--reader-well); }
+.project-screen:not([data-lit]) { grid-template-rows: auto; align-self: start; justify-self: start; inline-size: min(100%, calc(340px * var(--selector-scale))); padding: calc(12px * var(--selector-scale)) calc(14px * var(--selector-scale)); border-color: var(--line); background: rgba(var(--tone-well, 12, 16, 14), .42); }
+.project-screen-glass { position: relative; overflow: hidden; min-block-size: 0; background: rgb(6 8 7); box-shadow: inset 0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), .1), inset 0 2px 10px rgb(0 0 0 / .5); }
+.project-screen-glass img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: top center; opacity: .9; }
+.project-screen-glass::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--screen-glare), var(--lcd-mask), var(--screen-vignette); box-shadow: var(--screen-recess); }
+.project-screen figcaption { display: grid; gap: 5px; color: var(--text); overflow-wrap: anywhere; font: calc(12px * var(--selector-scale)) / 1.35 var(--mono); }
+:root[data-appearance="day"] .project-screen-glass { background: rgb(28 31 29); }
+
+@media (min-width: 761px) {
+  .section-page--projects .record-selector { grid-template-columns: calc(200px * var(--selector-scale)) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  .section-page--projects .record-selector > .record-selector-toolbar { display: none; }
+  .section-page--projects .record-selector > :is(.record-selector-results, .project-workbench, .search-empty) { grid-column: 2; min-block-size: 0; }
+  .section-page--projects .record-selector-results { display: grid; }
+  .section-page--projects .project-workbench { display: grid; min-block-size: 0; }
+  .section-page--projects .project-workbench-frame { display: grid; min-block-size: 0; }
+  .project-workbench-record[data-bench] { grid-template-rows: auto minmax(0, 1fr); align-items: start; row-gap: calc(22px * var(--selector-scale)); min-block-size: 0; }
+  .project-dispatch { overflow: hidden; }
+}
+
+/* Shorter desktop bays keep every part of the bench, just tighter: two-line copy, slimmer spines. */
+@media (min-width: 761px) and (max-height: 850px) {
+  .project-spines { gap: 10px; }
+  .project-spine-group { gap: 4px; }
+  .record-selector .project-spine { min-block-size: calc(36px * var(--selector-scale)); padding-block: calc(5px * var(--selector-scale)) calc(9px * var(--selector-scale)); }
+  .project-workbench-record[data-bench] { padding: calc(14px * var(--selector-scale)) calc(20px * var(--selector-scale)); row-gap: calc(12px * var(--selector-scale)); }
+  .project-workbench-record[data-bench] .project-workbench-brief { gap: calc(5px * var(--selector-scale)); }
+  .project-workbench-record[data-bench] .project-workbench-brief h3 { font-size: calc(26px * var(--selector-scale)); }
+  .project-workbench-record[data-bench] .project-workbench-brief p:not(.project-workbench-signal),
+  .project-dispatch p:not(.project-bench-label) { -webkit-line-clamp: 2; }
+  .project-dispatch { gap: calc(5px * var(--selector-scale)); padding: calc(10px * var(--selector-scale)) calc(12px * var(--selector-scale)); }
+  .project-dispatch h4 { font-size: calc(15px * var(--selector-scale)); }
+  .project-milestone-trace { margin-block-start: calc(10px * var(--selector-scale)); }
+  .project-screen[data-lit] { grid-template-rows: minmax(calc(52px * var(--selector-scale)), 1fr) auto; gap: 6px; }
+  .project-screen[data-lit] figcaption { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .project-screen[data-lit] figcaption .project-bench-label { display: none; }
+}
+
+/* Screens: every display in the archive shares one glass. One light, from the upper left, gives
+   every screen the same glare; the edge is recessed into its bezel; LCDs carry a faint pixel
+   mask and the tube carries scanlines. At Night the picture itself is the brightest thing. */
+:root {
+  --screen-glare:
+    linear-gradient(118deg, rgb(255 255 255 / .085), rgb(255 255 255 / .028) 15%, transparent 29%),
+    radial-gradient(140% 55% at 28% -18%, rgb(255 255 255 / .06), transparent 62%);
+  --screen-recess: inset 0 2px 5px rgb(0 0 0 / .72), inset 0 0 0 1px rgb(0 0 0 / .35), inset 0 -1px 0 rgb(255 255 255 / .05);
+  --screen-vignette: radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(0 0 0 / .36) 122%);
+  --lcd-mask: repeating-linear-gradient(90deg, rgb(0 0 0 / .1) 0 1px, transparent 1px 3px);
+}
+:root[data-appearance="day"] {
+  --screen-glare: linear-gradient(118deg, rgb(255 255 255 / .22), rgb(255 255 255 / .06) 15%, transparent 29%);
+  --screen-recess: inset 0 2px 4px rgb(43 55 48 / .3), inset 0 -1px 0 rgb(255 255 255 / .4);
+  --screen-vignette: radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(0 0 0 / .14) 125%);
+  --lcd-mask: repeating-linear-gradient(90deg, rgb(0 0 0 / .05) 0 1px, transparent 1px 3px);
+}
+:root:not([data-appearance="day"]) .game-cover img,
+:root:not([data-appearance="day"]) .game-drive-screen img,
+:root:not([data-appearance="day"]) .project-screen-glass img { filter: brightness(1.08) contrast(1.06) saturate(1.06); }
+
+/* Screen bloom: a lit picture spills light past its glass. A blurred, brighter copy of the same
+   picture is added as light (screen blend) over the glass and a little beyond the bezel, so the
+   glow carries the picture's own colours and hazes it the way a TV across a dark room does. */
+.screen-bloom { display: none; }
+@media (min-width: 761px) {
+  :root:not([data-appearance="day"]) .game-cover,
+  :root:not([data-appearance="day"]) .game-drive-screen,
+  :root:not([data-appearance="day"]) .project-screen-glass { overflow: visible; }
+  :root:not([data-appearance="day"]) .game-cover > img.screen-bloom,
+  :root:not([data-appearance="day"]) .game-drive-screen > img.screen-bloom,
+  :root:not([data-appearance="day"]) .project-screen-glass > img.screen-bloom {
+    display: block;
+    position: absolute;
+    z-index: 3;
+    inset: calc(var(--bloom-reach, 16px) * -1);
+    inline-size: calc(100% + var(--bloom-reach, 16px) * 2);
+    block-size: calc(100% + var(--bloom-reach, 16px) * 2);
+    max-inline-size: none;
+    object-fit: cover;
+    pointer-events: none;
+    filter: blur(var(--bloom-blur, 14px)) brightness(1.55) saturate(1.4);
+    opacity: var(--bloom-strength, .5);
+    mix-blend-mode: screen;
+  }
+  :root:not([data-appearance="day"]) .game-cover { --bloom-reach: 14px; --bloom-blur: 12px; --bloom-strength: .55; }
+  :root:not([data-appearance="day"]) .project-screen-glass { --bloom-reach: 20px; --bloom-strength: .42; }
+}
+
+/* Games drive: the current game sits loaded beside the shelves. */
+.game-drive {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: calc(12px * var(--selector-scale));
+  min-inline-size: 0;
+  padding: calc(12px * var(--selector-scale));
+  border: 1px solid var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(var(--tone-highlight, 255, 255, 255), .04), transparent 30%),
+    rgb(var(--tone-recessed, 25, 31, 27));
+  box-shadow: inset 0 2px 3px rgba(var(--tone-base, 5, 6, 5), .2);
+}
+.game-drive-label { display: flex; justify-content: space-between; gap: 8px; margin: 0; color: var(--muted); text-transform: uppercase; font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+.game-drive > .game-drive-label span { color: var(--accent); }
+.game-drive > .game-drive-label span::before { content: ""; display: inline-block; inline-size: 6px; block-size: 6px; margin-inline-end: 6px; vertical-align: 1px; background: currentColor; }
+.game-drive[data-empty] > .game-drive-label span { color: var(--muted); }
+.game-drive[data-empty] > .game-drive-label span::before { background: transparent; border: 1px solid currentColor; }
+.game-drive-empty { margin: 0; color: var(--muted); font: calc(13px * var(--selector-scale)) / 1.4 var(--sans); }
+.game-drive-screen { position: relative; overflow: hidden; aspect-ratio: 460 / 215; border: 1px solid var(--line); background: rgb(6 8 7); box-shadow: inset 0 2px 10px rgb(0 0 0 / .5); }
+.game-drive-screen img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; opacity: .92; }
+.game-drive-screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--screen-glare), var(--lcd-mask), var(--screen-vignette); box-shadow: var(--screen-recess); }
+.game-drive-title { display: grid; gap: 3px; min-inline-size: 0; }
+.game-drive-title h4 { margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font: 500 calc(18px * var(--selector-scale)) / 1.15 var(--sans); }
+.game-drive-title p { margin: 0; color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.3 var(--mono); text-transform: uppercase; }
+.game-drive-figures { display: grid; gap: 0; margin: 0; border-block: 1px solid var(--line); font: calc(12px * var(--selector-scale)) / 1.2 var(--mono); }
+.game-drive-figures div { display: flex; justify-content: space-between; gap: 8px; padding-block: calc(5px * var(--selector-scale)); }
+.game-drive-figures div + div { border-block-start: 1px dashed var(--line); }
+.game-drive-figures dt { color: var(--muted); }
+.game-drive-figures dd { margin: 0; color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.game-drive-note { display: grid; gap: calc(6px * var(--selector-scale)); min-inline-size: 0; }
+.game-drive-note h5 { margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font: 500 calc(14px * var(--selector-scale)) / 1.2 var(--sans); }
+.game-drive-note p:not(.game-drive-label) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin: 0; color: var(--text); font: calc(13px * var(--selector-scale)) / 1.45 var(--sans); }
+.game-drive-note small { color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+.game-drive-hit { position: absolute; inset: 0; z-index: 1; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.record-selector .game-drive-hit:hover, .record-selector .game-drive-hit:active { background: rgba(var(--tone-ink, 217, 213, 193), .05); }
+.game-drive-hit:focus-visible { outline: 1px solid var(--text-strong); outline-offset: -4px; }
+.record-sleeve[data-in-drive] .record-sleeve-label small { color: var(--accent); }
+.record-sleeve[data-in-drive] .record-sleeve-label small::before { border-color: currentColor; background: currentColor; }
+
+@media (min-width: 761px) {
+  .record-selector--games:has(> .game-drive) { grid-template-columns: minmax(0, 1fr) calc(260px * var(--selector-scale)); grid-template-rows: auto 1fr; column-gap: calc(16px * var(--selector-scale)); }
+  .record-selector--games:has(> .game-drive) > .game-shelf { grid-column: 1; }
+  .record-selector--games > .game-drive { grid-column: 2; grid-row: 1 / span 2; align-self: stretch; }
+  :root:not([data-appearance="day"]) .game-drive:not([data-empty]) {
+    background:
+      radial-gradient(120% 70% at 50% 18%, rgb(var(--cover-light-rgb, 188 194 188) / .16), rgb(var(--cover-light-rgb, 188 194 188) / .05) 55%, transparent 80%),
+      linear-gradient(180deg, rgba(var(--tone-highlight, 255, 255, 255), .04), transparent 30%),
+      rgb(var(--tone-recessed, 25, 31, 27));
+  }
+  :root:not([data-appearance="day"]) .game-drive:not([data-empty]) .game-drive-screen { box-shadow: inset 0 2px 10px rgb(0 0 0 / .5), 0 0 0 1px rgb(var(--cover-light-rgb, 188 194 188) / .2), 0 0 10px -2px rgb(var(--cover-light-rgb, 188 194 188) / .38); }
+}
+
+@media (min-width: 761px) and (max-height: 850px) {
+  .record-selector--games:has(> .game-drive) { grid-template-columns: minmax(0, 1fr) calc(220px * var(--selector-scale)); }
+  .game-drive { gap: 6px; padding: 9px 10px; }
+  .game-drive-title h4 { font-size: 16px; }
+  .game-drive-figures div { padding-block: 3px; }
+  .game-drive-note { gap: 4px; }
+  .game-drive-note p:not(.game-drive-label) { -webkit-line-clamp: 2; }
+  .game-drive-note small { display: none; }
+}
+
+/* At Night a lit project screen spills a little cool light onto the plate around it. */
+@media (min-width: 761px) {
+  :root:not([data-appearance="day"]) .project-screen[data-lit]::before {
+    content: "";
+    position: absolute;
+    inset: calc(-70px * var(--selector-scale));
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgb(196 210 214 / .1), rgb(196 210 214 / .045) 55%, transparent);
+  }
+  :root:not([data-appearance="day"]) .project-screen[data-lit] .project-screen-glass { box-shadow: inset 0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), .14), 0 0 9px -2px rgb(196 210 214 / .3); }
 }
 
 @media (min-width: 761px) and (max-height: 850px) {
@@ -4257,6 +4482,57 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   align-items: center;
 }
 
+/* Night screen light. Memory State and the Current Game cover light the plates around them:
+   strongest right at the screen, gone within a short reach, and only on surfaces (the gaps stay
+   dark). ambient-motion.js writes each screen's centre and half-size per plate; the cover's
+   colour is read from its artwork. Memory State brightens only while a line is actually written. */
+@property --memory-light-gain {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.78;
+}
+
+@media (min-width: 761px) {
+  :root:not([data-appearance="day"]) .dashboard-grid {
+    --memory-light-rgb: 107 211 186;
+    --memory-light-gain: 0.78;
+    transition: opacity 90ms linear, --memory-light-gain 1400ms cubic-bezier(.2, .6, .3, 1);
+  }
+
+  :root:not([data-appearance="day"]) .dashboard-grid > .dashboard-panel {
+    --memory-light-reach: calc(220px * var(--desktop-size, 1));
+    --cover-light-reach: calc(150px * var(--desktop-size, 1));
+    background:
+      radial-gradient(
+        calc(var(--memory-light-rx, 0px) + var(--memory-light-reach)) calc(var(--memory-light-ry, 0px) + var(--memory-light-reach))
+        at var(--memory-light-x, -9999px) var(--memory-light-y, -9999px),
+        rgb(var(--memory-light-rgb) / calc(.42 * var(--memory-light-gain))),
+        rgb(var(--memory-light-rgb) / calc(.2 * var(--memory-light-gain))) 50%,
+        rgb(var(--memory-light-rgb) / calc(.075 * var(--memory-light-gain))) 72%,
+        transparent
+      ),
+      radial-gradient(
+        calc(var(--cover-light-rx, 0px) + var(--cover-light-reach)) calc(var(--cover-light-ry, 0px) + var(--cover-light-reach))
+        at var(--cover-light-x, -9999px) var(--cover-light-y, -9999px),
+        rgb(var(--cover-light-rgb, 188 194 188) / .38),
+        rgb(var(--cover-light-rgb, 188 194 188) / .17) 50%,
+        rgb(var(--cover-light-rgb, 188 194 188) / .06) 72%,
+        transparent
+      ),
+      linear-gradient(180deg, var(--dashboard-plate-finish), transparent 42%),
+      var(--dashboard-plate-grain);
+    /* Solid plates: the backdrop shows only in the gutters, so the screens are the light in the room. */
+    background-color: color-mix(in srgb, rgb(var(--tone-surface, 8, 9, 8)), rgb(var(--tone-ink, 217, 213, 193)) 4%);
+  }
+}
+
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  :root:not([data-appearance="day"]) .dashboard-grid:has(.memory-trace-lines [data-writing]) {
+    --memory-light-gain: 1;
+    transition-duration: 90ms, 260ms;
+  }
+}
+
 @media (min-width: 761px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .dashboard-grid > .dashboard-panel {
     transform: translate(var(--plate-shift-x, 0px), var(--plate-shift-y, 0px));
@@ -4659,10 +4935,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .game-cover {
-  --lcd-edge-glow: rgb(172 236 216 / .16);
-  --lcd-halo: rgb(136 227 202 / .23);
-  --lcd-spill: rgb(105 209 181 / .23);
-  --lcd-bounce: rgb(105 209 181 / .17);
+  --lcd-light: var(--cover-light-rgb, 188 194 188);
   position: relative;
   aspect-ratio: 3 / 4;
   display: grid;
@@ -4676,9 +4949,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   text-align: center;
   font-size: 9px;
   overflow: hidden;
-  box-shadow: 0 0 0 1px var(--lcd-edge-glow), 0 0 22px 1px var(--lcd-halo), 3px 7px 34px 3px var(--lcd-spill), 9px 14px 58px 4px var(--lcd-bounce);
+  /* A tight bloom at the panel edge; the light it casts lands on the plates (see Night screen light). */
+  box-shadow: 0 0 0 1px rgb(var(--lcd-light) / .2), 0 0 9px -2px rgb(var(--lcd-light) / .38);
 }
 
+/* Glass over the picture: a neutral sheen and edge falloff, never a tint over the artwork. */
 .game-cover::before {
   content: "";
   position: absolute;
@@ -4687,8 +4962,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   pointer-events: none;
   opacity: 0.72;
   background:
-    radial-gradient(ellipse at 50% 44%, rgb(172 230 214 / .38), rgb(145 208 191 / .12) 55%, transparent 85%),
-    linear-gradient(180deg, rgb(177 235 219 / .3), transparent 14% 84%, rgb(112 215 192 / .38));
+    radial-gradient(ellipse at 50% 44%, rgb(255 255 255 / .07), transparent 62%, rgb(0 0 0 / .26) 112%),
+    linear-gradient(180deg, rgb(255 255 255 / .1), transparent 12% 88%, rgb(0 0 0 / .16));
   animation: dashboard-cover-signal 10s ease-in-out -0.8s infinite;
 }
 
@@ -4707,8 +4982,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  box-shadow: inset 0 2px 4px -1px var(--dashboard-plate-contact);
-  background: linear-gradient(155deg, rgb(182 218 208 / .14), transparent 46%, rgb(8 29 27 / .12));
+  box-shadow: var(--screen-recess);
+  background: var(--screen-glare), var(--lcd-mask), var(--screen-vignette);
 }
 
 .game-cover.is-steam-artwork img {
@@ -4900,6 +5175,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   text-transform: none;
 }
 
+/* An indicator lamp and its stencilled word: lit for new filings, dark for older ones. */
 .activity-badge {
   position: relative;
   display: none;
@@ -4907,10 +5183,10 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   block-size: 17px;
   justify-self: end;
   align-self: start;
-  padding: 0 5px;
-  border: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.16);
-  background: rgba(var(--tone-ink, 217, 213, 193), 0.026);
-  color: rgba(var(--tone-ink, 217, 213, 193), 0.56);
+  padding: 0 0 0 12px;
+  border: 0;
+  background: none;
+  color: rgba(var(--tone-ink, 217, 213, 193), 0.42);
   font-size: 9px;
   font-style: normal;
   line-height: 1;
@@ -4919,11 +5195,28 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   text-transform: uppercase;
 }
 
+.activity-badge::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 50%;
+  inline-size: 6px;
+  block-size: 6px;
+  translate: 0 -50%;
+  border: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.34);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
 .activity-feed li[data-activity-age="new"] .activity-badge {
-  border-color: rgba(var(--tone-ink, 217, 213, 193), 0.28);
   color: rgba(var(--tone-strong, 236, 230, 211), 0.9);
-  box-shadow: inset 2px 0 0 var(--dashboard-plate-mark);
   text-shadow: 0 0 5px rgba(var(--tone-strong, 236, 230, 211), 0.14);
+}
+
+.activity-feed li[data-activity-age="new"] .activity-badge::before {
+  border-color: rgba(var(--tone-strong, 236, 230, 211), 0.7);
+  background: rgb(var(--tone-strong, 236, 230, 211));
+  box-shadow: 0 0 6px rgba(var(--tone-strong, 236, 230, 211), 0.45), 0 0 1px rgba(var(--tone-strong, 236, 230, 211), 0.9);
 }
 
 .activity-feed li[data-activity-age="new"] .activity-badge::after {
@@ -4933,7 +5226,6 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   display: grid;
   place-items: center;
   padding: inherit;
-  border: 1px solid rgba(var(--tone-strong, 236, 230, 211), 0.48);
   color: var(--text-strong);
   text-shadow: 0 0 9px rgba(var(--tone-strong, 236, 230, 211), 0.32), 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.12);
   pointer-events: none;
@@ -5092,7 +5384,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
     font-size: calc(11px * var(--desktop-size));
     min-inline-size: calc(31px * var(--desktop-size));
     block-size: calc(17px * var(--desktop-size));
-    padding-inline: calc(5px * var(--desktop-size));
+    padding-inline: calc(12px * var(--desktop-size)) 0;
   }
   .archive-shell > .workspace > .dashboard-grid .weather-temp { font-size: calc(34px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .weather-readout { gap: calc(6px * var(--desktop-size)); }
@@ -5353,10 +5645,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .weather-primary {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    "temp action"
-    "condition condition";
+    "temp trace action"
+    "condition condition condition";
+  column-gap: clamp(10px, 1.1vw, 16px);
   align-items: start;
   gap: 3px;
   padding-block-end: 5px;
@@ -5391,6 +5684,14 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .weather-condition {
   grid-area: condition;
 }
+
+/* Thermograph: the next hours as one fine line, with now marked at its start. */
+.weather-trace { grid-area: trace; align-self: stretch; block-size: 0; min-block-size: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 2px; min-inline-size: 0; max-inline-size: calc(170px * var(--desktop-size, 1)); }
+.weather-trace:empty { visibility: hidden; }
+.weather-trace svg { inline-size: 100%; block-size: 100%; min-block-size: 0; overflow: visible; }
+.weather-trace polyline { fill: none; stroke: var(--text); stroke-width: 1.25; stroke-linejoin: round; opacity: .72; }
+.weather-trace circle { fill: var(--text-strong); stroke: rgba(var(--tone-strong, 236, 230, 211), .35); stroke-width: 3; }
+.weather-trace small { display: flex; justify-content: space-between; gap: 6px; color: var(--muted); font: calc(10px * var(--desktop-size, 1)) / 1 var(--mono); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
 
 .weather-condition,
 .weather-meta span,

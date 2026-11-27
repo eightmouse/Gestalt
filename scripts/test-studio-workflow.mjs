@@ -111,6 +111,15 @@ try {
   assert.equal(legacyData.writtenAt, "2026-05-01", "Legacy records freeze their original date, not the new edit date");
   assert.equal(legacyData.writtenOrder, 7, "Saving preserves the explicit historical tie-breaker");
   assert.equal((await entry.POST(request({ ...record, originalId: "missing-original" }))).status, 409, "Missing originals must not be silently recreated");
+  const { parseFrontmatter } = await load("content");
+  const multiLine = await entry.POST(request({ ...record, originalId: record.id, status: "Active", summary: "First line.\nstatus: Archived\r\nsection: games\n\n  Last line.", technicalStack: "One\nTwo" }));
+  assert.equal(multiLine.status, 200);
+  const multiLineSource = await readFile(recordPath, "utf8");
+  const multiLineData = parseFrontmatter(multiLineSource).data;
+  assert.equal(multiLineData.summary, "First line. status: Archived section: games Last line.", "Summary line breaks stay inside the summary");
+  assert.equal(multiLineData.section, "logs", "Summary text cannot overwrite the section");
+  assert.equal(multiLineData.status, "Active", "Summary text cannot overwrite the status");
+  assert.ok(multiLineSource.includes('technicalStack: "One\\nTwo"'), "Multi-line text blocks keep their encoded line breaks");
 
   const release = beginStudioOperation("publish");
   assert.equal((await entry.POST(request({ ...record, originalId: record.id }))).status, 409);

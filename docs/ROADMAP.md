@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+27 November, v1.86.0: Every section shares one frame. Projects is a workbench with all projects on spines and the selected one filling the bay; Games gets a drive for the current game and shelves that fill the cabinet. At Night the plates are solid, and the screens give off their own light onto the plates around them.
+
 27 November, v1.85.0: Logs become Field Papers. The newest notes rest on the desk as a paper stack that opens into a slim reader; handheld keeps one sheet with spines. The newest three logs stay on the desk, and older ones still file into the Field Archive after seven days.
 
 20 November, v1.84.4: The desktop Terminal leaves the Dashboard's ambient effects running. Memory State can show the Terminal event as it happens, while the workspace remains non-interactive behind the window.

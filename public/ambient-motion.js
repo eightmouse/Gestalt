@@ -13,6 +13,129 @@
     sync();
     doc.addEventListener("visibilitychange", sync);
     if (doc.defaultView?.matchMedia) bindDashboardHover(doc, doc.defaultView);
+    if (doc.defaultView?.ResizeObserver && doc.defaultView.MutationObserver && doc.body) bindScreenLight(doc, doc.defaultView);
+  }
+
+  // Averages a small RGBA sample into the colour a lit screen would cast. Bright pixels
+  // dominate (they emit the light), and the result is lifted to a light-like brightness
+  // so intensity stays a CSS decision. Returns "r g b" or null for an unusable sample.
+  function screenLightColour(pixels) {
+    let red = 0, green = 0, blue = 0, total = 0;
+    for (let index = 0; index + 3 < pixels.length; index += 4) {
+      if (pixels[index + 3] < 128) continue;
+      const r = pixels[index], g = pixels[index + 1], b = pixels[index + 2];
+      const weight = ((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255) ** 2 + 0.02;
+      red += r * weight; green += g * weight; blue += b * weight; total += weight;
+    }
+    if (!total) return null;
+    const mean = [red / total, green / total, blue / total];
+    const peak = Math.max(...mean, 1);
+    // Lift to a light-like level, then keep a fifth of a neutral so vivid art stays plausible.
+    return mean.map((value, index) => Math.round(value * (210 / peak) * 0.8 + [188, 194, 188][index] * 0.2)).join(" ");
+  }
+
+  // Night screens cast light onto the plates around them. Positions are measured from the
+  // fixed layout (offsets, not the hover-shifted paint), and only when the layout changes.
+  function bindScreenLight(doc, host) {
+    const names = ["x", "y", "rx", "ry"];
+    const colours = new Map();
+    let grid = null, frame = null;
+    const resize = new host.ResizeObserver(() => schedule());
+    function schedule() {
+      if (frame === null) frame = host.requestAnimationFrame(() => { frame = null; measure(); });
+    }
+    function attach(next) {
+      resize.disconnect();
+      grid = next;
+      if (grid) resize.observe(grid);
+    }
+    function box(element) {
+      let x = 0, y = 0, node = element;
+      while (node && node !== grid) {
+        x += node.offsetLeft; y += node.offsetTop;
+        node = node.offsetParent;
+      }
+      return node === grid ? { x, y, width: element.offsetWidth, height: element.offsetHeight } : null;
+    }
+    function write(panel, name, source, plate) {
+      if (!source || !plate) {
+        for (const key of names) panel.style.removeProperty(`--${name}-light-${key}`);
+        return;
+      }
+      // Gradients are placed from the padding box; the border sits outside it.
+      const values = [
+        source.x + source.width / 2 - plate.x - panel.clientLeft,
+        source.y + source.height / 2 - plate.y - panel.clientTop,
+        source.width / 2,
+        source.height / 2
+      ];
+      names.forEach((key, index) => panel.style.setProperty(`--${name}-light-${key}`, `${values[index].toFixed(1)}px`));
+    }
+    function read(source) {
+      // A fresh canvas each time: once tainted by a cross-origin draw, a canvas stays unreadable.
+      const canvas = doc.createElement("canvas");
+      canvas.width = canvas.height = 16;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return null;
+      context.drawImage(source, 0, 0, 16, 16);
+      return screenLightColour(context.getImageData(0, 0, 16, 16).data);
+    }
+    async function sample(image, src) {
+      try {
+        return read(image);
+      } catch {
+        // A cross-origin cover (Steam artwork) taints the canvas; read the same file through CORS.
+        if (!host.fetch || !host.createImageBitmap) return null;
+        const response = await host.fetch(src, { mode: "cors", credentials: "omit" });
+        if (!response.ok) return null;
+        const bitmap = await host.createImageBitmap(await response.blob(), { resizeWidth: 16, resizeHeight: 16 });
+        try { return read(bitmap); } finally { bitmap.close?.(); }
+      }
+    }
+    // The colour lands on `target` (the dashboard grid, or the Games drive) as --cover-light-rgb.
+    function sampleCover(cover, target) {
+      if (!target) return;
+      const image = cover?.querySelector("img");
+      const src = image?.currentSrc || image?.src || "";
+      const apply = (key) => {
+        const colour = key ? colours.get(key) : null;
+        if (colour) target.style.setProperty("--cover-light-rgb", colour);
+        else target.style.removeProperty("--cover-light-rgb");
+      };
+      if (!src || colours.has(src) || !image.complete || !image.naturalWidth) return apply(colours.has(src) ? src : "");
+      colours.set(src, null);
+      sample(image, src).catch(() => null).then((colour) => {
+        colours.set(src, colour);
+        if (target.isConnected) apply((cover.querySelector("img")?.currentSrc) === src ? src : "");
+      });
+    }
+    function measure() {
+      const drive = doc.querySelector(".game-drive");
+      sampleCover(drive?.querySelector(".game-drive-screen"), drive);
+      if (!grid?.isConnected) attach(doc.querySelector(".dashboard-grid"));
+      if (!grid) return;
+      const memory = grid.querySelector(".memory-trace"), cover = grid.querySelector(".game-cover");
+      const screens = { memory: memory && box(memory), cover: cover && box(cover) };
+      for (const panel of grid.children) {
+        if (!panel.classList?.contains("dashboard-panel")) continue;
+        const plate = box(panel);
+        for (const name of Object.keys(screens)) write(panel, name, screens[name], plate);
+      }
+      sampleCover(cover, grid);
+    }
+    const relevant = ".dashboard-grid, .dashboard-panel, .game-cover, .game-drive";
+    const screen = ".game-cover, .game-drive-screen";
+    new host.MutationObserver((records) => {
+      for (const record of records) {
+        if (record.type === "attributes" ? record.target.closest?.(screen) : !grid?.isConnected || [...record.addedNodes].some((node) => node.nodeType === 1 && (node.matches(relevant) || node.querySelector(relevant)))) {
+          schedule();
+          return;
+        }
+      }
+    }).observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
+    doc.addEventListener("load", (event) => { if (event.target?.closest?.(screen)) schedule(); }, true);
+    doc.addEventListener("gestalt:navigation-layout", schedule);
+    schedule();
   }
 
   function bindDashboardHover(doc, host) {
@@ -149,5 +272,5 @@
       node.removeAttribute("data-memory-offscreen");
     };
   }
-  return { initialize, watchMemory };
+  return { initialize, watchMemory, screenLightColour };
 });

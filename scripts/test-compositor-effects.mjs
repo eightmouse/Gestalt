@@ -62,8 +62,17 @@ for (const selector of [".active-projects-panel", ".activity-panel", ".memory-pa
   assert.ok(face["--dashboard-plate-grain"], `${selector} defines its own face texture`);
   for (const prop of ["background", "border-color", "box-shadow", "filter", "transform"]) assert.equal(face[prop], undefined, `${selector} retains the shared frame`);
 }
-assert.match(rule(".game-cover::after")["box-shadow"], /^inset /, "The artwork keeps its inset bezel");
-assert.match(rule(".game-cover")["box-shadow"], /0 0 22px 1px var\(--lcd-halo\).*58px 4px var\(--lcd-bounce\)/, "A softer edge glow falls off into a broader pool of light at night");
+assert.equal(rule(".game-cover::after")["box-shadow"], "var(--screen-recess)", "The artwork keeps its inset bezel");
+assert.match(css, /--screen-recess: inset /, "The shared recess is an inset edge");
+for (const glass of [".game-cover::after", ".game-drive-screen::after", ".project-screen-glass::after"]) {
+  assert.equal(rule(glass).background, "var(--screen-glare), var(--lcd-mask), var(--screen-vignette)", `${glass} shares the one glass: same glare angle, pixel mask and falloff`);
+}
+assert.match(rule(".game-cover")["box-shadow"], /^0 0 0 1px rgb\(var\(--lcd-light\) \/ \.2\), 0 0 9px -2px rgb\(var\(--lcd-light\) \/ \.38\)$/, "The cover keeps a tight bloom; its light lands on the plates instead of the air");
+assert.doesNotMatch(rule(".game-cover::before").background, /rgb\((?:1[0-9]{2}) 2[0-3][0-9] [12][0-9]{2}/, "The glass never tints the artwork teal");
+assert.match(css, /@property --memory-light-gain \{\s*syntax: "<number>";/, "Memory State's brightness can ease between idle and writing");
+assert.match(css, /:root:not\(\[data-appearance="day"\]\) \.dashboard-grid > \.dashboard-panel \{[\s\S]*?at var\(--memory-light-x, -9999px\) var\(--memory-light-y, -9999px\)[\s\S]*?at var\(--cover-light-x, -9999px\) var\(--cover-light-y, -9999px\)[\s\S]*?var\(--dashboard-plate-grain\);/, "Night plates receive light from both screens, under their existing finish");
+assert.match(css, /prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-appearance="day"\]\) \.dashboard-grid:has\(\.memory-trace-lines \[data-writing\]\) \{\s*--memory-light-gain: 1;/, "Memory State brightens only while a line is written, and never under Reduced Motion");
+assert.doesNotMatch(read("app/memory-state.css"), /--trace-(?:spill|bounce)|64px 6px/, "Memory State no longer paints a halo into the empty air");
 assert.match(read("app/appearance.css"), /\[data-appearance="day"\] \.game-cover \{\s*box-shadow: none;/, "Day keeps the LCD film without exterior light");
 assert.match(rule(".weather-primary").background, /repeating-linear-gradient.*right bottom/, "Gauge marks stay on the divider");
 assert.equal(rule(".latest-log > span")["justify-self"], "start", "The date stamp hugs the printed date");
@@ -158,7 +167,7 @@ assert.equal(cover.animation, "dashboard-cover-signal 10s ease-in-out -0.8s infi
 assert.equal(cover.filter, undefined, "Paint the glow with a soft gradient instead of a blur filter");
 assert.equal(cover["mix-blend-mode"], undefined);
 assert.equal(cover.inset, "0");
-assert.match(rule(".game-cover::after").background, /^linear-gradient/, "A smooth film replaces the busy scanline texture");
+assert.match(css, /--lcd-mask: repeating-linear-gradient\(90deg, rgb\(0 0 0 \/ \.1\) 0 1px, transparent 1px 3px\);/, "The LCD pixel mask stays faint: visible up close, never a busy texture");
 assert.equal(rule(".game-cover::after").animation, undefined, "The LCD coating is stationary");
 assert.equal(rule(".game-cover img").animation, undefined, "The photograph and title do not breathe with the decorative glow");
 assert.ok(coverPoints.every((point) => !point.transform), "Only the glow changes brightness, without moving across the art");
@@ -181,3 +190,16 @@ assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.latest-log-signal,[\s\S]*
 assert.match(css, /prefers-reduced-motion: reduce[\s\S]*\.activity-badge::after \{ display: none; \}/);
 assert.match(navigation, /::before \{ animation: desktop-terminal-surface 820ms ease-out both; \}/, "Only the plain background scales, never terminal text");
 console.log("Compositor effects passed: distinct ambient rhythms, constant-speed downward log passes, stable cover/text/geometry, staggered NEW overlays, rare bounded weather interference, dark resets and pause/mobile guards, mask-free content and stable exits.");
+// The Night light layers use the background shorthand; the plate colour must be restated after it,
+// or the plates turn into clear glass and the backdrop shows through every screen's room.
+const nightStart = css.indexOf(':root:not([data-appearance="day"]) .dashboard-grid > .dashboard-panel {');
+const nightPlate = css.slice(nightStart, css.indexOf("@media (min-width: 761px) and (prefers-reduced-motion: no-preference)", nightStart));
+assert.ok(nightPlate.indexOf("background-color: color-mix(") > nightPlate.indexOf("var(--dashboard-plate-grain);"), "Night plates stay solid after the light layers");
+// Screen bloom: Night desktop only, a blurred copy of the same picture added as light.
+const bloom = css.slice(css.indexOf("/* Screen bloom:"), css.indexOf("/* Games drive: the current game"));
+assert.ok(bloom.includes(".screen-bloom { display: none; }"), "Day, handheld and any other surface never show the bloom copy");
+assert.ok(bloom.includes("mix-blend-mode: screen;") && bloom.includes("filter: blur(var(--bloom-blur, 14px)) brightness(1.55) saturate(1.4);"), "The bloom only adds light");
+assert.ok(bloom.includes("pointer-events: none;"), "The bloom never catches the pointer");
+for (const file of ["components/archive/dashboard.tsx", "components/archive/section-page.tsx", "static-app.js"]) {
+  assert.match(read(file), /screen-bloom[^>]*aria-hidden="true"/, `${file} hides the bloom copy from assistive tech`);
+}

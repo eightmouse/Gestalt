@@ -1,14 +1,15 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { renderCipherLetters } from "@/components/archive/headline-text";
 import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
-import { formatReadableDate, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
+import { formatReadableDate, metaText, noteEntries, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import { FieldPapers } from "@/components/archive/field-papers";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, type SetupGroupId } from "@/components/archive/setup-utils";
 import { ArrowLeft, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS, LOG_DESK_KEEP } from "@/lib/log-archive";
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import pocket from "@/public/pocket-index.js";
+import { currentGameCover, steamBannerImage, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import recordLinks from "@/public/record-links.js";
 import sectionMotion from "@/public/section-motion.js";
 
@@ -29,6 +30,7 @@ type SectionPageProps = {
   onCreateRecord?: () => void;
   onCreateSetupRecord?: (group: SetupGroupId) => void;
   onEditSetupTool?: (record: RecordEntry) => void;
+  currentGame?: { ready: boolean; display: CurrentGameDisplay | null };
 };
 type SelectorGroup = { title: string; records: RecordEntry[] };
 
@@ -46,7 +48,7 @@ const setupCreateLabels: Record<SetupGroupId, string> = {
   notes: "Add Setup note"
 };
 
-export function SectionPage({ handheld, records, filingDay, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool }: SectionPageProps) {
+export function SectionPage({ handheld, records, filingDay, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool, currentGame }: SectionPageProps) {
   if (section.id === "logs") {
     return <section className="section-page section-page--logs" aria-label="Field Notes">
       {onCreateRecord ? <div className="field-paper-tools"><CreateRecordButton label="Add field note" onClick={onCreateRecord} /></div> : null}
@@ -66,7 +68,7 @@ export function SectionPage({ handheld, records, filingDay, section, onOpenRecor
   }
 
   if (section.id === "games" && splitSection) {
-    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} header={{ section, countLabel, readout, onCreateRecord, onBack }} />;
+    return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} currentGame={currentGame} records={sortedRecords} header={{ section, countLabel, readout, onCreateRecord, onBack }} />;
   }
 
   return (
@@ -109,7 +111,7 @@ function SectionPageHeader({ section, countLabel, readout, onBack, onCreateRecor
   </header>;
 }
 
-function GameShelf({ groups, handheld, onOpenRecord, header }: Pick<SectionPageProps, "handheld" | "onOpenRecord"> & { groups: SelectorGroup[]; header: SectionPageHeaderProps }) {
+function GameShelf({ groups, handheld, onOpenRecord, header, currentGame, records }: Pick<SectionPageProps, "handheld" | "onOpenRecord" | "currentGame" | "records"> & { groups: SelectorGroup[]; header: SectionPageHeaderProps }) {
   const cabinetRef = useRef<HTMLElement>(null);
   const [searchOpen, setSearch] = useState(false);
   const [query, setQuery] = useState("");
@@ -166,15 +168,50 @@ function GameShelf({ groups, handheld, onOpenRecord, header }: Pick<SectionPageP
         const kind = index === 0 ? "session" : "past";
         return <section className="game-shelf" id={`game-shelf-panel-${index}`} data-pocket-current={index === activeShelf} aria-labelledby={`game-shelf-${kind}`} key={kind}>
           <h3 id={`game-shelf-${kind}`} className="game-shelf-heading">{title}<span>{results.length}</span><span className="game-shelf-bus" aria-hidden="true"><i /></span></h3>
-          <GameShelfRail kind={kind} records={results} shown={!handheld || index === activeShelf} query={query} onOpenRecord={onOpenRecord} />
+          <GameShelfRail kind={kind} records={results} shown={!handheld || index === activeShelf} query={query} loadedId={handheld ? undefined : currentGame?.display?.recordId} onOpenRecord={onOpenRecord} />
         </section>;
       })}
       <p className="game-shelf-live" role="status">{query ? `${count} ${count === 1 ? "game" : "games"} found` : ""}</p>
+      {handheld ? null : <GameDrive state={currentGame} records={records} onOpenRecord={onOpenRecord} />}
     </section>
   </section>;
 }
 
-function GameShelfRail({ kind, records, shown, query, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "session" | "past"; shown: boolean; query: string }) {
+function GameDrive({ state, records, onOpenRecord }: { state?: { ready: boolean; display: CurrentGameDisplay | null }; records: RecordEntry[]; onOpenRecord: SectionPageProps["onOpenRecord"] }) {
+  const display = state?.display ?? null;
+  const record = records.find((entry) => entry.id === display?.recordId);
+  const drive = pocket.gameDrive(display, record, record ? noteEntries(record.body) : []);
+  if (!drive) return <aside className="game-drive" aria-label="Drive" data-empty="">
+    <p className="game-drive-label">Drive A<span>Empty</span></p>
+    <p className="game-drive-empty" role="status">{state?.ready ? "No game loaded." : "Reading Steam snapshot..."}</p>
+  </aside>;
+  const cover = currentGameCover(record, display?.coverAppId) || "/images/archive-backdrop.webp";
+  const image = steamBannerImage(cover) || cover;
+  const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Not live presence.` : undefined;
+  return <aside className="game-drive" aria-label="Drive" title={hint}>
+    <p className="game-drive-label">Drive A<span>Loaded</span></p>
+    <div className="game-drive-screen">
+      <img key={image} src={image} alt="" decoding="async" fetchPriority="low" referrerPolicy="no-referrer" onError={(event) => {
+        if (!event.currentTarget.dataset.coverFallback) {
+          event.currentTarget.dataset.coverFallback = "true";
+          event.currentTarget.src = "/images/archive-backdrop.webp";
+        }
+      }} />
+      <img className="screen-bloom" src={image} alt="" aria-hidden="true" decoding="async" referrerPolicy="no-referrer" />
+    </div>
+    <div className="game-drive-title"><h4>{drive.title}</h4><p>{[drive.status, "Current game"].filter(Boolean).join(" · ")}</p></div>
+    <dl className="game-drive-figures">{drive.figures.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+    {drive.latest ? <section className="game-drive-note" aria-label="Latest note">
+      <p className="game-drive-label">Latest note{drive.latest.date ? <span>{drive.latest.date}</span> : null}</p>
+      <h5>{drive.latest.title}</h5>
+      {drive.latest.excerpt ? <p>{drive.latest.excerpt}</p> : null}
+      {drive.earlier ? <small>+ {drive.earlier} earlier</small> : null}
+    </section> : null}
+    {record ? <button className="game-drive-hit" type="button" aria-label={`Open ${record.title} notes`} onClick={() => onOpenRecord(record, "notes")} /> : null}
+  </aside>;
+}
+
+function GameShelfRail({ kind, records, shown, query, loadedId, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "session" | "past"; shown: boolean; query: string; loadedId?: string }) {
   const shelfRef = useRef<HTMLDivElement>(null);
   const offset = useRef(0);
   const railId = `game-rail-${kind}`;
@@ -190,7 +227,7 @@ function GameShelfRail({ kind, records, shown, query, onOpenRecord }: Pick<Secti
   }, [query, records.length]);
   return <div className="game-shelf-track">
     <div ref={shelfRef} id={railId} className="record-media-cabinet" data-media-cabinet={kind} data-pocket-catalog="" onScroll={(event) => { if (!query && event.currentTarget.clientWidth) offset.current = event.currentTarget.scrollLeft; }}>
-      {records.length ? records.map((record) => <RecordSelectorTile key={record.id} record={record} onOpenRecord={onOpenRecord} />) : <p className="search-empty">{query ? "No matching games." : "No records filed here yet."}</p>}
+      {records.length ? records.map((record) => <RecordSelectorTile key={record.id} record={record} loaded={record.id === loadedId} onOpenRecord={onOpenRecord} />) : <p className="search-empty">{query ? "No matching games." : "No records filed here yet."}</p>}
     </div>
     <button className="game-shelf-edge" type="button" data-shelf-prev="" aria-disabled="true" tabIndex={-1} aria-controls={railId} aria-label={`Scroll ${label} left`}><ChevronLeft size={20} aria-hidden="true" /></button>
     <button className="game-shelf-edge" type="button" data-shelf-next="" aria-disabled="true" tabIndex={-1} aria-controls={railId} aria-label={`Scroll ${label} right`}><ChevronRight size={20} aria-hidden="true" /></button>
@@ -215,6 +252,15 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
     if (next < 0 || next >= count) return;
     commitTurn.current = sectionMotion.preparePlateTurn(frameRef.current, direction);
     setProjectIds((current) => ({ ...current, [index]: group.records[next].id }));
+  };
+  const spines = groups.flatMap((entry, i) => entry.records.map((record) => ({ group: i, record })));
+  const loadSpine = (target: number, id: string) => {
+    if (target === index && id === workbench?.record.id) return;
+    const from = spines.findIndex((spine) => spine.group === index && spine.record.id === workbench?.record.id);
+    const to = spines.findIndex((spine) => spine.group === target && spine.record.id === id);
+    if (workbench) commitTurn.current = sectionMotion.preparePlateTurn(frameRef.current, to < from ? -1 : 1);
+    setGroup(target);
+    setProjectIds((current) => ({ ...current, [target]: id }));
   };
   const rotate = useEffectEvent(() => step(1, true));
   const swipe = useEffectEvent((direction: -1 | 1) => {
@@ -246,21 +292,45 @@ function RecordSelector({ groups, handheld, onOpenRecord }: Pick<SectionPageProp
           <ProjectWorkprint workbench={pocket.projectWorkbench([record])!} other={i === 1} compact onOpenRecord={onOpenRecord} />
         </div>) : <p className="search-empty">No records filed here yet.</p>}
       </div>)}
-    </div> : workbench ? <div className="project-workbench">
-      <div ref={frameRef} className="project-workbench-frame">
-        <ProjectWorkprint workbench={workbench} other={other} onOpenRecord={onOpenRecord} />
-        <span className="project-workbench-register" aria-hidden="true" />
-      </div>
-    </div> : <p className="search-empty">No records filed here yet.</p>}
+    </div> : <>
+      {spines.length ? <nav className="project-spines" aria-label="Projects">
+        {groups.map((entry, i) => entry.records.length ? <div key={entry.title} className="project-spine-group" data-group={i === 1 ? "other" : "active"}>
+          <p className="project-spines-label">{entry.title}<span>{String(entry.records.length).padStart(2, "0")}</span></p>
+          {entry.records.map((record) => {
+            const progress = pocket.projectWorkbench([record])!.progress;
+            const current = i === index && record.id === workbench?.record.id;
+            return <button key={record.id} type="button" className="project-spine" aria-current={current ? "true" : undefined} onClick={() => loadSpine(i, record.id)}>
+              <span className="project-spine-title">{record.title}</span>
+              <small>{i === 1 ? record.status : `${progress}%`}</small>
+              <i className="project-spine-meter" style={{ "--spine-progress": `${progress}%` } as CSSProperties} aria-hidden="true" />
+            </button>;
+          })}
+        </div> : null)}
+      </nav> : null}
+      {workbench ? <div className="project-workbench">
+        <div ref={frameRef} className="project-workbench-frame">
+          <ProjectWorkprint workbench={workbench} bench={projectBenchFor(workbench.record)} other={other} onOpenRecord={onOpenRecord} />
+          <span className="project-workbench-register" aria-hidden="true" />
+        </div>
+      </div> : <p className="search-empty">No records filed here yet.</p>}
+    </>}
   </section>;
 }
 
-function ProjectWorkprint({ workbench, other, compact = false, onOpenRecord }: { workbench: NonNullable<ReturnType<typeof pocket.projectWorkbench<RecordEntry>>>; other: boolean; compact?: boolean; onOpenRecord: (record: RecordEntry) => void }) {
+function projectBenchFor(record: RecordEntry) {
+  const samples = record.meta.samples;
+  const sources = (Array.isArray(samples) ? samples.map(String) : typeof samples === "string" ? samples.split(/\r?\n|,/) : []).map((item) => item.trim()).filter(Boolean);
+  const stack = metaText(record.meta.technicalStack).split(/\r?\n|\|/).map((item) => item.trim()).filter(Boolean);
+  return pocket.projectBench(record, noteEntries(record.body), { screen: sources[0] || recordHeaderImage(record), stack });
+}
+
+function ProjectWorkprint({ workbench, bench, other, compact = false, onOpenRecord }: { workbench: NonNullable<ReturnType<typeof pocket.projectWorkbench<RecordEntry>>>; bench?: ReturnType<typeof pocket.projectBench>; other: boolean; compact?: boolean; onOpenRecord: (record: RecordEntry) => void }) {
   const { record, brief, progress, stops, more, nextStop } = workbench;
-  return <div className="project-workbench-record">
+  const meta = bench ? [bench.started && `Started ${bench.started}`, bench.noteCount && `${bench.noteCount} ${bench.noteCount === 1 ? "note" : "notes"}`].filter(Boolean) : [];
+  return <div className="project-workbench-record" data-bench={bench ? "" : undefined}>
     {other ? <span className="project-state-mark" aria-hidden="true">{record.status}</span> : null}
     <div className="project-workbench-brief">
-      <p className="project-workbench-signal">{record.status}</p>
+      <p className="project-workbench-signal">{record.status}{meta.map((item) => <span key={item}>{item}</span>)}</p>
       <h3>{record.title}</h3>
       {brief ? <p>{brief}</p> : null}
     </div>
@@ -276,19 +346,32 @@ function ProjectWorkprint({ workbench, other, compact = false, onOpenRecord }: {
         {stops.length ? <ol className="project-milestone-trace" role="list">
           {stops.map(({ label, state, value }, index) => <li key={`${index}-${label}`} data-stop={state}><i className="project-milestone-node" aria-hidden="true" /><strong>{label}</strong><small>{value}</small></li>)}
         </ol> : <meter min="0" max="100" value={progress} aria-label="Project progress" />}
-        {more ? <small className="project-milestone-more">+${more} in record</small> : null}
+        {more ? <small className="project-milestone-more">+{more} in record</small> : null}
       </>}
     </div>
+    {bench && (bench.latest || bench.screen || bench.stack.length) ? <div className="project-bench-deck">
+      {bench.latest ? <section className="project-dispatch" aria-label="Latest note">
+        <p className="project-bench-label">Latest note{bench.latest.date ? <span>{bench.latest.date}</span> : null}</p>
+        <h4>{bench.latest.title}</h4>
+        {bench.latest.excerpt ? <p>{bench.latest.excerpt}</p> : null}
+        {bench.earlier ? <small>+ {bench.earlier} earlier</small> : null}
+      </section> : null}
+      {bench.screen || bench.stack.length ? <figure className="project-screen" data-lit={bench.screen ? "" : undefined}>
+        {bench.screen ? <div className="project-screen-glass"><img src={bench.screen} alt="" decoding="async" loading="lazy" /><img className="screen-bloom" src={bench.screen} alt="" aria-hidden="true" decoding="async" loading="lazy" /></div> : null}
+        {bench.stack.length ? <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption> : null}
+      </figure> : null}
+    </div> : null}
     <button className="project-workbench-hit" type="button" aria-label={`Open ${record.title}`} onClick={(event) => sectionMotion.openProjectPlate(event.currentTarget, () => onOpenRecord(record))}><span className="project-workbench-light" aria-hidden="true" /></button>
   </div>;
 }
 
-function RecordSelectorTile({ record, onOpenRecord }: { record: RecordEntry; onOpenRecord: (record: RecordEntry) => void }) {
+function RecordSelectorTile({ record, loaded = false, onOpenRecord }: { record: RecordEntry; loaded?: boolean; onOpenRecord: (record: RecordEntry) => void }) {
   const status = gameActivityLabel(record);
   const activity = gameLogPlacement(record) === "session" && (status === "Active" || status === "Inactive") ? status : "";
-  return <button className="record-sleeve" data-game-sleeve="" data-state={recordStateKey(status)} type="button" aria-label={activity ? `${record.title}, ${activity}` : record.title} onClick={(event) => sectionMotion.openInstrumentSleeve(event.currentTarget, () => onOpenRecord(record), event.detail > 0)}>
+  const label = [record.title, activity, loaded ? "in drive" : ""].filter(Boolean).join(", ");
+  return <button className="record-sleeve" data-game-sleeve="" data-state={recordStateKey(status)} data-in-drive={loaded ? "" : undefined} type="button" aria-label={label} onClick={(event) => sectionMotion.openInstrumentSleeve(event.currentTarget, () => onOpenRecord(record), event.detail > 0)}>
     <span className="record-sleeve-art" aria-hidden="true">
-      <span className="record-sleeve-label"><strong>{record.title}</strong>{activity ? <small>{activity}</small> : null}</span>
+      <span className="record-sleeve-label"><strong>{record.title}</strong>{loaded ? <small>In drive</small> : activity ? <small>{activity}</small> : null}</span>
       <span className="game-disk-well"><span className="game-disk-hub" /></span>
       <span className="game-disk-contacts" />
       <span className="pocket-tape-reels" />

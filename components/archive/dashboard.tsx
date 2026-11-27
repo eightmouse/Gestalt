@@ -46,6 +46,7 @@ type WeatherState = {
   meta: string;
   note: string;
   loading: boolean;
+  trace?: number[];
 };
 
 type WeatherLocation = {
@@ -197,6 +198,7 @@ function CurrentGame({ display, record, onCreate }: { display: CurrentGameDispla
             event.currentTarget.src = "/images/archive-backdrop.webp";
           }
         }} />
+        <img className="screen-bloom" src={image} alt="" aria-hidden="true" decoding="async" referrerPolicy="no-referrer" />
       </div>
       <div>
         <strong>{display.title}</strong>
@@ -270,7 +272,7 @@ function WeatherPanel() {
       const location = await resolveWeatherLocation();
       const latitude = location.latitude.toFixed(3);
       const longitude = location.longitude.toFixed(3);
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=temperature_2m&forecast_hours=12&timezone=auto`;
       const response = await fetch(url);
       const data = await response.json();
       const current = data.current ?? {};
@@ -281,7 +283,8 @@ function WeatherPanel() {
         condition: weatherCodeLabel(Number(current.weather_code)),
         meta: `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`,
         note: `Approximate sky: ${location.label}. Nothing is saved by Gestalt.`,
-        loading: false
+        loading: false,
+        trace: Array.isArray(data.hourly?.temperature_2m) ? data.hourly.temperature_2m : []
       });
       weatherLoaded = true;
     } catch {
@@ -314,6 +317,7 @@ function WeatherPanel() {
     <div className="weather-readout">
       <div className="weather-primary">
         <span className="weather-temp" data-temp={weather.temp}>{weather.temp}</span>
+        <WeatherTrace values={weather.trace} />
         <button
           aria-label={weather.loading ? "Reading sky signal" : "Refresh sky"}
           className={weather.loading ? "weather-action is-loading" : "weather-action"}
@@ -337,6 +341,18 @@ function WeatherPanel() {
       <p className="weather-note">{weather.note}</p>
     </div>
   );
+}
+
+function WeatherTrace({ values }: { values?: number[] }) {
+  const trace = pocket.weatherTrace(values);
+  if (!trace) return <span className="weather-trace" aria-hidden="true" />;
+  return <span className="weather-trace" role="img" aria-label={`Next ${trace.hours} hours: low ${trace.low}C, high ${trace.high}C`}>
+    <svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <polyline points={trace.points} vectorEffect="non-scaling-stroke" />
+      <circle cx={trace.now[0]} cy={trace.now[1]} r="1.6" vectorEffect="non-scaling-stroke" />
+    </svg>
+    <small><span>{trace.hours}H</span>{trace.low}&ndash;{trace.high}C</small>
+  </span>;
 }
 
 async function resolveWeatherLocation(): Promise<WeatherLocation> {

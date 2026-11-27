@@ -64,7 +64,8 @@ const weatherState = {
   condition: "Awaiting signal",
   meta: "Approximate network signal",
   note: "No browser location prompt. Gestalt stores nothing.",
-  loading: false
+  loading: false,
+  trace: []
 };
 
 const localMemoryKey = "gestalt.local-memory";
@@ -834,6 +835,11 @@ async function initializeSteamDisplay() {
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
     if (panel && state.bootDismissed) panel.outerHTML = currentGamePanel();
+    const drive = document.querySelector(".game-drive");
+    if (drive) {
+      drive.outerHTML = gameDrivePanel();
+      if (state.activeSection === "games") syncGameShelf();
+    }
     const display = currentGameDisplay();
     const label = document.querySelector("[data-current-game-label]");
     if (label) label.textContent = display?.title || "None";
@@ -1596,7 +1602,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.85.0</span>
+        <span>v1.86.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1610,7 +1616,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.85.0</span>
+        <span class="version-label">v1.86.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1630,7 +1636,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.85.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.86.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1733,6 +1739,7 @@ function weatherPanel() {
   return `<div class="weather-readout" data-weather-module>
     <div class="weather-primary">
       <span class="weather-temp" data-temp="${escapeHtml(weatherState.temp)}" data-weather-temp>${escapeHtml(weatherState.temp)}</span>
+      ${weatherTraceMarkup()}
       <button class="weather-action${weatherState.loading ? " is-loading" : ""}" type="button" data-weather-action aria-label="${actionLabel}" title="${actionLabel}" ${weatherState.loading ? "disabled" : ""}>
         ${refreshIcon}
       </button>
@@ -1744,6 +1751,12 @@ function weatherPanel() {
     </div>
     <p class="weather-note" data-weather-note>${escapeHtml(weatherState.note)}</p>
   </div>`;
+}
+
+function weatherTraceMarkup() {
+  const trace = pocket.weatherTrace(weatherState.trace);
+  if (!trace) return '<span class="weather-trace" data-weather-trace aria-hidden="true"></span>';
+  return `<span class="weather-trace" data-weather-trace role="img" aria-label="Next ${trace.hours} hours: low ${trace.low}C, high ${trace.high}C"><svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true" focusable="false"><polyline points="${trace.points}" vector-effect="non-scaling-stroke"></polyline><circle cx="${trace.now[0]}" cy="${trace.now[1]}" r="1.6" vector-effect="non-scaling-stroke"></circle></svg><small><span>${trace.hours}H</span>${trace.low}&ndash;${trace.high}C</small></span>`;
 }
 
 function weatherRefreshIcon() {
@@ -1793,7 +1806,7 @@ function currentGamePanel() {
     || currentGame?.dashboardImage || currentGame?.banner || currentGame?.headerImage || "public/images/archive-backdrop.webp";
   const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Not live presence.` : "";
   const content = display ? `<div class="current-game" data-state="${recordStateKey(display.status)}" title="${escapeHtml(hint)}">
-    <div class="game-cover${steamDisplayModule?.steamBannerImage(image) ? " is-steam-artwork" : ""}"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /></div>
+    <div class="game-cover${steamDisplayModule?.steamBannerImage(image) ? " is-steam-artwork" : ""}"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /><img class="screen-bloom" src="${escapeHtml(image)}" alt="" aria-hidden="true" decoding="async" referrerpolicy="no-referrer" /></div>
     <div><strong>${escapeHtml(display.title)}</strong>
       ${summary ? `<span class="current-game-summary" title="${summary}">${summary}</span>` : ""}
       ${display.playtime ? `<span>${escapeHtml(display.playtime)} Play Time</span>` : ""}
@@ -2002,7 +2015,7 @@ function renderGameShelfResults({ kind, results }) {
   const rail = `game-rail-${kind}`;
   const label = kind === "session" ? "Session Logs" : "Past Logs";
   return `<div class="game-shelf-track">
-    <div id="${rail}" class="record-media-cabinet" data-media-cabinet="${kind}" data-pocket-catalog>${results.length ? renderSelectorTiles(results) : empty || renderSelectorTiles([])}</div>
+    <div id="${rail}" class="record-media-cabinet" data-media-cabinet="${kind}" data-pocket-catalog>${results.length ? renderSelectorTiles(results, driveRecordId()) : empty || renderSelectorTiles([])}</div>
     <button class="game-shelf-edge" type="button" data-shelf-prev aria-disabled="true" tabindex="-1" aria-controls="${rail}" aria-label="Scroll ${label} left">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
     <button class="game-shelf-edge" type="button" data-shelf-next aria-disabled="true" tabindex="-1" aria-controls="${rail}" aria-label="Scroll ${label} right">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
   </div>`;
@@ -2022,7 +2035,41 @@ function renderGameShelf(view) {
       ${renderGameShelfResults(shelf)}
     </section>`).join("")}
     <p class="game-shelf-live" role="status">${gameShelfStatus(view.count)}</p>
+    ${gameDrivePanel()}
   </section>`;
+}
+
+// The drive is desktop only, so only the desktop reader marks the loaded disk.
+function driveRecordId() {
+  return pocket.isHandheld() ? "" : currentGameRecord()?.id || "";
+}
+
+// The drive holds the current game only; handheld hides it in CSS and keeps its own shelves.
+function gameDrivePanel() {
+  const display = currentGameDisplay();
+  const record = currentGameRecord();
+  const drive = pocket.gameDrive(display, record, record ? noteEntries(record.body || "") : []);
+  if (!drive) return `<aside class="game-drive" aria-label="Drive" data-empty>
+    <p class="game-drive-label">Drive A<span>Empty</span></p>
+    <p class="game-drive-empty" role="status">${steamDisplayReady ? "No game loaded." : "Reading Steam snapshot..."}</p>
+  </aside>`;
+  const cover = steamDisplayModule?.currentGameCover?.(record, display?.coverAppId)
+    || record?.dashboardImage || record?.banner || record?.headerImage || "public/images/archive-backdrop.webp";
+  const image = steamDisplayModule?.steamBannerImage?.(cover) || cover;
+  const hint = display?.changedAt ? `Steam snapshot changed ${display.changedAt.slice(0, 10).split("-").reverse().join(" / ")}. Not live presence.` : "";
+  return `<aside class="game-drive" aria-label="Drive"${hint ? ` title="${escapeHtml(hint)}"` : ""}>
+    <p class="game-drive-label">Drive A<span>Loaded</span></p>
+    <div class="game-drive-screen"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /><img class="screen-bloom" src="${escapeHtml(image)}" alt="" aria-hidden="true" decoding="async" referrerpolicy="no-referrer" /></div>
+    <div class="game-drive-title"><h4>${escapeHtml(drive.title)}</h4><p>${escapeHtml([drive.status, "Current game"].filter(Boolean).join(" · "))}</p></div>
+    <dl class="game-drive-figures">${drive.figures.map(({ label, value }) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>
+    ${drive.latest ? `<section class="game-drive-note" aria-label="Latest note">
+      <p class="game-drive-label">Latest note${drive.latest.date ? `<span>${escapeHtml(drive.latest.date)}</span>` : ""}</p>
+      <h5>${escapeHtml(drive.latest.title)}</h5>
+      ${drive.latest.excerpt ? `<p>${escapeHtml(drive.latest.excerpt)}</p>` : ""}
+      ${drive.earlier ? `<small>+ ${drive.earlier} earlier</small>` : ""}
+    </section>` : ""}
+    ${record ? `<button class="game-drive-hit" type="button" data-open-record="${escapeHtml(record.id)}" data-open-content="notes" aria-label="${escapeHtml(`Open ${record.title} notes`)}"></button>` : ""}
+  </aside>`;
 }
 
 function syncPocketGameShelf(shell, view, restoreOffset = false) {
@@ -2104,6 +2151,7 @@ function renderRecordSelector(groups) {
         <button type="button" data-selector-page="1" aria-label="Next project" aria-disabled="${page + 1 === count}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
       </nav>
     </div>
+    ${renderProjectSpines(groups, view)}
     <div class="record-selector-results">${renderSelectorResults(view)}</div>
     <div class="pocket-project-stack">
       ${groups.map(({ title, records }, i) => `<div class="pocket-project-rail" data-pocket-catalog role="region" aria-label="${escapeHtml(title)}" tabindex="0" ${i === index ? "" : "hidden"}>
@@ -2113,17 +2161,46 @@ function renderRecordSelector(groups) {
   </section>`;
 }
 
+function renderProjectSpines(groups, { index, workbench }) {
+  if (!groups.some((group) => group.records.length)) return "";
+  return `<nav class="project-spines" aria-label="Projects">${groups.map((group, i) => group.records.length ? `<div class="project-spine-group" data-group="${i === 1 ? "other" : "active"}">
+    <p class="project-spines-label">${escapeHtml(group.title)}<span>${String(group.records.length).padStart(2, "0")}</span></p>
+    ${group.records.map((record) => {
+      const progress = pocket.projectWorkbench([record]).progress;
+      const current = i === index && record.id === workbench?.record.id;
+      return `<button type="button" class="project-spine" data-project-spine="${i}" data-spine-id="${escapeHtml(record.id)}"${current ? ' aria-current="true"' : ""}><span class="project-spine-title">${escapeHtml(record.title)}</span><small>${escapeHtml(i === 1 ? record.status : `${progress}%`)}</small><i class="project-spine-meter" style="--spine-progress: ${progress}%" aria-hidden="true"></i></button>`;
+    }).join("")}
+  </div>` : "").join("")}</nav>`;
+}
+
+function projectBenchFor(record) {
+  return pocket.projectBench(record, noteEntries(record.body || ""), { screen: recordMediaSources(record, "samples")[0] || recordHeaderImage(record), stack: textList(record.technicalStack) });
+}
+
 function renderSelectorResults({ workbench, other }) {
   if (!workbench) return '<p class="search-empty">No records filed here yet.</p>';
   return `<div class="project-workbench">
-    <div class="project-workbench-frame">${renderProjectStage(workbench, other)}<span class="project-workbench-register" aria-hidden="true"></span></div>
+    <div class="project-workbench-frame">${renderProjectStage(workbench, other, false, projectBenchFor(workbench.record))}<span class="project-workbench-register" aria-hidden="true"></span></div>
   </div>`;
 }
 
-function renderProjectStage({ record, brief, progress, stops, more, nextStop }, other, compact = false) {
-  return `<div class="project-workbench-record">
+function renderProjectStage({ record, brief, progress, stops, more, nextStop }, other, compact = false, bench) {
+  const meta = bench ? [bench.started && `Started ${bench.started}`, bench.noteCount && `${bench.noteCount} ${bench.noteCount === 1 ? "note" : "notes"}`].filter(Boolean) : [];
+  const deck = bench && (bench.latest || bench.screen || bench.stack.length) ? `<div class="project-bench-deck">
+      ${bench.latest ? `<section class="project-dispatch" aria-label="Latest note">
+        <p class="project-bench-label">Latest note${bench.latest.date ? `<span>${escapeHtml(bench.latest.date)}</span>` : ""}</p>
+        <h4>${escapeHtml(bench.latest.title)}</h4>
+        ${bench.latest.excerpt ? `<p>${escapeHtml(bench.latest.excerpt)}</p>` : ""}
+        ${bench.earlier ? `<small>+ ${bench.earlier} earlier</small>` : ""}
+      </section>` : ""}
+      ${bench.screen || bench.stack.length ? `<figure class="project-screen"${bench.screen ? " data-lit" : ""}>
+        ${bench.screen ? `<div class="project-screen-glass"><img src="${escapeHtml(bench.screen)}" alt="" decoding="async" loading="lazy" /><img class="screen-bloom" src="${escapeHtml(bench.screen)}" alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>` : ""}
+        ${bench.stack.length ? `<figcaption><span class="project-bench-label">Build sheet</span>${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption>` : ""}
+      </figure>` : ""}
+    </div>` : "";
+  return `<div class="project-workbench-record"${bench ? " data-bench" : ""}>
     ${other ? `<span class="project-state-mark" aria-hidden="true">${escapeHtml(record.status)}</span>` : ""}
-    <div class="project-workbench-brief"><p class="project-workbench-signal">${escapeHtml(record.status)}</p><h3>${escapeHtml(record.title)}</h3>${brief ? `<p>${escapeHtml(brief)}</p>` : ""}</div>
+    <div class="project-workbench-brief"><p class="project-workbench-signal">${escapeHtml(record.status)}${meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</p><h3>${escapeHtml(record.title)}</h3>${brief ? `<p>${escapeHtml(brief)}</p>` : ""}</div>
     <div class="project-workbench-progress">
       ${compact ? `<div class="pocket-project-readout">
         <div class="project-workbench-caption"><span>Progress</span><b>${progress}%</b></div>
@@ -2135,17 +2212,20 @@ function renderProjectStage({ record, brief, progress, stops, more, nextStop }, 
         ${more ? `<small class="project-milestone-more">+${more} in record</small>` : ""}
       `}
     </div>
+    ${deck}
     <button class="project-workbench-hit" type="button" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(`Open ${record.title}`)}"><span class="project-workbench-light" aria-hidden="true"></span></button>
   </div>`;
 }
 
-function renderSelectorTiles(sectionRecords) {
+function renderSelectorTiles(sectionRecords, loadedId = "") {
   if (!sectionRecords.length) return '<p class="search-empty">No records filed here yet.</p>';
   return sectionRecords.map((record) => {
     const status = gameActivityLabel(record);
     const activity = gameLogPlacement(record) === "session" && (status === "Active" || status === "Inactive") ? status : "";
-    return `<button class="record-sleeve" data-game-sleeve type="button" data-state="${recordStateKey(status)}" data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(activity ? `${record.title}, ${activity}` : record.title)}">
-      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${activity ? `<small>${activity}</small>` : ""}</span><span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span><span class="pocket-tape-reels"></span></span>
+    const loaded = record.id === loadedId;
+    const label = [record.title, activity, loaded ? "in drive" : ""].filter(Boolean).join(", ");
+    return `<button class="record-sleeve" data-game-sleeve type="button" data-state="${recordStateKey(status)}"${loaded ? " data-in-drive" : ""} data-open-record="${escapeHtml(record.id)}" aria-label="${escapeHtml(label)}">
+      <span class="record-sleeve-art" aria-hidden="true"><span class="record-sleeve-label"><strong>${escapeHtml(record.title)}</strong>${loaded ? "<small>In drive</small>" : activity ? `<small>${activity}</small>` : ""}</span><span class="game-disk-well"><span class="game-disk-hub"></span></span><span class="game-disk-contacts"></span><span class="pocket-tape-reels"></span></span>
     </button>`;
   }).join("");
 }
@@ -2192,7 +2272,15 @@ function syncRecordSelector(button, automatic = false, swipeDirection) {
   const groups = splitSectionRecords(state.activeSection, recordsFor(state.activeSection).sort(compareSectionRecords));
   const current = selectorView(groups);
   let direction;
-  if (button?.dataset.selectorGroup !== undefined || swipeDirection) {
+  if (button?.dataset.projectSpine !== undefined) {
+    const group = Number(button.dataset.projectSpine);
+    const id = button.dataset.spineId;
+    if (!groups[group]?.records.some((record) => record.id === id) || (group === current.index && id === current.workbench?.record.id)) return;
+    const order = groups.flatMap((entry, i) => entry.records.map((record) => `${i}:${record.id}`));
+    direction = order.indexOf(`${group}:${id}`) < order.indexOf(`${current.index}:${current.workbench?.record.id}`) ? -1 : 1;
+    state.selectorGroup = group;
+    state.selectorProjectIds[group] = id;
+  } else if (button?.dataset.selectorGroup !== undefined || swipeDirection) {
     const group = swipeDirection ? current.index + swipeDirection : Number(button.dataset.selectorGroup);
     if (!groups[group] || group === current.index) return;
     state.selectorGroup = group;
@@ -2212,10 +2300,14 @@ function syncRecordSelector(button, automatic = false, swipeDirection) {
     stack.querySelectorAll(".pocket-project-rail").forEach((rail, i) => { rail.hidden = i !== index; });
   }
   selector.querySelectorAll("[data-selector-group]").forEach((control, i) => control.setAttribute("aria-pressed", String(i === index)));
-  if (workbench && direction) {
-    const frame = selector.querySelector(".project-workbench-frame");
+  selector.querySelectorAll("[data-project-spine]").forEach((spine) => {
+    if (Number(spine.dataset.projectSpine) === index && spine.dataset.spineId === workbench?.record.id) spine.setAttribute("aria-current", "true");
+    else spine.removeAttribute("aria-current");
+  });
+  const frame = selector.querySelector(".project-workbench-frame");
+  if (workbench && direction && frame) {
     const commit = window.GestaltSectionMotion?.preparePlateTurn(frame, direction);
-    frame.firstElementChild.outerHTML = renderProjectStage(workbench, other);
+    frame.firstElementChild.outerHTML = renderProjectStage(workbench, other, false, projectBenchFor(workbench.record));
     commit?.();
   } else {
     selector.querySelector(".record-selector-results").innerHTML = renderSelectorResults(next);
@@ -3709,7 +3801,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.85.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.86.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3980,6 +4072,8 @@ function syncWeather() {
   if (label) label.textContent = weatherState.label;
   if (meta) meta.textContent = weatherState.meta;
   if (note) note.textContent = weatherState.note;
+  const trace = module.querySelector("[data-weather-trace]");
+  if (trace) trace.outerHTML = weatherTraceMarkup();
   if (action) {
     const actionLabel = weatherState.loading ? "Reading sky signal" : "Refresh sky";
     if (!action.querySelector(".weather-action-icon")) {
@@ -4167,7 +4261,7 @@ async function requestWeather() {
     const location = await resolveWeatherLocation();
     const latitude = location.latitude.toFixed(3);
     const longitude = location.longitude.toFixed(3);
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=temperature_2m&forecast_hours=12&timezone=auto`;
     const response = await fetch(url);
     const data = await response.json();
     const current = data.current || {};
@@ -4176,6 +4270,7 @@ async function requestWeather() {
     weatherState.condition = weatherCodeLabel(Number(current.weather_code));
     weatherState.meta = `Humidity ${current.relative_humidity_2m ?? "--"}% / Wind ${current.wind_speed_10m ?? "--"} kmh`;
     weatherState.note = `Approximate sky: ${location.label}. Nothing is saved by Gestalt.`;
+    weatherState.trace = Array.isArray(data.hourly?.temperature_2m) ? data.hourly.temperature_2m : [];
   } catch {
     weatherState.temp = "--";
     weatherState.condition = "Signal interrupted";
@@ -4331,7 +4426,7 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (target.dataset.selectorGroup !== undefined || target.dataset.selectorPage !== undefined) {
+  if (target.dataset.selectorGroup !== undefined || target.dataset.selectorPage !== undefined || target.dataset.projectSpine !== undefined) {
     syncRecordSelector(target);
     return;
   }

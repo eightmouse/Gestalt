@@ -1,37 +1,41 @@
 .memory-trace {
   --trace-size: var(--desktop-size, 1);
-  --trace-screen: #152424;
-  --trace-reflection: rgb(122 210 188 / .22);
-  --trace-screen-glow: rgb(110 210 186 / .10);
-  --trace-edge-falloff: rgb(4 16 16 / .32);
-  --trace-scanline: rgb(4 15 14 / .17);
-  --trace-rim: rgb(171 230 216 / .23);
-  --trace-inset: #080e0e;
+  /* A phosphor tube: near-black glass, light only where the beam writes. */
+  --trace-screen: #050b0a;
+  --trace-screen-glow: rgb(64 168 140 / .12);
+  --trace-edge-falloff: rgb(0 0 0 / .55);
+  --trace-scanline: rgb(0 0 0 / .3);
+  --trace-rim: rgb(171 230 216 / .16);
+  --trace-inset: #000;
   --trace-bezel: inset 0 0 0 1px var(--trace-rim), inset 0 0 14px -5px var(--trace-inset);
-  --trace-halo: rgb(143 228 206 / .23);
-  --trace-spill: rgb(107 211 186 / .21);
-  --trace-bounce: rgb(86 203 174 / .18);
-  --trace-ink: #cdd8d0;
-  --trace-command: #a5d8d6;
-  --trace-value: #e6be88;
-  --trace-comment: #9aafa1;
-  --trace-index: #91a39d;
-  --trace-live: #dafff1;
-  --trace-phosphor: rgb(116 240 210 / .43);
-  --trace-glow: rgb(158 235 216 / .32);
+  --trace-halo: rgb(143 228 206 / .3);
+  --trace-ink: #d6f2e7;
+  --trace-command: #b4ece6;
+  --trace-value: #f2cf98;
+  --trace-comment: #8fb3a3;
+  --trace-index: #6f8d82;
+  --trace-live: #effff8;
+  --trace-phosphor: rgb(130 250 215 / .6);
+  --trace-glow: rgb(100 232 196 / .34);
+  --trace-bloom: rgb(90 226 190 / .17);
+  position: relative;
   min-block-size: 0;
   block-size: 100%;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
   background:
-    repeating-linear-gradient(180deg, transparent 0 3px, var(--trace-scanline) 3px 4px),
-    radial-gradient(ellipse at 50% 47%, transparent 54%, var(--trace-edge-falloff) 110%),
-    linear-gradient(var(--trace-screen-glow), var(--trace-screen-glow)),
-    radial-gradient(ellipse at 42% -16%, var(--trace-reflection), transparent 75%),
+    repeating-linear-gradient(180deg, transparent 0 2px, var(--trace-scanline) 2px 3px),
+    radial-gradient(ellipse at 50% 47%, transparent 50%, var(--trace-edge-falloff) 112%),
+    radial-gradient(ellipse at 50% 44%, var(--trace-screen-glow), transparent 78%),
     var(--trace-screen);
-  box-shadow: var(--trace-bezel), 0 0 23px -1px var(--trace-halo), 2px 7px 40px 4px var(--trace-spill), -4px 12px 64px 6px var(--trace-bounce);
+  /* A tight bloom at the glass edge; the light it casts lands on the plates (globals.css, Night screen light). */
+  box-shadow: var(--trace-bezel), 0 0 4px var(--trace-halo), 0 0 22px 2px rgb(110 230 200 / .14);
 }
+/* Glass in front of the phosphor: the shared screen glare and a recessed edge (globals.css, Screens). */
+/* The lit tube hazes its own glass: a soft phosphor veil, added as light over the code. */
+.memory-trace::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at 50% 46%, rgb(96 226 192 / .12), rgb(96 226 192 / .04) 58%, transparent 82%); mix-blend-mode: screen; }
+.memory-trace::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: var(--screen-glare); box-shadow: var(--screen-recess); }
 .memory-trace-lens { position: absolute; overflow: hidden; pointer-events: none; }
 .memory-trace-raster { min-block-size: 0; min-inline-size: 0; display: grid; grid-template-rows: minmax(0, 1fr); }
 .memory-trace-lines { min-block-size: 0; margin: 0; padding: 0 calc(10px * var(--trace-size)) calc(4px * var(--trace-size)); overflow: hidden; overflow-anchor: none; list-style: none; }
@@ -42,11 +46,11 @@
 .memory-trace-lines > li { display: grid; grid-template-columns: minmax(4ch, max-content) minmax(0, 1fr); gap: calc(7px * var(--trace-size)); font: calc(12px * var(--trace-size))/1.9 "Cascadia Mono", "Consolas", monospace; }
 .memory-trace-lines > .memory-code-block:not(:first-child) { margin-block-start: calc(12px * var(--trace-size)); }
 .memory-code-number { color: var(--trace-index); font-size: 0.85em; text-align: end; user-select: none; }
-.memory-trace-lines code { min-inline-size: 0; color: var(--trace-ink); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; text-shadow: 0 0 3px var(--trace-phosphor); }
+.memory-trace-lines code { min-inline-size: 0; color: var(--trace-ink); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; text-shadow: 0 0 1px var(--trace-phosphor), 0 0 6px var(--trace-glow), 0 0 16px var(--trace-bloom); }
 .memory-trace-lines .memory-code-keyword { color: var(--trace-command); }
 .memory-trace-lines .memory-code-string { color: var(--trace-value); }
 .memory-trace-lines .memory-code-comment { color: var(--trace-comment); }
-.memory-trace-lines [data-writing] code { color: var(--trace-live); text-shadow: 0 0 3px var(--trace-phosphor), 0 0 7px var(--trace-glow); }
+.memory-trace-lines [data-writing] code { color: var(--trace-live); text-shadow: 0 0 1px var(--trace-live), 0 0 4px var(--trace-phosphor), 0 0 10px var(--trace-glow); }
 .memory-trace-lines [data-writing] code::after {
   content: "";
   display: inline-block;
@@ -59,7 +63,6 @@
 }
 :root[data-appearance="day"] .memory-trace {
   --trace-screen: #cbd6cc;
-  --trace-reflection: #dce6d9;
   --trace-screen-glow: rgb(243 255 241 / .19);
   --trace-edge-falloff: rgb(63 91 78 / .16);
   --trace-scanline: rgb(44 68 57 / .09);
@@ -73,8 +76,10 @@
   --trace-live: #194940;
   --trace-phosphor: rgb(255 255 255 / .62);
   --trace-glow: rgb(255 255 255 / .68);
+  --trace-bloom: transparent;
   box-shadow: var(--trace-bezel);
 }
+:root[data-appearance="day"] .memory-trace::before { display: none; }
 @media (max-width: 760px) {
   .memory-trace { --trace-size: 1; block-size: 250px; }
 }

@@ -65,4 +65,16 @@ assert.match(policy, /\.section-page-header h2 \{ font-size: calc\(34px \* var\(
 assert.match(policy, /\.section-page-header \{ grid-template-columns: calc\(34px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.setup-tile strong \{ font-size: calc\(16px \* var\(--desktop-size\)\)/);
 assert.match(policy, /\.workspace:has\(\.archive-folder-page\) \{\s*--workspace-pad-bottom: calc\(32px \* var\(--desktop-size\)\);\s*--footer-reserve: calc\(48px \* var\(--desktop-size\)\)/, "Archive keeps its own baseline footer clearance at larger tiers");
-console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing.");
+const frameStart = css.indexOf("/* Shared workspace frame");
+const sharedFrame = css.slice(frameStart, css.indexOf("@media (min-width: 761px) and (max-height: 850px)", frameStart));
+assert.match(sharedFrame, /@media \(min-width: 761px\)/, "The shared frame is desktop only; handheld keeps its own flow");
+assert.match(sharedFrame, /\.workspace-header \.subtle \{ min-block-size: 1lh; \}/, "Sections without a subtitle keep the same header height as the Dashboard");
+assert.match(sharedFrame, /\.section-page--selector:is\(\.section-page--games, \.section-page--projects\) \{ flex: 1 1 0%; grid-template-rows: auto minmax\(0, 1fr\); \}/, "Projects and Games reach the footer like the Dashboard");
+assert.match(sharedFrame, /\.section-page--selector \.record-selector \{ align-self: stretch; \}/, "The selector frame fills its row instead of stopping at its content");
+const shelves = css.slice(css.indexOf("/* Tall desktop bays: both shelves share"), css.indexOf(".game-shelf-track:has([data-shelf-prev]"));
+assert.ok(shelves.includes("@media (min-width: 761px) and (min-height: 851px)"), "Only tall desktop bays resize the disks; short ones keep their fixed shelf");
+assert.ok(shelves.includes("grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);"), "Session and Past Logs share the cabinet height equally");
+assert.match(shelves, /--cabinet-cover: min\(calc\(178px \* var\(--selector-scale\)\), max\(calc\(110px \* var\(--selector-scale\)\), calc\(\(100cqh/, "Disks grow with their shelf, between a readable floor and the existing ceiling");
+assert.ok(!shelves.includes("grid-auto-flow: row"), "Shelves stay single side-scrolling rows");
+for (const source of ["../components/archive/section-page.tsx", "../static-app.js"]) assert.ok(!readFileSync(new URL(source, import.meta.url), "utf8").includes("--rack-columns"));
+console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing, one shared section frame.");
