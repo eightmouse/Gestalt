@@ -1,4 +1,5 @@
 declare const recordMotion: {
+  readonly paperRevealMs: number;
   focusWithin(node: HTMLElement | null, host?: Window): () => void;
   createController(host?: Window): {
     minimize(options: { node: HTMLElement | null; target?: HTMLElement | null; enabled?: boolean; onComplete: () => void }): void;

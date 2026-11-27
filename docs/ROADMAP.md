@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+27 November, v1.85.0: Logs become Field Papers. The newest notes rest on the desk as a paper stack that opens into a slim reader; handheld keeps one sheet with spines. The newest three logs stay on the desk, and older ones still file into the Field Archive after seven days.
+
 20 November, v1.84.4: The desktop Terminal leaves the Dashboard's ambient effects running. Memory State can show the Terminal event as it happens, while the workspace remains non-interactive behind the window.
 
 20 November, v1.84.3: The six Dashboard plates share a raised finish and respond to the mouse with a small, bounded nudge. Current Game has a recessed LCD, Memory State glows at the characters, and the Projects and Latest Log signals follow their rails. Day has its own spillway backdrop; Night keeps its original scenery.

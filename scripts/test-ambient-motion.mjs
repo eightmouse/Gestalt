@@ -167,11 +167,17 @@ assert.ok(updateStaticCacheTokens('<script src="public/ambient-motion.js?v=old">
 const require = createRequire(import.meta.url);
 const postcss = createRequire(require.resolve("next/package.json"))("postcss");
 const css = postcss.parse(read("app/globals.css"));
-for (const state of ["data-archive-hidden", "data-memory-offscreen", "data-search-open"]) {
+for (const state of ["data-archive-hidden", "data-memory-offscreen"]) {
   let pauses = false;
   css.walkRules((rule) => { if (rule.selector.includes(state)) rule.walkDecls("animation-play-state", (decl) => { if (decl.value === "paused") pauses = true; }); });
   assert.ok(pauses, `${state} pauses decorative CSS without resetting animations`);
 }
+css.walkRules((rule) => {
+  if (!rule.selector.includes("data-search-open")) return;
+  rule.walkDecls("animation-play-state", (decl) => {
+    assert.notEqual(decl.value, "paused", "The palette leaves decorative CSS running");
+  });
+});
 const reactSource = read("components/archive/memory-state.tsx");
 const reactAst = ts.createSourceFile("dashboard.tsx", reactSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const memory = reactAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "MemoryLoop");
@@ -203,17 +209,25 @@ assert.equal(motionFrames.length, 6, "Five fragments plus the existing ambient d
 for (const frames of motionFrames) frames.walkDecls((decl) => assert.ok(["transform", "opacity"].includes(decl.prop), `${frames.params} keeps geometry and static masks out of keyframes`));
 const traceCss = postcss.parse(read("app/memory-state.css"));
 assert.ok(!traceCss.nodes.some((node) => node.name === "keyframes"));
-assert.ok(!/infinite|backdrop-filter|\bfilter:|will-change/.test(traceCss.toString()), "The code writer has no CSS animation loops or new filters");
+assert.ok(!/infinite|backdrop-filter|will-change/.test(traceCss.toString()), "The code writer still has no CSS loops or backdrop filters");
+const traceFilters = [];
+traceCss.walkDecls("filter", (decl) => traceFilters.push([decl.parent.selector, decl.value, decl.parent.parent.params]));
+assert.deepEqual(traceFilters, [[".memory-trace-raster", 'url("#gestalt-trace-lens")', "(min-width: 761px) and (prefers-reduced-motion: no-preference)"]], "The lens is separate from the scrolling list and respects reduced motion");
 const traceRoot = traceCss.nodes.find((node) => node.selector === ".memory-trace");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "grid-template-rows" && node.value === "minmax(0, 1fr)"), "The code stream uses the panel height without an extra heading row");
-assert.ok(traceRoot.nodes.some((node) => node.prop === "box-shadow" && node.value.startsWith("inset ")), "The stream has an inset outline without another layout border");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "box-shadow" && node.value.startsWith("var(--trace-bezel),")), "The night stream spills light beyond its inset outline");
 assert.ok(traceRoot.nodes.some((node) => node.prop === "background" && node.value.includes("linear-gradient(var(--trace-screen-glow), var(--trace-screen-glow))")), "Even glass tint replaces the background hotspot");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "background" && node.value.includes("repeating-linear-gradient(180deg, transparent 0 3px, var(--trace-scanline) 3px 4px)")), "The CRT scanlines sit behind the code");
+assert.ok(!traceRoot.nodes.some((node) => node.prop === "padding"), "No second inset pushes the viewport edge down");
+assert.ok(!traceRoot.nodes.some((node) => node.prop === "border-radius"), "The monitor frame stays sharp");
 const codeGlow = (selector) => traceCss.nodes.find((node) => node.selector === selector).nodes.find((node) => node.prop === "text-shadow").value;
 assert.equal(codeGlow(".memory-trace-lines code"), "0 0 3px var(--trace-phosphor)", "The letters emit a tight glow without blurring the text layer");
 assert.match(codeGlow(".memory-trace-lines [data-writing] code"), /0 0 7px var\(--trace-glow\)/, "The live line emits a brighter halo");
-assert.ok(traceRoot.nodes.some((node) => node.prop === "box-shadow" && node.value.includes("inset 0 0 0 1px var(--trace-rim)") && !node.value.includes("inset 0 2px")), "All four edges share one thin bezel");
+assert.ok(traceRoot.nodes.some((node) => node.prop === "--trace-bezel" && node.value.includes("inset 0 0 0 1px var(--trace-rim)") && !node.value.includes("inset 0 2px")), "All four edges share one thin bezel");
+const dayTrace = traceCss.nodes.find((node) => node.selector === ':root[data-appearance="day"] .memory-trace');
+assert.equal(dayTrace.nodes.find((node) => node.prop === "box-shadow").value, "var(--trace-bezel)", "Day shows only the inset bezel");
 const traceComponent = reactAst.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "SessionTrace");
-const traceContext = vm.createContext({ require, exports: {}, useRef: () => ({ current: null }), useEffect() {} });
+const traceContext = vm.createContext({ require, exports: {}, memoryState, useRef: () => ({ current: null }), useEffect() {} });
 vm.runInContext(ts.transpileModule(`${traceComponent.getText(reactAst)}\nexports.SessionTrace = SessionTrace;`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText, traceContext);
 const traceHtml = renderToStaticMarkup(createElement(traceContext.exports.SessionTrace));
 assert.equal(traceHtml, `<div class="memory-trace">${memoryState.renderShell()}</div>`, "React and Pages use the same code-stream shell");

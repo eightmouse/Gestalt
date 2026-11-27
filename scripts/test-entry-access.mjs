@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import pocket from "../public/pocket-index.js";
+import recordMotion from "../public/record-motion.js";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { createRequire } from "node:module";
@@ -66,7 +67,7 @@ Object.assign(reactLifecycle.context, {
   pending: false, complete: false,
   setRecordAccessPending: (value) => { reactLifecycle.context.pending = value; },
   setRecordAccessComplete: (value) => { reactLifecycle.context.complete = value; },
-  setEntryAccessMode: () => {}, localMemory: "granted"
+  setEntryAccessMode: () => {}, localMemory: "granted", recordMotion
 });
 vm.runInContext(ts.transpileModule(`${declarations.join("\n")}\nexports.start = startRecordAccess; exports.stop = stopRecordAccess; exports.change = changeEntryAccessMode;`, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText, reactLifecycle.context);
 const api = reactLifecycle.context.exports;
@@ -78,8 +79,9 @@ assert.equal(reactLifecycle.timers.size, 0, "Closing/minimizing cancels pending 
 api.start();
 assert.equal(reactLifecycle.context.pending, false, "First-only is once per page, even after closing early");
 api.change("always");
-api.start();
+api.start(true);
 assert.equal(reactLifecycle.context.pending, true);
+assert.deepEqual([...reactLifecycle.timers.values()].map(({ delay }) => delay), [recordMotion.paperRevealMs], "Logs use their shorter unfold timeline");
 api.change("off");
 assert.equal(reactLifecycle.context.pending, false);
 assert.equal(reactLifecycle.context.complete, true, "Changing modes settles the entry without replay");
@@ -88,6 +90,7 @@ api.start();
 assert.equal(reactLifecycle.context.pending, false);
 
 const staticLifecycle = harness(policyNames.map(staticFunction).join("\n"));
+staticLifecycle.window.GestaltRecordMotion = recordMotion;
 Object.assign(staticLifecycle.context, {
   state: { accessPending: true, accessComplete: false, entryAccessMode: "first", selectedId: "unchanged", activeContent: "notes" },
   recordAccessTimers: [],
@@ -111,8 +114,8 @@ for (const handheld of [true, false]) {
   context.pocket = { ...pocket, isHandheld: () => handheld };
   vm.runInContext('openRecord("fixture")', context);
   assert.equal(context.state.activeContent, "notes", "Logs open the writing at either viewport");
-  assert.equal(context.state.accessPending, true, "The same access overlay starts at either viewport");
-  assert.deepEqual([...timers.values()].map(({ delay }) => delay), [3250], "Pages uses one full-length access timeline");
+  assert.equal(context.state.accessPending, true, "The paper unfolds at either viewport");
+  assert.deepEqual([...timers.values()].map(({ delay }) => delay), [recordMotion.paperRevealMs], "Both readers use the same unfold duration");
   vm.runInContext('openRecord("fixture")', context);
   assert.equal(context.state.accessPending, false, "First only is shared across both sizes");
   assert.equal(timers.size, 0);

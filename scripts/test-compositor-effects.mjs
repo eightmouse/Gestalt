@@ -62,7 +62,9 @@ for (const selector of [".active-projects-panel", ".activity-panel", ".memory-pa
   assert.ok(face["--dashboard-plate-grain"], `${selector} defines its own face texture`);
   for (const prop of ["background", "border-color", "box-shadow", "filter", "transform"]) assert.equal(face[prop], undefined, `${selector} retains the shared frame`);
 }
-assert.match(rule(".game-cover::after")["box-shadow"], /^inset /, "The artwork sits in a slot, without an outer halo");
+assert.match(rule(".game-cover::after")["box-shadow"], /^inset /, "The artwork keeps its inset bezel");
+assert.match(rule(".game-cover")["box-shadow"], /0 0 22px 1px var\(--lcd-halo\).*58px 4px var\(--lcd-bounce\)/, "A softer edge glow falls off into a broader pool of light at night");
+assert.match(read("app/appearance.css"), /\[data-appearance="day"\] \.game-cover \{\s*box-shadow: none;/, "Day keeps the LCD film without exterior light");
 assert.match(rule(".weather-primary").background, /repeating-linear-gradient.*right bottom/, "Gauge marks stay on the divider");
 assert.equal(rule(".latest-log > span")["justify-self"], "start", "The date stamp hugs the printed date");
 const project = rule(".active-projects-panel .record-list button::after");
@@ -98,7 +100,7 @@ assert.match(css, /\.archive-shell\.has-record \.active-projects-panel \.record-
 assert.ok(sheet.nodes.some((node) => node.selector?.includes("[data-nav-blocked]") && node.selector.includes(".dashboard-grid *::after") && declarations(node)["animation-play-state"] === "paused"), "Consent and blocked states pause every ambient signal, not only the Project light");
 const ambientPause = sheet.nodes.find((node) => node.selector?.includes("[data-nav-blocked]") && node.selector.includes(".dashboard-grid *::after"));
 assert.ok(ambientPause.nodes.some((node) => node.prop === "animation-play-state" && node.important), "Explicit ambient pause wins against more-specific animation shorthands such as NEW overlays");
-assert.ok(!ambientPause.selector.includes("[data-nav-open]"), "Opening the desktop Terminal does not freeze Dashboard animations");
+assert.ok(!/\[data-(nav|search)-open\]/.test(ambientPause.selector), "Neither Terminal nor the command palette freezes Dashboard animations");
 assert.ok(!navSheet.nodes.some((node) => node.selector?.includes("[data-nav-open]") && declarations(node)["animation-play-state"] === "paused"), "The Terminal stylesheet leaves legacy Memory State and seasonal ambient effects running");
 assert.ok(plateMotion.nodes.some((node) => node.selector?.includes("[data-nav-open]") && node.selector.endsWith("[data-plate-hover]")), "The interactive plate response stays guarded while the workspace is inert");
 assert.ok(sheet.nodes.some((node) => node.name === "media" && node.params === "(max-width: 760px)" && node.nodes.some((child) => child.selector?.includes(".active-projects-panel .record-list button::after") && declarations(child).animation === "none")), "Mobile still has no travelling project light");

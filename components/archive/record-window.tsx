@@ -78,6 +78,7 @@ function handleRecordEscape(event: KeyboardEvent<HTMLElement>, dismiss: () => vo
 function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplete, initialContent, initialNoteIndex, linkedNoteId, maximized, record, shareable, onEdit, editor, editorBusy, escapeBlocked, onClose, onMinimize, onMaximize, onOpenFullEntry }: RecordWindowProps) {
   const windowRef = useRecordFocus(minimized, record.id);
   const logs = record.section === "logs";
+  const paper = logs && !editor;
   const noteDirectory = record.section === "games" || record.section === "projects";
   const readingLayout = noteDirectory || logs;
   const contents = getRecordContents(record);
@@ -107,7 +108,13 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
   const editFile = editableNote && editIndex !== undefined
     ? { index: editIndex, id: editableNote.id, title: editableNote.title }
     : undefined;
-  const caption = focusedNote ? `// ${noteReaderTitle(focusedNote.title, record.title)}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const caption = paper ? "FIELD NOTE" : focusedNote ? `// ${noteReaderTitle(focusedNote.title, record.title)}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const headingImage = artwork && (!retractArtwork || keepArtwork) ? <img key={artwork.src} className="heading-banner-image" src={artwork.src} alt="" decoding="async" referrerPolicy="no-referrer" style={imageFraming.headerFrameStyle(record.meta)} onError={artwork.coverFallback ? (event) => {
+    const image = event.currentTarget;
+    if (image.dataset.coverFallback) return;
+    image.dataset.coverFallback = "true";
+    image.src = artwork.coverFallback;
+  } : undefined} /> : null;
   const focusReading = () => {
     windowRef.current?.focus({ preventScroll: true });
     const layout = windowRef.current?.querySelector(".record-layout");
@@ -199,9 +206,9 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
       tabIndex={-1}
       hidden={minimized}
       inert={minimized}
-      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${readingLayout ? " has-reading-layout" : ""}${logs ? " is-log-record" : ""}${focusedNote ? " is-note-reader" : readingNotes ? " is-notes-view" : ""}`}
+      className={`${maximized ? "record-window is-maximized" : "record-window"}${accessPending ? " is-access-pending" : accessComplete ? " is-access-complete" : ""}${updateHistoryOpen ? " has-index-modal" : ""}${readingLayout ? " has-reading-layout" : ""}${logs ? " is-log-record" : ""}${paper ? " is-field-paper-reader" : ""}${focusedNote ? " is-note-reader" : readingNotes ? " is-notes-view" : ""}`}
       data-state={recordStateKey(record.status)}
-      aria-label={`${record.title} ${focusedNote ? "note reader" : "archive entry"}`}
+      aria-label={`${record.title} ${paper || focusedNote ? "note reader" : "archive entry"}`}
       onKeyDown={(event) => {
         if (minimized || escapeBlocked || editor || editorBusy) return;
         handleRecordEscape(event, () => {
@@ -214,7 +221,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
         });
       }}
     >
-      <RecordAccessSurface />
+      {!paper ? <RecordAccessSurface /> : null}
       <header className="window-bar">
         <button className="pocket-record-back" type="button" disabled={editorBusy} onClick={onClose}><ArrowLeft size={16} aria-hidden="true" />Back</button>
         <div className="window-title-group">
@@ -258,15 +265,14 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
             </div>
             {canSearchNoteFiles ? <NoteFileSearch expanded={noteFileSearchOpen} query={noteSearchQuery} inputRef={fileSearchInput} buttonRef={fileSearchButton} onToggle={toggleNoteFileSearch} onQueryChange={setNoteSearchQuery} /> : null}
           </nav> : null}
-          <div
+          {paper ? <div className="record-heading field-paper-heading">
+            <div className="field-paper-filing"><span>{recordLinks.traceId(record.id, "logs")}</span><span>{record.status}</span></div>
+            <h2>{record.title}</h2>
+            {headingImage}
+          </div> : <div
             className={`${artwork ? "record-heading has-heading-banner" : "record-heading"}${retractArtwork ? " is-notes-heading" : ""}`}
           >
-            {artwork && (!retractArtwork || keepArtwork) ? <img key={artwork.src} className="heading-banner-image" src={artwork.src} alt="" decoding="async" referrerPolicy="no-referrer" style={imageFraming.headerFrameStyle(record.meta)} onError={artwork.coverFallback ? (event) => {
-              const image = event.currentTarget;
-              if (image.dataset.coverFallback) return;
-              image.dataset.coverFallback = "true";
-              image.src = artwork.coverFallback;
-            } : undefined} /> : null}
+            {headingImage}
             <span className="record-kind">{record.type.toUpperCase()}</span>
             <span className="record-id">{recordLinks.traceId(record.id, record.section)}</span>
             <h2>
@@ -288,7 +294,7 @@ function ArchiveRecordWindow({ handheld, minimized, accessPending, accessComplet
                 </>
               ) : null}
             </p>
-          </div>
+          </div>}
 
           {!readingLayout && readingContents.length > 1 ? <label className="pocket-record-contents">
             <span>Contents</span>

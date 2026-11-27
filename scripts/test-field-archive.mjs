@@ -39,21 +39,24 @@ const react = compile(`${functions("components/archive/section-page.tsx", ["Arch
   sectionRegistryLabels: { archive: "Field Archive" }
 });
 const staticSource = read("static-app.js");
-for (const [name, value] of [["archiveRootFileLimit", chronology.ARCHIVE_ROOT_FILE_LIMIT], ["archiveRecentFileLimit", chronology.ARCHIVE_RECENT_FILE_LIMIT]]) {
+for (const [name, value] of [["archiveRootFileLimit", chronology.ARCHIVE_ROOT_FILE_LIMIT], ["archiveRecentFileLimit", chronology.ARCHIVE_RECENT_FILE_LIMIT], ["logDeskKeep", chronology.LOG_DESK_KEEP]]) {
   assert.match(staticSource, new RegExp(`const ${name} = ${value};`), `${name} agrees with the local reader`);
 }
 const staticContext = compile(functions("static-app.js", [
-  "renderArchiveFolders", "renderArchiveFolderWindow", "renderArchiveFile", "buildFieldArchive", "sortArchiveRecords", "archiveUsesFolders", "logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "isLogArchivedByAge", "escapeHtml", "readableDate", "sectionReadout", "renderSectionReadout"
+  "renderArchiveFolders", "renderArchiveFolderWindow", "renderArchiveFile", "buildFieldArchive", "partitionFieldLogs", "sortArchiveRecords", "archiveUsesFolders", "logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "isLogArchivedByAge", "escapeHtml", "readableDate", "sectionReadout", "renderSectionReadout"
 ]), {
   Date: ArchiveClock, logArchiveAfterDays: chronology.LOG_ARCHIVE_AFTER_DAYS,
+  logDeskKeep: chronology.LOG_DESK_KEEP,
   archiveRootFileLimit: chronology.ARCHIVE_ROOT_FILE_LIMIT, archiveRecentFileLimit: chronology.ARCHIVE_RECENT_FILE_LIMIT,
   state: { archiveFolderWindow: "" }, sectionRegistryLabels: { archive: "Field Archive" }, renderCipherLetters: String
 });
 
 const base = { section: "logs", type: "Field Note", priority: 50, updated: "2025-02-01", started: "2025-01-01", status: "Filed", meta: {}, body: "Unchanged content", summary: "", milestones: [], progress: 0 };
 const makeRecords = (count, month = "2025-01") => Array.from({ length: count }, (_, index) => ({ ...base, id: `${month}-${index}`, title: `Note ${month}-${index}`, writtenAt: `${month}-${String(index % 28 + 1).padStart(2, "0")}`, writtenOrder: index }));
+const withDesk = (records) => [...records, ...makeRecords(3, "2026-11")];
 const plain = (value) => JSON.parse(JSON.stringify(value));
 function models(records) {
+  records = withDesk(records);
   staticContext.records = records;
   const before = JSON.stringify(records);
   const local = chronology.buildFieldArchive(records, now);
@@ -79,6 +82,7 @@ function models(records) {
   return local;
 }
 function htmls(records) {
+  records = withDesk(records);
   staticContext.records = records;
   staticContext.section = section;
   const before = JSON.stringify(records);
@@ -137,7 +141,7 @@ const mixed = [
   { ...base, section: "archive", id: "manual", title: "Manual <script> & file" },
   { ...base, id: "future", title: "Not archived", writtenAt: "9999-01-01" },
   { ...base, id: "invalid", title: "Invalid date", writtenAt: "2025-02-31" },
-  { ...base, id: "recent", title: "Too recent", writtenAt: "2026-11-04" }
+  { ...base, id: "fresh", title: "Too recent", writtenAt: "2026-11-04" }
 ];
 models(mixed);
 for (const html of htmls(mixed)) {
@@ -150,7 +154,7 @@ for (const html of htmls(mixed)) {
   assert.ok(!html.includes("Too recent"));
 }
 staticContext.state.archiveFolderWindow = "07/2026";
-staticContext.records = gradual;
+staticContext.records = withDesk(gradual);
 staticContext.section = section;
 const active = vm.runInContext("renderArchiveFolders(section, records)", staticContext);
 assert.ok(active.includes('role="dialog"'), "Month folders retain the existing folder window");
@@ -159,7 +163,7 @@ assert.equal(vm.runInContext("renderArchiveFolderWindow(buildFieldArchive(record
 assert.ok(active.includes('aria-label="07/2026 folder"'));
 assert.ok(active.includes("Sorted by date . Newest first"));
 react.useState = () => ["07/2026", () => {}];
-const localActive = renderToStaticMarkup(createElement(react.exports.ArchiveFolders, { section, records: gradual, onOpenRecord() {} }));
+const localActive = renderToStaticMarkup(createElement(react.exports.ArchiveFolders, { section, records: withDesk(gradual), onOpenRecord() {} }));
 react.useState = useState;
 assert.ok(localActive.includes('aria-label="07/2026 folder"'), "The local reader opens the same month window");
 assert.equal((localActive.match(/class="archive-file"/g) || []).length, (active.match(/class="archive-file"/g) || []).length);
@@ -171,4 +175,16 @@ staticContext.records = makeRecords(1);
 const reduced = vm.runInContext("renderArchiveFolders(section, records)", staticContext);
 assert.ok(!reduced.includes('role="dialog"'), "Shrinking a collection closes stale folder state");
 assert.equal(staticContext.state.archiveFolderWindow, "");
+const quiet = makeRecords(3);
+const newNote = { ...base, id: "new", writtenAt: "2026-11-05" };
+for (const partitionLogs of [chronology.partitionFieldLogs, staticContext.partitionFieldLogs]) {
+  const identifiers = (items) => Array.from(items, ({ id }) => id);
+  assert.deepEqual(identifiers(partitionLogs(quiet, now).desk), identifiers(quiet.toReversed()), "The newest three stay even when all are old");
+  const rotated = partitionLogs([...quiet, newNote], now);
+  assert.deepEqual(identifiers(rotated.desk), ["new", quiet[2].id, quiet[1].id]);
+  assert.deepEqual(identifiers(rotated.archived), [quiet[0].id], "A new note displaces the oldest eligible sheet");
+  const busy = makeRecords(5).map((record, index) => ({ ...record, writtenAt: `2026-11-0${index + 1}` }));
+  assert.equal(partitionLogs(busy, now).desk.length, 5, "Busy weeks can retain more than three");
+  assert.equal(partitionLogs(busy, new Date("2026-11-08T00:00:00Z")).archived[0].id, busy[0].id, "The seven-day boundary is inclusive for older sheets");
+}
 console.log("Field Archive tests passed: gradual month/year grouping, recent-file buffer, busy months, renderer parity, original chronology, no migration, manual records, escaping and stale-folder cleanup.");

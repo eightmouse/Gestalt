@@ -25,7 +25,7 @@ import {
 } from "@/components/archive/record-utils";
 import { SectionPage } from "@/components/archive/section-page";
 import { setupGroupFor, setupNarrativeNotes, type SetupGroupId } from "@/components/archive/setup-utils";
-import { compareLogWritingOrder, isLogArchivedByAge } from "@/lib/log-archive";
+import { compareLogWritingOrder, partitionFieldLogs } from "@/lib/log-archive";
 import { SearchPanel } from "@/components/archive/search-panel";
 import { getSearchResults, getTimelineItems } from "@/components/archive/search-utils";
 import { ArchiveNavigationMenu, sections, Sidebar } from "@/components/archive/sidebar";
@@ -191,7 +191,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setRecordAccessComplete(false);
   };
 
-  const startRecordAccess = () => {
+  const startRecordAccess = (fieldPaper = false) => {
     stopRecordAccess();
 
     if (
@@ -208,7 +208,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       recordAccessTimerRef.current = null;
       setRecordAccessPending(false);
       setRecordAccessComplete(true);
-    }, 3250);
+    }, fieldPaper ? recordMotion.paperRevealMs : 3250);
   };
 
   useEffect(() => () => {
@@ -259,8 +259,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     );
   }, [archiveRecords]);
 
-  const archivedLogs = recordsBySection.logs.filter((record) => isLogArchivedByAge(record));
-  const archivePageRecords = [...recordsBySection.archive, ...archivedLogs];
+  const filingDay = now?.toISOString().slice(0, 10);
+  const fieldLogs = useMemo(() => partitionFieldLogs(recordsBySection.logs, filingDay ? new Date(filingDay) : undefined), [recordsBySection.logs, filingDay]);
+  const archivePageRecords = useMemo(() => [...recordsBySection.archive, ...recordsBySection.logs], [recordsBySection]);
 
   const selectedRecord = archiveRecords.find((record) => record.id === selectedId) ?? inlineDraftWindow ?? archiveRecords[0];
   const recordWindowKey = inlineDraftWindow?.id ?? selectedRecord?.id;
@@ -486,7 +487,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     if (options.editSetupTool) {
       stopRecordAccess();
       setRecordAccessComplete(true);
-    } else startRecordAccess();
+    } else startRecordAccess(record.section === "logs");
     setSelectedId(record.id);
     setInitialContent(pocket.readingView(record.section, content));
     setInitialNoteIndex(noteIndex);
@@ -776,7 +777,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         <small>{saying.meaning}</small>
       </span>
     </span>
-  ) : activeSection === "games" || activeSection === "projects" ? null : "Browse the records filed under this archive.";
+  ) : activeSection === "games" || activeSection === "projects" || activeSection === "logs" ? null : "Browse the records filed under this archive.";
   const hasFocusWindow = panelOpen || timelineOpen || roadmapOpen || osBehaviourOpen;
   const changeOsPreference = (key: PreferenceKey, value: string) => {
     if (key === "pocketBoot") {
@@ -827,7 +828,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   return (
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
-      <DesktopNavigationChrome records={archiveRecords} activeSection={activeSection} onOpenSection={openSection} />
+      <DesktopNavigationChrome records={archiveRecords} filedLogs={fieldLogs.archived} activeSection={activeSection} onOpenSection={openSection} />
       {showBoot ? <BootScreen startupMode={startupMode} /> : null}
       {showBoot ? <PocketBoot /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
@@ -945,7 +946,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
         ) : (
           <SectionPage
             handheld={handheld}
-            records={activeSection === "archive" ? archivePageRecords : recordsBySection[activeSection]}
+            records={activeSection === "archive" ? archivePageRecords : activeSection === "logs" ? fieldLogs.desk : recordsBySection[activeSection]}
+            filingDay={filingDay}
             section={activeSectionConfig}
             onBack={openHome}
             onOpenRecord={openRecord}

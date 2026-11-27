@@ -42,6 +42,15 @@
     const other = 1 - fallback;
     return counts[fallback] || !counts[other] ? fallback : other;
   }
+  function fieldPaperStack(records, selectedId) {
+    const index = Math.max(0, records.findIndex((record) => record.id === selectedId));
+    const start = Math.min(index, Math.max(0, records.length - 3));
+    return {
+      record: records[index], index, total: records.length,
+      edges: records.slice(start, start + 3).filter((record) => record !== records[index]),
+      previous: records[index - 1]?.id, next: records[index + 1]?.id
+    };
+  }
   function projectWorkbench(records, selectedId) {
     const index = Math.max(0, records.findIndex((record) => record.id === selectedId));
     const record = records[index];
@@ -151,5 +160,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, projectWorkbench, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

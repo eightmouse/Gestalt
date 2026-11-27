@@ -11,9 +11,7 @@ export function MemoryState({ mode }: { mode: MemoryStateMode }) {
 function SessionTrace() {
   const traceRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => memoryState.watchTrace(traceRef.current), []);
-  return <div className="memory-trace" ref={traceRef}>
-    <ol className="memory-trace-lines" aria-label="Workspace code stream" aria-live="off" />
-  </div>;
+  return <div className="memory-trace" ref={traceRef} dangerouslySetInnerHTML={{ __html: memoryState.renderShell() }} />;
 }
 
 // Retain the original moving visual as an optional, independently mounted variant.

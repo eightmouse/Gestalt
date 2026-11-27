@@ -11,8 +11,10 @@ const doc = Object.assign(new Events(), { hidden: false });
 const media = Object.assign(new Events(), { matches: false });
 const animations = [];
 let mediaPauses = 0;
+let paper = false;
 const node = {
   hidden: false, inert: false, attributes: new Set(),
+  classList: { contains: (name) => paper && name === "is-field-paper-reader" },
   getBoundingClientRect: () => ({ left: 100, top: 100, width: 900, height: 700 }),
   setAttribute(name) { this.attributes.add(name); }, removeAttribute(name) { this.attributes.delete(name); },
   querySelectorAll: () => [{ pause() { mediaPauses++; } }],
@@ -138,6 +140,15 @@ node.children = [{ animate }, { animate() { throw new Error("Unavailable content
 close(); await Promise.resolve();
 assert.equal(completed, 16); assert.equal(controller.busy, false);
 assert.equal(animations.at(-1).cancelled, true, "A partial content-animation failure releases the first animation");
+assert.equal(doc.listeners.size, 0); assert.equal(node.attributes.size, 0);
+paper = true;
+const paperCloseStart = animations.length;
+close();
+assert.equal(animations.length, paperCloseStart + 1, "A paper slides away as one sheet");
+assert.equal(animations.at(-1).options.duration, 240);
+assert.match(animations.at(-1).frames.at(-1).transform, /rotate\(-2deg\)$/);
+animations.at(-1).resolve(); await Promise.resolve();
+assert.equal(completed, 17); assert.equal(node.hidden, true);
 assert.equal(doc.listeners.size, 0); assert.equal(node.attributes.size, 0);
 const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const react = read("components/archive-os.tsx"), shell = read("static-app.js"), css = read("app/globals.css");

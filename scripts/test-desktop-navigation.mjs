@@ -422,19 +422,20 @@ assert.match(css, /data-nav-wide\] > \.workspace[^}]+--sidebar-width: 0px/);
 assert.match(css, /workspace > \.section-page\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/);
 assert.ok(!css.includes("workspace:has(> .section-page)"));
 assert.match(css, /section-split-grid\s*\{[^}]+1180px/);
-assert.match(css, /section-page--logs \.section-record-grid\s*\{[^}]+900px/);
 assert.match(css, /archive-manager\s*\{[^}]+240px/);
 assert.match(css, /workspace > \.workspace-footer\s*\{[^}]+max-inline-size: var\(--dashboard-max-inline\)/);
 assert.ok(!css.includes("desktop-nav-shutter"));
 assert.match(css, /\.workspace-window-tray\s*\{ display: contents; \}/, "Handheld retains original restore positioning");
 assert.match(css, /workspace-window-tray\s*\{[^}]+display: flex;/, "Minimized controls share one row instead of overlapping fixed coordinates");
 assert.match(css, /desktop-terminal-bar\s*\{[^}]+38px/, "Keep the terminal titlebar compact");
-assert.match(css, /desktop-nav-terminal\s*\{[^}]+block-size: min\(calc\(600px/, "The normal terminal has room below its directory, with a viewport height cap");
+assert.match(css, /desktop-nav-terminal\s*\{[^}]+block-size: min\(calc\(520px/, "The normal terminal uses the shorter landscape frame with the viewport cap");
+assert.match(css, /--terminal-surface: #111917;/, "The terminal surface stays dark independent of the archive theme");
+assert.match(css, /\.desktop-nav-terminal::before\s*\{[^}]*background: var\(--terminal-surface\)/, "The title bar keeps its own paint, above the dark terminal surface");
+assert.match(css, /\.desktop-terminal-body nav button\s*\{[^}]*color: var\(--terminal-ink\)/, "Directory text uses the dark console palette rather than Day text ink");
 assert.ok(!css.includes("data-nav-minimized] > .desktop-nav-terminal"), "No minimized window floats over the page");
 for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
   const render = read(file);
-  const ageCheck = file === "static-app.js" ? "isLogArchivedByAge(record, now)" : "isLogArchivedByAge(record)";
-  assert.ok(render.includes(`directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: ${ageCheck} }))`));
+  assert.ok(render.includes("directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))"));
   assert.ok(render.includes('aria-label="Directory sections"'));
   assert.ok(render.includes("Eightmouse@Gestalt"));
   assert.ok(!render.includes("desktop-nav-edge") && !render.includes("data-desktop-nav-toggle"), "No side handle remains");
@@ -448,8 +449,8 @@ function staticFunction(name) {
   return staticSource.slice(start, staticSource.indexOf("\n}\n", start) + 2);
 }
 const directoryDates = new Set();
-const renderContext = vm.createContext({ window: { GestaltDesktopNavigation: navigation }, records: entries, directoryArchiveDay: "",
-  activityDate: (record) => record.date, isLogArchivedByAge(record, now) { directoryDates.add(now); return record.archived; }, state: { activeSection: "games" } });
+const renderContext = vm.createContext({ window: { GestaltDesktopNavigation: navigation }, records: entries.map((entry, index) => ({ ...entry, id: String(index) })), directoryArchiveDay: "",
+  activityDate: (record) => record.date, partitionFieldLogs(records, now) { directoryDates.add(now); return { archived: records.filter((record) => record.archived) }; }, state: { activeSection: "games" } });
 vm.runInContext(`${staticFunction("readableDate")}\n${staticFunction("desktopDirectory")}\nvar markup = desktopDirectory();`, renderContext);
 assert.equal(directoryDates.size, 1, "The entire directory uses one archive cutoff instant");
 assert.equal(renderContext.directoryArchiveDay, [...directoryDates][0].toISOString().slice(0, 10));

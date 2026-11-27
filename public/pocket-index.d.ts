@@ -13,6 +13,7 @@ declare const pocket: {
   shelfSearchMin: number;
   filterShelfGames<T extends { title: string }>(records: T[], query: string): T[];
   gameShelfIndex(counts: number[], selected?: number, fallback?: number): number;
+  fieldPaperStack<T extends { id: string }>(records: readonly T[], selectedId?: string): { record?: T; index: number; total: number; edges: T[]; previous?: string; next?: string };
   projectWorkbench<T extends WorkbenchProject>(records: readonly T[], selectedId?: string): { record: T; index: number; progress: number; brief: string; stops: MilestoneStop[]; more: number; nextStop?: MilestoneStop } | null;
   recentDispatches<T extends { id: string; record: { id: string; section: string }; date: string; content?: string }>(featuredId: string | undefined, activity: readonly T[], now?: number): T[];
   normalizeBootMode(value: unknown): PocketBootMode;

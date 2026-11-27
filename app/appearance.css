@@ -80,8 +80,12 @@
   --dashboard-caption-edge: 0 1px rgb(255 255 255 / .56);
   --dashboard-readout-ink: #3e5950;
   --dashboard-plate-bottom: var(--surface-edge-low);
+  --dashboard-screen-overflow: hidden;
 }
 :root[data-appearance="day"] .latest-log { --dashboard-log-reader-tint: rgb(255 255 255 / .42); }
+:root[data-appearance="day"] .game-cover {
+  box-shadow: none;
+}
 :root[data-appearance="day"] :is(.dashboard-panel h2, .section-record-column h3, .record-aside h3) { color: var(--text-strong); }
 :root[data-appearance="day"] :is(.note-media figcaption, .record-id, .record-meta dt, .system-status dt) { color: var(--muted); }
 :root[data-appearance="day"] :is(.connections-dialog, .web-search-dialog, .roadmap-dialog, .os-behaviour-dialog, .studio-review-dialog)::backdrop { background: rgba(49, 60, 52, 0.4); }

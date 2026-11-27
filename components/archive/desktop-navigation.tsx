@@ -6,7 +6,6 @@ import navigation, { type DesktopNavigationController, type DesktopNavigationMod
 import recordMotion from "@/public/record-motion.js";
 import memoryState from "@/public/memory-state.js";
 import { activityDate, formatReadableDate } from "@/components/archive/record-utils";
-import { isLogArchivedByAge } from "@/lib/log-archive";
 import type { RecordEntry, RecordSection } from "@/lib/types";
 
 export function useDesktopNavigation(shellRef: RefObject<HTMLElement | null>, mode: DesktopNavigationMode, ready: boolean, busy: boolean, palette: boolean, remember: boolean) {
@@ -18,8 +17,11 @@ export function useDesktopNavigation(shellRef: RefObject<HTMLElement | null>, mo
   useEffect(() => { controller.current?.attach(shellRef.current, { mode, ready, busy, palette, remember }); }, [shellRef, mode, ready, busy, palette, remember]);
 }
 
-export function DesktopNavigationChrome({ records, activeSection, onOpenSection }: { records: RecordEntry[]; activeSection: RecordSection; onOpenSection: (section: RecordSection) => void }) {
-  const rows = useMemo(() => navigation.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record) }))), [records]);
+export function DesktopNavigationChrome({ records, filedLogs, activeSection, onOpenSection }: { records: RecordEntry[]; filedLogs: RecordEntry[]; activeSection: RecordSection; onOpenSection: (section: RecordSection) => void }) {
+  const rows = useMemo(() => {
+    const filedIds = new Set(filedLogs.map((record) => record.id));
+    return navigation.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) })));
+  }, [records, filedLogs]);
   return <>
     <button className="desktop-nav-backdrop" data-desktop-nav-dismiss type="button" aria-label="Close archive navigation" tabIndex={-1} />
     <aside className="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" className="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Tips"><span className="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside>
@@ -29,7 +31,7 @@ export function DesktopNavigationChrome({ records, activeSection, onOpenSection 
     </section>
     <section className="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
       <header className="desktop-terminal-bar">
-        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.84.4</small></span>
+        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.85.0</small></span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button>
           <button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button>

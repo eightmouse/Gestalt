@@ -25,7 +25,6 @@ const projectStatusOrder = ["active", "in progress", "planning", "blocked", "pau
 const sectionRegistryLabels = {
   archive: "Field Archive",
   games: "Media Cabinet",
-  logs: "Field Note Index",
   projects: "Process Reader",
   setup: "Setup Manifest"
 };
@@ -208,7 +207,7 @@ function stopRecordAccessSequence() {
   state.accessPending = false;
 }
 
-function startRecordAccessSequence() {
+function startRecordAccessSequence(fieldPaper = false) {
   if (!state.accessPending) {
     return;
   }
@@ -220,7 +219,7 @@ function startRecordAccessSequence() {
     recordWindow?.classList.add("is-access-complete");
     state.accessComplete = true;
     recordAccessTimers = [];
-  }, 3250));
+  }, fieldPaper ? (window.GestaltRecordMotion?.paperRevealMs ?? 740) : 3250));
 }
 
 const state = {
@@ -241,6 +240,7 @@ const state = {
   pocketBootMode: pocket?.readBootMode() || "once",
   selectorGroup: undefined,
   selectorProjectIds: [],
+  fieldPaperId: undefined,
   gameShelfQuery: "",
   gameShelfSearch: false,
   gameShelfPick: undefined,
@@ -344,7 +344,7 @@ function openRecord(recordId, contentKey = "overview", noteIndex = null, noteId 
   state.noteSearchPage = 0;
   state.updateHistoryOpen = false;
   if (!syncRecordWindow()) render();
-  startRecordAccessSequence();
+  startRecordAccessSequence(record.section === "logs");
   if (record.section === "setup" && noteId && !state.noteLinkMissing) {
     root.querySelector(`.record-window [data-setup-note-id="${CSS.escape(noteId)}"]`)?.scrollIntoView({ block: "nearest" });
   } else if (!dashboardNote && state.focusedNoteIndex > 0) revealFocusedNote();
@@ -372,6 +372,7 @@ function openSection(sectionId) {
   state.activeSection = sectionId;
   state.selectorGroup = undefined;
   state.selectorProjectIds = [];
+  state.fieldPaperId = undefined;
   state.gameShelfQuery = "";
   state.gameShelfSearch = false;
   state.gameShelfPick = state.gameShelfSearchPick = undefined;
@@ -426,6 +427,7 @@ function openHome() {
   state.activeSection = "system";
   state.selectorGroup = undefined;
   state.selectorProjectIds = [];
+  state.fieldPaperId = undefined;
   state.gameShelfQuery = "";
   state.gameShelfSearch = false;
   state.gameShelfPick = state.gameShelfSearchPick = undefined;
@@ -1594,7 +1596,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.84.4</span>
+        <span>v1.85.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1608,7 +1610,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.84.4</span>
+        <span class="version-label">v1.85.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1628,7 +1630,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.84.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.85.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1857,53 +1859,86 @@ function dashboard() {
   </div>`;
 }
 
-function latestSectionNote(records, section) {
-  const updates = records.filter((record) => record.section === section).flatMap((record) =>
-    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note, index) => ({
-      record,
-      noteIndex: index,
-      date: section === "logs" ? logArchiveDate(record) : noteTitleDate(note.title) ?? record.updated,
-      title: activityTraceTitle(note.title),
-      excerpt: excerptFromBody(note.body, section === "logs" ? 720 : section === "games" ? 240 : 180),
-      body: note.body
-    })).filter((note) => note.excerpt)
-  );
-  const latest = updates.sort((a, b) => section === "logs" ? compareLogWritingOrder(a.record, b.record) : b.date.localeCompare(a.date) || a.record.id.localeCompare(b.record.id))[0];
-  if (!latest) return null;
-  const samples = (latest.record.meta ?? latest.record).samples;
-  const sources = Array.isArray(samples) ? samples : typeof samples === "string" ? samples.split(/\r?\n|,/) : [];
-  const images = section === "projects" ? sources : section === "games" ? Array.from(latest.body.matchAll(/!\[[^\]]*]\(([^)\r\n]+)\)/g), (match) => match[1]) : [];
-  // Preview only local still images; do not start videos/GIFs or remote requests here.
-  const image = images.map((source) => source.trim()).find((source) => /^(?:\/(?:media|images)\/|(?:\.\/)?public\/(?:media|images)\/)[a-zA-Z0-9_./ -]+\.(?:png|jpe?g|webp|avif)$/i.test(source) && !source.split("/").includes("..")) ?? "";
-  const { body, ...preview } = latest;
-  return { ...preview, image };
+function fieldPaperExcerpt(record) {
+  const first = noteEntries(record.body)[0];
+  const paragraphs = [];
+  let remaining = 1800;
+  for (const block of (first?.body ?? splitUpdateIndex(record.body).mainBody).split(/\r?\n\s*\r?\n/)) {
+    const paragraph = excerptFromBody(block, remaining);
+    if (!paragraph) continue;
+    paragraphs.push(paragraph);
+    remaining -= paragraph.length + 2;
+    if (remaining < 40) break;
+  }
+  return paragraphs.join("\n\n") || excerptFromBody(cleanSummaryText(record.summary), 1800);
 }
 
-function renderSectionNotePreview(sectionRecords, section) {
-  const update = latestSectionNote(sectionRecords, section);
-  if (!update) return "";
-  const label = section === "projects" ? "LATEST UPDATE" : section === "games" ? "LATEST SESSION" : "READING DESK";
-  const showTitle = update.title !== update.record.title && !/^(?:current note|new note|untitled note)$/i.test(update.title);
-  return `<aside class="section-note-preview section-note-preview--${section}" aria-label="${section === "projects" ? "Latest project update" : section === "games" ? "Latest written game session" : "Latest field note"}">
-    <h3>// ${label}</h3>
-    <button class="section-note-link" type="button" data-open-record="${escapeHtml(update.record.id)}" data-open-content="notes" data-open-note-index="${update.noteIndex}">
-      <time datetime="${escapeHtml(update.date)}">${escapeHtml(readableDate(update.date))}</time>
-      <strong>${escapeHtml(update.record.title)}</strong>
-      ${showTitle ? `<span class="section-note-title">${escapeHtml(update.title)}</span>` : ""}
-      ${update.image ? `<img src="${escapeHtml(update.image)}" alt="" loading="lazy" decoding="async" />` : ""}
-      <p>${escapeHtml(update.excerpt)}</p>
-      <span class="section-note-open">${section === "projects" ? "Read update" : section === "games" ? "Read session" : "Read full note"} &#8594;</span>
+function renderFieldPaperFace(record) {
+  const date = logArchiveDate(record);
+  const excerpt = fieldPaperExcerpt(record);
+  return `<span class="field-paper-face">
+      <span class="field-paper-meta"><span>FIELD NOTE</span><time datetime="${escapeHtml(date)}">${escapeHtml(readableDate(date))}</time></span>
+      <strong class="field-paper-title">${escapeHtml(record.title)}</strong>
+      ${excerpt ? `<span class="field-paper-excerpt">${escapeHtml(excerpt)}</span>` : ""}
+      <span class="field-paper-open" aria-hidden="true">${pocketIcon('<path d="M7 17 17 7M7 7h10v10"/>')}</span>
+    </span>`;
+}
+
+function renderFieldPaperDeck({ record, edges, index }, arriving = false) {
+  return `<button class="field-paper-front" type="button" data-field-current="${escapeHtml(record.id)}" data-field-lean="${index % 2 ? "right" : "left"}" ${arriving ? "data-field-arriving" : ""} data-open-record="${escapeHtml(record.id)}" data-open-content="notes" aria-label="Read ${escapeHtml(record.title)}">
+      ${renderFieldPaperFace(record)}
     </button>
-  </aside>`;
+    ${edges.map((edge) => `<button class="field-paper-peek" type="button" data-field-peek="${escapeHtml(edge.id)}" aria-label="Bring ${escapeHtml(edge.title)} forward">
+        ${renderFieldPaperFace(edge)}
+        <span class="field-paper-spine-label" aria-hidden="true">${escapeHtml(edge.title)}</span>
+      </button>`).join("")}`;
+}
+
+function renderFieldPapers(records) {
+  const stack = pocket.fieldPaperStack(records, state.fieldPaperId);
+  const { record, index, total, previous, next } = stack;
+  if (!record) return '<div class="field-paper-desk"><p class="search-empty">No recent field notes.</p></div>';
+  return `<section class="field-paper-desk" aria-label="Field papers">
+    <div class="field-paper-deck" id="field-paper-deck">${renderFieldPaperDeck(stack)}</div>
+    ${total > 3 ? `<nav class="field-paper-pager" aria-label="Browse field papers">
+      <button type="button" data-field-step="previous" aria-label="Newer field note" aria-controls="field-paper-deck" aria-disabled="${!previous}">${pocketIcon('<path d="m15 18-6-6 6-6"/>')}</button>
+      <span role="status"><span class="field-paper-status-title">${escapeHtml(record.title)}: </span><span data-field-position>${index + 1} / ${total}</span></span>
+      <button type="button" data-field-step="next" aria-label="Older field note" aria-controls="field-paper-deck" aria-disabled="${!next}">${pocketIcon('<path d="m9 18 6-6-6-6"/>')}</button>
+    </nav>` : ""}
+  </section>`;
+}
+
+function selectFieldPaper(button) {
+  const desk = button.closest(".field-paper-desk");
+  const deck = desk?.querySelector(".field-paper-deck");
+  if (state.activeSection !== "logs" || !deck) return;
+  const { desk: ordered } = partitionFieldLogs(recordsFor("logs"));
+  const current = pocket.fieldPaperStack(ordered, state.fieldPaperId);
+  const { fieldPeek, fieldStep } = button.dataset;
+  const id = fieldPeek || (fieldStep === "previous" ? current.previous : current.next);
+  if (!id || id === current.record?.id) return;
+  const stack = pocket.fieldPaperStack(ordered, id);
+  if (stack.record?.id !== id) return;
+  state.fieldPaperId = id;
+  deck.innerHTML = renderFieldPaperDeck(stack, true);
+  const status = desk.querySelector("[data-field-position]");
+  if (status) {
+    desk.querySelector(".field-paper-status-title").textContent = `${stack.record.title}: `;
+    status.textContent = `${stack.index + 1} / ${stack.total}`;
+    for (const step of desk.querySelectorAll("[data-field-step]")) step.setAttribute("aria-disabled", String(!stack[step.dataset.fieldStep]));
+  }
+  if (fieldPeek) deck.querySelector(".field-paper-front")?.focus({ preventScroll: true });
 }
 
 function sectionPage(sectionId) {
   const section = sections.find((entry) => entry.id === sectionId) || sections[0];
-  const sourceRecords = sectionId === "archive"
-    ? [...recordsFor("archive"), ...recordsFor("logs").filter((record) => isLogArchivedByAge(record))]
-    : recordsFor(sectionId);
-  const sectionRecords = sourceRecords.sort(compareSectionRecords);
-  const visibleRecords = sectionId === "logs" ? sectionRecords.filter((record) => !isLogArchivedByAge(record)) : sectionRecords;
+  if (sectionId === "logs") {
+    return `<section class="section-page section-page--logs" aria-label="Field Notes">${renderFieldPapers(partitionFieldLogs(recordsFor("logs")).desk)}</section>`;
+  }
+  if (sectionId === "archive") {
+    return renderArchiveFolders(section, [...recordsFor("archive"), ...recordsFor("logs")]);
+  }
+  const visibleRecords = recordsFor(sectionId).sort(compareSectionRecords);
   const countLabel = `${visibleRecords.length} ${visibleRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(sectionId, visibleRecords);
   const readout = sectionReadout(visibleRecords, splitSection, sectionId);
@@ -1912,9 +1947,6 @@ function sectionPage(sectionId) {
     return renderSetupBay(section, visibleRecords, countLabel, readout);
   }
 
-  if (sectionId === "archive") {
-    return renderArchiveFolders(section, sectionRecords);
-  }
   const games = sectionId === "games" ? gameShelfView(splitSection) : null;
   const searchOpen = games?.searchable && state.gameShelfSearch;
 
@@ -1929,10 +1961,7 @@ function sectionPage(sectionId) {
       </div>
       ${games ? `<div class="section-page-header-actions"><i>${countLabel}</i>${renderGameShelfSearch(games.searchable, searchOpen)}</div>` : `<i>${countLabel}</i>`}
     </header>
-      ${games ? renderGameShelf(games) : splitSection ? renderRecordSelector(splitSection) : `<div class="section-note-layout">
-        <div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>
-        ${sectionId === "logs" ? renderSectionNotePreview(visibleRecords, "logs") : ""}
-      </div>`}
+      ${games ? renderGameShelf(games) : splitSection ? renderRecordSelector(splitSection) : `<div class="section-record-grid">${renderSectionRows(visibleRecords)}</div>`}
   </section>`;
 }
 
@@ -2201,6 +2230,7 @@ function syncRecordSelector(button, automatic = false, swipeDirection) {
 }
 
 const logArchiveAfterDays = 7;
+const logDeskKeep = 3;
 const archiveRootFileLimit = 24;
 const archiveRecentFileLimit = 12;
 
@@ -2226,7 +2256,16 @@ function compareSectionRecords(a, b) {
     : b.updated.localeCompare(a.updated) || a.priority - b.priority;
 }
 
-function isLogArchivedByAge(record, now = new Date()) {
+function partitionFieldLogs(records, now = new Date()) {
+  const desk = [];
+  const archived = [];
+  records.filter((record) => record.section === "logs").sort(compareLogWritingOrder).forEach((record, index) => {
+    (index >= logDeskKeep && isLogArchivedByAge(record, now) ? archived : desk).push(record);
+  });
+  return { desk, archived };
+}
+
+function isLogArchivedByAge(record, now) {
   const date = logArchiveDate(record);
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
 
@@ -2272,7 +2311,8 @@ function renderArchiveFolderWindow(folders) {
 
 function renderArchiveFolders(section, sectionRecords) {
   const { archivedLogs, folders, looseGroups } = buildFieldArchive(sectionRecords);
-  const archiveDates = [...looseGroups, ...folders].flatMap((group) => group.records.map((record) => logArchiveDate(record))).sort();
+  const filedRecords = [...looseGroups, ...folders].flatMap((group) => group.records);
+  const archiveDates = filedRecords.map(logArchiveDate).sort();
   const looseCount = looseGroups.reduce((count, group) => count + group.records.length, 0);
   const usesFolders = folders.length > 0;
   const folderWindow = renderArchiveFolderWindow(folders);
@@ -2284,7 +2324,7 @@ function renderArchiveFolders(section, sectionRecords) {
   return `<section class="section-page section-page--archive archive-folder-page${folderWindow ? " has-folder-window" : ""}" aria-label="${escapeHtml(section.code)} files">
     <header class="section-page-header">
       <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
-      <div><p>${escapeHtml(section.code)}</p><h2 class="cipher-section">${renderCipherLetters(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(sectionRecords))}</div>
+      <div><p>${escapeHtml(section.code)}</p><h2 class="cipher-section">${renderCipherLetters(sectionRegistryLabels.archive || section.label)}</h2>${renderSectionReadout(sectionReadout(filedRecords))}</div>
       <i>${archivedLogs.length} archived logs</i>
     </header>
     <div class="archive-manager">
@@ -2297,7 +2337,7 @@ function renderArchiveFolders(section, sectionRecords) {
         <div class="archive-root-files">${looseGroups.map((group) => `<section class="archive-root-group" aria-label="${escapeHtml(group.title)} files"><h3><span>${escapeHtml(group.title)}</span><small>${escapeHtml(group.detail)} / ${group.records.length} ${group.records.length === 1 ? "FILE" : "FILES"}</small></h3><div class="archive-file-grid">${group.records.map(renderArchiveFile).join("")}</div></section>`).join("")}
           ${usesFolders ? `<section class="archive-root-group" aria-label="Monthly folders"><h3><span>MONTHLY FILES</span><small>${folders.length} ${folders.length === 1 ? "FOLDER" : "FOLDERS"}</small></h3><div class="archive-folder-tiles">${folders.map((folder) => folderButton(folder)).join("")}</div></section>` : ""}
           ${archiveDates.length ? "" : `<p class="search-empty">No records have reached the archive threshold yet.</p>`}</div>
-        <p class="archive-manager-footnote">LOGS ARE FILED HERE AFTER ${logArchiveAfterDays} DAYS . FOLDERS AND FILES ARE ORDERED NEWEST TO OLDEST</p>
+        <p class="archive-manager-footnote">THE NEWEST ${logDeskKeep} STAY ON THE DESK . OLDER LOGS ARE FILED AFTER ${logArchiveAfterDays} DAYS</p>
       </div>
     </div>${folderWindow}
   </section>`;
@@ -2312,7 +2352,7 @@ function archiveUsesFolders(recordCount) {
 }
 
 function buildFieldArchive(records, now = new Date()) {
-  const archivedLogs = records.filter((record) => record.section === "logs" && isLogArchivedByAge(record, now)).sort(compareLogWritingOrder);
+  const { archived: archivedLogs } = partitionFieldLogs(records, now);
   const filedRecords = records.filter((record) => record.section !== "logs");
   const months = new Map();
   for (const record of archivedLogs) {
@@ -2837,11 +2877,11 @@ function recordWindow(record) {
   const directoryNote = noteDirectory && readingNotes && state.noteFileOpen;
   const focusedNote = (state.dashboardNoteReader || directoryNote) && state.focusedNoteIndex !== null ? noteEntries(record.body)[state.focusedNoteIndex] : null;
   const noteTitle = focusedNote ? splitNoteTitle(focusedNote.title).title : "";
-  const caption = focusedNote ? `// ${noteTitle === "Current note" ? record.title : noteTitle}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
+  const caption = logs ? "FIELD NOTE" : focusedNote ? `// ${noteTitle === "Current note" ? record.title : noteTitle}` : readingLayout || readingNotes ? `// ${record.title}` : "// ARCHIVE ENTRY";
   const artwork = recordArtwork(record);
 
-  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${readingLayout ? "has-reading-layout" : ""} ${logs ? "is-log-record" : ""} ${focusedNote ? "is-note-reader" : readingNotes ? "is-notes-view" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} ${focusedNote ? "note reader" : "archive entry"}">
-    ${recordAccessSurfaceMarkup()}
+  return `<article role="dialog" aria-modal="true" tabindex="-1" class="record-window ${state.panelMaximized ? "is-maximized" : ""} ${state.windowSteady ? "is-steady" : ""} ${state.accessPending ? "is-access-pending" : state.accessComplete ? "is-access-complete" : ""} ${state.updateHistoryOpen ? "has-index-modal" : ""} ${readingLayout ? "has-reading-layout" : ""} ${logs ? "is-log-record is-field-paper-reader" : ""} ${focusedNote ? "is-note-reader" : readingNotes ? "is-notes-view" : ""}" data-state="${recordStateKey(record.status)}" aria-label="${escapeHtml(record.title)} ${logs || focusedNote ? "note reader" : "archive entry"}">
+    ${logs ? "" : recordAccessSurfaceMarkup()}
     <header class="window-bar">
       ${pocketBack()}
       <span class="record-window-caption">${escapeHtml(caption)}</span>
@@ -2863,7 +2903,11 @@ function recordWindow(record) {
           <div class="record-view-tab-links">${contents.map(({ key, label }) => `<button type="button" data-content-key="${key}"${activeContent === key ? ' aria-current="true"' : ""}>${escapeHtml(label)}</button>`).join("")}</div>
           ${noteDirectory ? renderNoteFileSearch(record) : ""}
         </nav>` : ""}
-        <div class="record-heading${artwork.src ? " has-heading-banner" : ""}${retractArtwork ? " is-notes-heading" : ""}">
+        ${logs ? `<div class="record-heading field-paper-heading">
+          <div class="field-paper-filing"><span>${escapeHtml(recordTraceId(record))}</span><span>${escapeHtml(record.status)}</span></div>
+          <h2>${escapeHtml(record.title)}</h2>
+          ${artwork.src ? renderHeadingImage(record, artwork) : ""}
+        </div>` : `<div class="record-heading${artwork.src ? " has-heading-banner" : ""}${retractArtwork ? " is-notes-heading" : ""}">
           ${artwork.src && !retractArtwork ? renderHeadingImage(record, artwork) : ""}
           <span class="record-kind">${escapeHtml(record.type.toUpperCase())}</span>
           <span class="record-id">${escapeHtml(recordTraceId(record))}</span>
@@ -2875,7 +2919,7 @@ function recordWindow(record) {
             Type: ${escapeHtml(record.type)}
             ${record.started ? `<span>.</span>Started: ${readableDate(record.started)}` : ""}
           </p>
-        </div>
+        </div>`}
 
         ${!readingLayout && readingContents.length > 1 ? `<label class="pocket-record-contents"><span>Contents</span><span class="pocket-record-select"><select data-record-content-picker>
           ${readingContents.map(({ key, label }) => `<option value="${key}"${key === activeContent ? " selected" : ""}>${escapeHtml(label)}</option>`).join("")}
@@ -3662,9 +3706,10 @@ function workspaceWindowTray() {
 function desktopDirectory() {
   const now = new Date();
   directoryArchiveDay = now.toISOString().slice(0, 10);
-  const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: isLogArchivedByAge(record, now) }))) || [];
+  const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
+  const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.84.4</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.85.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3680,7 +3725,7 @@ function workspaceHeading() {
   return `<div>
     <p class="route-label">// ${escapeHtml(dashboard ? "DASHBOARD" : section.code)}</p>
     <h1 class="headline-decode-text${resolving ? " is-resolving" : ""}" aria-label="${escapeHtml(headline)}"><span>${renderCipherLetters(headline)}</span><span class="cursor headline-cursor${resolving ? " is-delayed" : ""}" aria-hidden="true">_</span></h1>
-    <p class="subtle">${dashboard ? dashboardSubtext() : section.id === "games" || section.id === "projects" ? "" : "Browse the records filed under this archive."}</p>
+    <p class="subtle">${dashboard ? dashboardSubtext() : section.id === "games" || section.id === "projects" || section.id === "logs" ? "" : "Browse the records filed under this archive."}</p>
   </div>`;
 }
 
@@ -4073,7 +4118,7 @@ function selectRecordContent(key, layout) {
     const entry = layout.closest(".record-window");
     const caption = entry?.querySelector(".record-window-caption");
     entry?.classList.toggle("is-notes-view", key === "notes");
-    if (caption) caption.textContent = tabs || key === "notes" ? `// ${record.title}` : "// ARCHIVE ENTRY";
+    if (caption && record.section !== "logs") caption.textContent = tabs || key === "notes" ? `// ${record.title}` : "// ARCHIVE ENTRY";
     panel.innerHTML = renderRecordContent(record, key, handheld);
     if (aside) aside.innerHTML = recordAsideContent(record, contents, key, handheld);
     if (tabs) {
@@ -4288,6 +4333,10 @@ document.addEventListener("click", (event) => {
 
   if (target.dataset.selectorGroup !== undefined || target.dataset.selectorPage !== undefined) {
     syncRecordSelector(target);
+    return;
+  }
+  if (target.dataset.fieldPeek !== undefined || target.dataset.fieldStep !== undefined) {
+    selectFieldPaper(target);
     return;
   }
   if (target.dataset.shelfSearchToggle !== undefined) {

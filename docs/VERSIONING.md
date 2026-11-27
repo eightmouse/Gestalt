@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.84.4`. Previous site-code release: `v1.84.3` (146522d9).
+Release target: `v1.85.0`. Previous site-code release: `v1.84.4` (5cff7b3a).
+
+`v1.85.0` turns Logs into Field Papers: the newest field notes lie on the desk as a short paper stack. The front sheet opens a slim paper reader; peeking edges bring a note forward, and Newer/Older steps appear once more than three notes are on the desk. Handheld shows one sheet with readable spines. The newest three logs always stay on the desk, and older ones are still filed in the Field Archive after seven days. The old Reading Desk preview is retired. The desktop Terminal gets its own green phosphor surface and a shorter window; Memory State gains a slight lens curve and drops only complete rows, and keeps running while search is open. Day game covers lose their drop shadow. Writing order, note links, authored records, media and dependencies are unchanged.
 
 `v1.84.4` keeps the Dashboard's ambient motion and Memory State code running while the desktop Terminal is open. The underlying workspace still cannot receive clicks or plate hover. Record windows, hidden tabs, and Reduced Motion keep their existing guards.
 

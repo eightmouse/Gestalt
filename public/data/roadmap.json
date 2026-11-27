@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "20 / 11 / 2026",
+  "updated": "27 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -27,10 +27,6 @@
           "detail": "Explore a hologram-style time and date readout, with distinct cipher and glitch resolves for the Dashboard and footer. Replace the public System Tips button with a bell at the same location as the local publish bell; the public bell keeps tips available even if the welcome prompt is missed. Local publishing stays unchanged."
         },
         {
-          "title": "Logs overhaul",
-          "detail": "After the Dashboard, give field notes a browsing experience of their own. Keep writing order, direct note reading and automatic filing in the Field Archive. Design to be discussed."
-        },
-        {
           "title": "Setup overhaul",
           "detail": "The last section design pass, after Logs. Revisit the device bay while keeping Systems, Tools, Peripherals and Notes, along with their in-place editing. Design to be discussed."
         },
@@ -44,6 +40,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Field Papers",
+          "detail": "Logs lie on the desk as a short stack of papers. Open the front sheet to read it, or bring another forward by its edge. Handheld shows one sheet with readable spines. The newest three stay on the desk; older logs still file into the Field Archive after seven days.",
+          "version": "v1.85.0",
+          "releasedOn": "2026-11-27"
+        },
         {
           "title": "The Dashboard lives behind Terminal",
           "detail": "Open Terminal with T and the surrounding signals keep moving. Memory State writes the action while the Terminal is still open. The workspace stays non-interactive behind it, and Reduced Motion still applies.",

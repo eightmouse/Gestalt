@@ -77,9 +77,10 @@
     ['// fragments at rest', 'for (const fragment of archive) {', '  yield fragment.retain();', '}', 'await signal.next();'],
     ['// waiting at the edge', 'const next = await signal.next();', 'yield workspace.resolve(next);']
   ];
-  function renderShell() {
-    return '<ol class="memory-trace-lines" aria-label="Workspace code stream" aria-live="off"></ol>';
-  }
+  // 16 x 16 PNG: red/green encode (x, y) * (x*x + y*y) / 2 around neutral 128.
+  const barrelMap = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABz0lEQVR42m2TvXLTQBSFv7u7Wmm9siU7o3jipA51yjSkyKTnDehpaeloael5A56Bt+A1gHiMZf0wxxSkYEYjzUj37D1/srrmesW2ZpNpKnIkBZKjhDSRBnJP85vNnu0zNz+x3St2S7pMm6hLFgVloHQUUE6UA4sT9ZH2QLdn9wu7fc1V5iKxKnV8VRA9wQQIM3GkOmnJ6sjFgas9dveGbWJdsow6PgYKjzc8+JliJJ6XLHvWR7YH7P4tl5E2UhdiX3iCw4Ghe5iESQP1ibbnssce3tEVtIHsqc7T3mn67+UnYaqRPNIOdCfs8T2dp/FkJ63BcAbnacDNUlJO5IlmpBuxpw90xgqyEY1wZvIPgN7EmTxrppuxp496CDDrw/8BpuMEMOzxkxY1o5aWkwi4+QXARLJ0Itx4kbeHz5LSDpJVjZLopxeinWyovCxpg+yx+y8yq+1lXBpkYphe2OpkdAoyvY0KwO6+Ko71UdEsToqpGBWZgjNNx6BAl1HhbhN2+02BXxwUfu5VhDhKiaphqklVqDKrUvW5ytjuuyrV7VWv+qgl5SD1Kp9TEReFStkmFXS3xOpnrn+oupu9apx7KUnTud5O7HNU7TdZv8BNwx9cqXcCJQtR8AAAAABJRU5ErkJggg==";
+  const traceShell = `<svg class="memory-trace-lens" width="0" height="0" aria-hidden="true" focusable="false"><defs><filter id="gestalt-trace-lens" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB"><feImage href="${barrelMap}" preserveAspectRatio="none" result="barrel"/><feDisplacementMap in="SourceGraphic" in2="barrel" scale="18" xChannelSelector="R" yChannelSelector="G"/></filter></defs></svg><div class="memory-trace-raster"><ol class="memory-trace-lines" aria-label="Workspace code stream" aria-live="off"></ol></div>`;
+  function renderShell() { return traceShell; }
   function watchTrace(node, host = globalThis.window) {
     const state = session(host);
     if (!node || !state) return () => {};
@@ -93,7 +94,7 @@
     let followedHeight = -1, followedViewport = -1, followedWidth = -1;
     const random = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
     const active = () => !disposed && visible && !doc.hidden && node.isConnected &&
-      !shell?.matches(".has-record, .is-booting, [data-nav-blocked], [data-search-open], [data-workspace-tool-open]");
+      !shell?.matches(".has-record, .is-booting, [data-nav-blocked], [data-workspace-tool-open]");
     function cancel() {
       if (timer !== null) host.clearTimeout(timer);
       timer = null;
@@ -110,15 +111,18 @@
       if (height === followedHeight && viewport === followedViewport && width === followedWidth) return;
       followedHeight = height; followedViewport = viewport; followedWidth = width;
       if (height <= viewport) return;
-      list.scrollTop = height;
-      const top = list.getBoundingClientRect().top;
-      // Read the clipped rows together, then discard them without renumbering survivors.
-      const expired = [...list.children].slice(0, -1).filter((row) => row.getBoundingClientRect().bottom <= top);
-      for (const row of expired) row.remove();
-      if (expired.length) {
-        followedHeight = list.scrollHeight;
-        list.scrollTop = followedHeight;
+      const cutoff = list.getBoundingClientRect().top + height - viewport - list.scrollTop;
+      // Discard complete rows before scrolling can expose half a glyph at the top.
+      const expired = [];
+      for (let index = 0; index < list.children.length - 1; index++) {
+        const row = list.children[index];
+        if (row.getBoundingClientRect().top >= cutoff - 0.5) break;
+        expired.push(row);
       }
+      for (const row of expired) row.remove();
+      followedHeight = list.scrollHeight;
+      const nextScroll = Math.max(0, followedHeight - viewport);
+      if (list.scrollTop !== nextScroll) list.scrollTop = nextScroll;
     }
     function appendLine(text, first) {
       const row = doc.createElement("li"), number = doc.createElement("span"), code = doc.createElement("code");
@@ -219,7 +223,7 @@
     const observer = host.IntersectionObserver ? new host.IntersectionObserver(([entry]) => { visible = entry.isIntersecting; availability(); }) : null;
     observer?.observe(node);
     const coverObserver = host.MutationObserver && shell ? new host.MutationObserver(availability) : null;
-    coverObserver?.observe(shell, { attributes: true, attributeFilter: ["class", "data-nav-blocked", "data-search-open", "data-workspace-tool-open"] });
+    coverObserver?.observe(shell, { attributes: true, attributeFilter: ["class", "data-nav-blocked", "data-workspace-tool-open"] });
     const resizeObserver = host.ResizeObserver ? new host.ResizeObserver(() => { if (active()) follow(); }) : null;
     resizeObserver?.observe(list);
     state.listeners.add(update);

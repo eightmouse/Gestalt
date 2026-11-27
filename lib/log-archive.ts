@@ -1,6 +1,7 @@
 import type { RecordEntry } from "@/lib/types";
 
 export const LOG_ARCHIVE_AFTER_DAYS = 7;
+export const LOG_DESK_KEEP = 3;
 export const ARCHIVE_ROOT_FILE_LIMIT = 24;
 export const ARCHIVE_RECENT_FILE_LIMIT = 12;
 const millisecondsPerDay = 24 * 60 * 60 * 1000;
@@ -12,7 +13,7 @@ export function archiveUsesFolders(recordCount: number): boolean {
 }
 
 export function buildFieldArchive(records: RecordEntry[], now = new Date()) {
-  const archivedLogs = records.filter((record) => record.section === "logs" && isLogArchivedByAge(record, now)).sort(compareLogWritingOrder);
+  const { archived: archivedLogs } = partitionFieldLogs(records, now);
   const filedRecords = records.filter((record) => record.section !== "logs");
   const months = new Map<string, RecordEntry[]>();
   for (const record of archivedLogs) {
@@ -75,7 +76,16 @@ export function compareSectionRecords(a: RecordEntry, b: RecordEntry): number {
     : b.updated.localeCompare(a.updated) || a.priority - b.priority;
 }
 
-export function isLogArchivedByAge(record: RecordEntry, now = new Date()): boolean {
+export function partitionFieldLogs(records: RecordEntry[], now = new Date()) {
+  const desk: RecordEntry[] = [];
+  const archived: RecordEntry[] = [];
+  records.filter((record) => record.section === "logs").sort(compareLogWritingOrder).forEach((record, index) => {
+    (index >= LOG_DESK_KEEP && isLogArchivedByAge(record, now) ? archived : desk).push(record);
+  });
+  return { desk, archived };
+}
+
+function isLogArchivedByAge(record: RecordEntry, now: Date): boolean {
   const date = logArchiveDate(record);
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
 

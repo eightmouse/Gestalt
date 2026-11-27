@@ -119,8 +119,8 @@ const desktopNavigationCheck = spawnSync(process.execPath, [path.join(root, "scr
 if (desktopNavigationCheck.status !== 0) errors.push(`Desktop navigation regression failed: ${(desktopNavigationCheck.stderr || desktopNavigationCheck.stdout || "").trim()}`);
 const paletteCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-search-palette.mjs")], { encoding: "utf8" });
 if (paletteCheck.status !== 0) errors.push(`Palette regression failed: ${(paletteCheck.stderr || paletteCheck.stdout || "").trim()}`);
-const sectionPreviewCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-section-previews.mjs")], { encoding: "utf8" });
-if (sectionPreviewCheck.status !== 0) errors.push(`Section preview regression failed: ${(sectionPreviewCheck.stderr || sectionPreviewCheck.stdout || "").trim()}`);
+const fieldPaperCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-field-papers.mjs")], { encoding: "utf8" });
+if (fieldPaperCheck.status !== 0) errors.push(`Field papers regression failed: ${(fieldPaperCheck.stderr || fieldPaperCheck.stdout || "").trim()}`);
 const retiredIntegrationCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-no-x-integration.mjs")], { encoding: "utf8" });
 if (retiredIntegrationCheck.status !== 0) errors.push(`Retired integration regression failed: ${(retiredIntegrationCheck.stderr || retiredIntegrationCheck.stdout || "").trim()}`);
 const desktopCheck = spawnSync(process.execPath, [path.join(root, "scripts/test-desktop-sizing.mjs")], { encoding: "utf8" });

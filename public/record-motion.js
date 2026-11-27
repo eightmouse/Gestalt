@@ -131,7 +131,12 @@
       doc.addEventListener("visibilitychange", onVisibility);
       motion.addEventListener("change", onMotion);
       try {
-        if (closing) {
+        if (closing && node.classList.contains("is-field-paper-reader")) {
+          animation = node.animate([
+            { transform: `${base} translateY(0) rotate(0deg)`, opacity },
+            { transform: `${base} translateY(16px) rotate(-2deg)`, opacity: 0 }
+          ], { duration: 240, easing: "cubic-bezier(.4,0,.6,1)", fill: "forwards" });
+        } else if (closing) {
           // Fade the real content before collapsing the remaining frame; never clone the record.
           for (const child of node.children ?? []) {
             const value = Number.parseFloat(host.getComputedStyle(child).opacity);
@@ -164,5 +169,5 @@
     }
     return { minimize: (options) => run(options), close: (options) => run(options, true), cancel, destroy: cancel, get busy() { return Boolean(active); } };
   }
-  return Object.freeze({ createController, focusWithin });
+  return Object.freeze({ createController, focusWithin, paperRevealMs: 740 });
 });

@@ -1,11 +1,12 @@
 import type { RecordEntry, RecordSection } from "@/lib/types";
 import { renderCipherLetters } from "@/components/archive/headline-text";
 import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
-import { formatReadableDate, latestSectionNote, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
+import { formatReadableDate, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
+import { FieldPapers } from "@/components/archive/field-papers";
 import type { ContentKey } from "@/components/archive/types";
 import { setupGroupFor, setupGroupRegistry, type SetupGroupId } from "@/components/archive/setup-utils";
 import { ArrowLeft, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
-import { buildFieldArchive, compareSectionRecords, isLogArchivedByAge, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS } from "@/lib/log-archive";
+import { buildFieldArchive, compareSectionRecords, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS, LOG_DESK_KEEP } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import pocket from "@/public/pocket-index.js";
 import recordLinks from "@/public/record-links.js";
@@ -21,6 +22,7 @@ type ArchiveSectionConfig = {
 type SectionPageProps = {
   handheld: boolean;
   records: RecordEntry[];
+  filingDay?: string;
   section: ArchiveSectionConfig;
   onOpenRecord: (record: RecordEntry, content?: ContentKey, noteIndex?: number) => void;
   onBack: () => void;
@@ -33,7 +35,6 @@ type SelectorGroup = { title: string; records: RecordEntry[] };
 const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
   archive: "Field Archive",
   games: "Media Cabinet",
-  logs: "Field Note Index",
   projects: "Process Reader",
   setup: "Setup Manifest"
 };
@@ -45,9 +46,17 @@ const setupCreateLabels: Record<SetupGroupId, string> = {
   notes: "Add Setup note"
 };
 
-export function SectionPage({ handheld, records, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool }: SectionPageProps) {
-  const visibleRecords = section.id === "logs" ? records.filter((record) => !isLogArchivedByAge(record)) : records;
-  const sortedRecords = [...visibleRecords].sort(compareSectionRecords);
+export function SectionPage({ handheld, records, filingDay, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool }: SectionPageProps) {
+  if (section.id === "logs") {
+    return <section className="section-page section-page--logs" aria-label="Field Notes">
+      {onCreateRecord ? <div className="field-paper-tools"><CreateRecordButton label="Add field note" onClick={onCreateRecord} /></div> : null}
+      <FieldPapers records={records} onOpenRecord={(record) => onOpenRecord(record, "notes")} />
+    </section>;
+  }
+  if (section.id === "archive") {
+    return <ArchiveFolders onOpenRecord={onOpenRecord} records={records} section={section} filingDay={filingDay} />;
+  }
+  const sortedRecords = [...records].sort(compareSectionRecords);
   const countLabel = `${sortedRecords.length} ${sortedRecords.length === 1 ? "record" : "records"}`;
   const splitSection = splitSectionRecords(section.id, sortedRecords);
   const readout = sectionReadout(sortedRecords, splitSection, section.id);
@@ -56,9 +65,6 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onBack, 
     return <SetupBay countLabel={countLabel} onCreateRecord={onCreateSetupRecord} onOpenRecord={onOpenRecord} onEditTool={onEditSetupTool} readout={readout} records={sortedRecords} section={section} />;
   }
 
-  if (section.id === "archive") {
-    return <ArchiveFolders onOpenRecord={onOpenRecord} records={sortedRecords} section={section} />;
-  }
   if (section.id === "games" && splitSection) {
     return <GameShelf handheld={handheld} groups={splitSection} onOpenRecord={onOpenRecord} header={{ section, countLabel, readout, onCreateRecord, onBack }} />;
   }
@@ -66,7 +72,7 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onBack, 
   return (
     <section className={`section-page section-page--${section.id}${splitSection ? " section-page--selector" : ""}`} aria-label={`${section.code} records`}>
       <SectionPageHeader section={section} countLabel={countLabel} readout={readout} onCreateRecord={onCreateRecord} onBack={splitSection ? onBack : undefined} />
-      {splitSection ? <RecordSelector groups={splitSection} handheld={handheld} onOpenRecord={onOpenRecord} /> : <div className="section-note-layout">
+      {splitSection ? <RecordSelector groups={splitSection} handheld={handheld} onOpenRecord={onOpenRecord} /> : (
         <div className="section-record-grid">
           {sortedRecords.length > 0 ? (
             sortedRecords.map((record) => (
@@ -76,8 +82,7 @@ export function SectionPage({ handheld, records, section, onOpenRecord, onBack, 
             <p className="search-empty">No records filed here yet.</p>
           )}
         </div>
-        {section.id === "logs" ? <SectionNotePreview records={sortedRecords} kind="logs" onOpenRecord={onOpenRecord} /> : null}
-      </div>}
+      )}
     </section>
   );
 }
@@ -291,28 +296,11 @@ function RecordSelectorTile({ record, onOpenRecord }: { record: RecordEntry; onO
   </button>;
 }
 
-function SectionNotePreview({ records, kind, onOpenRecord }: Pick<SectionPageProps, "records" | "onOpenRecord"> & { kind: "projects" | "games" | "logs" }) {
-  const update = latestSectionNote(records, kind);
-  if (!update) return null;
-  const label = kind === "projects" ? "LATEST UPDATE" : kind === "games" ? "LATEST SESSION" : "READING DESK";
-  const showTitle = update.title !== update.record.title && !/^(?:current note|new note|untitled note)$/i.test(update.title);
-  return <aside className={`section-note-preview section-note-preview--${kind}`} aria-label={kind === "projects" ? "Latest project update" : kind === "games" ? "Latest written game session" : "Latest field note"}>
-    <h3>// {label}</h3>
-    <button className="section-note-link" type="button" onClick={() => onOpenRecord(update.record, "notes", update.noteIndex)}>
-      <time dateTime={update.date}>{formatReadableDate(update.date)}</time>
-      <strong>{update.record.title}</strong>
-      {showTitle ? <span className="section-note-title">{update.title}</span> : null}
-      {update.image ? <img src={update.image} alt="" loading="lazy" decoding="async" /> : null}
-      <p>{update.excerpt}</p>
-      <span className="section-note-open">{kind === "projects" ? "Read update" : kind === "games" ? "Read session" : "Read full note"} &#8594;</span>
-    </button>
-  </aside>;
-}
-
-function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (record: RecordEntry) => void; records: RecordEntry[]; section: ArchiveSectionConfig }) {
-  const { archivedLogs, folders, looseGroups } = buildFieldArchive(records);
+function ArchiveFolders({ onOpenRecord, records, section, filingDay }: { onOpenRecord: (record: RecordEntry) => void; records: RecordEntry[]; section: ArchiveSectionConfig; filingDay?: string }) {
+  const { archivedLogs, folders, looseGroups } = buildFieldArchive(records, filingDay ? new Date(filingDay) : undefined);
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
-  const archiveDates = [...looseGroups, ...folders].flatMap((group) => group.records.map((record) => logArchiveDate(record))).sort();
+  const filedRecords = [...looseGroups, ...folders].flatMap((group) => group.records);
+  const archiveDates = filedRecords.map(logArchiveDate).sort();
   const looseCount = looseGroups.reduce((count, group) => count + group.records.length, 0);
   const usesFolders = folders.length > 0;
   const activeFolderData = folders.find((folder) => folder.title === activeFolder) ?? null;
@@ -343,7 +331,7 @@ function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (rec
         <div>
           <p>{section.code}</p>
           <h2 className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
-          <SectionReadout items={sectionReadout(records)} />
+          <SectionReadout items={sectionReadout(filedRecords)} />
         </div>
         <i>{archivedLogs.length} archived logs</i>
       </header>
@@ -403,7 +391,7 @@ function ArchiveFolders({ onOpenRecord, records, section }: { onOpenRecord: (rec
             </section> : null}
             {!archiveDates.length ? <p className="search-empty">No records have reached the archive threshold yet.</p> : null}
           </div>
-          <p className="archive-manager-footnote">LOGS ARE FILED HERE AFTER {LOG_ARCHIVE_AFTER_DAYS} DAYS . FOLDERS AND FILES ARE ORDERED NEWEST TO OLDEST</p>
+          <p className="archive-manager-footnote">THE NEWEST {LOG_DESK_KEEP} STAY ON THE DESK . OLDER LOGS ARE FILED AFTER {LOG_ARCHIVE_AFTER_DAYS} DAYS</p>
         </div>
       </div>
       {activeFolderData ? (

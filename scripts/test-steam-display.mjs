@@ -254,7 +254,11 @@ for (const section of ["projects", "games", "logs"]) {
     assert.ok(html.includes(imageFraming.headerFrameCss(headerFrame)), "React and Pages render the saved header crop, not overview framing");
     assert.ok(html.includes("Header &lt;fixture&gt;"));
     assert.ok(html.includes(recordLinks.traceId(record.id, section)), "Both readers show the same reference in the entry header");
-    assert.ok(html.includes('class="record-window-caption">// Header &lt;fixture&gt;'), "The record title replaces the generic dialog caption");
+    if (section === "logs") {
+      assert.ok(html.includes('class="record-window-caption">FIELD NOTE') && html.includes('<h2>Header &lt;fixture&gt;</h2>'), "Logs print the title on the sheet");
+    } else {
+      assert.ok(html.includes('class="record-window-caption">// Header &lt;fixture&gt;'), "The record title replaces the generic dialog caption");
+    }
   }
 }
 const tabs = ["overview", "notes", "recommendation"];

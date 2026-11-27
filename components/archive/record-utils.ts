@@ -1,5 +1,5 @@
 import type { RecordEntry } from "@/lib/types";
-import { compareLogWritingOrder, logArchiveDate } from "@/lib/log-archive";
+import { logArchiveDate } from "@/lib/log-archive";
 import noteInline from "@/public/note-inline.js";
 
 export type ArchiveMetrics = {
@@ -214,26 +214,18 @@ export function recordDisplaySummary(record: RecordEntry): string {
   return fallback || "No summary recorded.";
 }
 
-export function latestSectionNote(records: RecordEntry[], section: "projects" | "games" | "logs") {
-  const updates = records.filter((record) => record.section === section).flatMap((record) =>
-    noteEntries(record.body).slice(0, section === "games" ? undefined : 1).map((note, index) => ({
-      record,
-      noteIndex: index,
-      date: section === "logs" ? logArchiveDate(record) : noteTitleDate(note.title) ?? record.updated,
-      title: activityTraceTitle(note.title),
-      excerpt: excerptFromBody(note.body, section === "logs" ? 720 : section === "games" ? 240 : 180),
-      body: note.body
-    })).filter((note) => note.excerpt)
-  );
-  const latest = updates.sort((a, b) => section === "logs" ? compareLogWritingOrder(a.record, b.record) : b.date.localeCompare(a.date) || a.record.id.localeCompare(b.record.id))[0];
-  if (!latest) return null;
-  const samples = (latest.record.meta ?? latest.record).samples;
-  const sources = Array.isArray(samples) ? samples : typeof samples === "string" ? samples.split(/\r?\n|,/) : [];
-  const images = section === "projects" ? sources : section === "games" ? Array.from(latest.body.matchAll(/!\[[^\]]*]\(([^)\r\n]+)\)/g), (match) => match[1]) : [];
-  // Preview only local still images; do not start videos/GIFs or remote requests here.
-  const image = images.map((source) => source.trim()).find((source) => /^(?:\/(?:media|images)\/|(?:\.\/)?public\/(?:media|images)\/)[a-zA-Z0-9_./ -]+\.(?:png|jpe?g|webp|avif)$/i.test(source) && !source.split("/").includes("..")) ?? "";
-  const { body, ...preview } = latest;
-  return { ...preview, image };
+export function fieldPaperExcerpt(record: RecordEntry): string {
+  const first = noteEntries(record.body)[0];
+  const paragraphs = [];
+  let remaining = 1800;
+  for (const block of (first?.body ?? splitUpdateIndex(record.body).mainBody).split(/\r?\n\s*\r?\n/)) {
+    const paragraph = excerptFromBody(block, remaining);
+    if (!paragraph) continue;
+    paragraphs.push(paragraph);
+    remaining -= paragraph.length + 2;
+    if (remaining < 40) break;
+  }
+  return paragraphs.join("\n\n") || excerptFromBody(cleanSummaryText(record.summary), 1800);
 }
 
 export function getArchiveMetrics(records: RecordEntry[], activeGame?: RecordEntry): ArchiveMetrics {
