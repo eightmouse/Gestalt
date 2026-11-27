@@ -30,6 +30,12 @@
   // Only fixed event names and enum/numeric fields can enter the session buffer.
   function detailFor(name, fields = {}) {
     if (name === "workspace.ready") return "state=ready";
+    if (name === "workspace.boot") {
+      const mode = ["full", "quick", "instant"].includes(fields.mode) ? fields.mode : null;
+      const ms = Number(fields.ms), records = Number(fields.records);
+      if (!mode || !Number.isFinite(ms) || ms < 0 || ms > 99_000 || !Number.isInteger(records) || records < 0 || records > 99_999) return null;
+      return `boot=${mode},${(ms / 1000).toFixed(1)},${records}`;
+    }
     if (name === "section.enter") return sections.includes(fields.section) ? `target=${fields.section}` : null;
     if (name === "record.open") return sections.includes(fields.section) ? `section=${fields.section}` : null;
     if (["record.close", "record.minimize", "record.restore"].includes(name)) return "target=record";
@@ -44,8 +50,9 @@
     const state = session(host);
     let detail;
     try { detail = detailFor(name, fields && typeof fields === "object" ? fields : {}); } catch { return; }
-    if (!state || detail === null || name === "workspace.ready" && state.ready) return;
+    if (!state || detail === null || name === "workspace.ready" && state.ready || name === "workspace.boot" && state.booted) return;
     if (name === "workspace.ready") state.ready = true;
+    if (name === "workspace.boot") state.booted = true;
     const now = new Date();
     const time = [now.getHours(), now.getMinutes(), now.getSeconds()].map((value) => String(value).padStart(2, "0")).join(":");
     state.entries.push(Object.freeze({ id: ++state.sequence, time, name, detail }));
@@ -59,6 +66,10 @@
   function codeFor(entry) {
     const value = entry.detail.split("=")[1];
     if (entry.name === "workspace.ready") return ['const workspace = gestalt.surface();', 'await workspace.ready();', 'yield workspace.compose();'];
+    if (entry.name === "workspace.boot") {
+      const [mode, seconds, records] = value.split(",");
+      return [`await archive.boot("${mode}"); // ${seconds}s`, `const records = archive.count(); // ${records}`];
+    }
     if (entry.name === "section.enter") return [`await workspace.route("${value}");`, 'yield workspace.compose();'];
     if (entry.name === "record.open") return [`const record = archive.open("${value}");`, 'await record.reveal();'];
     if (entry.name === "record.close") return ['await record.dissolve();', 'workspace.focus();'];

@@ -73,7 +73,8 @@ vm.runInContext(ts.transpileModule(`${declarations.join("\n")}\nexports.start = 
 const api = reactLifecycle.context.exports;
 api.start();
 assert.equal(reactLifecycle.context.pending, true);
-assert.deepEqual([...reactLifecycle.timers.values()].map(({ delay }) => delay), [3250], "React uses one full-length access timeline");
+assert.deepEqual([...reactLifecycle.timers.values()].map(({ delay }) => delay), [recordMotion.accessRevealMs], "React uses one full-length access timeline");
+assert.equal(recordMotion.accessRevealMs, 1500, "The access timeline is short: the last panel settles by 1420ms");
 api.stop();
 assert.equal(reactLifecycle.timers.size, 0, "Closing/minimizing cancels pending work");
 api.start();

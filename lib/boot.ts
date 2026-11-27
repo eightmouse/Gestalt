@@ -19,7 +19,7 @@ export function scheduleBootCompletion(onComplete: () => void, elapsed = 0, mode
   };
   motion.addEventListener("change", onMotionChange);
   if (motion.matches) finish();
-  // Matches the complete boot/session/workspace timeline in globals.css.
-  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 11900) - elapsed));
+  // Matches the power-on timeline in globals.css: the last screen flare settles by 2.98s (quick 1.54s).
+  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 1600 : 3000) - elapsed));
   return stop;
 }

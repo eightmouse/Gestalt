@@ -240,3 +240,16 @@ for (const asset of ["public/memory-state.js", "app/memory-state.css"]) {
 assert.ok(read("index.html").indexOf('src="public/memory-state.js') < read("index.html").indexOf('src="static-app.js'));
 assert.ok(read("components/archive/memory-state.tsx").includes('mode === "legacy" ? <MemoryLoop /> : <SessionTrace />'), "Legacy is preserved but not mounted invisibly behind trace");
 console.log("Memory State passed: private actions, one-way code stream, clipped-line pruning with continuing numbers, bounded bursts/idle passages, single cancellable deadline, visibility/cover/reduced-motion/unmount guards, legacy preservation and packaging.");
+// The boot event: validated numbers only, once per page, written as the first code lines.
+{
+  const boot = { document: {} };
+  memory.record("workspace.boot", { mode: "full", ms: 2987, records: 64 }, boot);
+  memory.record("workspace.boot", { mode: "full", ms: 1, records: 1 }, boot);
+  memory.record("workspace.boot", { mode: "<script>", ms: 1, records: 1 }, { document: {} });
+  const logged = memory.entries(boot);
+  assert.equal(logged.length, 1, "The boot is logged once");
+  assert.equal(logged[0].detail, "boot=full,3.0,64");
+  assert.ok(read("public/memory-state.js").includes('return [`await archive.boot("${mode}"); // ${seconds}s`, `const records = archive.count(); // ${records}`];'), "The boot reads as two code lines with the real numbers");
+  memory.record("workspace.boot", { mode: "quick", ms: -5, records: 1 }, boot);
+  memory.record("workspace.boot", { mode: "quick", ms: 5, records: 1.5 }, { document: {} });
+}

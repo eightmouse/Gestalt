@@ -211,15 +211,22 @@ button {
   transform: translateZ(0);
 }
 
-.archive-shell.is-booting { --boot-handoff-delay: 3960ms; --boot-meter-extension: 210ms; --boot-ui-extension: 720ms; }
-.archive-shell.is-quick-boot { --boot-handoff-delay: 0ms; --boot-meter-extension: 0ms; }
+/* Boot: a power-on, not a loading bar. One clock (--boot-elapsed keeps it honest across rebuilds):
+   0-440ms   the tube warms up: a line, it opens, a flash, it settles.
+   240ms+    GESTALT resolves with its per-visit signal rhythm.
+   full: 520/640/760/880ms readiness lines report real state (records, appearance, Steam, last session).
+   full: 1280ms the loader cuts and the operator session holds until the handoff.
+   handoff (full 2200ms, quick 760ms): the screen shutters into a line and the workspace is there;
+   that line rises and settles as the rule above the workspace header.
+   +60/+140/+220ms the Dashboard plates unfold from their centre lines, row by row.
+   +360ms the screens (Memory State, the cover) flare on.
+   Completion (lib/boot.ts, static-app.js) waits 3000ms, quick 1600ms: after the last flare. */
+.archive-shell.is-booting { --boot-on: 240ms; --boot-workspace-at: 2200ms; }
+.archive-shell.is-quick-boot { --boot-workspace-at: 760ms; }
 
 .boot-screen {
   --boot-width: min(520px, 78vw);
   --boot-size: var(--desktop-size, 1);
-  --boot-meter-sequence: boot-load;
-  --boot-meter-duration: 2020ms;
-  --boot-meter-delay: 120ms;
   --boot-word-duration: 640ms;
   --boot-word-delay: 70ms;
   --boot-signal-sequence: boot-signal-lock;
@@ -236,14 +243,12 @@ button {
     var(--bg, #050605);
   color: var(--text);
   pointer-events: none;
-  animation: boot-exit 830ms ease-in-out calc(8280ms + var(--boot-elapsed, 0ms)) both;
+  transform-origin: center;
+  animation: boot-shutter 200ms cubic-bezier(0.7, 0, 0.84, 0) calc(var(--boot-workspace-at, 2200ms) + var(--boot-elapsed, 0ms)) both;
 }
 
 /* Chosen once in the head; changing sections cannot reshuffle startup. */
 :root[data-boot-profile="probe"] .boot-screen {
-  --boot-meter-sequence: boot-load-probe;
-  --boot-meter-duration: 2060ms;
-  --boot-meter-delay: 100ms;
   --boot-word-duration: 720ms;
   --boot-word-delay: 50ms;
   --boot-signal-sequence: boot-signal-register;
@@ -251,18 +256,12 @@ button {
   --boot-status-delay: 220ms;
 }
 :root[data-boot-profile="stream"] .boot-screen {
-  --boot-meter-sequence: boot-load-stream;
-  --boot-meter-duration: 1940ms;
-  --boot-meter-delay: 140ms;
   --boot-word-duration: 580ms;
   --boot-word-delay: 100ms;
   --boot-signal-duration: 860ms;
   --boot-status-delay: 300ms;
 }
 :root[data-boot-profile="verify"] .boot-screen {
-  --boot-meter-sequence: boot-load-verify;
-  --boot-meter-duration: 2040ms;
-  --boot-meter-delay: 120ms;
   --boot-word-duration: 680ms;
   --boot-word-delay: 60ms;
   --boot-signal-sequence: boot-signal-register;
@@ -270,13 +269,18 @@ button {
   --boot-status-delay: 240ms;
 }
 
-.boot-screen::before {
-  content: "";
+/* The tube warms up: a bright line draws across the middle, opens to fill the glass, flashes and
+   settles to the dark screen. Transform and opacity only. */
+.boot-tube {
   position: absolute;
   inset: 0;
-  background: linear-gradient(rgba(var(--tone-base, 5, 6, 5), 0.52), rgba(var(--tone-base, 5, 6, 5), 0.8)), var(--archive-image) center / cover no-repeat;
+  pointer-events: none;
+  transform-origin: center;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(var(--tone-strong, 236, 230, 211), 0.55), rgba(var(--tone-ink, 217, 213, 193), 0.14) 58%, transparent 86%),
+    rgba(var(--tone-ink, 217, 213, 193), 0.06);
   opacity: 0;
-  animation: boot-artwork 5200ms ease-in-out calc(var(--boot-handoff-delay) + var(--boot-elapsed, 0ms)) both;
+  animation: boot-tube-on 440ms linear var(--boot-elapsed, 0ms) both;
 }
 
 .boot-loader,
@@ -290,40 +294,35 @@ button {
   gap: calc(14px * var(--boot-size));
 }
 
-.boot-loader {
-  animation: boot-loader-exit 420ms ease-in-out calc(2220ms + var(--boot-meter-extension) + var(--boot-elapsed, 0ms)) both;
+/* The full welcome cuts from the loader to the operator session; nothing dissolves. */
+.archive-shell:not(.is-quick-boot) .boot-loader {
+  animation: boot-cut 1ms linear calc(1280ms + var(--boot-elapsed, 0ms)) forwards;
 }
 
-.boot-process-log {
-  position: absolute;
-  inset-block-start: max(26px, 9%);
-  inset-inline: max(24px, 6%);
+.boot-readiness {
   display: grid;
-  justify-items: start;
-  gap: min(calc(8px * var(--boot-size)), 0.75vh);
-  margin: 0;
+  gap: calc(6px * var(--boot-size));
+  inline-size: min(100%, calc(320px * var(--boot-size)));
+  margin: calc(10px * var(--boot-size)) 0 0;
   padding: 0;
   list-style: none;
-  color: var(--text);
-  font: min(calc(14px * var(--boot-size)), 2.1vh) / 1.3 var(--mono);
-  font-variant-numeric: tabular-nums;
-  visibility: hidden;
-  animation: boot-process-window 3530ms linear calc(2710ms + var(--boot-elapsed, 0ms));
+  color: var(--muted);
+  font: calc(12px * var(--boot-size)) / 1.3 var(--mono);
+  letter-spacing: 0.1em;
 }
-.boot-process-log li {
+.boot-readiness li {
   display: flex;
-  gap: calc(14px * var(--boot-size));
+  justify-content: space-between;
+  gap: 16px;
+  padding-block-end: calc(5px * var(--boot-size));
+  border-block-end: 1px dashed rgba(var(--tone-ink, 217, 213, 193), 0.14);
   opacity: 0;
-  animation: boot-process-line 1ms linear calc(2800ms + var(--boot-line-time) + var(--boot-elapsed, 0ms)) forwards;
+  animation: boot-line-in 160ms linear calc(520ms + var(--boot-line, 0) * 120ms + var(--boot-elapsed, 0ms)) both;
 }
-.boot-process-log li > span { flex: none; white-space: pre; }
-.boot-process-stamp { color: var(--muted); }
-.boot-process-state, .boot-process-log li:last-child { color: var(--text-strong); }
-@keyframes boot-process-window { from, to { visibility: visible; } }
-@keyframes boot-process-line { from, to { opacity: 1; } }
-@media (max-height: 590px) {
-  .boot-process-log { gap: min(4px, 0.75vh); font-size: min(12px, 2.1vh); }
-}
+.boot-readiness li:nth-child(2) { --boot-line: 1; }
+.boot-readiness li:nth-child(3) { --boot-line: 2; }
+.boot-readiness li:nth-child(4) { --boot-line: 3; }
+.boot-readiness b { color: var(--text-strong); font-weight: 400; font-variant-numeric: tabular-nums; }
 
 .boot-session {
   position: absolute;
@@ -334,7 +333,7 @@ button {
   margin-inline: auto;
   transform: translateY(-50%);
   opacity: 0;
-  animation: boot-session 2670ms ease-in-out calc(2288ms + var(--boot-handoff-delay) + var(--boot-elapsed, 0ms)) both;
+  animation: boot-line-in 200ms linear calc(1300ms + var(--boot-elapsed, 0ms)) both;
 }
 
 .boot-session-label {
@@ -363,52 +362,42 @@ button {
   font-size: calc(14px * var(--boot-size));
 }
 
-/* Four broad surfaces arrive without moving the layout or cascading every card. */
-.archive-shell.is-booting > .sidebar {
-  animation: boot-surface 1200ms ease-in-out calc(3660ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms)) both;
-}
-
-.archive-shell.is-booting > .workspace > .workspace-header {
-  animation: boot-surface 1200ms ease-in-out calc(3740ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms)) both;
-}
-
-.archive-shell.is-booting > .workspace > :is(.dashboard-grid, .section-page) {
-  animation: boot-surface 1200ms ease-in-out calc(3880ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms)) both;
-}
-
+/* Behind the screen the workspace is already in place: it appears the instant the shutter starts. */
+.archive-shell.is-booting > .sidebar,
+.archive-shell.is-booting > .workspace > .workspace-header,
+.archive-shell.is-booting > .workspace > :is(.dashboard-grid, .section-page),
 .archive-shell.is-booting > .workspace > .workspace-footer {
-  animation: boot-surface 970ms ease-in-out calc(4110ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms)) both;
+  animation: boot-surface 1ms linear calc(var(--boot-workspace-at) + var(--boot-elapsed, 0ms)) both;
 }
 
 .archive-shell.is-booting .workspace-header h1 {
-  --headline-start-delay: calc(3760ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms));
+  --headline-start-delay: calc(var(--boot-workspace-at) + 60ms + var(--boot-elapsed, 0ms));
 }
 
-.archive-shell.is-quick-boot > .boot-screen {
-  animation-name: quick-boot-exit;
-  animation-duration: 2800ms;
-  animation-delay: var(--boot-elapsed, 0ms);
+.archive-shell.is-quick-boot :is(.boot-session, .boot-readiness) { display: none; }
+
+/* The thread: the power-on line does not vanish. As the screen shutters it shows as a bright line
+   across the middle, then rises and settles exactly onto the rule above the workspace header
+   (measured by measureBootThread), handing over to the real rule underneath. */
+.boot-thread {
+  position: fixed;
+  z-index: 61;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 100vw;
+  block-size: 1px;
+  pointer-events: none;
+  transform-origin: left top;
+  background: linear-gradient(90deg, transparent, rgba(var(--tone-strong, 236, 230, 211), 0.9) 10% 90%, transparent);
+  box-shadow: 0 0 6px rgba(var(--tone-strong, 236, 230, 211), 0.45);
+  opacity: 0;
+  animation: boot-thread 560ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--boot-workspace-at) + var(--boot-elapsed, 0ms)) both;
 }
-.archive-shell.is-quick-boot > .boot-screen::before,
-.archive-shell.is-quick-boot :is(.boot-session, .boot-process-log) { display: none; }
-.archive-shell.is-quick-boot > .sidebar {
-  animation-duration: 420ms;
-  animation-delay: calc(2240ms + var(--boot-elapsed, 0ms));
-}
-.archive-shell.is-quick-boot > .workspace > .workspace-header {
-  animation-duration: 450ms;
-  animation-delay: calc(2280ms + var(--boot-elapsed, 0ms));
-}
-.archive-shell.is-quick-boot > .workspace > :is(.dashboard-grid, .section-page) {
-  animation-duration: 450ms;
-  animation-delay: calc(2320ms + var(--boot-elapsed, 0ms));
-}
-.archive-shell.is-quick-boot > .workspace > .workspace-footer {
-  animation-duration: 400ms;
-  animation-delay: calc(2380ms + var(--boot-elapsed, 0ms));
-}
-.archive-shell.is-quick-boot .workspace-header h1 {
-  --headline-start-delay: calc(1650ms + var(--boot-elapsed, 0ms));
+@keyframes boot-thread {
+  0% { opacity: 0; transform: translate(0, 50vh) scaleX(1); }
+  32% { opacity: 1; transform: translate(0, 50vh) scaleX(1); }
+  80% { opacity: 1; transform: translate(var(--thread-x, 0px), var(--thread-y, 0px)) scaleX(var(--thread-scale, 1)); }
+  100% { opacity: 0; transform: translate(var(--thread-x, 0px), var(--thread-y, 0px)) scaleX(var(--thread-scale, 1)); }
 }
 
 @keyframes boot-surface {
@@ -416,70 +405,51 @@ button {
   to { opacity: 1; visibility: visible; }
 }
 
-.dashboard-boot-readout { display: none; }
-
+/* The Dashboard plates unfold from their centre lines on one rhythm, row by row, and the screens
+   power on last with a brief flare. */
 @media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
-  .archive-shell.is-booting:not(.is-quick-boot) > .workspace > .dashboard-grid { animation: none; }
-  .archive-shell.is-booting:not(.is-quick-boot) .dashboard-panel[data-boot-module] {
-    --boot-module-at: calc(9110ms + var(--boot-module-order) * 210ms + var(--boot-elapsed, 0ms));
-    --boot-readout-delay: 55ms;
-    --boot-readout-duration: 1020ms;
-    --boot-ready-at: calc(var(--boot-module-at) + var(--boot-readout-delay) + var(--boot-readout-duration));
-    animation: boot-module-seat 820ms cubic-bezier(.2,.65,.34,1) var(--boot-module-at) both;
+  .archive-shell.is-booting > .workspace > .dashboard-grid { animation: none; }
+  .archive-shell.is-booting .dashboard-panel[data-boot-module] {
+    --boot-row: 0;
+    transform-origin: center;
+    animation: boot-plate-unfold 240ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--boot-workspace-at) + 60ms + var(--boot-row) * 80ms + var(--boot-elapsed, 0ms)) both;
   }
-  .archive-shell.is-booting:not(.is-quick-boot) .dashboard-panel[data-boot-module] > h2 {
-    animation: boot-module-heading 320ms ease-out var(--boot-ready-at) both;
+  .archive-shell.is-booting .dashboard-panel:is([data-boot-module="game"], [data-boot-module="log"], [data-boot-module="memory"]) { --boot-row: 1; }
+  .archive-shell.is-booting .dashboard-panel[data-boot-module="activity"] { --boot-row: 2; }
+  .archive-shell.is-booting .dashboard-grid :is(.memory-trace, .game-cover) {
+    animation: boot-screen-flare 420ms ease-out calc(var(--boot-workspace-at) + 360ms + var(--boot-elapsed, 0ms)) both;
   }
-  .archive-shell.is-booting:not(.is-quick-boot) .dashboard-panel[data-boot-module] > div {
-    animation: boot-module-content 520ms cubic-bezier(.28,.15,.3,1) calc(var(--boot-ready-at) + 80ms) both;
-  }
-  .archive-shell.is-booting:not(.is-quick-boot) .dashboard-boot-readout {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    display: grid;
-    grid-template-columns: auto minmax(0, max-content);
-    place-content: center;
-    align-items: center;
-    gap: 9px;
-    padding-inline: 12px;
-    color: var(--text-strong);
-    font: calc(12px * var(--desktop-size, 1)) / 1.25 var(--mono);
-    pointer-events: none;
-    animation: boot-module-readout var(--boot-readout-duration) linear calc(var(--boot-module-at) + var(--boot-readout-delay)) both;
-  }
-  .dashboard-boot-readout i {
-    inline-size: 18px;
-    block-size: 12px;
-    color: var(--accent);
-    background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 5px);
-  }
-  [data-boot-module="projects"] .dashboard-boot-readout i { border-block-end: 1px solid currentColor; clip-path: polygon(0 55%, 32% 55%, 32% 26%, 66% 26%, 66% 0, 100% 0, 100% 100%, 0 100%); }
-  [data-boot-module="weather"] .dashboard-boot-readout i { clip-path: polygon(0 100%, 41% 40%, 65% 60%, 100% 0, 100% 100%); }
-  [data-boot-module="game"] .dashboard-boot-readout i { background: linear-gradient(currentColor, currentColor) center / 8px 2px no-repeat; border: 1px solid currentColor; border-inline-end-style: dashed; }
-  [data-boot-module="log"] .dashboard-boot-readout i { inline-size: 12px; background: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 4px); border-inline-start: 2px solid currentColor; border-inline-end: 1px solid currentColor; }
-  [data-boot-module="memory"] .dashboard-boot-readout i { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); clip-path: polygon(0 0, 26% 0, 26% 23%, 58% 23%, 58% 0, 100% 0, 100% 100%, 0 100%); }
-  [data-boot-module="activity"] .dashboard-boot-readout i { background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 6px) center / 100% 4px no-repeat; border-block: 1px solid currentColor; }
 }
 
-@keyframes boot-module-seat {
-  from { opacity: 0; }
-  50% { opacity: 1; }
-  to { opacity: 1; }
+@keyframes boot-tube-on {
+  0% { opacity: 1; transform: scale(0, 0.004); }
+  24% { opacity: 1; transform: scale(1, 0.004); }
+  58% { opacity: 1; transform: scale(1, 1); }
+  100% { opacity: 0; transform: scale(1, 1); }
 }
-@keyframes boot-module-heading {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes boot-line-in {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  50% { opacity: 0.35; }
+  70%, 100% { opacity: 1; }
 }
-@keyframes boot-module-content {
-  from { opacity: 0; }
-  60% { opacity: 0.87; }
-  to { opacity: 1; }
+@keyframes boot-cut {
+  to { opacity: 0; visibility: hidden; }
 }
-@keyframes boot-module-readout {
-  0% { opacity: 0; transform: translateY(4px); }
-  12%, 77% { opacity: 1; transform: none; }
-  100% { opacity: 0; visibility: hidden; }
+@keyframes boot-shutter {
+  from { transform: scaleY(1); opacity: 1; }
+  90% { transform: scaleY(0.004); opacity: 1; }
+  to { transform: scaleY(0.004); opacity: 0; visibility: hidden; }
+}
+@keyframes boot-plate-unfold {
+  from { opacity: 0; transform: scaleY(0.02); }
+  35% { opacity: 1; }
+  to { opacity: 1; transform: scaleY(1); }
+}
+@keyframes boot-screen-flare {
+  0% { opacity: 0; filter: brightness(2.4); }
+  25% { opacity: 1; }
+  100% { opacity: 1; filter: brightness(1); }
 }
 
 .boot-loader > span {
@@ -493,37 +463,18 @@ button {
   letter-spacing: 0.42em;
   text-align: center;
   animation:
-    boot-type var(--boot-word-duration) steps(7, end) calc(var(--boot-word-delay) + var(--boot-elapsed, 0ms)) both,
-    var(--boot-signal-sequence) var(--boot-signal-span, var(--boot-signal-duration)) linear calc(var(--boot-signal-start, 90ms) + var(--boot-elapsed, 0ms)) both;
+    boot-type var(--boot-word-duration) steps(7, end) calc(var(--boot-on, 240ms) + var(--boot-word-delay) + var(--boot-elapsed, 0ms)) both,
+    var(--boot-signal-sequence) var(--boot-signal-span, var(--boot-signal-duration)) linear calc(var(--boot-on, 240ms) + var(--boot-signal-start, 90ms) + var(--boot-elapsed, 0ms)) both;
 }
 
 .boot-status {
-  --headline-start-delay: calc(var(--boot-status-delay) + var(--boot-elapsed, 0ms));
+  --headline-start-delay: calc(var(--boot-on, 240ms) + var(--boot-status-delay) + var(--boot-elapsed, 0ms));
   inline-size: var(--boot-width);
   justify-content: center;
   font-style: normal;
   font-size: 14px;
   letter-spacing: 0.14em;
   text-align: center;
-}
-
-.boot-meter {
-  inline-size: var(--boot-width);
-  block-size: 12px;
-  display: block;
-  padding: 2px;
-  border: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.28);
-  background: rgba(var(--tone-highlight, 255, 255, 255), 0.018);
-}
-
-.boot-meter b {
-  display: block;
-  inline-size: 100%;
-  block-size: 100%;
-  transform: scaleX(0);
-  transform-origin: left center;
-  background: rgba(var(--tone-ink, 217, 213, 193), 0.72);
-  animation: var(--boot-meter-sequence) calc(var(--boot-meter-duration) + var(--boot-meter-extension)) cubic-bezier(0.3, 0.04, 0.25, 1) calc(var(--boot-meter-delay) + var(--boot-elapsed, 0ms)) both;
 }
 
 .local-memory-consent {
@@ -1510,7 +1461,7 @@ button {
 
 .cipher-glyph::before { content: attr(data-a); }
 .headline-decode-text { --cipher-start: var(--headline-start-delay); --cipher-duration: 460ms; }
-.boot-status.headline-decode-text { --cipher-duration: 640ms; }
+.boot-status.headline-decode-text { --cipher-duration: 480ms; }
 .boot-status .cipher-glyph { text-align: center; }
 .cipher-on-open { --cipher-start: 50ms; --cipher-duration: 360ms; }
 
@@ -2401,7 +2352,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   --section-title-offset: 0px;
   --instrument-outline: var(--line);
 }
-.section-page:is(.section-page--games, .section-page--projects) .section-page-header {
+.section-page:is(.section-page--games, .section-page--projects, .section-page--logs) .section-page-header {
   background: linear-gradient(110deg, var(--section-accent-soft), transparent 70%), rgba(var(--tone-surface, 8, 9, 8), .82);
   border-color: var(--instrument-outline);
 }
@@ -2706,13 +2657,17 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .project-workbench-signal span { color: var(--muted); }
 .project-milestone-trace li[data-stop="ready"] { border-block-start-color: var(--text); }
 
-.project-bench-deck { grid-column: 1 / -1; align-self: stretch; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: calc(14px * var(--selector-scale)); min-block-size: 0; }
+.project-bench-deck { grid-column: 1 / -1; align-self: stretch; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(14px * var(--selector-scale)); min-block-size: 0; }
 .project-bench-label { display: flex; justify-content: space-between; gap: 8px; margin: 0; color: var(--muted); text-transform: uppercase; font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
 .project-bench-label span { font-variant-numeric: tabular-nums; }
 .project-dispatch { display: grid; align-content: start; gap: calc(8px * var(--selector-scale)); min-inline-size: 0; padding: calc(14px * var(--selector-scale)) calc(16px * var(--selector-scale)); border: 1px solid var(--line); background: rgba(var(--tone-well, 12, 16, 14), .42); }
 .project-dispatch h4 { margin: 0; overflow-wrap: anywhere; color: var(--text-strong); font: 500 calc(17px * var(--selector-scale)) / 1.2 var(--sans); }
 .project-dispatch p:not(.project-bench-label) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; margin: 0; color: var(--text); font: calc(14px * var(--selector-scale)) / 1.45 var(--sans); }
 .project-dispatch small { color: var(--muted); font: calc(11px * var(--selector-scale)) / 1.2 var(--mono); }
+/* The screen always keeps the right half, the same size for every project, note or not. */
+.project-build-sheet ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; color: var(--text); font: calc(12px * var(--selector-scale)) / 1.35 var(--mono); overflow-wrap: anywhere; }
+.project-build-sheet li { padding-block: 3px; border-block-end: 1px dashed var(--line); }
+.project-bench-deck > .project-screen { grid-column: 2; }
 .project-screen { position: relative; display: grid; grid-template-rows: minmax(calc(70px * var(--selector-scale)), 1fr) auto; gap: calc(8px * var(--selector-scale)); min-inline-size: 0; margin: 0; padding: calc(7px * var(--selector-scale)); border: 1px solid var(--line-strong); background: var(--reader-well); }
 .project-screen:not([data-lit]) { grid-template-rows: auto; align-self: start; justify-self: start; inline-size: min(100%, calc(340px * var(--selector-scale))); padding: calc(12px * var(--selector-scale)) calc(14px * var(--selector-scale)); border-color: var(--line); background: rgba(var(--tone-well, 12, 16, 14), .42); }
 .project-screen-glass { position: relative; overflow: hidden; min-block-size: 0; background: rgb(6 8 7); box-shadow: inset 0 0 0 1px rgba(var(--tone-ink, 217, 213, 193), .1), inset 0 2px 10px rgb(0 0 0 / .5); }
@@ -2910,10 +2865,64 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .section-page--logs {
   --section-index-max-inline: var(--section-split-max-inline);
+  --section-page-gap: 0px;
+  --section-title-offset: 0px;
+  --instrument-outline: var(--line);
   inline-size: min(100%, var(--section-index-max-inline));
   max-inline-size: var(--section-index-max-inline);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
+}
+
+/* Field Desk: the papers lie on a dark desk under one lamp. The lamp pool sits behind the stack,
+   the desk darkens toward its edges, and the plate above casts a soft shadow onto it. */
+@media (min-width: 761px) {
+  .section-page--logs > .field-paper-tools { display: none; }
+  .section-page--logs > .field-paper-desk {
+    --desk-lamp: 255 236 204;
+    border: 1px solid var(--instrument-outline);
+    border-block-start: 0;
+    background:
+      linear-gradient(180deg, rgb(0 0 0 / .3), transparent 26px),
+      radial-gradient(ellipse 46% 62% at 50% 44%, rgb(var(--desk-lamp) / .1), rgb(var(--desk-lamp) / .035) 58%, transparent 82%),
+      radial-gradient(ellipse at 50% 50%, transparent 52%, rgb(0 0 0 / .32) 112%),
+      repeating-linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), .014) 0 1px, transparent 1px 5px),
+      color-mix(in srgb, rgb(var(--tone-surface, 8, 9, 8)), rgb(var(--tone-ink, 217, 213, 193)) 3%);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .2);
+  }
+  :root[data-appearance="day"] .section-page--logs > .field-paper-desk {
+    background:
+      linear-gradient(180deg, rgb(43 55 48 / .1), transparent 22px),
+      radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(43 55 48 / .1) 115%),
+      repeating-linear-gradient(90deg, rgba(var(--tone-ink, 217, 213, 193), .02) 0 1px, transparent 1px 5px),
+      rgba(var(--tone-surface, 8, 9, 8), .78);
+  }
+  /* At Night the paper is lit by the lamp, not by itself: a dimmer, warmer sheet that falls off
+     toward its edges and sits on the desk with a real contact shadow. The reading window keeps
+     its full-brightness paper for legibility. */
+  :root:not([data-appearance="day"]) .section-page--logs .field-paper-desk {
+    --field-sheet: #d3ccb8;
+    --field-under: #bfb8a4;
+    --field-corner: #ded7c3;
+    --field-fold-light: rgb(255 255 255 / .32);
+    --field-shadow: rgb(0 0 0 / .72);
+  }
+  :root:not([data-appearance="day"]) .section-page--logs .field-paper-face {
+    background:
+      radial-gradient(ellipse 120% 90% at 50% 18%, transparent 38%, rgb(24 18 10 / .24) 100%),
+      var(--field-fibers) repeat,
+      linear-gradient(104deg, var(--field-fold-dark), transparent 18%),
+      var(--field-sheet);
+    box-shadow: 0 18px 26px -12px var(--field-shadow), 0 2px 3px rgb(0 0 0 / .35);
+  }
+  :root:not([data-appearance="day"]) .section-page--logs .field-paper-peek > .field-paper-face {
+    background-color: var(--field-under);
+  }
+}
+
+@media (max-width: 760px) {
+  .section-page--logs { grid-template-rows: minmax(0, 1fr); }
+  .section-page--logs > .section-page-header { display: none; }
 }
 
 .field-paper-tools {
@@ -5299,7 +5308,6 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   }
   .archive-shell > .boot-screen .boot-loader > span { font-size: calc(64px * var(--desktop-size)); }
   .archive-shell > .boot-screen .boot-status { font-size: calc(14px * var(--desktop-size)); }
-  .archive-shell > .boot-screen .boot-meter { block-size: calc(12px * var(--desktop-size)); padding: calc(2px * var(--desktop-size)); }
 
   .archive-shell > .sidebar {
     gap: calc(28px * var(--desktop-size));
@@ -5388,7 +5396,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   }
   .archive-shell > .workspace > .dashboard-grid .weather-temp { font-size: calc(34px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid .weather-readout { gap: calc(6px * var(--desktop-size)); }
-  .archive-shell > .workspace > .dashboard-grid .weather-action { inline-size: calc(32px * var(--desktop-size)); block-size: calc(32px * var(--desktop-size)); }
+  .archive-shell > .workspace > .dashboard-grid .weather-action { inline-size: var(--weather-instrument); block-size: var(--weather-instrument); }
   .archive-shell > .workspace > .dashboard-grid .weather-action-icon { inline-size: calc(22px * var(--desktop-size)); block-size: calc(22px * var(--desktop-size)); }
   .archive-shell > .workspace > .dashboard-grid :is(.weather-condition, .weather-meta span, .weather-note) { font-size: calc(12px * var(--desktop-size)); }
 
@@ -5644,6 +5652,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .weather-primary {
+  /* The refresh button and the thermograph window share one height. */
+  --weather-instrument: calc(34px * var(--desktop-size, 1));
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
@@ -5685,13 +5695,15 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   grid-area: condition;
 }
 
-/* Thermograph: the next hours as one fine line, with now marked at its start. */
-.weather-trace { grid-area: trace; align-self: stretch; block-size: 0; min-block-size: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 2px; min-inline-size: 0; max-inline-size: calc(170px * var(--desktop-size, 1)); }
+/* Thermograph: the next hours drawn in a small recessed window of its own, set apart from the
+   reading, with two faint grid lines so the trace reads as an instrument, not a mark on the plate. */
+.weather-trace { grid-area: trace; justify-self: end; align-self: start; block-size: var(--weather-instrument); min-block-size: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 3px; inline-size: min(100%, calc(150px * var(--desktop-size, 1))); min-inline-size: 0; margin-inline-start: clamp(6px, 1vw, 14px); padding: 5px 8px 4px; border: 1px solid rgba(var(--tone-ink, 217, 213, 193), .14); border-block-start-color: rgb(0 0 0 / .5); background: repeating-linear-gradient(180deg, transparent 0 calc(33.3% - 1px), rgba(var(--tone-ink, 217, 213, 193), .07) calc(33.3% - 1px) 33.3%) 0 5px / 100% calc(100% - 22px) no-repeat, rgb(0 0 0 / .22); box-shadow: inset 0 1px 3px rgb(0 0 0 / .45); }
 .weather-trace:empty { visibility: hidden; }
 .weather-trace svg { inline-size: 100%; block-size: 100%; min-block-size: 0; overflow: visible; }
-.weather-trace polyline { fill: none; stroke: var(--text); stroke-width: 1.25; stroke-linejoin: round; opacity: .72; }
-.weather-trace circle { fill: var(--text-strong); stroke: rgba(var(--tone-strong, 236, 230, 211), .35); stroke-width: 3; }
-.weather-trace small { display: flex; justify-content: space-between; gap: 6px; color: var(--muted); font: calc(10px * var(--desktop-size, 1)) / 1 var(--mono); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.weather-trace polyline { fill: none; stroke: var(--text); stroke-width: 1.1; stroke-linejoin: round; stroke-linecap: round; opacity: .78; }
+.weather-trace circle { fill: var(--text-strong); stroke: rgba(var(--tone-strong, 236, 230, 211), .3); stroke-width: 3; }
+.weather-trace small { display: flex; justify-content: space-between; gap: 6px; color: var(--muted); font: calc(9px * var(--desktop-size, 1)) / 1 var(--mono); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+:root[data-appearance="day"] .weather-trace { border-block-start-color: rgb(43 55 48 / .3); background-color: rgb(255 255 255 / .3); box-shadow: inset 0 1px 2px rgb(43 55 48 / .18); }
 
 .weather-condition,
 .weather-meta span,
@@ -5720,12 +5732,11 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   justify-self: end;
   align-self: start;
   flex: 0 0 auto;
-  inline-size: 32px;
-  block-size: 32px;
+  inline-size: var(--weather-instrument, 32px);
+  block-size: var(--weather-instrument, 32px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-block-start: 1px;
   padding: 0;
   border: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.2);
   background: transparent;
@@ -5985,8 +5996,8 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 .memory-loop[data-memory-offscreen] *::after { animation-play-state: paused !important; }
 
 /* These one-shot cues share the boot clock; only ambient loops pause when covered. */
-.archive-shell.is-booting:not(.is-quick-boot) .dashboard-panel[data-boot-module],
-.archive-shell.is-booting:not(.is-quick-boot) .dashboard-panel[data-boot-module] > :is(h2, div, .dashboard-boot-readout) { animation-play-state: running !important; }
+.archive-shell.is-booting .dashboard-panel[data-boot-module],
+.archive-shell.is-booting .dashboard-grid :is(.memory-trace, .game-cover) { animation-play-state: running !important; }
 
 .workspace-footer {
   position: absolute;
@@ -6084,7 +6095,7 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 
 .record-window.is-access-pending {
   border-color: transparent;
-  animation: window-in 200ms ease-out, record-window-edge-flow 850ms ease-out 2150ms both;
+  animation: window-in 200ms ease-out, record-window-edge-flow 120ms linear 360ms both;
 }
 
 .record-window.is-access-pending .record-access-surface {
@@ -6097,82 +6108,85 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   visibility: hidden;
 }
 
+/* Record access: one timeline on a fixed beat. The frame draws (0-360ms), the access plate reads
+   (120-880ms), then the plate shutters into a line (880-1040ms) and the record unfolds behind it
+   from centre lines, with labels arriving as a hard flicker (900-1300ms). One easing throughout. */
 .record-window.is-access-pending .record-access-identity small:first-child {
-  animation: record-access-micro-in 300ms ease-out 180ms both;
+  animation: record-access-micro-in 160ms linear 200ms both;
 }
 
 .record-window.is-access-pending .record-access-state {
-  animation: record-access-micro-in 300ms ease-out 480ms both;
+  animation: record-access-micro-in 160ms linear 320ms both;
 }
 
 .record-window.is-access-pending .record-access-surface::before {
-  animation: record-access-grid-in 1700ms ease-out both;
+  animation: record-access-grid-in 760ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
 }
 
 .record-window.is-access-pending .record-access-scan {
-  animation: record-access-scan-pass 1500ms cubic-bezier(0.2, 0.65, 0.25, 1) 260ms both;
+  animation: record-access-scan-pass 600ms cubic-bezier(0.16, 1, 0.3, 1) 240ms both;
 }
 
 .record-window.is-access-pending .record-access-rule--top {
-  animation: record-access-draw-horizontal 780ms cubic-bezier(0.2, 0.7, 0.25, 1) 100ms both;
+  animation: record-access-draw-horizontal 240ms cubic-bezier(0.16, 1, 0.3, 1) 0ms both;
 }
 
 .record-window.is-access-pending .record-access-rule--right {
-  animation: record-access-draw-vertical 620ms cubic-bezier(0.2, 0.7, 0.25, 1) 500ms both;
+  animation: record-access-draw-vertical 240ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
 }
 
 .record-window.is-access-pending .record-access-rule--bottom {
-  animation: record-access-draw-horizontal 720ms cubic-bezier(0.2, 0.7, 0.25, 1) 760ms both;
+  animation: record-access-draw-horizontal 240ms cubic-bezier(0.16, 1, 0.3, 1) 0ms both;
 }
 
 .record-window.is-access-pending .record-access-rule--left {
-  animation: record-access-draw-vertical 620ms cubic-bezier(0.2, 0.7, 0.25, 1) 1020ms both;
+  animation: record-access-draw-vertical 240ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
 }
 
 .record-window.is-access-pending .record-access-corners i {
-  animation: record-access-corner-in 420ms cubic-bezier(0.16, 0.8, 0.25, 1) both;
+  animation: record-access-corner-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.record-window.is-access-pending .record-access-corners i:nth-child(1) { animation-delay: 180ms; }
-.record-window.is-access-pending .record-access-corners i:nth-child(2) { animation-delay: 420ms; }
-.record-window.is-access-pending .record-access-corners i:nth-child(3) { animation-delay: 660ms; }
-.record-window.is-access-pending .record-access-corners i:nth-child(4) { animation-delay: 900ms; }
+.record-window.is-access-pending .record-access-corners i:nth-child(1) { animation-delay: 200ms; }
+.record-window.is-access-pending .record-access-corners i:nth-child(2) { animation-delay: 240ms; }
+.record-window.is-access-pending .record-access-corners i:nth-child(3) { animation-delay: 280ms; }
+.record-window.is-access-pending .record-access-corners i:nth-child(4) { animation-delay: 320ms; }
 
 .record-window.is-access-pending .record-access-traces i:nth-child(1) {
-  animation: record-access-draw-horizontal 620ms cubic-bezier(0.2, 0.7, 0.25, 1) 360ms both;
+  animation: record-access-draw-horizontal 240ms cubic-bezier(0.16, 1, 0.3, 1) 240ms both;
 }
 
 .record-window.is-access-pending .record-access-traces i:nth-child(2) {
-  animation: record-access-draw-horizontal 700ms cubic-bezier(0.2, 0.7, 0.25, 1) 680ms both;
+  animation: record-access-draw-horizontal 240ms cubic-bezier(0.16, 1, 0.3, 1) 240ms both;
 }
 
 .record-window.is-access-pending .record-access-traces i:nth-child(3) {
-  animation: record-access-draw-vertical 500ms cubic-bezier(0.2, 0.7, 0.25, 1) 520ms both;
+  animation: record-access-draw-vertical 240ms cubic-bezier(0.16, 1, 0.3, 1) 360ms both;
 }
 
 .record-window.is-access-pending .record-access-traces i:nth-child(4) {
-  animation: record-access-draw-vertical 560ms cubic-bezier(0.2, 0.7, 0.25, 1) 940ms both;
+  animation: record-access-draw-vertical 240ms cubic-bezier(0.16, 1, 0.3, 1) 360ms both;
 }
 
 .record-window.is-access-pending .record-access-ticks i {
-  animation: record-access-tick-rise 240ms ease-out both;
+  animation: record-access-tick-rise 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.record-window.is-access-pending .record-access-ticks i:nth-child(1) { animation-delay: 440ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(2) { animation-delay: 500ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(3) { animation-delay: 560ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(4) { animation-delay: 620ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(5) { animation-delay: 680ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(6) { animation-delay: 740ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(7) { animation-delay: 800ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(8) { animation-delay: 860ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(9) { animation-delay: 920ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(10) { animation-delay: 980ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(11) { animation-delay: 1040ms; }
-.record-window.is-access-pending .record-access-ticks i:nth-child(12) { animation-delay: 1100ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(1) { animation-delay: 360ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(2) { animation-delay: 384ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(3) { animation-delay: 408ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(4) { animation-delay: 432ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(5) { animation-delay: 456ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(6) { animation-delay: 480ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(7) { animation-delay: 504ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(8) { animation-delay: 528ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(9) { animation-delay: 552ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(10) { animation-delay: 576ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(11) { animation-delay: 600ms; }
+.record-window.is-access-pending .record-access-ticks i:nth-child(12) { animation-delay: 624ms; }
 
 .record-window.is-access-pending .record-access-meter i {
-  animation: record-access-progress 1750ms linear both;
+  animation: record-access-progress 480ms linear 320ms both;
 }
 
 @media (max-width: 760px) {
@@ -6185,8 +6199,10 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
   }
 }
 
+/* The plate leaves by closing into a line, never by dissolving over the record. */
 .record-window.is-access-pending .record-access-surface {
-  animation: record-access-surface-flow 3250ms linear both;
+  transform-origin: center;
+  animation: record-access-shutter 160ms cubic-bezier(0.7, 0, 0.84, 0) 880ms both;
 }
 
 .record-window.is-access-pending > :not(.record-access-surface) {
@@ -6194,81 +6210,91 @@ html:has(body > :is(.web-search-dialog, .connections-dialog)[open]), body:has(> 
 }
 
 .record-window.is-access-pending .record-access-identity {
-  animation: record-access-identity-flow 1900ms ease-out 20ms both;
+  animation: record-access-flash 160ms linear 120ms both;
 }
 
 .record-window.is-access-pending .record-access-surface::after {
-  animation: record-access-sweep 1120ms cubic-bezier(0.2, 0.7, 0.25, 1) 1580ms both;
+  animation: record-access-sweep 240ms cubic-bezier(0.16, 1, 0.3, 1) 640ms both;
 }
 
 .record-window.is-access-pending > .window-bar {
-  animation: record-content-header 820ms cubic-bezier(0.2, 0.7, 0.25, 1) 1600ms both;
+  transform-origin: center;
+  animation: record-content-header 200ms cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
 }
 
 .record-window.is-access-pending > .record-layout {
-  animation: record-content-build 1480ms cubic-bezier(0.18, 0.72, 0.22, 1) 1560ms both;
+  transform-origin: center;
+  animation: record-content-build 240ms cubic-bezier(0.16, 1, 0.3, 1) 940ms both;
 }
 
 .record-window.is-access-pending .record-heading .heading-banner-image {
-  animation: record-banner-materialize 980ms cubic-bezier(0.2, 0.68, 0.24, 1) 1580ms both;
+  animation: record-banner-materialize 360ms cubic-bezier(0.16, 1, 0.3, 1) 940ms both;
 }
 
 .record-window.is-access-pending .record-heading .record-kind,
 .record-window.is-access-pending .record-heading .record-id {
-  animation: record-label-materialize 520ms cubic-bezier(0.18, 0.72, 0.22, 1) 1680ms both;
+  animation: record-label-materialize 160ms linear 980ms both;
 }
 
 .record-window.is-access-pending .record-heading h2 {
-  animation: record-title-materialize 680ms cubic-bezier(0.18, 0.72, 0.22, 1) 1820ms both;
+  animation: record-title-materialize 360ms linear 1020ms both;
 }
 
 .record-window.is-access-pending .record-heading p {
-  animation: record-label-materialize 640ms cubic-bezier(0.18, 0.72, 0.22, 1) 1940ms both;
+  animation: record-label-materialize 160ms linear 1060ms both;
 }
 
 .record-window.is-access-pending .record-main > :is(.record-content-view, .pocket-record-contents) {
-  animation: record-panel-populate 900ms cubic-bezier(0.18, 0.72, 0.22, 1) 2050ms both;
+  transform-origin: center;
+  animation: record-panel-populate 240ms cubic-bezier(0.16, 1, 0.3, 1) 1100ms both;
 }
 
 .record-window.is-access-pending .overview-stack .record-section h3 {
-  animation: record-content-heading-bloom 720ms ease-out 2220ms both;
+  animation: record-content-heading-bloom 480ms ease-out 1220ms both;
 }
 
 .record-window.is-access-pending .content-terminal .terminal-title {
-  animation: record-content-heading-bloom 720ms ease-out 2180ms both;
+  animation: record-content-heading-bloom 480ms ease-out 1180ms both;
 }
 
 .record-window.is-access-pending .overview-stack > .banner-frame,
 .record-window.is-access-pending .overview-stack > .empty-banner {
-  animation: record-panel-populate 700ms cubic-bezier(0.18, 0.72, 0.22, 1) 2050ms both;
+  transform-origin: center;
+  animation: record-panel-populate 240ms cubic-bezier(0.16, 1, 0.3, 1) 1100ms both;
 }
 
 .record-window.is-access-pending .overview-stack > .record-section:nth-of-type(1) {
-  animation: record-panel-populate 700ms cubic-bezier(0.18, 0.72, 0.22, 1) 2200ms both;
+  transform-origin: center;
+  animation: record-panel-populate 240ms cubic-bezier(0.16, 1, 0.3, 1) 1140ms both;
 }
 
 .record-window.is-access-pending .overview-stack > .record-section:nth-of-type(2) {
-  animation: record-panel-populate 700ms cubic-bezier(0.18, 0.72, 0.22, 1) 2350ms both;
+  transform-origin: center;
+  animation: record-panel-populate 240ms cubic-bezier(0.16, 1, 0.3, 1) 1180ms both;
 }
 
 .record-window.is-access-pending > .record-layout .record-aside {
-  animation: record-aside-materialize 900ms cubic-bezier(0.18, 0.72, 0.22, 1) 1750ms both;
+  transform-origin: center;
+  animation: record-aside-materialize 240ms cubic-bezier(0.16, 1, 0.3, 1) 1020ms both;
 }
 
 .record-window.is-access-pending > .setup-window-shell {
-  animation: record-content-build 1480ms cubic-bezier(0.18, 0.72, 0.22, 1) 1560ms both;
+  transform-origin: center;
+  animation: record-content-build 240ms cubic-bezier(0.16, 1, 0.3, 1) 940ms both;
 }
 
 .record-window.is-access-pending .setup-console-prompt {
-  animation: record-content-header 820ms cubic-bezier(0.2, 0.7, 0.25, 1) 1660ms both;
+  animation: record-content-header 200ms cubic-bezier(0.16, 1, 0.3, 1) 980ms both;
 }
 
 .record-window.is-access-pending .setup-console-body {
-  animation: record-panel-populate 980ms cubic-bezier(0.18, 0.72, 0.22, 1) 2000ms both;
+  transform-origin: center;
+  animation: record-panel-populate 240ms cubic-bezier(0.16, 1, 0.3, 1) 1100ms both;
 }
 
 .record-window.is-access-pending .setup-notes-terminal {
-  animation: record-panel-populate 850ms cubic-bezier(0.18, 0.72, 0.25, 1) 2200ms both;
+  transform-origin: center;
+  animation: record-panel-populate 240ms cubic-bezier(0.16, 1, 0.3, 1) 1180ms both;
 }
 
 .record-window.is-access-complete {
@@ -8815,37 +8841,22 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   to { opacity: 0.78; transform: scaleY(1); }
 }
 
-@keyframes record-access-surface-flow {
-  0%,
-  48% { opacity: 1; }
-  64% { opacity: 0.62; }
-  80% { opacity: 0.18; }
-  92%,
-  100% { opacity: 0; }
-}
-
 @keyframes record-window-edge-flow {
   from { border-color: transparent; }
   to { border-color: var(--window-outline); }
 }
 
-@keyframes record-access-identity-flow {
-  0% { opacity: 0; }
-  8%,
-  68% { opacity: 1; }
-  88%,
-  100% { opacity: 0; }
-}
-
 @keyframes record-content-header {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: scaleY(0.04); }
+  30% { opacity: 1; }
+  to { opacity: 1; transform: scaleY(1); }
 }
 
 /* The access surface draws the frame; nested content does not need more masks. */
 @keyframes record-content-build {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scaleY(0.02); }
+  35% { opacity: 1; }
+  to { opacity: 1; transform: scaleY(1); }
 }
 
 @keyframes record-banner-materialize {
@@ -8854,14 +8865,18 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 
 @keyframes record-label-materialize {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  50% { opacity: 0.3; }
+  70%, 100% { opacity: 1; }
 }
 
 @keyframes record-title-materialize {
-  0% { opacity: 0; transform: translateY(8px); text-shadow: none; }
-  58% { opacity: 1; transform: translateY(0); text-shadow: 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.3); }
-  100% { opacity: 1; transform: translateY(0); text-shadow: 0 0 0 rgba(var(--tone-ink, 217, 213, 193), 0); }
+  0% { opacity: 0; text-shadow: none; }
+  18% { opacity: 1; text-shadow: 0 0 18px rgba(var(--tone-ink, 217, 213, 193), 0.34); }
+  30% { opacity: 0.35; }
+  44% { opacity: 1; text-shadow: 0 0 14px rgba(var(--tone-ink, 217, 213, 193), 0.24); }
+  100% { opacity: 1; text-shadow: 0 0 0 rgba(var(--tone-ink, 217, 213, 193), 0); }
 }
 
 @keyframes record-content-heading-bloom {
@@ -8871,13 +8886,15 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 }
 
 @keyframes record-panel-populate {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scaleY(0.02); }
+  35% { opacity: 1; }
+  to { opacity: 1; transform: scaleY(1); }
 }
 
 @keyframes record-aside-materialize {
-  from { opacity: 0; transform: translateX(8px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: scaleY(0.02); }
+  35% { opacity: 1; }
+  to { opacity: 1; transform: scaleY(1); }
 }
 
 @keyframes record-access-micro-in {
@@ -9030,36 +9047,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   79.23% { opacity: 0.44; transform: translateX(2px); }
 }
 
-@keyframes boot-exit {
-  from { opacity: 1; }
-
-  100% {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
-@keyframes quick-boot-exit {
-  0%, 80% { opacity: 1; }
-  100% { opacity: 0; visibility: hidden; }
-}
-
-@keyframes boot-loader-exit {
-  from { opacity: 1; }
-  to { opacity: 0; visibility: hidden; }
-}
-
-@keyframes boot-session {
-  0% { opacity: 0; }
-  18%, 70% { opacity: 1; }
-  88%, 100% { opacity: 0; visibility: hidden; }
-}
-
-@keyframes boot-artwork {
-  0%, 44% { opacity: 0; }
-  60%, 100% { opacity: 0.22; }
-}
-
 @keyframes boot-type {
   from {
     clip-path: inset(0 100% 0 0);
@@ -9080,47 +9067,6 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   31% { opacity: 0.82; }
   73% { opacity: 0.74; }
 }
-@keyframes boot-load {
-  0% { transform: scaleX(0); }
-  12% { transform: scaleX(0.18); }
-  23% { transform: scaleX(0.195); }
-  40% { transform: scaleX(0.49); }
-  53% { transform: scaleX(0.515); }
-  79% { transform: scaleX(0.84); }
-  86% { transform: scaleX(0.86); }
-  100% { transform: scaleX(1); }
-}
-@keyframes boot-load-probe {
-  0% { transform: scaleX(0); }
-  9% { transform: scaleX(0.08); }
-  26% { transform: scaleX(0.105); }
-  49% { transform: scaleX(0.64); }
-  57% { transform: scaleX(0.655); }
-  83% { transform: scaleX(0.91); }
-  88% { transform: scaleX(0.92); }
-  100% { transform: scaleX(1); }
-}
-@keyframes boot-load-stream {
-  0% { transform: scaleX(0); }
-  20% { transform: scaleX(0.34); }
-  28% { transform: scaleX(0.36); }
-  52% { transform: scaleX(0.63); }
-  60% { transform: scaleX(0.645); }
-  89% { transform: scaleX(0.96); }
-  93% { transform: scaleX(0.965); }
-  100% { transform: scaleX(1); }
-}
-@keyframes boot-load-verify {
-  0% { transform: scaleX(0); }
-  15% { transform: scaleX(0.24); }
-  20% { transform: scaleX(0.25); }
-  44% { transform: scaleX(0.58); }
-  50% { transform: scaleX(0.6); }
-  70% { transform: scaleX(0.86); }
-  88% { transform: scaleX(0.885); }
-  100% { transform: scaleX(1); }
-}
-
 @keyframes memory-drift {
   from {
     transform: translate3d(-3%, -1%, 0) scale(1);
@@ -10633,7 +10579,8 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     visibility: visible;
   }
 
-  .boot-screen {
+  .boot-screen,
+  .boot-thread {
     display: none;
   }
 
@@ -10653,4 +10600,85 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 
   .game-cover::before { animation: none; }
   .activity-feed li[data-activity-age="new"] .activity-badge::after { display: none; }
+}
+
+@keyframes record-access-shutter {
+  from { transform: scaleY(1); opacity: 1; }
+  92% { transform: scaleY(0.004); opacity: 1; }
+  to { transform: scaleY(0.004); opacity: 0; }
+}
+
+@keyframes record-access-flash {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  50% { opacity: 0.35; }
+  70%, 100% { opacity: 1; }
+}
+
+/* Shared plate material. One recipe in three levels, so every section reads as the same hardware
+   as the Dashboard: a PLATE is the heavy outer object (lit top rim, solid face, fine grain, contact
+   shadow); a WELL is a channel recessed into a plate; a CARD is a light piece raised inside a well.
+   Desktop only: handheld keeps its own pocket design. */
+:root {
+  --plate-face: color-mix(in srgb, rgb(var(--tone-surface, 8, 9, 8)), rgb(var(--tone-ink, 217, 213, 193)) 4%);
+  --plate-finish: linear-gradient(180deg, rgb(255 255 255 / .06), transparent 42%);
+  --plate-grain: repeating-linear-gradient(90deg, transparent 0 34px, rgba(var(--tone-ink, 217, 213, 193), .014) 35px, transparent 36px 78px), linear-gradient(90deg, rgb(255 255 255 / .022), transparent 52%);
+  --plate-edge: rgba(var(--tone-ink, 217, 213, 193), .2);
+  --plate-rim: rgba(var(--tone-strong, 236, 230, 211), .26);
+  --plate-contact: rgb(0 0 0 / .6);
+  --well-face: rgb(0 0 0 / .24);
+  --well-shadow: inset 0 2px 5px rgb(0 0 0 / .5), inset 0 0 0 1px rgb(0 0 0 / .28), inset 0 -1px 0 rgba(var(--tone-ink, 217, 213, 193), .06);
+  --card-lift: 0 2px 3px -1px rgb(0 0 0 / .5);
+}
+:root[data-appearance="day"] {
+  --plate-face: rgba(var(--tone-surface, 208, 212, 204), .9);
+  --plate-finish: linear-gradient(180deg, rgb(255 255 255 / .34), transparent 42%);
+  --plate-grain: repeating-linear-gradient(90deg, transparent 0 34px, rgba(var(--tone-ink, 37, 44, 41), .018) 35px, transparent 36px 78px);
+  --plate-edge: rgba(var(--tone-ink, 37, 44, 41), .18);
+  --plate-rim: rgb(255 255 255 / .66);
+  --plate-contact: rgb(43 55 48 / .26);
+  --well-face: rgb(43 55 48 / .06);
+  --well-shadow: inset 0 2px 4px rgb(43 55 48 / .16), inset 0 -1px 0 rgb(255 255 255 / .5);
+  --card-lift: 0 2px 3px -1px rgb(43 55 48 / .2);
+}
+
+@media (min-width: 761px) {
+  /* Plates: every section header, and the bodies that hang beneath them. */
+  .workspace > .section-page > .section-page-header,
+  .workspace > .section-page > .record-selector,
+  .workspace > .section-page--logs > .field-paper-desk,
+  .workspace .setup-group,
+  .workspace .archive-manager {
+    border-color: var(--plate-edge);
+    border-block-start-color: var(--plate-rim);
+    box-shadow: 0 5px 8px -4px var(--plate-contact), inset 0 -1px 0 var(--plate-contact);
+  }
+  .workspace > .section-page > .section-page-header {
+    background: linear-gradient(110deg, var(--section-accent-soft), transparent 62%), var(--plate-finish), var(--plate-grain), var(--plate-face);
+  }
+  .workspace .setup-group,
+  .workspace .archive-manager,
+  .workspace > .section-page > .record-selector {
+    background: var(--plate-finish), var(--plate-grain), var(--plate-face);
+  }
+  /* A header and the body beneath it are one plate: one rim on top, one contact shadow below. */
+  .workspace > .section-page > .section-page-header:has(+ :is(.record-selector, .field-paper-desk, .field-paper-tools)) { box-shadow: inset 0 -1px 0 var(--plate-edge); }
+  .workspace > .section-page > :is(.record-selector, .field-paper-desk) { border-block-start: 0; }
+  .workspace > .section-page > .record-selector { background: var(--plate-grain), var(--plate-face); }
+
+  /* Wells: channels set into a plate. */
+  .workspace .record-selector--games .game-shelf-track,
+  .workspace .project-spines {
+    background: var(--well-face);
+    box-shadow: var(--well-shadow);
+  }
+  .workspace .record-selector--games .game-shelf-track { padding-block: 2px; }
+  .workspace .project-spines { padding: calc(8px * var(--selector-scale)); }
+  .workspace > .section-page--logs > .field-paper-desk { box-shadow: 0 5px 8px -4px var(--plate-contact), var(--well-shadow); }
+
+  /* Cards: light pieces raised inside a plate or well. */
+  .workspace :is(.project-dispatch, .project-spine, .game-drive) {
+    border-block-start-color: var(--plate-rim);
+    box-shadow: var(--card-lift);
+  }
 }

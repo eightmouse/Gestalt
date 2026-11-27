@@ -43,7 +43,7 @@ for (const source of [reactBoot, staticBoot.getText(ast)]) {
       continue;
     }
     assert.equal(completed, 0, "No early consent/completion");
-    assert.equal([...timers.values()][0].delay, mode === "quick" ? 2300 : 11400, "Rebuilds keep the chosen startup deadline");
+    assert.equal([...timers.values()][0].delay, mode === "quick" ? 1100 : 2500, "Rebuilds keep the chosen startup deadline");
     [...timers.values()][0].callback();
     assert.equal(completed, 1);
     assert.equal(timers.size, 0);
@@ -96,7 +96,7 @@ for (const sample of [...Array.from({ length: 257 }, (_, index) => index / 257),
   signalDetails.add(JSON.stringify([...styles]));
 }
 assert.ok(signalDetails.size > 250, "Variation is finer than four repeated scripted timings");
-const curves = new Set();
+const statusDuration = parseInt(declarations(sheet.nodes.find((node) => node.selector === ".boot-status.headline-decode-text"))["--cipher-duration"]);
 for (const [index, profile] of behaviour.bootProfiles.entries()) {
   let draws = 0;
   const attributes = new Map();
@@ -106,28 +106,10 @@ for (const [index, profile] of behaviour.bootProfiles.entries()) {
   assert.equal(draws, 1, "One profile per document, not per render/section/palette");
   const override = sheet.nodes.find((node) => node.selector === `:root[data-boot-profile="${profile}"] .boot-screen`);
   const values = { ...bootDefaults, ...(override ? declarations(override) : {}) };
-  const meter = sheet.nodes.find((node) => node.type === "atrule" && node.name === "keyframes" && node.params === values["--boot-meter-sequence"]);
-  assert.ok(meter, `Missing progress curve ${profile}`);
-  const points = meter.nodes.flatMap((node) => {
-    const scale = Number(declarations(node).transform.match(/^scaleX\(([\d.]+)\)$/)?.[1]);
-    return node.selector.split(",").map((percentage) => [Number(percentage.trim().replace("%", "")), scale]);
-  });
-  assert.deepEqual(points[0], [0, 0]);
-  assert.deepEqual(points.at(-1), [100, 1]);
-  for (let step = 1; step < points.length; step++) {
-    assert.ok(points[step][0] > points[step - 1][0]);
-    assert.ok(points[step][1] > points[step - 1][1] && points[step][1] <= 1, "Progress keeps moving without hard stops, reversal or overflow");
-  }
-  curves.add(JSON.stringify(points));
-  const speeds = points.slice(1).map((point, index) => (point[1] - points[index][1]) / (point[0] - points[index][0]));
-  assert.ok(Math.max(...speeds) > Math.min(...speeds) * 4, "Progress still hesitates and catches, rather than moving at a fixed rate");
-  const end = parseInt(values["--boot-meter-duration"]) + parseInt(values["--boot-meter-delay"]);
-  assert.ok(end >= 1800 && end <= 2220, "Every bar finishes before the existing loader handoff");
-  const statusDuration = parseInt(declarations(sheet.nodes.find((node) => node.selector === ".boot-status.headline-decode-text"))["--cipher-duration"]);
-  const textEnd = parseInt(values["--boot-status-delay"]) + statusDuration;
-  assert.ok(textEnd < 1800, "Status remains readable before the loader exits");
+  assert.ok(!Object.keys(values).some((key) => key.startsWith("--boot-meter")), "No scripted progress bar remains");
+  assert.ok(240 + parseInt(values["--boot-status-delay"]) + statusDuration < 1280, `${profile}: the status resolves before the loader cuts`);
+  assert.ok(240 + parseInt(values["--boot-word-delay"]) + parseInt(values["--boot-word-duration"]) < 1280, `${profile}: GESTALT is typed before the cut`);
 }
-assert.equal(curves.size, 4, "Four distinct rhythms, not the same curve renamed");
 for (const name of ["boot-signal-lock", "boot-signal-register"]) {
   const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
   assert.ok(frames);
@@ -152,56 +134,39 @@ assert.match(staticSource, /state\.bootDismissed \? "" : " is-booting"/);
 assert.match(staticSource, /state\.localMemory !== "prompt" \|\| !state\.bootDismissed/);
 assert.match(staticSource, /--boot-elapsed: -\$\{Math\.max\(0, performance\.now\(\) - bootStartedAt\)\}ms/);
 assert.match(staticSource, /if \(!state\.bootDismissed && !bootCleanup\)/);
-assert.match(css, /\.archive-shell\.is-booting \{ --boot-handoff-delay: 3960ms; --boot-meter-extension: 210ms; --boot-ui-extension: 720ms; \}/);
-assert.match(css, /\.archive-shell\.is-quick-boot \{ --boot-handoff-delay: 0ms; --boot-meter-extension: 0ms; \}/);
-assert.match(css, /boot-exit 830ms ease-in-out calc\(8280ms \+ var\(--boot-elapsed, 0ms\)\)/);
-assert.match(css, /boot-loader-exit 420ms ease-in-out calc\(2220ms \+ var\(--boot-meter-extension\) \+ var\(--boot-elapsed, 0ms\)\)/);
-assert.match(css, /boot-session 2670ms ease-in-out calc\(2288ms \+ var\(--boot-handoff-delay\) \+ var\(--boot-elapsed, 0ms\)\)/);
-assert.match(css, /\.archive-shell\.is-quick-boot > \.boot-screen \{\s*animation-name: quick-boot-exit;\s*animation-duration: 2800ms;/);
-assert.match(css, /\.archive-shell\.is-quick-boot :is\(\.boot-session, \.boot-process-log\) \{ display: none; \}/);
+// Power-on timeline: tube 0-440ms, readiness 520-1040ms, cut 1280ms, session 1300ms, handoff 2200ms (quick 760ms).
+assert.match(css, /\.archive-shell\.is-booting \{ --boot-on: 240ms; --boot-workspace-at: 2200ms; \}/);
+assert.match(css, /\.archive-shell\.is-quick-boot \{ --boot-workspace-at: 760ms; \}/);
+assert.match(css, /\.boot-tube \{[^}]*animation: boot-tube-on 440ms linear var\(--boot-elapsed, 0ms\) both;/, "The tube warms up first, on the boot clock");
+assert.match(css, /boot-shutter 200ms [^;]*calc\(var\(--boot-workspace-at, 2200ms\) \+ var\(--boot-elapsed, 0ms\)\) both/, "The screen leaves by shuttering into a line");
+assert.match(css, /\.archive-shell:not\(\.is-quick-boot\) \.boot-loader \{\s*animation: boot-cut 1ms linear calc\(1280ms \+ var\(--boot-elapsed, 0ms\)\) forwards;/, "The loader cuts, it never dissolves");
+assert.match(css, /\.archive-shell\.is-quick-boot :is\(\.boot-session, \.boot-readiness\) \{ display: none; \}/, "Quick start skips the readiness and session");
+for (const name of ["boot-exit", "quick-boot-exit", "boot-loader-exit", "boot-artwork", "boot-load", "boot-module-seat", "boot-module-readout"]) {
+  assert.ok(!css.includes(`@keyframes ${name} {`), `${name} is retired`);
+}
+assert.ok(!css.includes("boot-process-log") && !css.includes("dashboard-boot-readout") && !css.includes(".boot-meter"), "No scripted console, readouts or meter");
 assert.match(reactSource, /const done = \(\) => setBootComplete\(true\)/);
 assert.match(reactSource, /scheduleBootCompletion\(done, 0, startupMode\)/);
 assert.match(staticSource, /performance.now\(\) - bootStartedAt, state.startupMode/);
 assert.match(css, /\.boot-session \{\s*position: absolute;\s*grid-area: auto;\s*align-self: start;\s*inset-block-start: 38%;/, "Profile is anchored to the viewport, not the loader's centered grid cell");
-const sessionFrames = css.match(/@keyframes boot-session \{([\s\S]*?)\n\}/)?.[1];
-assert.ok(sessionFrames);
-const hold = sessionFrames.match(/([\d.]+)%, ([\d.]+)% \{ opacity: 1; \}/);
-assert.ok(hold);
-const fadeOutEnd = sessionFrames.match(/([\d.]+)%, 100% \{ opacity: 0; visibility: hidden; \}/);
-assert.ok(fadeOutEnd);
-const visibleMs = Number(fadeOutEnd[1]) * 2670 / 100;
-const consoleStart = 2710, consoleDuration = 3530, lineStart = 2800, lineWrite = 1;
-assert.equal(behaviour.bootProcesses.length, 24, "Full startup renders a tall process log");
-assert.ok(consoleStart + consoleDuration < 3960 + 2288, "Console clears before the profile appears");
-assert.ok(lineStart + behaviour.bootProcesses[0].at + lineWrite > 2220 + 210 + 420, "The first completed line follows the loader");
-assert.ok(lineStart + behaviour.bootProcesses.at(-1).at + lineWrite + 400 < consoleStart + consoleDuration, "The complete log holds before the cut");
-assert.ok(behaviour.bootProcesses.slice(1).filter((row, index) => row.at - behaviour.bootProcesses[index].at >= 300).length >= 2, "Startup has distinct phases rather than a fixed cadence");
-assert.match(css, /boot-process-window 3530ms linear calc\(2710ms/);
-assert.match(css, /@keyframes boot-process-window \{ from, to \{ visibility: visible; \} \}/, "The console cuts out without fading");
-assert.match(css, /boot-process-line 1ms linear calc\(2800ms \+ var\(--boot-line-time\)[^;]*forwards/, "Each console line stays visible once written");
-assert.ok(visibleMs >= 2200 && visibleMs <= 2450, "The operator phase leaves room for the module handoff");
-assert.ok((Number(hold[2]) - Number(hold[1])) * 2670 / 100 >= 1300, "The profile still has a readable hold before the workspace");
+assert.match(css, /\.boot-session \{[^}]*animation: boot-line-in 200ms linear calc\(1300ms \+ var\(--boot-elapsed, 0ms\)\) both;/, "The operator session arrives right after the cut and holds until the handoff");
+assert.ok(2200 - 1500 >= 700, "The session holds long enough to read");
 assert.match(css, /\.boot-session-mark \{[^}]*border-radius: 0;/, "The portrait frame is square");
-for (const [delay, duration] of [[3660, 1200], [3740, 1200], [3880, 1200], [4110, 970]]) {
-  assert.ok(css.includes(`boot-surface ${duration}ms ease-in-out calc(${delay}ms + var(--boot-handoff-delay) + var(--boot-ui-extension) + var(--boot-elapsed, 0ms)) both`));
-  assert.ok(3960 + 720 + delay + duration <= 11900, "All surfaces settle before controls are released");
-}
+assert.match(css, /\.boot-readiness li \{[^}]*animation: boot-line-in 160ms linear calc\(520ms \+ var\(--boot-line, 0\) \* 120ms \+ var\(--boot-elapsed, 0ms\)\) both;/, "Readiness lines land on one beat");
+assert.ok(520 + 3 * 120 + 160 + 240 <= 1280, "Every readiness line, including the last session, holds before the cut");
 const modules = Object.values(behaviour.bootModules);
 assert.deepEqual(modules.map(({ order }) => order), [0, 1, 2, 3, 4, 5]);
-assert.equal(new Set(modules.map(({ label }) => label)).size, 6, "Every plate has a distinct startup cue");
-assert.match(css, /--boot-module-at: calc\(9110ms \+ var\(--boot-module-order\) \* 210ms/);
-assert.match(css, /boot-module-seat 820ms/);
-for (const name of ["seat", "heading", "content"]) {
-  const frames = css.match(new RegExp(`@keyframes boot-module-${name} \\{([\\s\\S]*?)\\n\\}`))?.[1];
-  assert.ok(frames);
-  assert.doesNotMatch(frames, /clip-path|transform|height/, "Visible plates and their contents retain full bounds during startup");
+assert.match(css, /boot-plate-unfold 240ms [^;]*calc\(var\(--boot-workspace-at\) \+ 60ms \+ var\(--boot-row\) \* 80ms \+ var\(--boot-elapsed, 0ms\)\) both/, "Plates unfold row by row on one rhythm");
+assert.match(css, /\[data-boot-module="game"\], \[data-boot-module="log"\], \[data-boot-module="memory"\]\) \{ --boot-row: 1; \}/);
+assert.match(css, /\[data-boot-module="activity"\] \{ --boot-row: 2; \}/);
+assert.match(css, /boot-screen-flare 420ms ease-out calc\(var\(--boot-workspace-at\) \+ 360ms/, "The screens power on last");
+assert.ok(2200 + 360 + 420 <= 3000 && 760 + 360 + 420 <= 1600 && 2200 + 560 <= 3000, "The last flare settles before controls are released");
+assert.ok(2200 + 60 + 2 * 80 + 240 <= 3000, "The last plate settles before releasing inert");
+for (const name of ["boot-tube-on", "boot-shutter", "boot-plate-unfold"]) {
+  const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
+  assert.ok(frames, name);
+  frames.walkDecls((decl) => assert.ok(["transform", "opacity", "visibility"].includes(decl.prop), `${name} animates only transform and opacity`));
 }
-assert.match(css, /--boot-readout-delay: 55ms;\s*--boot-readout-duration: 1020ms;/);
-assert.match(css, /--boot-ready-at: calc\(var\(--boot-module-at\) \+ var\(--boot-readout-delay\) \+ var\(--boot-readout-duration\)\)/, "Module content cannot overlap its readout");
-assert.match(css, /boot-module-heading 320ms ease-out var\(--boot-ready-at\) both/);
-assert.match(css, /boot-module-content 520ms [^;]+ calc\(var\(--boot-ready-at\) \+ 80ms\) both/);
-assert.match(css, /@keyframes boot-module-content \{\s*from \{ opacity: 0; \}/);
-assert.ok(9110 + modules.at(-1).order * 210 + 55 + 1020 + 80 + 520 <= 11900, "The last plate settles before releasing inert");
 assert.match(read("components/archive/dashboard.tsx"), /osBehaviour\.bootModules\[title\]/);
 assert.match(staticSource, /window\.GestaltOsBehaviour\?\.bootModules\?\.\[title\]/);
 const reactScreen = read("components/archive/boot-screen.tsx");
@@ -240,22 +205,48 @@ assert.ok(read("lib/publish-paths.mjs").includes('"public/images/archive-backdro
 assert.ok(read("lib/publish-paths.mjs").includes('"public/images/eightmouse-avatar.png"'), "Content-only publishing cannot omit a changed profile asset");
 assert.match(reactSource, /if \(!bootComplete \|\| localMemory === "prompt"/);
 assert.match(staticSource, /if \(!state.bootDismissed \|\| state.localMemory === "prompt"\) return;/);
-assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.boot-screen \{\s*display: none;/);
+assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.boot-screen,\s*\.boot-thread \{\s*display: none;/, "Reduced Motion skips the whole power-on, including the thread");
+// Signature touches: the thread becomes the header rule, the last visit is remembered locally, and
+// Memory State's first lines are the boot itself.
+assert.match(css, /\.boot-thread \{[^}]*animation: boot-thread 560ms [^;]*calc\(var\(--boot-workspace-at\) \+ var\(--boot-elapsed, 0ms\)\) both;/);
+assert.match(css, /80% \{ opacity: 1; transform: translate\(var\(--thread-x, 0px\), var\(--thread-y, 0px\)\) scaleX\(var\(--thread-scale, 1\)\); \}/, "The thread lands on the measured header rule");
+assert.equal(behaviour.lastSessionLabel(undefined), null, "No local memory, no last-session line");
+assert.equal(behaviour.lastSessionLabel(null), "First session");
+const sessionNow = new Date(2026, 10, 27, 18, 0);
+assert.equal(behaviour.lastSessionLabel(new Date(2026, 10, 27, 9, 0).toISOString(), sessionNow), "Earlier today");
+assert.equal(behaviour.lastSessionLabel(new Date(2026, 10, 26, 23, 0).toISOString(), sessionNow), "Yesterday");
+assert.equal(behaviour.lastSessionLabel(new Date(2026, 10, 24, 12, 0).toISOString(), sessionNow), "3 days ago");
+assert.equal(behaviour.lastSessionLabel(new Date(2026, 8, 1, 12, 0).toISOString(), sessionNow), "01 / 09 / 2026");
+assert.equal(behaviour.lastSessionLabel("not a date", sessionNow), "First session");
+const sessionStore = new Map([["gestalt.local-memory", "session"]]);
+const sessionStorage = { getItem: (key) => sessionStore.get(key) ?? null, setItem: (key, value) => sessionStore.set(key, value) };
+assert.equal(behaviour.readLastSession(sessionStorage), undefined, "Without granted local memory nothing is read");
+assert.equal(behaviour.saveLastSession(sessionNow, sessionStorage), false, "Without granted local memory nothing is written");
+sessionStore.set("gestalt.local-memory", "granted");
+assert.equal(behaviour.readLastSession(sessionStorage), null);
+assert.equal(behaviour.saveLastSession(sessionNow, sessionStorage), true);
+assert.equal(behaviour.readLastSession(sessionStorage), sessionNow.toISOString(), "One local timestamp, nothing else");
+assert.deepEqual(behaviour.bootReadiness({ lastSession: "Yesterday" }).at(-1), { key: "session", label: "LAST SESSION", value: "Yesterday" });
+assert.equal(behaviour.bootReadiness({ lastSession: null }).length, 3);
 const headlineModule = vm.createContext({ exports: {}, require: (id) => id === "@/public/cipher-decode.js" ? cipherDecode : require(id) });
 vm.runInContext(ts.transpileModule(read("components/archive/headline-text.tsx"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText, headlineModule);
 const rendered = vm.createContext({ exports: {}, require: (id) => id === "@/components/archive/headline-text" ? headlineModule.exports : id === "@/public/os-behaviour.js" ? behaviour : require(id) });
 vm.runInContext(ts.transpileModule(reactScreen, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, rendered);
 const reactMarkup = renderToStaticMarkup(rendered.exports.BootScreen({ startupMode: "full" }));
-assert.doesNotMatch(renderToStaticMarkup(rendered.exports.BootScreen({ startupMode: "quick" })), /boot-process-log/);
-assert.match(staticSource, /state.startupMode === "full" \? `<ol class="boot-process-log">\$\{\(window.GestaltOsBehaviour\?\.bootProcesses/);
-assert.deepEqual([...reactMarkup.matchAll(/--boot-line-time:(\d+)ms"><span class="boot-process-stamp">([\d.]+)<\/span><span class="boot-process-state">\[ OK \]<\/span>([^<]+)/g)].map(([, at, stamp, label]) => ({ at: Number(at), stamp, label })), behaviour.bootProcesses);
+assert.doesNotMatch(renderToStaticMarkup(rendered.exports.BootScreen({ startupMode: "quick" })), /boot-readiness/);
+assert.match(staticSource, /state\.startupMode === "full" \? `<ol class="boot-readiness">\$\{bootReadinessLines\(\)\}<\/ol>` : ""/);
+assert.deepEqual([...reactMarkup.matchAll(/<li data-boot-line="(\w+)"><span>([A-Z]+)<\/span><b>([^<]+)<\/b><\/li>/g)].map(([, key, label, value]) => [key, label, value]), [["records", "RECORDS", "00 read"], ["appearance", "APPEARANCE", "Night"], ["steam", "STEAM", "Reading"]], "The full welcome reports real state, not a script");
+assert.deepEqual(behaviour.bootReadiness({ records: 63, appearance: "day", steam: "ready" }).map(({ value }) => value), ["63 read", "Day", "Snapshot read"]);
+assert.equal(behaviour.bootReadiness({ steam: "offline" }).at(-1).value, "Offline, using records", "A missing snapshot is reported, never hidden");
+assert.match(staticSource, /const readiness = document\.querySelector\("\.boot-readiness"\);\s*if \(readiness\) readiness\.innerHTML = bootReadinessLines\(\);/, "The Steam line updates in place when the snapshot lands during boot");
+assert.match(reactSource, /steam: steamReady \? \(steamSnapshot \? "ready" : "offline"\) : "reading"/);
+for (const source of [reactScreen, staticSource]) assert.ok(source.includes("boot-tube"), "Both readers render the tube");
 const sessionMarkup = (markup) => markup.slice(markup.indexOf('<div class="boot-session">'), markup.indexOf("</div>", markup.indexOf('<div class="boot-session">')) + 6).replace(/\s+</g, "<").replaceAll('src="public/images/eightmouse-avatar.png"', 'src="/images/eightmouse-avatar.png"').replaceAll("/>", ">");
 assert.equal(sessionMarkup(reactMarkup), sessionMarkup(staticSource), "Both readers render the same welcome with their own public asset paths");
 assert.ok(reactMarkup.includes('<span class="boot-session-user">Eightmouse</span>'), "The operator name has no cipher layer");
 assert.doesNotMatch(css, /boot-user-(?:cipher|readable|jitter|duration)|data-boot-interference/);
 assert.ok(css.includes("var(--boot-signal-span, var(--boot-signal-duration))") && css.includes("var(--boot-signal-start, 90ms)"), "GESTALT consumes bounded per-visit timing with CSS fallbacks");
 assert.ok(!css.includes("var(--headline-index) * 8ms"), "No evenly staggered welcome wave");
-assert.match(declarations(sheet.nodes.find((node) => node.selector === ".boot-meter b")).animation, /cubic-bezier\(0\.3, 0\.04, 0\.25, 1\)/, "Progress uses eased acceleration instead of rigid linear catches");
 
 // Document shortcuts must not bypass the inert boot surface or the consent dialog.
 const reactAst = ts.createSourceFile("components/archive-os.tsx", reactSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -339,4 +330,4 @@ for (const [source, react] of [[reactShortcut, true], [staticShortcut, false]]) 
 const steamInit = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "initializeSteamDisplay").getText(ast);
 assert.match(steamInit, /if \(steamDisplayStarted\) return;/);
 assert.ok(!steamInit.includes("!state.bootDismissed"), "The existing one-shot Steam read can prepare during boot");
-console.log("Boot passed: stable loader rhythms, ordered process log, plain operator profile, readable non-overlapping module cues, and quick/reduced startup.");
+console.log("Boot passed: tube warm-up, stable wordmark rhythms, real readiness lines, plain operator profile, shutter handoff, row-by-row plates, screen flare, and quick/reduced startup.");

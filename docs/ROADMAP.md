@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+27 November, v1.87.0: Gestalt powers on: a three-second boot that reports real readiness, remembers your last session, and hands over through a single line that becomes the header rule. Records open and close on one clean beat. Logs gets a Field Desk, and every section shares the Dashboard's plate material.
+
 27 November, v1.86.0: Every section shares one frame. Projects is a workbench with all projects on spines and the selected one filling the bay; Games gets a drive for the current game and shelves that fill the cabinet. At Night the plates are solid, and the screens give off their own light onto the plates around them.
 
 27 November, v1.85.0: Logs become Field Papers. The newest notes rest on the desk as a paper stack that opens into a slim reader; handheld keeps one sheet with spines. The newest three logs stay on the desk, and older ones still file into the Field Archive after seven days.

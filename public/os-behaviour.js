@@ -5,32 +5,57 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   const startupKey = "gestalt.startup";
   const bootProfiles = Object.freeze(["staged", "probe", "stream", "verify"]);
-  const bootProcesses = Object.freeze([
-    [60, "Attach bootstrap console"],
-    [106, "Verify startup signature"],
-    [168, "Load Gestalt system image"],
-    [236, "Reserve workspace memory"],
-    [292, "Start archive volume driver"],
-    [380, "Read volume signature"],
-    [488, "Mount archive volume"],
-    [834, "Read record tables"],
-    [905, "Check record references"],
-    [987, "Verify record index"],
-    [1122, "Map device directory"],
-    [1210, "Stage note renderer"],
-    [1275, "Register reading desk"],
-    [1330, "Link media cabinet"],
-    [1507, "Attach process reader"],
-    [1880, "Register command channels"],
-    [1945, "Attach input dispatcher"],
-    [2018, "Initialize workspace surfaces"],
-    [2124, "Bind window controls"],
-    [2255, "Load operator environment"],
-    [2338, "Restore appearance preferences"],
-    [2420, "Resolve operator identity"],
-    [2525, "Check workspace readiness"],
-    [2760, "Reach operator session target"]
-  ].map(([at, label]) => Object.freeze({ at, label, stamp: (at / 1000).toFixed(3) })));
+  // The full welcome reports what has actually happened, never a scripted list. A line shows the
+  // state it has when the beat arrives and changes in place if the state changes before the handoff.
+  function bootReadiness({ records = 0, appearance = "night", steam = "reading", lastSession = null } = {}) {
+    const count = Math.max(0, Math.floor(Number(records) || 0));
+    const lines = [
+      { key: "records", label: "RECORDS", value: `${String(count).padStart(2, "0")} read` },
+      { key: "appearance", label: "APPEARANCE", value: appearance === "day" ? "Day" : "Night" },
+      { key: "steam", label: "STEAM", value: steam === "ready" ? "Snapshot read" : steam === "offline" ? "Offline, using records" : "Reading" }
+    ];
+    if (typeof lastSession === "string" && lastSession) lines.push({ key: "session", label: "LAST SESSION", value: lastSession });
+    return lines;
+  }
+  // The last visit is remembered only with local memory, only on this device: one timestamp.
+  const lastSessionKey = "gestalt.last-session";
+  function readLastSession(storage) {
+    try {
+      const local = storage || globalThis.localStorage;
+      if (local.getItem("gestalt.local-memory") !== "granted") return undefined;
+      return local.getItem(lastSessionKey) || null;
+    } catch { return undefined; }
+  }
+  function saveLastSession(now = new Date(), storage) {
+    try {
+      const local = storage || globalThis.localStorage;
+      if (local.getItem("gestalt.local-memory") !== "granted") return false;
+      local.setItem(lastSessionKey, now.toISOString());
+      return true;
+    } catch { return false; }
+  }
+  function lastSessionLabel(previous, now = new Date()) {
+    if (previous === undefined) return null;
+    const then = previous ? new Date(previous) : null;
+    if (!then || Number.isNaN(then.getTime()) || then > now) return "First session";
+    const day = (date) => Math.floor(new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() / 86_400_000);
+    const days = day(now) - day(then);
+    if (days <= 0) return "Earlier today";
+    if (days === 1) return "Yesterday";
+    if (days < 30) return `${days} days ago`;
+    return [then.getDate(), then.getMonth() + 1].map((value) => String(value).padStart(2, "0")).join(" / ") + ` / ${then.getFullYear()}`;
+  }
+  // The power-on line ends as the rule above the workspace header: measure where that rule sits.
+  function measureBootThread(shell, host = globalThis.window) {
+    const header = shell?.querySelector?.(".workspace > .workspace-header");
+    if (!header || !host?.innerWidth) return false;
+    const box = header.getBoundingClientRect();
+    if (!box.width) return false;
+    shell.style.setProperty("--thread-x", `${Math.round(box.left)}px`);
+    shell.style.setProperty("--thread-y", `${Math.round(box.top - 18)}px`);
+    shell.style.setProperty("--thread-scale", (box.width / host.innerWidth).toFixed(4));
+    return true;
+  }
   const bootModules = Object.freeze({
     PROJECTS: Object.freeze({ id: "projects", order: 0, label: "Mounting process table" }),
     "LOCAL WEATHER": Object.freeze({ id: "weather", order: 1, label: "Checking local sensors" }),
@@ -158,5 +183,5 @@
     }
     return { open, update, close, destroy: close };
   }
-  return { bootProfiles, bootProcesses, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
+  return { bootProfiles, bootReadiness, readLastSession, saveLastSession, lastSessionLabel, measureBootThread, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
 });

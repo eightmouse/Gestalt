@@ -31,12 +31,14 @@ type SectionPageProps = {
   onCreateSetupRecord?: (group: SetupGroupId) => void;
   onEditSetupTool?: (record: RecordEntry) => void;
   currentGame?: { ready: boolean; display: CurrentGameDisplay | null };
+  filedLogCount?: number;
 };
 type SelectorGroup = { title: string; records: RecordEntry[] };
 
 const sectionRegistryLabels: Partial<Record<RecordSection, string>> = {
   archive: "Field Archive",
   games: "Media Cabinet",
+  logs: "Field Desk",
   projects: "Process Reader",
   setup: "Setup Manifest"
 };
@@ -48,9 +50,10 @@ const setupCreateLabels: Record<SetupGroupId, string> = {
   notes: "Add Setup note"
 };
 
-export function SectionPage({ handheld, records, filingDay, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool, currentGame }: SectionPageProps) {
+export function SectionPage({ handheld, records, filingDay, section, onOpenRecord, onBack, onCreateRecord, onCreateSetupRecord, onEditSetupTool, currentGame, filedLogCount = 0 }: SectionPageProps) {
   if (section.id === "logs") {
     return <section className="section-page section-page--logs" aria-label="Field Notes">
+      <SectionPageHeader section={section} countLabel={`${records.length} ${records.length === 1 ? "paper" : "papers"}`} readout={fieldDeskReadout(records, filedLogCount)} onCreateRecord={onCreateRecord} />
       {onCreateRecord ? <div className="field-paper-tools"><CreateRecordButton label="Add field note" onClick={onCreateRecord} /></div> : null}
       <FieldPapers records={records} onOpenRecord={(record) => onOpenRecord(record, "notes")} />
     </section>;
@@ -99,7 +102,7 @@ function SectionPageHeader({ section, countLabel, readout, onBack, onCreateRecor
     {onBack ? <button className="pocket-catalog-back" type="button" onClick={onBack}><ArrowLeft size={16} aria-hidden="true" />Back to Index</button> : null}
     <span className="nav-mark" data-icon={section.icon} aria-hidden="true" />
     <div>
-      {section.id !== "games" && section.id !== "projects" ? <p>{section.code}</p> : null}
+      {section.id !== "games" && section.id !== "projects" && section.id !== "logs" ? <p>{section.code}</p> : null}
       <h2 key={section.id} className="cipher-section">{renderCipherLetters(sectionRegistryLabels[section.id] ?? section.label)}</h2>
       <SectionReadout items={readout} />
     </div>
@@ -355,10 +358,13 @@ function ProjectWorkprint({ workbench, bench, other, compact = false, onOpenReco
         <h4>{bench.latest.title}</h4>
         {bench.latest.excerpt ? <p>{bench.latest.excerpt}</p> : null}
         {bench.earlier ? <small>+ {bench.earlier} earlier</small> : null}
+      </section> : bench.stack.length ? <section className="project-dispatch project-build-sheet" aria-label="Build sheet">
+        <p className="project-bench-label">Build sheet</p>
+        <ul>{bench.stack.map((item) => <li key={item}>{item}</li>)}{bench.moreStack ? <li>+{bench.moreStack} more</li> : null}</ul>
       </section> : null}
-      {bench.screen || bench.stack.length ? <figure className="project-screen" data-lit={bench.screen ? "" : undefined}>
-        {bench.screen ? <div className="project-screen-glass"><img src={bench.screen} alt="" decoding="async" loading="lazy" /><img className="screen-bloom" src={bench.screen} alt="" aria-hidden="true" decoding="async" loading="lazy" /></div> : null}
-        {bench.stack.length ? <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption> : null}
+      {bench.screen ? <figure className="project-screen" data-lit="">
+        <div className="project-screen-glass"><img src={bench.screen} alt="" decoding="async" loading="lazy" /><img className="screen-bloom" src={bench.screen} alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>
+        {bench.latest && bench.stack.length ? <figcaption><span className="project-bench-label">Build sheet</span>{bench.stack.join(" · ")}{bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption> : null}
       </figure> : null}
     </div> : null}
     <button className="project-workbench-hit" type="button" aria-label={`Open ${record.title}`} onClick={(event) => sectionMotion.openProjectPlate(event.currentTarget, () => onOpenRecord(record))}><span className="project-workbench-light" aria-hidden="true" /></button>
@@ -575,6 +581,14 @@ function SectionReadout({ items }: { items: Array<{ label: string; value: string
       ))}
     </dl>
   );
+}
+
+function fieldDeskReadout(records: RecordEntry[], filed: number): Array<{ label: string; value: string }> {
+  return [
+    { label: "DESK", value: String(records.length).padStart(2, "0") },
+    { label: "FILED", value: String(filed).padStart(2, "0") },
+    { label: "LAST", value: records[0] ? formatReadableDate(logArchiveDate(records[0])) : "-- / -- / ----" }
+  ];
 }
 
 function sectionReadout(records: RecordEntry[], split: SelectorGroup[] | null = null, section?: RecordSection): Array<{ label: string; value: string }> {

@@ -7,7 +7,7 @@ import {
   Square,
   Terminal,
 } from "lucide-react";
-import { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { BootScreen } from "@/components/archive/boot-screen";
 import { scheduleBootCompletion } from "@/lib/boot";
@@ -208,7 +208,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
       recordAccessTimerRef.current = null;
       setRecordAccessPending(false);
       setRecordAccessComplete(true);
-    }, fieldPaper ? recordMotion.paperRevealMs : 3250);
+    }, fieldPaper ? recordMotion.paperRevealMs : recordMotion.accessRevealMs);
   };
 
   useEffect(() => () => {
@@ -239,8 +239,26 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, []);
 
   useEffect(() => {
-    if (bootComplete && (localMemory === "granted" || localMemory === "session")) memoryState.record("workspace.ready");
+    if (!bootComplete || (localMemory !== "granted" && localMemory !== "session")) return;
+    // Memory State's first lines are the boot itself, with the real time and record count.
+    const instant = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    memoryState.record("workspace.boot", { mode: instant ? "instant" : startupMode, ms: Math.round(performance.now()), records: archiveRecords.length });
+    memoryState.record("workspace.ready");
   }, [bootComplete, localMemory]);
+
+  // The last visit is read before this one is saved, and only with local memory.
+  const [lastSession, setLastSession] = useState<string | null>(null);
+  const lastSessionSaved = useRef(false);
+  useEffect(() => {
+    if (localMemory === "granted" && !lastSessionSaved.current) setLastSession(behaviour.lastSessionLabel(behaviour.readLastSession()));
+  }, [localMemory]);
+  useEffect(() => {
+    if (!bootComplete || localMemory !== "granted" || lastSessionSaved.current) return;
+    lastSessionSaved.current = behaviour.saveLastSession();
+  }, [bootComplete, localMemory]);
+  useLayoutEffect(() => {
+    if (!bootComplete) behaviour.measureBootThread(shellRef.current);
+  }, [bootComplete]);
 
   const recordsBySection = useMemo(() => {
     return sections.reduce<Record<RecordSection, RecordEntry[]>>(
@@ -829,7 +847,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   return (
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
       <DesktopNavigationChrome records={archiveRecords} filedLogs={fieldLogs.archived} activeSection={activeSection} onOpenSection={openSection} />
-      {showBoot ? <BootScreen startupMode={startupMode} /> : null}
+      {showBoot ? <BootScreen startupMode={startupMode} readiness={{ records: archiveRecords.length, appearance: appearance.resolveMode(appearanceMode), steam: steamReady ? (steamSnapshot ? "ready" : "offline") : "reading", lastSession }} /> : null}
+      {showBoot ? <i className="boot-thread" aria-hidden="true" /> : null}
       {showBoot ? <PocketBoot /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
         const record = archiveRecords.find((entry) => entry.id === id);
@@ -951,6 +970,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             section={activeSectionConfig}
             onBack={openHome}
             onOpenRecord={openRecord}
+            filedLogCount={activeSection === "logs" ? fieldLogs.archived.length : undefined}
             currentGame={activeSection === "games" ? { ready: steamReady, display: currentGameDisplay } : undefined}
             onCreateRecord={process.env.NODE_ENV === "development" ? () => createLocalRecord(activeSection as Exclude<RecordSection, "system">) : undefined}
             onCreateSetupRecord={process.env.NODE_ENV === "development" ? (group) => createLocalRecord("setup", group) : undefined}

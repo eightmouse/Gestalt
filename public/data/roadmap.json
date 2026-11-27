@@ -41,6 +41,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Power-on, one beat and the Field Desk",
+          "detail": "Gestalt powers on in about three seconds and reports what it actually read, including your last session when local memory is on. The power-on line becomes the header rule, and Memory State logs the boot. Records open and close on one clean beat. Logs sits on a lamp-lit Field Desk, and every section shares the Dashboard's plates.",
+          "version": "v1.87.0",
+          "releasedOn": "2026-11-27"
+        },
+        {
           "title": "Workbench, drive and lit screens",
           "detail": "Every section fills the same frame. Projects keeps every project on a spine and spreads the selected one across the bay, with its milestones, newest note and a lit screen. Games loads the current game into a drive beside the shelves. At Night the plates are solid and the screens glow with their own pictures; Weather draws the next twelve hours.",
           "version": "v1.86.0",

@@ -180,7 +180,6 @@ function DashboardPanel({ title, children, footerLabel, className = "", onFooter
         )}
       </h2>
       <div>{children}</div>
-      {module ? <span className="dashboard-boot-readout" aria-hidden="true"><i />{module.label}</span> : null}
     </article>
   );
 }

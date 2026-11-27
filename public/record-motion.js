@@ -137,27 +137,32 @@
             { transform: `${base} translateY(16px) rotate(-2deg)`, opacity: 0 }
           ], { duration: 240, easing: "cubic-bezier(.4,0,.6,1)", fill: "forwards" });
         } else if (closing) {
-          // Fade the real content before collapsing the remaining frame; never clone the record.
+          // The open run backwards: each content surface folds into its centre line (no dissolve),
+          // then the frame closes to a two-pixel line and the line retracts to a point. Only the
+          // last sliver of the point fades. Never clone the record.
           for (const child of node.children ?? []) {
             const value = Number.parseFloat(host.getComputedStyle(child).opacity);
+            const from = Number.isFinite(value) ? value : 1;
             const content = child.animate([
-              { opacity: Number.isFinite(value) ? value : 1 },
-              { opacity: 0 }
-            ], { duration: 180, easing: "ease-out", fill: "forwards" });
+              { offset: 0, transform: "scaleY(1)", opacity: from, transformOrigin: "center" },
+              { offset: 0.8, transform: "scaleY(0.02)", opacity: from, transformOrigin: "center" },
+              { offset: 1, transform: "scaleY(0.02)", opacity: 0, transformOrigin: "center" }
+            ], { duration: 120, easing: "cubic-bezier(0.7, 0, 0.84, 0)", fill: "forwards" });
             content.finished.catch(() => {});
             contents.push(content);
           }
-          // Once dissolved, stop compositing the nested content during frame contraction.
+          // Once folded, stop compositing the nested content during frame contraction.
           Promise.all(contents.map((content) => content.finished)).then(() => {
             if (!finished) node.setAttribute("data-record-content-hidden", "");
           }, () => {});
           const lineHeight = Math.min(1, 2 / Math.max(1, rect.height));
           animation = node.animate([
-            { offset: 0, transform: `${base} scale(1, 1)`, opacity, transformOrigin: "center" },
-            { offset: 0.38, transform: `${base} scale(1, 1)`, opacity, transformOrigin: "center" },
-            { offset: 0.8, transform: `${base} scale(1, ${lineHeight})`, opacity: opacity * 0.85, transformOrigin: "center" },
-            { offset: 1, transform: `${base} scale(0.04, ${lineHeight})`, opacity: 0, transformOrigin: "center" }
-          ], { duration: 520, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" });
+            { offset: 0, transform: `${base} scale(1, 1)`, opacity, transformOrigin: "center", easing: "steps(1, end)" },
+            { offset: 0.3, transform: `${base} scale(1, 1)`, opacity, transformOrigin: "center", easing: "cubic-bezier(0.7, 0, 0.84, 0)" },
+            { offset: 0.62, transform: `${base} scale(1, ${lineHeight})`, opacity, transformOrigin: "center", easing: "cubic-bezier(0.7, 0, 0.84, 0)" },
+            { offset: 0.94, transform: `${base} scale(0.01, ${lineHeight})`, opacity, transformOrigin: "center" },
+            { offset: 1, transform: `${base} scale(0.01, ${lineHeight})`, opacity: 0, transformOrigin: "center" }
+          ], { duration: 420, easing: "linear", fill: "forwards" });
         } else animation = node.animate([
           { offset: 0, transform: `translate(0px, 0px) ${base} scale(1, 1)`, opacity, transformOrigin: "center" },
           { offset: 0.24, transform: `translate(${dx * 0.08}px, ${dy * 0.06}px) ${base} scale(0.86, 0.98)`, opacity, transformOrigin: "center" },
@@ -169,5 +174,6 @@
     }
     return { minimize: (options) => run(options), close: (options) => run(options, true), cancel, destroy: cancel, get busy() { return Boolean(active); } };
   }
-  return Object.freeze({ createController, focusWithin, paperRevealMs: 740 });
+  // accessRevealMs is the whole record access timeline in globals.css: the last panel settles by 1420ms.
+  return Object.freeze({ createController, focusWithin, paperRevealMs: 740, accessRevealMs: 1500 });
 });

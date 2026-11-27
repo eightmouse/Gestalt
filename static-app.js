@@ -25,6 +25,7 @@ const projectStatusOrder = ["active", "in progress", "planning", "blocked", "pau
 const sectionRegistryLabels = {
   archive: "Field Archive",
   games: "Media Cabinet",
+  logs: "Field Desk",
   projects: "Process Reader",
   setup: "Setup Manifest"
 };
@@ -90,6 +91,22 @@ let bootCleanup = null;
 let osBehaviourController = null;
 let workspaceToolsController = null;
 
+// The full welcome reports real state; the Steam line changes in place if the snapshot lands during boot.
+const bootPreviousSession = window.GestaltOsBehaviour?.readLastSession?.();
+
+function bootReadinessState() {
+  return {
+    lastSession: state.localMemory === "granted" ? window.GestaltOsBehaviour?.lastSessionLabel?.(bootPreviousSession) ?? null : null,
+    records: records.length,
+    appearance: document.documentElement.getAttribute("data-appearance") === "day" ? "day" : "night",
+    steam: steamDisplayReady ? (steamDisplaySnapshot ? "ready" : "offline") : "reading"
+  };
+}
+
+function bootReadinessLines() {
+  return (window.GestaltOsBehaviour?.bootReadiness?.(bootReadinessState()) || []).map(({ key, label, value }) => `<li data-boot-line="${escapeHtml(key)}"><span>${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></li>`).join("");
+}
+
 function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let timer = 0;
@@ -109,8 +126,8 @@ function scheduleBootCompletion(onComplete, elapsed = 0, mode = "full") {
   };
   motion.addEventListener("change", onMotionChange);
   if (motion.matches) finish();
-  // Matches the complete boot/session/workspace timeline in globals.css.
-  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 2800 : 11900) - elapsed));
+  // Matches the power-on timeline in globals.css: the last screen flare settles by 2.98s (quick 1.54s).
+  else timer = window.setTimeout(finish, Math.max(0, (mode === "quick" ? 1600 : 3000) - elapsed));
   return stop;
 }
 let navMotionTimer = 0;
@@ -220,7 +237,7 @@ function startRecordAccessSequence(fieldPaper = false) {
     recordWindow?.classList.add("is-access-complete");
     state.accessComplete = true;
     recordAccessTimers = [];
-  }, fieldPaper ? (window.GestaltRecordMotion?.paperRevealMs ?? 740) : 3250));
+  }, fieldPaper ? (window.GestaltRecordMotion?.paperRevealMs ?? 740) : (window.GestaltRecordMotion?.accessRevealMs ?? 1500)));
 }
 
 const state = {
@@ -835,6 +852,8 @@ async function initializeSteamDisplay() {
     // Do not rebuild the archive/window DOM when a display-only snapshot arrives.
     const panel = document.querySelector(".current-game-panel");
     if (panel && state.bootDismissed) panel.outerHTML = currentGamePanel();
+    const readiness = document.querySelector(".boot-readiness");
+    if (readiness) readiness.innerHTML = bootReadinessLines();
     const drive = document.querySelector(".game-drive");
     if (drive) {
       drive.outerHTML = gameDrivePanel();
@@ -1602,7 +1621,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.86.0</span>
+        <span>v1.87.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1616,7 +1635,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.86.0</span>
+        <span class="version-label">v1.87.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1636,7 +1655,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.86.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.87.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1710,7 +1729,7 @@ function dashboardPanel(title, body, footerLabel, action, className = "") {
   return `<article class="dashboard-panel ${className}"${module ? ` data-boot-module="${module.id}" style="--boot-module-order: ${module.order}"` : ""}>
     <h2>${titleMarkup}</h2>
     <div>${body}</div>
-    ${module ? `<span class="dashboard-boot-readout" aria-hidden="true"><i></i>${escapeHtml(module.label)}</span>` : ""}
+
   </article>`;
 }
 
@@ -1946,7 +1965,22 @@ function selectFieldPaper(button) {
 function sectionPage(sectionId) {
   const section = sections.find((entry) => entry.id === sectionId) || sections[0];
   if (sectionId === "logs") {
-    return `<section class="section-page section-page--logs" aria-label="Field Notes">${renderFieldPapers(partitionFieldLogs(recordsFor("logs")).desk)}</section>`;
+    const { desk, archived } = partitionFieldLogs(recordsFor("logs"));
+    const readout = [
+      { label: "DESK", value: String(desk.length).padStart(2, "0") },
+      { label: "FILED", value: String(archived.length).padStart(2, "0") },
+      { label: "LAST", value: desk[0] ? readableDate(logArchiveDate(desk[0])) : "-- / -- / ----" }
+    ];
+    return `<section class="section-page section-page--logs" aria-label="Field Notes">
+    <header class="section-page-header">
+      <span class="nav-mark" data-icon="${section.icon}" aria-hidden="true"></span>
+      <div>
+        <h2 class="cipher-section">${renderCipherLetters(sectionRegistryLabels.logs)}</h2>
+        ${renderSectionReadout(readout)}
+      </div>
+      <i>${desk.length} ${desk.length === 1 ? "paper" : "papers"}</i>
+    </header>
+    ${renderFieldPapers(desk)}</section>`;
   }
   if (sectionId === "archive") {
     return renderArchiveFolders(section, [...recordsFor("archive"), ...recordsFor("logs")]);
@@ -2192,10 +2226,13 @@ function renderProjectStage({ record, brief, progress, stops, more, nextStop }, 
         <h4>${escapeHtml(bench.latest.title)}</h4>
         ${bench.latest.excerpt ? `<p>${escapeHtml(bench.latest.excerpt)}</p>` : ""}
         ${bench.earlier ? `<small>+ ${bench.earlier} earlier</small>` : ""}
+      </section>` : bench.stack.length ? `<section class="project-dispatch project-build-sheet" aria-label="Build sheet">
+        <p class="project-bench-label">Build sheet</p>
+        <ul>${bench.stack.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}${bench.moreStack ? `<li>+${bench.moreStack} more</li>` : ""}</ul>
       </section>` : ""}
-      ${bench.screen || bench.stack.length ? `<figure class="project-screen"${bench.screen ? " data-lit" : ""}>
-        ${bench.screen ? `<div class="project-screen-glass"><img src="${escapeHtml(bench.screen)}" alt="" decoding="async" loading="lazy" /><img class="screen-bloom" src="${escapeHtml(bench.screen)}" alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>` : ""}
-        ${bench.stack.length ? `<figcaption><span class="project-bench-label">Build sheet</span>${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption>` : ""}
+      ${bench.screen ? `<figure class="project-screen" data-lit>
+        <div class="project-screen-glass"><img src="${escapeHtml(bench.screen)}" alt="" decoding="async" loading="lazy" /><img class="screen-bloom" src="${escapeHtml(bench.screen)}" alt="" aria-hidden="true" decoding="async" loading="lazy" /></div>
+        ${bench.latest && bench.stack.length ? `<figcaption><span class="project-bench-label">Build sheet</span>${escapeHtml(bench.stack.join(" · "))}${bench.moreStack ? ` · +${bench.moreStack}` : ""}</figcaption>` : ""}
       </figure>` : ""}
     </div>` : "";
   return `<div class="project-workbench-record"${bench ? " data-bench" : ""}>
@@ -3801,7 +3838,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.86.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.87.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3905,19 +3942,19 @@ function render() {
     ${desktopDirectory()}
     ${!state.bootDismissed && pocket ? pocket.bootMarkup : ""}
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
+      <i class="boot-tube"></i>
       <div class="boot-loader">
         <span>GESTALT</span>
         <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing"><span>${renderCipherLetters("System initializing")}</span></div>
-        <b class="boot-meter"><b></b></b>
+        ${state.startupMode === "full" ? `<ol class="boot-readiness">${bootReadinessLines()}</ol>` : ""}
       </div>
-      ${state.startupMode === "full" ? `<ol class="boot-process-log">${(window.GestaltOsBehaviour?.bootProcesses || []).map(({ at, label, stamp }) => `<li style="--boot-line-time: ${at}ms"><span class="boot-process-stamp">${escapeHtml(stamp)}</span><span class="boot-process-state">[ OK ]</span>${escapeHtml(label)}</li>`).join("")}</ol>` : ""}
       <div class="boot-session">
         <span class="boot-session-label">// SESSION READY</span>
         <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async" loading="lazy">
         <span class="boot-session-user">Eightmouse</span>
         <span class="boot-session-detail">Opening the archive</span>
       </div>
-    </div>`}
+    </div><i class="boot-thread" aria-hidden="true"></i>`}
     ${localMemoryPrompt()}
     <div class="grain-layer"></div>
     <div class="scanline-layer"></div>
@@ -3974,6 +4011,7 @@ function render() {
     }, 520);
   }
 
+  if (!state.bootDismissed) window.GestaltOsBehaviour?.measureBootThread?.(root.querySelector(".archive-shell"));
   if (!state.bootDismissed && !bootCleanup) {
     bootCleanup = pocket?.isHandheld()
       ? pocket.runBoot(root.querySelector(".archive-shell"), completeBoot, { mode: state.pocketBootMode, remember: state.localMemory === "granted" })
@@ -4000,7 +4038,9 @@ function render() {
   }
 }
 
+let bootFinishedAt = null;
 function completeBoot() {
+  bootFinishedAt = globalThis.performance?.now?.() ?? null;
   state.bootDismissed = true;
   bootCleanup = null;
   const shell = root.querySelector(".archive-shell");
@@ -4010,6 +4050,8 @@ function completeBoot() {
   shell.removeAttribute("aria-busy");
   shell.style.removeProperty("--boot-elapsed");
   root.querySelector(".boot-screen")?.remove();
+  root.querySelector(".boot-thread")?.remove();
+  if (state.localMemory === "granted") window.GestaltOsBehaviour?.saveLastSession?.();
   root.querySelector(".pocket-boot")?.remove();
   const gamePanel = shell.querySelector(".current-game-panel");
   // Keep the plate's animation timeline intact if the snapshot arrives during boot.
@@ -4305,7 +4347,12 @@ let traceNode = null, traceCleanup = null;
 function syncMemoryTrace() {
   const api = window.GestaltMemoryState;
   if (!api) return;
-  if (state.bootDismissed && state.localMemory !== "prompt") api.record("workspace.ready");
+  if (state.bootDismissed && state.localMemory !== "prompt") {
+    // Memory State's first lines are the boot itself, with the real time and record count.
+    const instant = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    api.record("workspace.boot", { mode: instant ? "instant" : state.startupMode, ms: Math.round(bootFinishedAt ?? globalThis.performance?.now?.() ?? 0), records: records.length });
+    api.record("workspace.ready");
+  }
   const node = document.querySelector("[data-memory-trace]");
   if (node === traceNode) return;
   traceCleanup?.();

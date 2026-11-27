@@ -120,9 +120,17 @@ const hidden = rule(':is(.record-window, .desktop-nav-terminal)[data-record-cont
 assert.equal(hidden.visibility, "hidden");
 assert.equal(hidden.display, undefined, "Dissolved content keeps its layout, including auto-height Setup windows");
 assert.ok(!sheet.nodes.some((node) => node.selector?.includes("[data-record-content-hidden]::")), "The remaining Terminal frame and background stay visible while contracting");
-assert.match(css, /record-content-build 1480ms[^;]*1560ms both/, "The staged construction timing remains intact");
-assert.match(css, /record-panel-populate 900ms[^;]*2050ms both/);
-assert.match(css, /record-access-sweep 1120ms[^;]*1580ms both/, "Keep the scan, drawn frame and overlapping population sequence");
+// Record access runs on one beat: frame 0-360ms, plate 120-880ms, shutter 880-1040ms, record 900-1420ms.
+assert.match(css, /record-access-shutter 160ms [^;]*880ms both/, "The access plate leaves by closing into a line");
+assert.match(css, /record-access-sweep 240ms [^;]*640ms both/, "The sweep leads straight into the shutter");
+assert.match(css, /record-content-build 240ms [^;]*940ms both/, "The record unfolds behind the closing plate");
+assert.match(css, /record-panel-populate 240ms [^;]*1100ms both/);
+assert.ok(!css.includes("record-access-surface-flow") && !css.includes("record-access-identity-flow"), "The plate never dissolves over the record");
+const accessBlock = css.slice(css.indexOf("/* Record access: one timeline"), css.indexOf(".record-window.is-access-complete {"));
+const delays = [...accessBlock.matchAll(/(\d+)ms both;/g)].map((match) => Number(match[1]));
+assert.ok(delays.length > 20 && delays.every((delay) => delay % 20 === 0 && delay <= 1220), "Every start sits on the 20ms grid and the sequence is over by 1.22s");
+const unfold = sheet.nodes.find((node) => node.name === "keyframes" && node.params === "record-panel-populate");
+assert.ok(unfold.toString().includes("scaleY(0.02)") && !unfold.toString().includes("translateY"), "Panels unfold from a centre line instead of drifting up");
 const track = rule(".latest-log-signal"), light = rule(".latest-log-signal::before");
 assert.equal(track.position, "absolute");
 assert.equal(track.inset, "0", "Percentage translation follows the whole rail and excerpt, not the marker");
@@ -203,3 +211,16 @@ assert.ok(bloom.includes("pointer-events: none;"), "The bloom never catches the 
 for (const file of ["components/archive/dashboard.tsx", "components/archive/section-page.tsx", "static-app.js"]) {
   assert.match(read(file), /screen-bloom[^>]*aria-hidden="true"/, `${file} hides the bloom copy from assistive tech`);
 }
+// The window's own border takes over from the drawn access rules as soon as they finish (360ms),
+// so the frame never vanishes with the shutter (880ms) and reappears later.
+assert.match(css, /\.record-window\.is-access-pending \{[^}]*record-window-edge-flow 120ms linear 360ms both;/, "The frame hands off from the drawn rules to the real border without a gap");
+// Shared plate material: one recipe in three levels, desktop only.
+const material = css.slice(css.indexOf("/* Shared plate material."));
+for (const token of ["--plate-face", "--plate-finish", "--plate-grain", "--plate-edge", "--plate-rim", "--plate-contact", "--well-face", "--well-shadow", "--card-lift"]) {
+  assert.ok(material.split(":root[data-appearance=\"day\"] {")[0].includes(`${token}:`) && material.split(":root[data-appearance=\"day\"] {")[1].includes(`${token}:`), `${token} has a Night and a Day value`);
+}
+assert.ok(material.includes("@media (min-width: 761px) {"), "Handheld keeps its own pocket design");
+for (const selector of [".workspace > .section-page > .section-page-header", ".workspace > .section-page > .record-selector", ".workspace .setup-group", ".workspace .archive-manager"]) {
+  assert.ok(material.includes(selector), `${selector} uses the plate`);
+}
+assert.ok(!/--plate-face: rgba\(var\(--tone-surface, 8, 9, 8\)/.test(material), "Night plates are solid, never see-through");

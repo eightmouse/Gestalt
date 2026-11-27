@@ -60,4 +60,16 @@ assert.match(read("app/globals.css"), /\.field-paper-front\s*\{[^}]*aspect-ratio
 assert.match(read("components/archive/record-window.tsx"), /!paper \? <RecordAccessSurface \/> : null/);
 assert.match(read("static-app.js"), /logs \? "" : recordAccessSurfaceMarkup\(\)/);
 assert.doesNotMatch(read("app/desktop-navigation.css"), /section-note-preview|section-note-layout/);
-console.log("Field papers passed: writing order and filing, shallow stacks, bounded plain-text excerpts, reader links, controls, escaped Pages output, and no old preview panes.");
+// Field Desk: the same instrument plate as the other sections, with real counts only.
+for (const file of ["components/archive/section-page.tsx", "static-app.js"]) {
+  const source = read(file);
+  assert.ok(source.includes("logs: \"Field Desk\""), `${file} names the Logs plate Field Desk`);
+  assert.ok(/label: "DESK"/.test(source) && /label: "FILED"/.test(source) && /label: "LAST"/.test(source), `${file} reads desk, filed and newest date`);
+}
+const deskCss = read("app/globals.css");
+assert.ok(deskCss.includes(".section-page:is(.section-page--games, .section-page--projects, .section-page--logs) .section-page-header {"), "Logs shares the instrument header plate");
+const nightStart = deskCss.indexOf("/* At Night the paper is lit by the lamp");
+const nightPaper = deskCss.slice(nightStart, deskCss.indexOf(".section-page--logs { grid-template-rows: minmax(0, 1fr); }", nightStart));
+assert.ok(nightPaper.includes(":root:not([data-appearance=\"day\"]) .section-page--logs .field-paper-desk {") && !nightPaper.includes("is-field-paper-reader"), "Only the desk paper dims at Night; the reader keeps full-brightness paper");
+assert.match(deskCss, /\.section-page--logs \{ grid-template-rows: minmax\(0, 1fr\); \}\s*\.section-page--logs > \.section-page-header \{ display: none; \}/, "Handheld keeps its own Logs layout");
+console.log("Field papers passed: writing order and filing, shallow stacks, bounded plain-text excerpts, reader links, controls, escaped Pages output, no old preview panes, and the Field Desk plate.");
