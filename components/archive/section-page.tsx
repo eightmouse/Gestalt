@@ -343,7 +343,7 @@ function projectBenchFor(record: RecordEntry) {
   const samples = record.meta.samples;
   const sources = (Array.isArray(samples) ? samples.map(String) : typeof samples === "string" ? samples.split(/\r?\n|,/) : []).map((item) => item.trim()).filter(Boolean);
   const stack = metaText(record.meta.technicalStack).split(/\r?\n|\|/).map((item) => item.trim()).filter(Boolean);
-  return pocket.projectBench(record, noteEntries(record.body), { screen: sources[0] || recordHeaderImage(record), stack });
+  return pocket.projectBench(record, noteEntries(record.body), { screen: sources[0] || recordHeaderImage(record), stack, excerpt: 1200, body: true });
 }
 
 function ProjectWorkprint({ workbench, bench, other, compact = false, onOpenRecord }: { workbench: NonNullable<ReturnType<typeof pocket.projectWorkbench<RecordEntry>>>; bench?: ReturnType<typeof pocket.projectBench>; other: boolean; compact?: boolean; onOpenRecord: (record: RecordEntry) => void }) {

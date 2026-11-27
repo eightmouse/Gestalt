@@ -110,6 +110,9 @@ assert.deepEqual(bench, { started: "05 / 04 / 2026", noteCount: 2, latest: { id:
 assert.deepEqual(pocket.projectBench({}, [{ id: "main", title: "Current note", body: "Loose body" }]), { started: "", noteCount: 0, latest: null, earlier: 0, earlierNotes: [], screen: "", stack: [], moreStack: 0 }, "An undated body is not presented as a filed note, and empty fields stay empty");
 assert.ok(pocket.projectBench({}, [{ id: "n-a", title: "Untimed", body: "x ".repeat(200) }]).latest.excerpt.length <= 181, "Long notes are clipped to a short excerpt");
 assert.equal(pocket.projectBench({}, [{ id: "n-a", title: "Untimed", body: "" }]).latest.date, "", "Notes without a date heading do not get one invented");
+const bodyBench = pocket.projectBench({ updated: "2026-02-07" }, [{ id: "main", title: "Current note", body: "## Description\nFirst paragraph.\n\nSecond paragraph." }], { excerpt: 1200, body: true });
+assert.deepEqual(bodyBench.latest, { id: "main", date: "07 / 02 / 2026", title: "Description", excerpt: "First paragraph.\n\nSecond paragraph." },"With no dated notes, a project bench shows its record body, titled by its first heading and dated by its last update");
+assert.equal(bodyBench.noteCount, 0, "The body is not counted as a filed note");
 assert.equal(pocket.projectBench({}, [], { stack: Array.from({ length: 8 }, (_, i) => `S${i}`) }).moreStack, 2);
 assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive empty");
 const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);

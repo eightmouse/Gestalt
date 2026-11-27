@@ -32,6 +32,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Whole notes on the bench",
+          "detail": "The Projects bench shows the latest note's paragraphs, filling the card beside the screen and fading at the foot. Projects without dated notes show their own writing instead of a blank card.",
+          "version": "v1.88.3",
+          "releasedOn": "2026-11-28"
+        },
+        {
           "title": "A fuller drive and a lived-in desk",
           "detail": "The Games drive uses its full height for the latest note and lists the notes before it. Closing a field paper puts it back on the desk instead of folding it away. The desk gets a blotter with a ruler edge, a pencil and an old cup ring, and the papers lose their corner arrow.",
           "version": "v1.88.2",

@@ -72,12 +72,14 @@
   }
   // Everything the desktop workbench shows beyond the plate itself. Renderers pass their own
   // parsed notes, image source and stack list; nothing here is invented when a field is empty.
-  function projectBench(record, notes = [], { screen = "", stack = [], excerpt = 180, history = 0 } = {}) {
+  function projectBench(record, notes = [], { screen = "", stack = [], excerpt = 180, history = 0, body = false } = {}) {
     const filed = notes.filter((note) => note && note.id !== "main");
-    const plain = (text) => String(text || "").split(/\n\s*\n/)
+    const blocks = (text) => String(text || "").split(/\n\s*\n/)
       .map((block) => block.split(/\r?\n/).filter((line) => !/^\s*(?:!\[|<|:::|```|#{1,6}\s)/.test(line)).join(" "))
       .map((block) => block.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/(\*\*|__|`)/g, "").replace(/^\s*(?:[-*>]|\d+\.)\s+/, "").replace(/\s+/g, " ").trim())
-      .find(Boolean) || "";
+      .filter(Boolean);
+    // A short excerpt is the first paragraph; a longer one keeps the note's paragraphs, separated by a blank line.
+    const plain = (text, size) => size > 180 ? blocks(text).join("\n\n") : blocks(text)[0] || "";
     const clip = (text, size = 180) => text.length <= size ? text : `${text.slice(0, text.lastIndexOf(" ", size) > size * .6 ? text.lastIndexOf(" ", size) : size).trim()}…`;
     const date = (value) => {
       const [year, month, day] = String(value || "").split("-");
@@ -91,7 +93,12 @@
         title: (match ? match[4] : note.title || "").trim() || "Untitled note"
       };
     };
-    const latest = filed[0] ? { ...heading(filed[0]), excerpt: clip(plain(filed[0].body), excerpt) } : null;
+    // With no dated notes, a record's own body can stand in (when asked): titled by its first heading,
+    // dated by the record's last update.
+    const main = body && !filed[0] ? notes.find((note) => note?.id === "main" && String(note.body || "").trim()) : null;
+    const mainTitle = main ? (/^\s*#{1,6}\s+(.+)$/m.exec(main.body)?.[1] || "").trim() : "";
+    const latest = filed[0] ? { ...heading(filed[0]), excerpt: clip(plain(filed[0].body, excerpt), excerpt) }
+      : main ? { id: "main", date: date(record?.updated), title: mainTitle || "Notes", excerpt: clip(plain(main.body, excerpt), excerpt) } : null;
     // The notes filed before the latest, newest first, when asked for: date and title only.
     const earlierNotes = filed.slice(1, 1 + Math.max(0, history)).map(heading);
     const lines = (Array.isArray(stack) ? stack : []).map((item) => String(item).trim()).filter(Boolean);
