@@ -6,12 +6,7 @@
     {
       "id": "working",
       "title": "In progress",
-      "items": [
-        {
-          "title": "Setup overhaul",
-          "detail": "The last section design pass, after Logs. Revisit the device bay while keeping Systems, Tools, Peripherals and Notes, along with their in-place editing. Design to be discussed."
-        }
-      ]
+      "items": []
     },
     {
       "id": "ideas",
@@ -24,6 +19,26 @@
         {
           "title": "Archive Relay",
           "detail": "Discuss after Setup editing. A writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
+        },
+        {
+          "title": "Terminal: more presence",
+          "detail": "Give the desktop Terminal (T) a stronger design, with extra details here and there so it feels like a real instrument rather than a list. Design to be discussed."
+        },
+        {
+          "title": "Settings: a proper menu",
+          "detail": "Show each setting clearly, with a picture of what every mode looks like and the details behind it. Explain how Auto Weather finds your sky: an approximate city from your connection's IP address, looked up through ipapi.co, never your exact position, and Gestalt does not keep it. Design to be discussed."
+        },
+        {
+          "title": "Dashboard: richer plates",
+          "detail": "Some plates look emptier than others. Add clever, useful details to each one, nothing random or repeated, so the six plates feel equally considered. Design to be discussed."
+        },
+        {
+          "title": "Games: the picture as part of the disk",
+          "detail": "Disks with short titles leave a gap under the label, while longer titles fill it. Make the game's picture part of the disk's design so every disk is complete whatever its title. Design to come."
+        },
+        {
+          "title": "New section: Movies and Anime",
+          "detail": "A section between Games and Logs for movies and anime, kept apart (one above the other or similar). Layout to be discussed when we get there."
         }
       ]
     },
@@ -31,6 +46,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Setup is the machine",
+          "detail": "Machines are boot entries; the picked one shows its wallpaper and its specs the way neofetch prints them, with a command line that opens it. Tools sit in a dock, peripherals as connected devices, and notes below, shared by every machine.",
+          "version": "v1.89.0",
+          "releasedOn": "2026-11-29"
+        },
         {
           "title": "A login, not a squeeze",
           "detail": "The boot's session screen sits on the archive's wallpaper, blurred, with the operator's picture and name, and fades into the workspace instead of squeezing into a line.",

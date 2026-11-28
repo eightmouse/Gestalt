@@ -259,6 +259,7 @@ const state = {
   selectorGroup: undefined,
   selectorProjectIds: [],
   fieldPaperId: undefined,
+  setupMachineId: undefined,
   gameShelfQuery: "",
   gameShelfSearch: false,
   gameShelfPick: undefined,
@@ -1621,7 +1622,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.88.4</span>
+        <span>v1.89.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1635,7 +1636,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.88.4</span>
+        <span class="version-label">v1.89.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1655,7 +1656,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.4</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.89.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -2613,6 +2614,7 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
               <i>${group.records.length}</i>
             </header>
             <p>${escapeHtml(group.detail)}</p>
+            ${group.id === "systems" ? setupBootMenu(group.records) : ""}
             <div class="setup-tile-grid">
               ${
                 group.records.length
@@ -2623,8 +2625,54 @@ function renderSetupBay(section, sectionRecords, countLabel, readout) {
           </section>`
         )
         .join("")}
+      ${setupMachineMarkup(currentSetupMachine(groups[0].records))}
     </div>
   </section>`;
+}
+
+// Setup: the machines are boot entries; the one picked is shown in the readout beside them.
+function currentSetupMachine(machines) {
+  return machines.find((record) => record.id === state.setupMachineId) || machines[0];
+}
+
+function setupBootMenu(machines) {
+  if (!machines.length) return "";
+  const current = currentSetupMachine(machines);
+  return `<nav class="setup-boot" aria-label="Machines">${machines.map((record) => {
+    const readout = pocket.machineReadout(setupProfile(record).specs, { title: record.title, user: "Eightmouse" });
+    return `<button type="button" class="setup-boot-entry" data-setup-machine="${escapeHtml(record.id)}"${record.id === current.id ? ' aria-current="true"' : ""}><span class="setup-boot-caret" aria-hidden="true">&gt;</span><span><strong>${escapeHtml(readout.entry)}</strong><small>${escapeHtml(record.title)}</small></span></button>`;
+  }).join("")}</nav>`;
+}
+
+// The machine readout: its wallpaper on the shared glass, and its spec lines the way neofetch prints them.
+function setupMachineMarkup(record) {
+  if (!record) return '<section class="setup-machine" data-empty aria-label="Machine"><p class="setup-machine-empty">No machine filed yet.</p></section>';
+  const readout = pocket.machineReadout(setupProfile(record).specs, { title: record.title, user: "Eightmouse" });
+  const wallpaper = recordHeaderImage(record) || record.banner || "";
+  return `<section class="setup-machine" aria-label="${escapeHtml(`Machine: ${record.title}`)}">
+    <div class="setup-machine-screen">
+      <div class="project-screen-glass setup-machine-glass">${wallpaper ? `<img src="${escapeHtml(wallpaper)}" alt="" decoding="async" /><img class="screen-bloom" src="${escapeHtml(wallpaper)}" alt="" aria-hidden="true" decoding="async" />` : '<span class="project-screen-empty">No wallpaper filed</span>'}</div>
+    </div>
+    <div class="setup-machine-spec">
+      <p class="setup-machine-host">${escapeHtml(readout.host)}</p>
+      ${readout.rows.length ? `<dl>${readout.rows.map((row) => `<div><dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.value)}</dd></div>`).join("")}</dl>` : '<p class="setup-machine-empty">No spec lines filed.</p>'}
+      <span class="setup-machine-palette" aria-hidden="true">${"<i></i>".repeat(8)}</span>
+      <button type="button" class="setup-machine-open" data-open-record="${escapeHtml(record.id)}"><span aria-hidden="true">$ </span>${escapeHtml(setupCommandFor(record))}</button>
+    </div>
+  </section>`;
+}
+
+// Picking a boot entry swaps the readout in place; nothing else on the page re-renders.
+function selectSetupMachine(button) {
+  const bay = button.closest(".setup-bay");
+  const machines = recordsFor("setup").filter((record) => setupGroupFor(record) === "systems");
+  const record = machines.find((item) => item.id === button.dataset.setupMachine);
+  if (!bay || !record) return;
+  state.setupMachineId = record.id;
+  bay.querySelectorAll("[data-setup-machine]").forEach((entry) => entry.removeAttribute("aria-current"));
+  button.setAttribute("aria-current", "true");
+  bay.querySelector(".setup-machine")?.insertAdjacentHTML("beforebegin", setupMachineMarkup(record));
+  bay.querySelectorAll(".setup-machine")[1]?.remove();
 }
 
 function renderSetupTile(record, { id: group, title: category }) {
@@ -3848,7 +3896,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.4</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.89.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -4513,6 +4561,10 @@ document.addEventListener("click", (event) => {
 
   if (target.dataset.selectorGroup !== undefined || target.dataset.selectorPage !== undefined || target.dataset.projectSpine !== undefined) {
     syncRecordSelector(target);
+    return;
+  }
+  if (target.dataset.setupMachine !== undefined) {
+    selectSetupMachine(target);
     return;
   }
   if (target.dataset.fieldPeek !== undefined || target.dataset.fieldStep !== undefined) {

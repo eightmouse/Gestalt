@@ -11105,3 +11105,150 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 @media (min-width: 761px) and (max-height: 850px) {
   .record-media-cabinet { --cabinet-cover: 92px; }
 }
+
+/* Setup is the machine. Desktop: a boot menu of machines at the top left, the picked machine's
+   readout (its wallpaper on the shared screen glass and its spec lines the way neofetch prints
+   them) beside it, and the dock, connected devices and notes along the bottom. The boot menu and
+   readout are desktop only; handheld keeps the four groups as they were. */
+.setup-boot,
+.setup-machine { display: none; }
+@media (min-width: 761px) {
+  .archive-shell > .workspace > .setup-bay > .setup-bay-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-auto-rows: auto;
+    grid-template-areas:
+      "systems systems systems machine machine machine machine machine machine machine machine machine"
+      "tools tools tools tools peripherals peripherals peripherals peripherals peripherals notes notes notes";
+    overflow: hidden;
+  }
+  /* The dock: every tool on one row, icon over name, sized to fit four or five across. */
+  .archive-shell > .workspace > .setup-bay .setup-group--tools .setup-tile-grid { grid-auto-columns: calc(74px * var(--desktop-size, 1)); gap: calc(6px * var(--desktop-size, 1)); }
+  .archive-shell > .workspace > .setup-bay .setup-tile--tools { inline-size: auto; min-block-size: calc(96px * var(--desktop-size, 1)); padding-inline: calc(4px * var(--desktop-size, 1)); }
+  .archive-shell > .workspace > .setup-bay .setup-group--peripherals .setup-tile-grid { grid-auto-columns: calc(124px * var(--desktop-size, 1)); gap: calc(8px * var(--desktop-size, 1)); }
+  .setup-machine-palette { inline-size: max-content; outline: 1px solid var(--line); }
+  .archive-shell > .workspace > .setup-bay .setup-group { min-block-size: 0; overflow: hidden; }
+  .setup-group--systems { grid-area: systems; }
+  .setup-group--tools { grid-area: tools; }
+  .setup-group--peripherals { grid-area: peripherals; }
+  .setup-group--notes { grid-area: notes; }
+  .setup-group--systems > .setup-tile-grid { display: none; }
+  .setup-group--systems { grid-template-rows: auto auto minmax(0, 1fr); }
+  /* The action words (idle, inspect, read, boot) said nothing; only editing keeps its label. */
+  .setup-bay .setup-tile:not(.is-editing) > i { display: none; }
+
+  /* Boot menu: one entry per machine, the picked one highlighted with its caret. */
+  .setup-boot { display: grid; align-content: start; gap: calc(6px * var(--desktop-size, 1)); min-block-size: 0; overflow: auto; }
+  .setup-boot-entry {
+    appearance: none;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: calc(10px * var(--desktop-size, 1));
+    padding: calc(10px * var(--desktop-size, 1)) calc(12px * var(--desktop-size, 1));
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    text-align: start;
+    font: calc(13px * var(--desktop-size, 1)) / 1.25 var(--mono);
+    cursor: pointer;
+    transition: background-color 110ms ease, border-color 110ms ease, color 110ms ease;
+  }
+  .setup-boot-entry > span:last-child { display: grid; gap: 3px; min-inline-size: 0; }
+  .setup-boot-entry strong { overflow: hidden; color: var(--text); font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+  .setup-boot-entry small { overflow: hidden; color: var(--muted); font-size: calc(11px * var(--desktop-size, 1)); text-overflow: ellipsis; white-space: nowrap; }
+  .setup-boot-caret { visibility: hidden; color: var(--accent); }
+  .setup-boot-entry:is(:hover, :focus-visible) { border-color: var(--line); color: var(--text); outline: none; }
+  .setup-boot-entry[aria-current="true"] { border-color: var(--line-strong); background: rgba(var(--tone-ink, 217, 213, 193), .09); }
+  .setup-boot-entry[aria-current="true"] strong { color: var(--text-strong); }
+  .setup-boot-entry[aria-current="true"] .setup-boot-caret { visibility: visible; }
+
+  /* The readout. */
+  .setup-machine {
+    grid-area: machine;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: center;
+    gap: calc(22px * var(--desktop-size, 1));
+    min-block-size: 0;
+    padding: calc(18px * var(--desktop-size, 1));
+    border: 1px solid rgba(var(--tone-ink, 217, 213, 193), 0.15);
+    background:
+      linear-gradient(135deg, rgba(var(--tone-ink, 217, 213, 193), 0.055), transparent 38%),
+      var(--glass-panel);
+    overflow: hidden;
+  }
+  .setup-machine[data-empty] { grid-template-columns: minmax(0, 1fr); place-items: center; }
+  .setup-machine-empty { margin: 0; color: var(--muted); font: calc(12px * var(--desktop-size, 1)) / 1.4 var(--mono); }
+  .setup-machine-screen { min-inline-size: 0; padding: calc(7px * var(--desktop-size, 1)); border: 1px solid var(--line-strong); background: var(--reader-well); }
+  .setup-machine-glass { aspect-ratio: 16 / 9; }
+  .setup-machine-glass:has(> .project-screen-empty) { display: grid; place-items: center; }
+  .setup-machine-spec { display: grid; align-content: center; gap: calc(9px * var(--desktop-size, 1)); min-inline-size: 0; font: calc(13px * var(--desktop-size, 1)) / 1.35 var(--mono); }
+  .setup-machine-host { margin: 0; padding-block-end: calc(8px * var(--desktop-size, 1)); border-block-end: 1px solid var(--line); color: var(--accent); font-size: calc(15px * var(--desktop-size, 1)); }
+  .setup-machine-spec dl { display: grid; gap: calc(5px * var(--desktop-size, 1)); margin: 0; }
+  .setup-machine-spec dl > div { display: grid; grid-template-columns: calc(64px * var(--desktop-size, 1)) minmax(0, 1fr); gap: calc(10px * var(--desktop-size, 1)); }
+  .setup-machine-spec dt { color: var(--accent); }
+  .setup-machine-spec dd { margin: 0; overflow: hidden; color: var(--text-strong); text-overflow: ellipsis; white-space: nowrap; }
+  /* The colour strip neofetch prints under its readout, in Gestalt's own tones. */
+  .setup-machine-palette { display: flex; gap: 0; margin-block-start: calc(4px * var(--desktop-size, 1)); }
+  .setup-machine-palette i { inline-size: calc(22px * var(--desktop-size, 1)); block-size: calc(12px * var(--desktop-size, 1)); }
+  .setup-machine-palette i:nth-child(1) { background: rgb(var(--tone-base, 5, 6, 5)); }
+  .setup-machine-palette i:nth-child(2) { background: rgb(var(--tone-surface, 8, 9, 8)); }
+  .setup-machine-palette i:nth-child(3) { background: rgb(var(--tone-recessed, 25, 31, 27)); }
+  .setup-machine-palette i:nth-child(4) { background: rgba(var(--tone-ink, 217, 213, 193), .35); }
+  .setup-machine-palette i:nth-child(5) { background: rgba(var(--tone-ink, 217, 213, 193), .65); }
+  .setup-machine-palette i:nth-child(6) { background: rgb(var(--tone-ink, 217, 213, 193)); }
+  .setup-machine-palette i:nth-child(7) { background: var(--accent); }
+  .setup-machine-palette i:nth-child(8) { background: rgb(107 211 186); }
+  .setup-machine-open {
+    appearance: none;
+    justify-self: start;
+    max-inline-size: 100%;
+    margin-block-start: calc(4px * var(--desktop-size, 1));
+    padding: calc(6px * var(--desktop-size, 1)) calc(10px * var(--desktop-size, 1));
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: rgba(var(--tone-base, 5, 6, 5), .4);
+    color: var(--muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: calc(12px * var(--desktop-size, 1)) / 1.2 var(--mono);
+    cursor: pointer;
+  }
+  .setup-machine-open:is(:hover, :focus-visible) { border-color: var(--line-strong); color: var(--text-strong); outline: none; }
+}
+/* Shorter desktop bays keep every part of the machine, tighter: no group blurbs, smaller tiles. */
+@media (min-width: 761px) and (max-height: 850px) {
+  .archive-shell > .workspace > .setup-bay > .setup-bay-grid { grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px; }
+  .archive-shell > .workspace > .setup-bay .setup-group { gap: 8px; padding: 10px 12px; }
+  .archive-shell > .workspace > .setup-bay .setup-group > p { display: none; }
+  .archive-shell > .workspace > .setup-bay .setup-group > header { padding-block-end: 6px; }
+  .setup-boot { gap: 4px; }
+  .setup-boot-entry { padding: 6px 10px; }
+  .setup-machine { gap: 16px; padding: 12px; }
+  .setup-machine-spec { gap: 6px; font-size: 12px; }
+  .setup-machine-host { padding-block-end: 5px; font-size: 13px; }
+  .setup-machine-spec dl { gap: 2px; }
+  .setup-machine-open { margin-block-start: 0; padding-block: 4px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--tools { min-block-size: 0; padding-block: 4px; gap: 5px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--tools .setup-tile-icon { inline-size: 34px; block-size: 34px; }
+  .archive-shell > .workspace > .setup-bay .setup-group--peripherals .setup-tile-grid { grid-auto-columns: 112px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals .setup-tile-icon { block-size: 52px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--notes { min-block-size: 0; padding-block: 4px; gap: 5px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--notes .setup-tile-icon { inline-size: 34px; block-size: 34px; }
+  .archive-shell > .workspace > .setup-bay .setup-group--notes .setup-tile-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+}
+@media (min-width: 761px) and (max-height: 850px) {
+  .archive-shell > .workspace > .setup-bay .setup-group--tools .setup-tile-grid { grid-auto-columns: 54px; gap: 4px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--tools strong { font-size: 11px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals { inline-size: auto; min-inline-size: 0; }
+}
+@media (min-width: 761px) {
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals { inline-size: auto; min-inline-size: 0; }
+}
+@media (min-width: 761px) and (max-height: 850px) {
+  .archive-shell > .workspace > .setup-bay .setup-group--peripherals .setup-tile-grid { grid-auto-columns: 96px; gap: 8px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals { min-block-size: 0; padding: 5px; gap: 4px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals .setup-tile-icon { block-size: 48px; }
+  .archive-shell > .workspace > .setup-bay .setup-tile--peripherals strong { font-size: 11px; }
+}

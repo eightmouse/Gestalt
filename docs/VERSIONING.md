@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.88.4`. Previous site-code release: `v1.88.3` (88b0c11d).
+Release target: `v1.89.0`. Previous site-code release: `v1.88.4` (71abfe05).
+
+`v1.89.0` makes Setup the machine. On desktop the machines are boot entries at the top left; the picked one fills a readout beside them with its wallpaper on the shared screen glass and its spec lines the way neofetch prints them: user@host, then OS, Model, CPU, GPU and RAM from the record's own notes, a colour strip in Gestalt's tones, and a command line that opens the record. Switching entries swaps the readout in place. Tools sit in a dock, peripherals as connected devices and notes along the bottom, shared by every machine; the empty action words on tiles are gone, and shorter screens tighten everything so it still fits. Handheld Setup and in-place editing are unchanged. Authored records, media and dependencies are unchanged.
 
 `v1.88.4` makes the boot's session screen work like an OS login: when the loader cuts, the archive's own wallpaper fades in blurred and dimmed behind the operator's picture and name, and at the handoff the whole screen fades out with a slight zoom over 420ms instead of squeezing into a line, so the blur seems to clear onto the workspace. The portrait loads eagerly so it is always there. Timings, quick start and Reduced Motion are unchanged. Authored records, media and dependencies are unchanged.
 

@@ -4,7 +4,7 @@ import { gameActivityLabel, gameLogPlacement } from "@/lib/game-state";
 import { formatReadableDate, metaText, noteEntries, recordDisplaySummary, recordHeaderImage } from "@/components/archive/record-utils";
 import { FieldPapers } from "@/components/archive/field-papers";
 import type { ContentKey } from "@/components/archive/types";
-import { setupGroupFor, setupGroupRegistry, type SetupGroupId } from "@/components/archive/setup-utils";
+import { setupCommandFor, setupGroupFor, setupGroupRegistry, setupProfile, type SetupGroupId } from "@/components/archive/setup-utils";
 import { ArrowLeft, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, FileText, Folder, FolderOpen, HardDrive, Pencil, Plus, Search, X } from "lucide-react";
 import { buildFieldArchive, compareSectionRecords, logArchiveDate, LOG_ARCHIVE_AFTER_DAYS, LOG_DESK_KEEP } from "@/lib/log-archive";
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -672,6 +672,7 @@ function SetupBay({
   section: ArchiveSectionConfig;
 }) {
   const [editingTools, setEditingTools] = useState(false);
+  const [machineId, setMachineId] = useState<string>();
   const groups = setupGroupRegistry.map((group) => ({
     ...group,
     records: [] as RecordEntry[]
@@ -711,6 +712,7 @@ function SetupBay({
               </div>
             </header>
             <p>{group.detail}</p>
+            {group.id === "systems" && group.records.length ? <SetupBootMenu machines={group.records} current={(group.records.find((record) => record.id === machineId) ?? group.records[0]).id} onPick={setMachineId} /> : null}
             <div className="setup-tile-grid">
               {group.records.length > 0 ? (
                 group.records.map((record) => (
@@ -722,9 +724,40 @@ function SetupBay({
             </div>
           </section>
         ))}
+        <SetupMachine record={groups[0].records.find((record) => record.id === machineId) ?? groups[0].records[0]} onOpenRecord={onOpenRecord} />
       </div>
     </section>
   );
+}
+
+// Setup: the machines are boot entries; the one picked is shown in the readout beside them.
+function SetupBootMenu({ machines, current, onPick }: { machines: RecordEntry[]; current: string; onPick: (id: string) => void }) {
+  return <nav className="setup-boot" aria-label="Machines">
+    {machines.map((record) => {
+      const readout = pocket.machineReadout(setupProfile(record).specs, { title: record.title, user: "Eightmouse" });
+      return <button key={record.id} type="button" className="setup-boot-entry" aria-current={record.id === current ? "true" : undefined} onClick={() => onPick(record.id)}>
+        <span className="setup-boot-caret" aria-hidden="true">&gt;</span><span><strong>{readout.entry}</strong><small>{record.title}</small></span>
+      </button>;
+    })}
+  </nav>;
+}
+
+// The machine readout: its wallpaper on the shared glass, and its spec lines the way neofetch prints them.
+function SetupMachine({ record, onOpenRecord }: { record?: RecordEntry; onOpenRecord: (record: RecordEntry) => void }) {
+  if (!record) return <section className="setup-machine" data-empty="" aria-label="Machine"><p className="setup-machine-empty">No machine filed yet.</p></section>;
+  const readout = pocket.machineReadout(setupProfile(record).specs, { title: record.title, user: "Eightmouse" });
+  const wallpaper = recordHeaderImage(record) || record.banner || "";
+  return <section className="setup-machine" aria-label={`Machine: ${record.title}`}>
+    <div className="setup-machine-screen">
+      <div className="project-screen-glass setup-machine-glass">{wallpaper ? <><img src={wallpaper} alt="" decoding="async" /><img className="screen-bloom" src={wallpaper} alt="" aria-hidden="true" decoding="async" /></> : <span className="project-screen-empty">No wallpaper filed</span>}</div>
+    </div>
+    <div className="setup-machine-spec">
+      <p className="setup-machine-host">{readout.host}</p>
+      {readout.rows.length ? <dl>{readout.rows.map((row, index) => <div key={`${row.label}-${index}`}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl> : <p className="setup-machine-empty">No spec lines filed.</p>}
+      <span className="setup-machine-palette" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} />)}</span>
+      <button type="button" className="setup-machine-open" onClick={() => onOpenRecord(record)}><span aria-hidden="true">$ </span>{setupCommandFor(record)}</button>
+    </div>
+  </section>;
 }
 
 function SetupTile({ onOpenRecord, onEditTool, record, group, category }: { onOpenRecord: (record: RecordEntry) => void; onEditTool?: (record: RecordEntry) => void; record: RecordEntry; group: SetupGroupId; category: string }) {

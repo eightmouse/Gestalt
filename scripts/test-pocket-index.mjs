@@ -114,6 +114,12 @@ const bodyBench = pocket.projectBench({ updated: "2026-02-07" }, [{ id: "main", 
 assert.deepEqual(bodyBench.latest, { id: "main", date: "07 / 02 / 2026", title: "Description", excerpt: "First paragraph.\n\nSecond paragraph." },"With no dated notes, a project bench shows its record body, titled by its first heading and dated by its last update");
 assert.equal(bodyBench.noteCount, 0, "The body is not counted as a filed note");
 assert.equal(pocket.projectBench({}, [], { stack: Array.from({ length: 8 }, (_, i) => `S${i}`) }).moreStack, 2);
+const linux = pocket.machineReadout([{ label: "Model", value: "MSI GF63 Thin 11SC" }, { label: "CPU", value: "Intel Core i5-11400H" }, { label: "RAM", value: "12GB RAM" }, { label: "GPU", value: "NVIDIA GTX 1650" }, { label: "GPU", value: "Intel UHD Graphics" }, { label: "OS", value: "Arch Linux + Hyprland" }], { title: "Linux Setup", user: "Eightmouse" });
+assert.equal(linux.host, "eightmouse@arch", "The host comes from the OS line");
+assert.equal(linux.entry, "Arch Linux", "The boot entry is the OS, without its desktop");
+assert.deepEqual(linux.rows.map((row) => row.label), ["OS", "Model", "CPU", "GPU", "GPU", "RAM"], "Neofetch order, both GPUs kept in their filed order");
+assert.deepEqual(pocket.machineReadout([{ label: "Board", value: "X" }], { title: "Spare Rig" }), { host: "operator@spare", entry: "Spare Rig", rows: [{ label: "Board", value: "X" }] }, "Without an OS line the title names the machine; unknown lines still show");
+assert.equal(pocket.machineReadout([], {}).entry, "Machine");
 assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive empty");
 const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);
 assert.deepEqual(steamDrive.figures.map(({ value }) => value), ["1088.0h", "26 / 11 / 2026", "42%"]);

@@ -104,6 +104,23 @@
     const lines = (Array.isArray(stack) ? stack : []).map((item) => String(item).trim()).filter(Boolean);
     return { started: date(record?.started), noteCount: filed.length, latest, earlier: Math.max(0, filed.length - 1), earlierNotes, screen: String(screen || "").trim(), stack: lines.slice(0, 6), moreStack: Math.max(0, lines.length - 6) };
   }
+  // A machine's readout, the way neofetch prints it: user@host, then OS, Model, CPU, GPU and RAM
+  // in that order and any other filed lines after them. Built only from the record's own spec lines
+  // (already parsed, private labels removed); the host and boot entry come from the OS line, or the
+  // record's title when there is none. Nothing is invented.
+  function machineReadout(specs = [], { title = "", user = "operator" } = {}) {
+    const rows = (Array.isArray(specs) ? specs : [])
+      .map((row) => ({ label: String(row?.label || "").trim(), value: String(row?.value || "").trim() }))
+      .filter((row) => row.label && row.value);
+    const order = ["os", "model", "cpu", "gpu", "ram", "memory"];
+    const rank = (row) => { const index = order.indexOf(row.label.toLowerCase()); return index < 0 ? order.length : index; };
+    const sorted = rows.map((row, index) => ({ row, index })).sort((a, b) => rank(a.row) - rank(b.row) || a.index - b.index).map(({ row }) => row).slice(0, 8);
+    const os = rows.find((row) => row.label.toLowerCase() === "os")?.value || "";
+    const entry = os.split(/\s+[+&|/]\s+/)[0].trim() || String(title).trim() || "Machine";
+    const slug = (value) => (String(value).toLowerCase().match(/[a-z0-9]+/) || [""])[0];
+    const host = slug(os) || slug(title) || "machine";
+    return { host: `${slug(user) || "operator"}@${host}`, entry, rows: sorted };
+  }
   // The picture in a game disk's window: one landscape source for every disk, so they all read the
   // same way. Steam's store header (always the same layout, with the game's logo) when the game has a
   // Steam ID, then the record's own header image, its banner, then its dashboard art. No art, no picture.
@@ -232,5 +249,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gameDiskArt, weatherTrace, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gameDiskArt, machineReadout, weatherTrace, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

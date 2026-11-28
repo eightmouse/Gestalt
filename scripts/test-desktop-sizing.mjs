@@ -98,4 +98,17 @@ assert.match(masthead, /:is\(\.time-block > button, \.icon-button, \.local-revie
 const navCss = readFileSync(new URL("../app/desktop-navigation.css", import.meta.url), "utf8");
 assert.match(navCss, /\.archive-shell:not\(\[data-nav-wide\]\) \{\s*--dashboard-max-inline: min\(calc\(1480px \* var\(--desktop-size, 1\)\), calc\(100vw - var\(--sidebar-width\) - var\(--window-rail-pad\) \* 2\)\);/, "Legacy Mode fills the room beside the sidebar, so there is no empty strip on the right");
 assert.match(navCss, /\.archive-shell:not\(\[data-nav-wide\]\) > \.workspace > \.workspace-header \{ max-inline-size: var\(--dashboard-max-inline\); \}/, "The masthead ends where the bay does");
+// Setup is the machine: a boot menu of machines, the picked one's readout beside it, then the dock,
+// devices and notes. Desktop only; handheld keeps the four groups.
+{
+  const react = readFileSync(new URL("../components/archive/section-page.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../static-app.js", import.meta.url), "utf8");
+  for (const [name, source] of [["React", react], ["static", shell]]) {
+    for (const part of ["setup-boot-entry", "setup-machine-host", "setup-machine-palette", "setup-machine-open", "machineReadout(setupProfile(record).specs"]) assert.ok(source.includes(part), name + " Setup draws " + part);
+  }
+  assert.ok(shell.includes("if (target.dataset.setupMachine !== undefined) {") && shell.includes("setupMachineId: undefined"), "Picking a boot entry swaps the readout in the static reader");
+  assert.ok(react.includes("const [machineId, setMachineId] = useState<string>();"), "React keeps the picked machine in state");
+  assert.match(css, /\.setup-boot,\s*\.setup-machine \{ display: none; \}/, "The boot menu and readout are desktop only");
+  assert.match(css, /grid-template-areas:\s*"systems systems systems machine/,"The machine readout sits beside the boot menu");
+}
 console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing, one shared section frame and one masthead.");
