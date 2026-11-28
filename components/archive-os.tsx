@@ -48,7 +48,7 @@ import { normalizeEntryAccessMode, readEntryAccessMode, saveEntryAccessMode, sho
 import { inlineNoteIndex, newInlineRecord, supportsInlineEditing, type InlineNoteFile } from "@/lib/inline-editing";
 import seasonal, { type SeasonalMode } from "@/public/seasonal.js";
 import desktopNavigation, { type DesktopNavigationMode } from "@/public/desktop-navigation.js";
-import { DesktopNavigationChrome, DesktopTerminalRestore, SystemTipsButton, useDesktopNavigation } from "@/components/archive/desktop-navigation";
+import { DesktopNavigationChrome, DesktopTerminalRestore, SettingsTrayButton, SystemTipsButton, useDesktopNavigation } from "@/components/archive/desktop-navigation";
 
 const LocalStudioEditor = dynamic(
   () => import("@/components/studio-client").then((module) => module.StudioClient),
@@ -150,10 +150,10 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const recordAccessPlayedRef = useRef(false);
   const [entryAccessMode, setEntryAccessMode] = useState<EntryAccessMode>("first");
   const [seasonalMode, setSeasonalMode] = useState<SeasonalMode>("auto");
-  const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("fixed");
+  const [desktopNavigationMode, setDesktopNavigationMode] = useState<DesktopNavigationMode>("terminal");
   const [startupMode, setStartupMode] = useState<StartupMode>("full");
   const [pocketBootMode, setPocketBootMode] = useState<PocketBootMode>("once");
-  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("night");
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("auto");
   const [memoryMode, setMemoryMode] = useState<MemoryStateMode>("trace");
   const shellRef = useRef<HTMLElement | null>(null);
   const entryAccessModeRef = useRef<EntryAccessMode>("first");
@@ -171,6 +171,8 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   }, [activeSection, handheld]);
 
   useEffect(() => { ambientMotion.initialize(); }, []);
+  // The first-visit note beside the tray's Settings button is done once Settings has been opened.
+  useEffect(() => { if (osBehaviourOpen) behaviour.markSettingsSeen(document); }, [osBehaviourOpen]);
 
   const changeEntryAccessMode = (value: EntryAccessMode) => {
     const mode = normalizeEntryAccessMode(value);
@@ -223,7 +225,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
     setDesktopNavigationMode(desktopNavigation.readMode());
     setStartupMode(behaviour.readStartupMode());
     setPocketBootMode(pocket.readBootMode());
-    setAppearanceMode(appearance.initialize(window));
+    appearance.initialize(window);
+    setAppearanceMode(appearance.getMode(document));
+    if (behaviour.readSettingsSeen()) document.documentElement.setAttribute("data-settings-seen", "");
     setMemoryMode(memoryState.readMode());
     entryAccessModeRef.current = mode;
     setEntryAccessMode(mode);
@@ -1049,6 +1053,12 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             <Square size={13} />
             Restore active record
           </button>
+          <SettingsTrayButton onOpen={() => {
+            setSearchOpen(false);
+            setSearchQuery("");
+            setNavOpen(false);
+            setOsBehaviourOpen(true);
+          }} />
           <SystemTipsButton />
         </div>
 

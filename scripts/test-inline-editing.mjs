@@ -172,7 +172,9 @@ for (const section of ["logs", "games", "projects"]) {
   const editor = await fixture({ section, manual: true });
   const tabs = editor.layout().props.contents.map((item) => item.key);
   assert.deepEqual(Array.from(tabs), section === "games" ? ["overview", "notes", "recommendation"] : section === "projects" ? ["overview", "notes", "technical", "samples"] : ["notes", "overview", "attachments"]);
-  assert.equal(Boolean(editor.layout().props.controls), section === "games", "Game placement controls belong only to Games");
+  assert.equal(editor.layout().props.pictures.some((picture) => picture.key === "cover"), section === "games", "Only Games have a cover tile");
+  assert.equal(editor.layout().props.pictures.some((picture) => picture.key === "art"), section === "projects", "Only Projects have an overview art tile");
+  assert.equal(editor.layout().props.pictures[0].key, "header", "Every kind starts its pictures with the header");
   editor.layout().props.onUpdate("title", `Updated ${section}`);
   await editor.layout().props.onSave();
   const savedRecord = editor.changes[0][0][0];
@@ -248,7 +250,7 @@ console.log("Save-state checks passed: edit/revert, notes/media, buffered edits,
 for (const section of ["projects", "games"]) {
   const editor = await fixture({ section, manual: true });
   editor.layout().props.onUpdate("headerImage", "/media/header.png");
-  editor.layout().props.headerFraming.props.onChange({ headerZoom: 135, headerX: 30, headerY: 65 });
+  editor.layout().props.pictures[0].framing.props.onChange({ headerZoom: 135, headerX: 30, headerY: 65 });
   editor.layout().props.content.props.onFrameChange({ bannerFit: "contain", bannerZoom: 110, bannerX: 70, bannerY: 25 });
   assert.equal(editor.layout().props.record.meta.headerZoom, 135);
   assert.equal(editor.layout().props.record.meta.bannerX, 70);
@@ -260,7 +262,7 @@ for (const section of ["projects", "games"]) {
   await editor.layout().props.onSave();
   const payload = editor.calls.find((call) => call.url === "/api/studio/entry").payload;
   for (const [key, value] of Object.entries({ headerZoom: 135, headerX: 30, headerY: 65, bannerFit: "contain", bannerZoom: 110, bannerX: 70, bannerY: 25 })) assert.equal(payload[key], value);
-  editor.layout().props.headerFraming.props.onChange({ headerZoom: 100, headerX: 50, headerY: 50 });
+  editor.layout().props.pictures[0].framing.props.onChange({ headerZoom: 100, headerX: 50, headerY: 50 });
   assert.equal(editor.layout().props.record.meta.headerZoom, undefined, "Reset restores the existing CSS crop");
   assert.equal(editor.layout().props.record.meta.bannerZoom, 110, "Resetting the header cannot reset overview artwork");
 }
@@ -368,7 +370,8 @@ for (const [state, label] of [["new", "New draft"], ["unsaved", "Unsaved changes
   assert.ok(!html.toLowerCase().includes("published"), "The indicator never claims a Git push or hosted deployment");
 }
 assert.match(read("app/studio/studio.css"), /\.inline-record-actions > \.studio-save-state\s*\{ margin-inline-end: auto;/);
-assert.match(read("components/studio/inline-record-layout.tsx"), /title="Background behind the entry title; separate from overview artwork and samples"/);
+assert.match(read("components/studio-client.tsx"), /label: "Header", hint: "Behind the entry title"/);
+assert.match(read("components/studio/save-shortcut.ts"), /event\.key\.toLowerCase\(\) !== "s"/, "Ctrl+S saves the open record");
 console.log("Buffered controls and status markup passed: typing, revert, cancel, blur, cleanup, local-save wording and compact action rows.");
 
 const untitled = await fixture({ create: true, manual: true });
@@ -424,22 +427,26 @@ assert.equal(fullStudio.heading().props.form.title, "The same shortcut", "Both l
 console.log("Log title suggestions: explicit acceptance, date/placeholder handling, single-note scope, draft retention, stale callbacks, saved/manual title protection and editor parity passed.");
 
 const gameControls = await fixture({ section: "games", manual: true });
-const controls = () => gameControls.layout().props.controls.type(gameControls.layout().props.controls.props);
 const descendants = (node) => !node || typeof node !== "object" ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(descendants)];
+const shelfElement = () => { const details = gameControls.layout().props.details; return descendants(details.type(details.props)).find((node) => node.type?.name === "GameShelfControls"); };
+const controls = () => shelfElement().type(shelfElement().props);
 const selects = () => descendants(controls()).filter((node) => node.type === "select");
-const html = renderToStaticMarkup(gameControls.layout().props.controls);
-assert.equal((html.match(/class="studio-select-control"/g) || []).length, 2);
-assert.equal((html.match(/<select /g) || []).length, 2, "Native selects retain keyboard, type-ahead and touch picker behavior");
-assert.equal((html.match(/aria-hidden="true"/g) || []).length, 2, "Decorative chevrons do not change the control's accessible name");
-selects().find((node) => node.props["aria-label"] === "Session activity").props.onChange({ target: { value: "active" } });
+const html = renderToStaticMarkup(shelfElement());
+assert.equal((html.match(/class="studio-select-control"/g) || []).length, 1);
+assert.equal((html.match(/<select /g) || []).length, 1, "One native shelf select keeps keyboard, type-ahead and touch picker behavior");
+assert.equal((html.match(/aria-hidden="true"/g) || []).length, 1, "The decorative chevron does not change the control's accessible name");
+const shelf = () => selects().find((node) => node.props["aria-label"] === "Shelf");
+shelf().props.onChange({ target: { value: "active" } });
 assert.equal(gameControls.layout().props.record.meta.gameActivity, "active");
-selects().find((node) => node.props["aria-label"] === "Log placement").props.onChange({ target: { value: "past" } });
-assert.equal(selects().length, 1, "Changing placement still conditionally hides session activity");
+assert.equal(gameControls.layout().props.record.meta.gamePlacement, "session");
+assert.equal(shelf().props.value, "active");
+shelf().props.onChange({ target: { value: "past" } });
+assert.equal(shelf().props.value, "past", "Past Logs is one choice, so placement and activity never disagree");
 assert.equal(gameControls.layout().props.record.meta.gamePlacement, "past");
 await gameControls.layout().props.onSave();
 const placementWrite = gameControls.calls.find((call) => call.url === "/api/studio/entry").payload;
 assert.equal(placementWrite.gamePlacement, "past");
-assert.equal(placementWrite.gameActivity, "active");
+assert.equal(placementWrite.gameActivity, "", "Past Logs clears session activity");
 assert.equal(placementWrite.steamAppId, "123");
 assert.match(source, /Setup folder\s*<span className="studio-select-control">\s*<select/);
 const editorCss = read("app/studio/studio.css");

@@ -25,20 +25,12 @@
           "detail": "A section between Games and Logs for movies and anime, kept apart (one above the other or similar). Layout to be discussed when we get there."
         },
         {
-          "title": "Studio: tidier editing",
-          "detail": "Look for quality-of-life improvements in how entries are written and edited, and tidy the different rules each kind of entry follows so the Studio feels less messy. Design to be discussed."
-        },
-        {
           "title": "Shorter browser windows",
           "detail": "Gestalt is mostly checked with the taskbar and browser bars hidden. Make sure it looks just as composed when a visible taskbar or toolbar leaves less height, with nothing squished. Checked on common screen sizes with the bars showing."
         },
         {
           "title": "Visitors leave a sign",
           "detail": "Show visits the Gestalt way, not as a counter going up: someone stumbled in and their visit left a mark. Needs a privacy-friendly way to count on a static site, with no tracking of who visited. Design and service to be discussed."
-        },
-        {
-          "title": "First visit: better defaults and a light guide",
-          "detail": "New visitors start on Auto appearance, Terminal navigation and the Code Surface Memory State, with a small, unintrusive pointer to Settings that says what can be changed there."
         },
         {
           "title": "First visit: a gentler shortcut hint",
@@ -62,6 +54,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Tidier editing and a better first visit",
+          "detail": "Every entry's Overview editor reads the same: Identity with status chips, one strip of picture tiles, then what belongs to its kind, with a single Shelf choice for games. The save bar stays at the foot and Ctrl+S saves. New visitors start on Auto and Terminal, and Settings has a tray button with a short first-visit note.",
+          "version": "v1.92.0",
+          "releasedOn": "2026-11-28"
+        },
         {
           "title": "Game disks with weight",
           "detail": "Disks are narrower and thicker, with the cover turned sideways on a 9:16 label beside the title spine, a smaller shutter, faint circuitry under the case and a little wear on each label, different on every disk. The disc keeps its spin instead of restarting.",

@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.91.2`. Previous site-code release: `v1.91.1` (c98721df).
+Release target: `v1.92.0`. Previous site-code release: `v1.91.2` (72883a50).
+
+`v1.92.0` tidies in-place editing and the first visit. An entry's Overview editor is laid out the same way for every kind: Identity (title, status chips for the statuses that kind uses with room for any other, and both dates), Pictures (one tile per picture the entry uses, showing it, to add, change, clear or frame it), then the part that belongs to the kind: a project's summary and progress, a game's single Shelf choice (Session Logs active, inactive or following its status, or Past Logs) with its Steam ID, summary and progress, or a log's generated summary. The save bar stays on the window's foot on every tab, and Ctrl+S saves in every in-place editor. New visitors start on Auto appearance and Terminal navigation, with Code Surface Memory State; saved choices are kept. Settings has its own button in the window tray, with a short first-visit note that fades by itself and is gone once Settings has been opened. Auto's card now says it switches at 7:00 and 19:00, and the local editor's Settings shows Auto when Auto is on. Authored records, media and dependencies are unchanged.
 
 `v1.91.2` reshapes each game disk around its cover. The disk is narrower, with the picture on a 9:16 label turned on its side so the whole wide art fits, and the title on a spine beside it sharing one flat outline, with the section accent along its top. The shutter is smaller, the case has faint circuitry under the smoked plastic and a shutter track, and a moulded side wall and shadow give it thickness; it lifts further when reached for. Each label is printed a little worn: a faded patch, a crease, scuffs and a few specks, placed from the record so no two disks match. The disc keeps turning from where it was instead of restarting on hover. Handheld disks are unchanged.
 

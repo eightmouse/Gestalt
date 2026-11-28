@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+28 November, v1.92.0: In-place editing gets one tidy Overview for every kind of entry and a save bar with Ctrl+S. New visitors start on Auto and Terminal, with Settings in the window tray.
+
 28 November, v1.91.2: Game disks are narrower and thicker, with a sideways cover on a 9:16 label, circuitry under the case, a little wear on every label and a disc that keeps its spin.
 
 28 November, v1.91.1: Game disks carry a tall portrait cover with the title on a spine, like a game case.

@@ -93,6 +93,7 @@ let workspaceToolsController = null;
 
 // The full welcome reports real state; the Steam line changes in place if the snapshot lands during boot.
 const bootPreviousSession = window.GestaltOsBehaviour?.readLastSession?.();
+if (window.GestaltOsBehaviour?.readSettingsSeen?.()) document.documentElement.setAttribute("data-settings-seen", "");
 
 function bootReadinessState() {
   return {
@@ -253,7 +254,7 @@ const state = {
   recordAccessPlayed: false,
   entryAccessMode: readEntryAccessMode(),
   seasonalMode: window.GestaltSeasonal?.readMode() || "auto",
-  desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "fixed",
+  desktopNavigationMode: window.GestaltDesktopNavigation?.readMode() || "terminal",
   startupMode: window.GestaltOsBehaviour?.readStartupMode() || "full",
   pocketBootMode: pocket?.readBootMode() || "once",
   selectorGroup: undefined,
@@ -1636,7 +1637,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.91.2</span>
+        <span>v1.92.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1650,7 +1651,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.91.2</span>
+        <span class="version-label">v1.92.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1670,7 +1671,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.91.2</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.92.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -3311,6 +3312,7 @@ function openWorkspaceTool(mode) {
 }
 
 function openOsBehaviour() {
+  window.GestaltOsBehaviour?.markSettingsSeen?.();
   const rebuild = state.navOpen || !root.querySelector(".workspace");
   state.searchOpen = false;
   state.searchQuery = "";
@@ -3917,7 +3919,7 @@ function restoreRecord() {
 }
 
 function workspaceWindowTray() {
-  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button><button class="reopen-control" type="button" data-window-action="open"${!state.panelOpen && state.panelMinimized ? "" : " hidden"}>Restore active record</button><button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Tips" aria-controls="system-notices" aria-expanded="false" title="System Tips" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></div>`;
+  return `<div class="workspace-window-tray"><button class="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19h8"/><path d="m4 17 6-6-6-6"/></svg></button><button class="reopen-control" type="button" data-window-action="open"${!state.panelOpen && state.panelMinimized ? "" : " hidden"}>Restore active record</button><button class="settings-tray-button" type="button" data-open-os-behaviour aria-haspopup="dialog" aria-label="Settings" title="Settings"><span class="settings-tray-note" aria-hidden="true">Look, motion and navigation</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></button><button class="system-notices-toggle" type="button" data-system-notices-toggle aria-label="System Tips" aria-controls="system-notices" aria-expanded="false" title="System Tips" inert><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button></div>`;
 }
 
 function desktopDirectory() {
@@ -3929,7 +3931,7 @@ function desktopDirectory() {
   const login = terminalApi?.loginLine?.(state.localMemory === "granted" ? window.GestaltOsBehaviour?.lastSessionLabel?.(bootPreviousSession) : null, records.length) || "";
   const current = rows.find((row) => row.id === state.activeSection) || rows[0];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.91.2</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.92.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body">
       <p class="desktop-terminal-login">${escapeHtml(login)}</p>
       <p class="desktop-terminal-prompt"><span class="desktop-terminal-user">eightmouse@gestalt</span>:~$ <span class="desktop-terminal-command">ls -l</span></p>

@@ -10,11 +10,14 @@
     if (normalizeMode(mode) !== "auto") return normalizeMode(mode);
     return date.getHours() >= 7 && date.getHours() < 19 ? "day" : "night";
   }
+  // A first visit, or a visitor who hasn't let Gestalt remember anything, starts on Auto: the
+  // archive follows the time of day until they pick a look themselves.
   function readMode(storage) {
     try {
       const local = storage || globalThis.localStorage;
-      return local.getItem("gestalt.local-memory") === "granted" ? normalizeMode(local.getItem(key)) : "night";
-    } catch { return "night"; }
+      const saved = local.getItem("gestalt.local-memory") === "granted" ? local.getItem(key) : null;
+      return saved == null ? "auto" : normalizeMode(saved);
+    } catch { return "auto"; }
   }
   function getMode(doc = globalThis.document) { return normalizeMode(doc?.documentElement?.getAttribute("data-appearance-mode")); }
   function sync(doc = globalThis.document, date = new Date()) {
@@ -59,7 +62,7 @@
     const doc = host?.document;
     if (!doc?.documentElement) return "night";
     if (!doc.documentElement.hasAttribute("data-appearance-mode")) {
-      let mode = "night";
+      let mode = "auto";
       try { mode = readMode(host.localStorage); } catch { /* Storage can be blocked. */ }
       doc.documentElement.setAttribute("data-appearance-mode", mode);
     }

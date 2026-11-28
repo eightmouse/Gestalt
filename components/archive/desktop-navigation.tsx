@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type RefObject } from "react";
-import { Info, Terminal } from "lucide-react";
+import { Info, Settings, Terminal } from "lucide-react";
 import navigation, { type DesktopNavigationController, type DesktopNavigationMode } from "@/public/desktop-navigation.js";
 import recordMotion from "@/public/record-motion.js";
 import memoryState from "@/public/memory-state.js";
@@ -32,7 +32,7 @@ export function DesktopNavigationChrome({ records, filedLogs, activeSection, las
     </section>
     <section className="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
       <header className="desktop-terminal-bar">
-        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.91.2</small></span>
+        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.92.0</small></span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button>
           <button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button>
@@ -63,6 +63,14 @@ export function DesktopNavigationChrome({ records, filedLogs, activeSection, las
 export function DesktopTerminalRestore() {
   return <button className="desktop-terminal-restore" type="button" data-desktop-terminal-restore aria-label="Restore terminal" aria-controls="desktop-directory" title="Restore terminal (T)" aria-hidden="true" inert>
     <Terminal size={18} aria-hidden="true" />
+  </button>;
+}
+
+// Settings in the window tray. On a first visit a short note beside it says what can be changed;
+// it fades by itself and is gone once Settings has been opened (<html data-settings-seen>).
+export function SettingsTrayButton({ onOpen }: { onOpen: () => void }) {
+  return <button className="settings-tray-button" type="button" aria-haspopup="dialog" aria-label="Settings" title="Settings" onClick={onOpen}>
+    <span className="settings-tray-note" aria-hidden="true">Look, motion and navigation</span><Settings size={18} aria-hidden="true" />
   </button>;
 }
 

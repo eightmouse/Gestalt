@@ -4,6 +4,7 @@ import { BookOpen, ChevronDown, ImagePlus, Plus, Save, Trash2, X } from "lucide-
 import type { ReactNode } from "react";
 import { setupGroupRegistry, type SetupGroupId } from "@/components/archive/setup-utils";
 import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
+import { useSaveShortcut } from "@/components/studio/save-shortcut";
 import { setupSpecDraft, setupSpecLine } from "@/lib/setup-editing";
 
 type SetupField = "title" | "summary" | "externalUrl" | "status" | "hardware" | "body";
@@ -35,6 +36,7 @@ export function InlineSetupLayout({
   onRefresh: () => void;
   onMessage: (message: string) => void;
 }) {
+  useSaveShortcut(onSave, busy);
   const artwork = group === "tools" ? "iconImage" : "headerImage";
   const artworkLabel = group === "tools" ? "Shortcut icon" : group === "peripherals" ? "Device photo" : "Profile image";
   const title = <input aria-label="Record title" className="inline-setup-title" value={fields.title} placeholder={titleHint} onChange={(event) => onUpdate("title", event.target.value)} />;

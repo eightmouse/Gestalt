@@ -11,6 +11,8 @@ export type OsBehaviourController = {
 declare const behaviour: {
   bootProfiles: readonly string[];
   bootReadiness(state?: { records?: number; appearance?: string; steam?: "reading" | "ready" | "offline"; lastSession?: string | null }): { key: string; label: string; value: string }[];
+  readSettingsSeen(storage?: Pick<Storage, "getItem">): boolean;
+  markSettingsSeen(doc?: Document, storage?: Pick<Storage, "getItem" | "setItem">): boolean;
   readLastSession(storage?: Pick<Storage, "getItem">): string | null | undefined;
   saveLastSession(now?: Date, storage?: Pick<Storage, "getItem" | "setItem">): boolean;
   lastSessionLabel(previous: string | null | undefined, now?: Date): string | null;

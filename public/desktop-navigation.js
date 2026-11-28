@@ -7,9 +7,12 @@
   const noticesKey = "gestalt.shortcut-notices";
   const noticesRevision = "seen-with-web-search";
   function normalizeMode(value) { return value === "terminal" || value === "auto" ? "terminal" : "fixed"; }
+  // A first visit starts on Terminal navigation; a saved choice (including Legacy Mode) is kept.
   function readMode(storage) {
-    try { return normalizeMode((storage || globalThis.localStorage).getItem(key)); }
-    catch { return "fixed"; }
+    try {
+      const saved = (storage || globalThis.localStorage).getItem(key);
+      return saved == null ? "terminal" : normalizeMode(saved);
+    } catch { return "terminal"; }
   }
   function saveMode(value, storage) {
     try { (storage || globalThis.localStorage).setItem(key, normalizeMode(value)); }

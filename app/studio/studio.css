@@ -2235,3 +2235,105 @@ input.studio-title-edit {
     grid-column: auto;
   }
 }
+
+/* In-place Overview: three blocks in the same order for every kind of entry (who it is, its
+   pictures, then what belongs to its kind), and the save bar pinned to the window's foot. */
+.inline-overview { display: grid; gap: 14px; min-inline-size: 0; }
+.inline-editor-block {
+  display: grid; gap: 14px; min-inline-size: 0; padding: 14px 16px 16px;
+  border: 1px solid var(--line); background: rgba(var(--tone-ink, 217, 213, 193), 0.02);
+}
+.inline-editor-block-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  color: var(--muted); font: 12px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.inline-editor-block-head::before { content: "//"; margin-inline-end: -4px; letter-spacing: 0; }
+.inline-editor-block-head > span { margin-inline-end: auto; }
+.inline-editor-block-head small { font-size: 12px; letter-spacing: 0; text-transform: none; }
+.inline-field-label { color: var(--muted); font: 13px/1.5 var(--mono); letter-spacing: 0; }
+
+.record-layout.is-editing-record .inline-identity-title { display: grid; gap: 10px; justify-items: start; }
+.record-layout.is-editing-record .inline-identity-title .inline-record-title { font: 400 calc(30px * var(--desktop-size, 1))/1.2 var(--sans); }
+.record-layout.is-editing-record .inline-identity-title .studio-use-note-title { margin: 0; }
+.inline-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.inline-status-row > .inline-field-label { margin-inline-end: 6px; }
+.inline-status-chip {
+  min-block-size: 32px; padding: 4px 11px; border: 1px solid var(--line); background: transparent;
+  color: var(--text); font: 14px/1.4 var(--mono); cursor: pointer;
+}
+.inline-status-chip:is(:hover, :focus-visible) { border-color: var(--line-strong); color: var(--text-strong); }
+.inline-status-chip[aria-pressed="true"] { border-color: var(--accent); background: rgba(var(--tone-ink, 217, 213, 193), 0.08); color: var(--text-strong); }
+.record-layout.is-editing-record .inline-status-custom {
+  inline-size: 14ch; min-inline-size: 0; margin-inline-start: 4px; padding: 4px 2px;
+  border: 0; border-block-end: 1px dashed var(--line); background: transparent; color: var(--text-strong); font: 14px/1.4 var(--mono);
+}
+.record-layout.is-editing-record .inline-status-custom:focus { outline: none; border-color: var(--accent); }
+.inline-identity-dates { display: flex; flex-wrap: wrap; gap: 10px 28px; }
+.inline-identity-dates > label { display: flex; align-items: baseline; gap: 10px; }
+.record-layout.is-editing-record .inline-identity-dates input {
+  padding: 4px 0; border: 0; border-block-end: 1px dashed var(--line); background: transparent;
+  color: var(--text); color-scheme: var(--control-scheme, dark); font: 15px/1.4 var(--mono);
+}
+
+.inline-picture-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 14px; }
+.inline-picture { display: grid; gap: 7px; min-inline-size: 0; }
+.inline-picture-face {
+  position: relative; display: grid; place-items: center; inline-size: 100%; aspect-ratio: 16 / 9; padding: 0; overflow: hidden;
+  border: 1px solid var(--line-strong); background: rgba(var(--tone-ink, 217, 213, 193), 0.03); color: var(--muted); cursor: pointer;
+}
+.inline-picture[data-empty] .inline-picture-face { border-style: dashed; border-color: var(--line); }
+.inline-picture-face img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; }
+.inline-picture-face:is(:hover, :focus-visible) { border-color: var(--accent); color: var(--text-strong); }
+.inline-picture-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-inline-size: 0; }
+.inline-picture-meta strong { color: var(--text-strong); font: 500 13px/1.4 var(--mono); }
+.inline-picture-meta small { min-inline-size: 0; color: var(--muted); font-size: 12px; text-align: end; }
+.inline-picture-meta button { padding: 0; border: 0; background: none; color: var(--muted); font: 13px/1.4 var(--mono); cursor: pointer; }
+.inline-picture-meta button:is(:hover, :focus-visible) { color: var(--text-strong); text-decoration: underline; }
+.inline-picture-framing { display: grid; gap: 8px; }
+.inline-picture-framing .studio-artwork-framing { margin: 0; }
+
+.inline-details > .studio-textarea-field, .inline-details > .studio-progress-edit, .inline-details > .studio-milestone-editor { margin: 0; }
+.inline-game-shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; align-items: end; }
+
+.record-layout.is-editing-record .inline-save-bar {
+  position: sticky; inset-block-end: 0; z-index: 4; display: flex; flex-wrap: nowrap; align-items: center; gap: 10px;
+  margin-block: auto 0; padding-block: 12px; border-block-start: 1px solid var(--line);
+  background: rgb(var(--tone-surface, 8, 9, 8));
+}
+.inline-entry-editor > .inline-entry-content { margin-block-end: 18px; }
+.record-layout.is-editing-record .inline-save-bar > .studio-save-state { flex: none; margin: 0; }
+.record-layout.is-editing-record .inline-save-bar > .inline-record-message {
+  flex: 1 1 auto; min-inline-size: 0; margin: 0; overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap;
+}
+.inline-save-bar > .inline-record-message + .inline-save-hint, .inline-save-bar > .studio-save-state + .inline-save-hint { margin-inline-start: auto; }
+.inline-save-hint { flex: none; color: var(--muted); font: 12px/1 var(--mono); }
+.record-layout.is-editing-record .inline-save-bar button { flex: none; }
+.record-layout.is-editing-record .inline-save-bar button:last-child { border-color: var(--accent); color: var(--text-strong); }
+@media (max-width: 760px) {
+  .inline-save-hint { display: none; }
+  .record-layout.is-editing-record .inline-save-bar > .inline-record-message { display: none; }
+  .record-layout.is-editing-record .inline-save-bar > .studio-save-state { margin-inline-end: auto; }
+}
+@media (min-width: 761px) {
+  /* The save bar covers the window's bottom padding and runs edge to edge under the same shading as
+     the pinned tab bar, so nothing shows beneath it while the entry scrolls. */
+  .archive-shell > .workspace > .record-window .record-layout.is-editing-record .inline-save-bar {
+    inset-block-end: calc(-32px * var(--desktop-size, 1));
+    margin-block-end: calc(-32px * var(--desktop-size, 1));
+    margin-inline: calc(-32px * var(--desktop-size, 1)) calc(-28px * var(--desktop-size, 1));
+    padding: 12px calc(28px * var(--desktop-size, 1)) calc(12px + 32px * var(--desktop-size, 1)) calc(32px * var(--desktop-size, 1));
+    border-block-start: 0;
+    background:
+      linear-gradient(var(--line), var(--line)) calc(32px * var(--desktop-size, 1)) 0 / calc(100% - 60px * var(--desktop-size, 1)) 1px no-repeat,
+      linear-gradient(90deg, rgb(var(--tone-base, 5, 6, 5)), rgb(var(--tone-surface, 8, 9, 8)) 38%),
+      rgb(var(--tone-surface, 8, 9, 8));
+  }
+}
+/* Steam App ID reads like its neighbour, Shelf: the same label and the same control height. */
+.inline-game-shelf .studio-inline-field { display: grid; gap: 8px; min-inline-size: 0; margin: 0; }
+.inline-game-shelf .studio-inline-field > span { color: var(--muted); font: 14px/1.5 var(--mono); letter-spacing: 0; text-transform: none; }
+.record-layout.is-editing-record .inline-game-shelf .studio-inline-field > input {
+  box-sizing: border-box; inline-size: 100%; min-block-size: 40px; padding: 8px 10px;
+  border: 1px solid var(--line-strong); background: var(--surface-input, #10110f); color: var(--text-strong); font: 16px/1.4 var(--mono);
+}
+.record-layout.is-editing-record .inline-game-shelf .studio-inline-field > input:focus { outline: none; border-color: var(--accent); }

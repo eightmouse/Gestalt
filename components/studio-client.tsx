@@ -14,7 +14,7 @@ import type { SteamRecordSeed } from "@/public/steam-display.mjs";
 import imageFraming, { type HeaderFrame, type ImageFrame } from "@/public/image-framing.js";
 import { ArtworkFraming } from "@/components/studio/artwork-framing";
 import { HeaderFraming } from "@/components/studio/header-framing";
-import { InlineRecordLayout } from "@/components/studio/inline-record-layout";
+import { InlineRecordLayout, type InlinePicture } from "@/components/studio/inline-record-layout";
 import { InlineSetupLayout } from "@/components/studio/inline-setup-layout";
 import { StudioSaveState, type SaveState } from "@/components/studio/save-state";
 import { inlineNoteIndex, supportsInlineEditing, type InlineNoteFile } from "@/lib/inline-editing";
@@ -853,6 +853,18 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
       { key: "attachments", label: "Attachments" }
     ] : getStudioContents(form.section)) as Array<{ key: "overview" | "notes" | "attachments" | "technical" | "samples" | "recommendation"; label: string }>;
     const inlineContent = inlineContents.find((item) => item.key === activeContent)?.key ?? "overview";
+    // Every picture the entry uses, in one strip: the header behind the title for every kind, a
+    // game's cover, and a project's overview art (which the reader shows only without a header).
+    const inlinePictures: InlinePicture[] = [
+      { key: "header", label: "Header", hint: "Behind the entry title", image: form.headerImage,
+        onPick: () => chooseFiles("headerImage"), onClear: () => update("headerImage", ""), framing: headerFraming },
+      ...(form.section === "games" ? [{ key: "cover", label: "Cover", hint: form.steamAppId ? "Empty: Steam art is used" : "Dashboard, disk and overview art", image: form.banner,
+        onPick: () => chooseFiles("banner"), onClear: () => update("banner", ""),
+        framing: <ArtworkFraming banner={form.banner} frame={imageFraming.normalizeImageFrame(form)} onChange={updateArtworkFrame} /> }] : []),
+      ...(form.section === "projects" ? [{ key: "art", label: "Overview art", hint: form.headerImage ? "Hidden while a header is set" : "Beside the overview", image: form.banner,
+        onPick: () => chooseFiles("banner"), onClear: () => update("banner", ""),
+        framing: form.headerImage ? undefined : <ArtworkFraming banner={form.banner} frame={imageFraming.normalizeImageFrame(form)} onChange={updateArtworkFrame} /> }] : [])
+    ];
     const editingNotes = noteFiles && inlineContent === "notes" ? { ...noteFiles, direct: form.section === "logs" } : undefined;
     const writingNote = Boolean(editingNotes && (directNote || inlineNoteIndex(parsedNotes, noteFile) >= 0));
     const noteSearch = !writingNote && noteFiles && noteCount > 1
@@ -868,10 +880,11 @@ export function StudioClient({ embedded = false, inline = false, initialContent 
     return <>
       <input ref={fileInputRef} hidden type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
         onChange={(event) => event.target.files && uploadFiles(event.target.files)} onClick={(event) => { event.currentTarget.value = ""; }} />
-      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={editorMessage} titleAction={titleAction} headerFraming={headerFraming} saveState={saveState}
+      <InlineRecordLayout record={activeRecord} activeContent={inlineContent} contents={inlineContents} isNew={!form.originalId} busy={saving || uploading} message={editorMessage} titleAction={titleAction} saveState={saveState}
         writingNote={writingNote} noteSearch={noteSearch}
-        controls={form.section === "games" ? <GameInspectorControls form={form} onUpdate={update} /> : undefined}
-        exportRequired={archiveRefreshRequired} onUpdate={update} onPickHeader={() => chooseFiles("headerImage")} onPickThumbnail={() => chooseFiles("banner")}
+        pictures={inlinePictures}
+        details={<InlineOverviewDetails form={form} record={activeRecord} onUpdate={update} />}
+        exportRequired={archiveRefreshRequired} onUpdate={update}
         onContentChange={(key) => {
           onNoteFileChange?.(null);
           if (key !== "notes") closeNoteSearch();
@@ -1946,6 +1959,68 @@ function SetupOverviewEditor({
       )}
     </section>
   );
+}
+
+// The part of the in-place Overview that belongs to the kind of entry: a project's summary and
+// progress, a game's shelf, Steam ID, summary and progress, or a log's generated summary.
+function InlineOverviewDetails({ form, record, onUpdate }: { form: StudioForm; record: RecordEntry; onUpdate: StudioUpdate }) {
+  const label = form.section === "games" ? "Game" : form.section === "logs" ? "Log" : "Project";
+  if (form.section === "logs") {
+    return <section className="inline-editor-block inline-details" aria-label={label}>
+      <header className="inline-editor-block-head"><span>{label}</span></header>
+      <div className="studio-generated-overview">
+        <span>GENERATED FROM LATEST NOTE</span>
+        <p>{recordDisplaySummary(record)}</p>
+        <small>A manual summary of 22 or more words replaces this excerpt.</small>
+      </div>
+      <details className="studio-manual-overview">
+        <summary>Manual overview (optional)</summary>
+        <label className="studio-textarea-field">
+          Summary
+          <textarea value={form.summary.toLowerCase() === "no summary recorded." ? "" : form.summary} onChange={(event) => onUpdate("summary", event.target.value || "No summary recorded.")} />
+        </label>
+      </details>
+    </section>;
+  }
+  return <section className="inline-editor-block inline-details" aria-label={label}>
+    <header className="inline-editor-block-head"><span>{label}</span></header>
+    {form.section === "games" ? <GameShelfControls form={form} onUpdate={onUpdate} /> : null}
+    <label className="studio-textarea-field">
+      Summary
+      <textarea value={form.summary} onChange={(event) => onUpdate("summary", event.target.value)} />
+    </label>
+    <div className="studio-progress-edit">
+      <span>Current Progress</span>
+      <input type="range" min="0" max="100" value={form.progress} onChange={(event) => onUpdate("progress", Number(event.target.value))} />
+      <strong>{form.progress}%</strong>
+    </div>
+    <MilestoneEditor key={`${form.originalId || form.section}:milestones`} value={form.milestones} onChange={(value) => onUpdate("milestones", value)} />
+  </section>;
+}
+
+// A game's shelf as one choice, so where it is filed and whether it counts as active can't disagree:
+// Session Logs (active, inactive or following its status) or Past Logs.
+function GameShelfControls({ form, onUpdate }: { form: StudioForm; onUpdate: StudioUpdate }) {
+  const placement = gameLogPlacement(form);
+  const shelf = placement === "past" ? "past" : form.gameActivity || "status";
+  return <div className="inline-game-shelf">
+    <label className="studio-placement-field">Shelf
+      <span className="studio-select-control">
+        <select aria-label="Shelf" value={shelf} onChange={(event) => {
+          const next = event.target.value;
+          onUpdate("gamePlacement", next === "past" ? "past" : "session");
+          onUpdate("gameActivity", next === "active" ? "active" : next === "inactive" ? "inactive" : "");
+        }}>
+          <option value="active">Session Logs · active</option>
+          <option value="inactive">Session Logs · inactive</option>
+          <option value="status">Session Logs · from status ({form.status})</option>
+          <option value="past">Past Logs</option>
+        </select>
+        <ChevronDown size={16} aria-hidden="true" />
+      </span>
+    </label>
+    <InlineField label="Steam App ID" value={form.steamAppId} onChange={(value) => onUpdate("steamAppId", value)} />
+  </div>;
 }
 
 function GameInspectorControls({ form, onUpdate }: { form: StudioForm; onUpdate: StudioUpdate }) {

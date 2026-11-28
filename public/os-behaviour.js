@@ -17,6 +17,24 @@
     if (typeof lastSession === "string" && lastSession) lines.push({ key: "session", label: "LAST SESSION", value: lastSession });
     return lines;
   }
+  // The first-visit pointer to Settings: once Settings has been opened it is not shown again. The
+  // page marks this on <html data-settings-seen>; with local memory it is kept for later visits too.
+  const settingsSeenKey = "gestalt.settings-seen";
+  function readSettingsSeen(storage) {
+    try {
+      const local = storage || globalThis.localStorage;
+      return local.getItem("gestalt.local-memory") === "granted" && local.getItem(settingsSeenKey) === "yes";
+    } catch { return false; }
+  }
+  function markSettingsSeen(doc = globalThis.document, storage) {
+    doc?.documentElement?.setAttribute("data-settings-seen", "");
+    try {
+      const local = storage || globalThis.localStorage;
+      if (local.getItem("gestalt.local-memory") !== "granted") return false;
+      local.setItem(settingsSeenKey, "yes");
+      return true;
+    } catch { return false; }
+  }
   // The last visit is remembered only with local memory, only on this device: one timestamp.
   const lastSessionKey = "gestalt.last-session";
   function readLastSession(storage) {
@@ -105,7 +123,7 @@
   // and every option is a card that says what it does. The options whose difference you can see
   // carry a small drawn preview (CSS, so it never goes stale). Handheld shows every panel stacked.
   const optionDetails = {
-    appearance: { night: "Dark plates, lit screens", day: "Paper light, no glow", auto: "Follows your system" },
+    appearance: { night: "Dark plates, lit screens", day: "Paper light, no glow", auto: "Day from 7:00, Night from 19:00" },
     entry: { first: "The open beat plays once per visit", always: "Every record opens on the beat", off: "Records open instantly" },
     startup: { full: "Power-on, readiness and login", quick: "A short boot, straight to work" },
     pocketBoot: { once: "Boots once per session", always: "Boots on every visit" },
@@ -212,5 +230,5 @@
     }
     return { open, update, close, destroy: close };
   }
-  return { bootProfiles, bootReadiness, readLastSession, saveLastSession, lastSessionLabel, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
+  return { bootProfiles, bootReadiness, readSettingsSeen, markSettingsSeen, readLastSession, saveLastSession, lastSessionLabel, bootModules, initializeBootPresentation, normalizeStartupMode, readStartupMode, saveStartupMode, normalizeValues, renderContent, createController };
 });
