@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+28 November, v1.91.0: Entries with notes get a note index filed by month, entry tab bars stay pinned, and the boot's session text reads in every theme.
+
 28 November, v1.90.1: Latest Log shows more of the note on taller screens, with its footer on the bottom edge.
 
 28 November, v1.90.0: The Terminal becomes a real shell session, Settings a control panel with previews and a Privacy tab, and the Dashboard plates gain Steam figures, reading times and next milestones. Recent Activity folds busy records into one row.

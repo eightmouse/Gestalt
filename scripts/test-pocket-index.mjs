@@ -144,6 +144,22 @@ assert.deepEqual(plate.figures.map((figure) => figure.label), ["Play time", "Ach
 assert.equal(plate.share, 38);
 assert.deepEqual(plate.note, { title: "Pleasant surprise", date: "05 / 11 / 2026" });
 assert.equal(pocket.gamePlate({ title: "D" }, null).share, null, "No achievements, no bar");
+// The note index: many notes become a featured latest card and months, newest first.
+const manyNotes = [
+  { id: "n-1", title: "28 / 11 / 2026 - A real shell (v1.90)", body: "### Head\nThe Terminal is a real session now.\n\nMore." },
+  { id: "n-2", title: "28 / 11 / 2026 - Setup is the machine (v1.89)", body: "" },
+  { id: "n-3", title: "27 / 11 / 2026 - Power-on (v1.87)", body: "" },
+  { id: "n-4", title: "02 / 10 / 2026 - October note", body: "" },
+  { id: "n-5", title: "Updates", body: "" },
+  { id: "n-6", title: "15 / 09 / 2026 - Shelves (v1.77 - v1.81)", body: "" }
+];
+assert.equal(pocket.noteIndex(manyNotes), null, "Fewer than nine notes keep the file grid");
+const index = pocket.noteIndex(manyNotes, 3);
+assert.deepEqual(index.latest, { index: 0, title: "A real shell", version: "v1.90", date: "28 / 11 / 2026", excerpt: "The Terminal is a real session now." }, "The newest note is featured with its version tag and first lines");
+assert.deepEqual(index.months.map((month) => [month.label, month.notes.map((note) => note.title)]), [["Nov 2026", ["Setup is the machine", "Power-on"]], ["Oct 2026", ["October note"]], ["Sep 2026", ["Shelves"]]], "Months newest first, without repeating the featured note");
+assert.equal(index.months[2].notes[0].version, "v1.77", "A version range keeps its first version as the tag");
+assert.deepEqual(index.undated.map((note) => note.title), ["Updates"], "Undated notes are kept, at the end");
+assert.equal(index.count, 6);
 assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive empty");
 const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);
 assert.deepEqual(steamDrive.figures.map(({ value }) => value), ["1088.0h", "26 / 11 / 2026", "42%"]);

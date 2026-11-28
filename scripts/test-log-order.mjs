@@ -17,7 +17,7 @@ const react = compiled("../components/archive/record-utils.ts", { "@/lib/log-arc
 const realRecords = compiled("../lib/content.ts").getRecords();
 const staticSource = readFileSync(new URL("../static-app.js", import.meta.url), "utf8");
 const ast = ts.createSourceFile("static-app.js", staticSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-const staticContext = vm.createContext({ window: { GestaltNoteInline: noteInline }, pocket: { isHandheld: () => false } });
+const staticContext = vm.createContext({ window: { GestaltNoteInline: noteInline }, pocket: { isHandheld: () => false, noteIndex: () => null } });
 for (const name of ["logArchiveDate", "compareLogWritingOrder", "compareSectionRecords", "recentActivity", "activityDate", "recordLastUpdated", "datedNotes", "latestActivityNote", "setupActivityDetail", "setupGroupForActivity", "activityTraceTitle", "noteEntries", "splitUpdateIndex", "noteTitleDate", "textBlock", "matchingNotes", "notePage", "currentNotePage", "renderNoteRows", "renderNotesPage", "recordNoteDirectory", "renderRecordNoteFiles", "renderLogNoteContent", "renderSetupNotes", "splitNoteTitle", "escapeHtml", "pocketIcon", "renderNoteLink", "recordLinkButton", "recordLinkFeedback"]) {
   const declaration = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === name);
   assert.ok(declaration, `Static function ${name} exists`);

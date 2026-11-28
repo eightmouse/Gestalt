@@ -1386,6 +1386,9 @@ function recordNoteDirectory(record, query) {
   const searching = Boolean(query.trim());
   const files = matchingNotes(noteEntries(record.body), query);
   const countLabel = searching ? (files.length === 1 ? "MATCH" : "MATCHES") : (files.length === 1 ? "FILE" : "FILES");
+  // Any dated notes (and no search): the note index, the newest featured and the rest filed by month.
+  const index = searching ? null : pocket.noteIndex(files, 1);
+  if (index) return { count: `${String(files.length).padStart(2, "0")} ${countLabel}`, items: noteIndexMarkup(index), indexed: true };
   const items = files.map((note) => {
     const parts = splitNoteTitle(note.title);
     const title = parts.title === "Current note" ? record.title : parts.title;
@@ -1393,18 +1396,28 @@ function recordNoteDirectory(record, query) {
   }).join("");
   return {
     count: `${String(files.length).padStart(2, "0")} ${countLabel}`,
-    items: items || `<p class="notes-empty">${searching ? "No note matches that signal." : "No notes filed."}</p>`
+    items: items || `<p class="notes-empty">${searching ? "No note matches that signal." : "No notes filed."}</p>`,
+    indexed: false
   };
 }
 
+function noteIndexMarkup(index) {
+  const tag = (version) => version ? `<b class="record-note-version">${escapeHtml(version)}</b>` : "<b></b>";
+  const row = (note) => `<button class="record-note-row" type="button" data-note-file-index="${note.index}">${note.date ? `<time>${escapeHtml(note.date)}</time>` : "<time>--</time>"}<span>${escapeHtml(note.title)}</span>${tag(note.version)}</button>`;
+  const group = (label, notes, open) => `<details class="record-note-month"${open ? " open" : ""}><summary><span>${escapeHtml(label)}</span><small>${notes.length} ${notes.length === 1 ? "note" : "notes"}</small></summary><div class="record-note-rows">${notes.map(row).join("")}</div></details>`;
+  const { latest } = index;
+  return `<button class="record-note-latest" type="button" data-note-file-index="${latest.index}"><span class="record-note-latest-meta"><span>Latest${latest.date ? ` · ${escapeHtml(latest.date)}` : ""}</span>${latest.version ? `<b class="record-note-version">${escapeHtml(latest.version)}</b>` : ""}</span><strong>${escapeHtml(latest.title)}</strong>${latest.excerpt ? `<span class="record-note-latest-excerpt">${escapeHtml(latest.excerpt)}</span>` : ""}</button>
+    <div class="record-note-months">${index.months.map((month, position) => group(month.label, month.notes, position === 0)).join("")}${index.undated.length ? group("Undated", index.undated, false) : ""}</div>`;
+}
+
 function renderRecordNoteFiles(record) {
-  const { count, items } = recordNoteDirectory(record, state.noteSearchQuery);
+  const { count, items, indexed } = recordNoteDirectory(record, state.noteSearchQuery);
   return `<section class="record-note-files" aria-label="${escapeHtml(record.title)} notes">
     <header class="record-note-files-header">
       <h3 class="terminal-title">// NOTE FILES</h3>
       <p class="record-note-file-count" role="status">${count}</p>
     </header>
-    <div class="record-note-file-grid">${items}</div>
+    <div class="record-note-file-grid"${indexed ? " data-index" : ""}>${items}</div>
   </section>`;
 }
 
@@ -1623,7 +1636,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.90.1</span>
+        <span>v1.91.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1637,7 +1650,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.90.1</span>
+        <span class="version-label">v1.91.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1657,7 +1670,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.90.1</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.91.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -3916,7 +3929,7 @@ function desktopDirectory() {
   const login = terminalApi?.loginLine?.(state.localMemory === "granted" ? window.GestaltOsBehaviour?.lastSessionLabel?.(bootPreviousSession) : null, records.length) || "";
   const current = rows.find((row) => row.id === state.activeSection) || rows[0];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.90.1</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.91.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body">
       <p class="desktop-terminal-login">${escapeHtml(login)}</p>
       <p class="desktop-terminal-prompt"><span class="desktop-terminal-user">eightmouse@gestalt</span>:~$ <span class="desktop-terminal-command">ls -l</span></p>
@@ -4265,9 +4278,11 @@ function syncNotePage(notesPage, paging = currentNotePage(selectedRecord())) {
 
 function syncRecordNoteFiles(directory) {
   if (!directory) return;
-  const { count, items } = recordNoteDirectory(selectedRecord(), state.noteSearchQuery);
+  const { count, items, indexed } = recordNoteDirectory(selectedRecord(), state.noteSearchQuery);
   directory.querySelector(".record-note-file-count").textContent = count;
-  directory.querySelector(".record-note-file-grid").innerHTML = items;
+  const grid = directory.querySelector(".record-note-file-grid");
+  grid.toggleAttribute("data-index", indexed);
+  grid.innerHTML = items;
 }
 
 function stepNotePage(button) {

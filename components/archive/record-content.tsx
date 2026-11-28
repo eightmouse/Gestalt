@@ -20,6 +20,7 @@ import { NoteLinkControl } from "@/components/archive/record-link-control";
 import { steamBannerImage } from "@/public/steam-display.mjs";
 import imageFraming from "@/public/image-framing.js";
 import memoryState from "@/public/memory-state.js";
+import pocket from "@/public/pocket-index.js";
 export function getRecordContents(record: RecordEntry): Array<{ key: ContentKey; label: string }> {
   if (record.section === "games") {
     return [
@@ -431,6 +432,8 @@ export function NoteFileSearch({ expanded, query, inputRef, buttonRef, onToggle,
 export function RecordNoteFiles({ record, query, notes, action, onOpen }: { record: RecordEntry; query: string; notes?: ArchiveNote[]; action?: ReactNode; onOpen: (index: number) => void }) {
   const files = matchingNotes(notes ?? noteEntries(record.body), query);
   const countLabel = query.trim() ? (files.length === 1 ? "MATCH" : "MATCHES") : (files.length === 1 ? "FILE" : "FILES");
+  // Any dated notes (and no search): the note index, the newest featured and the rest filed by month.
+  const index = query.trim() ? null : pocket.noteIndex(files, 1);
 
   return <section className="record-note-files" aria-label={`${record.title} notes`}>
     <header className="record-note-files-header">
@@ -438,8 +441,8 @@ export function RecordNoteFiles({ record, query, notes, action, onOpen }: { reco
       <p className="record-note-file-count" role="status">{String(files.length).padStart(2, "0")} {countLabel}</p>
       {action}
     </header>
-    <div className="record-note-file-grid">
-      {files.length ? files.map((note) => <NoteFile key={note.id ?? note.index} note={note} recordTitle={record.title} onOpen={onOpen} />)
+    <div className="record-note-file-grid" data-index={index ? "" : undefined}>
+      {index ? <NoteIndex index={index} onOpen={onOpen} /> : files.length ? files.map((note) => <NoteFile key={note.id ?? note.index} note={note} recordTitle={record.title} onOpen={onOpen} />)
         : <p className="notes-empty">{query.trim() ? "No note matches that signal." : "No notes filed."}</p>}
     </div>
   </section>;
@@ -471,6 +474,28 @@ function LogNoteContent({ record, focusedIndex, shareable }: { record: RecordEnt
       </article>;
     }) : <p className="notes-empty">No notes filed.</p>}
   </section>;
+}
+
+function NoteIndex({ index, onOpen }: { index: NonNullable<ReturnType<typeof pocket.noteIndex>>; onOpen: (index: number) => void }) {
+  const { latest } = index;
+  const row = (note: { index: number; title: string; version: string; date: string }) => <button key={note.index} className="record-note-row" type="button" data-note-file-index={note.index} onClick={() => onOpen(note.index)}>
+    <time>{note.date || "--"}</time><span>{note.title}</span>{note.version ? <b className="record-note-version">{note.version}</b> : <b />}
+  </button>;
+  const group = (key: string, label: string, notes: typeof index.undated, open: boolean) => <details key={key} className="record-note-month" open={open}>
+    <summary><span>{label}</span><small>{notes.length} {notes.length === 1 ? "note" : "notes"}</small></summary>
+    <div className="record-note-rows">{notes.map(row)}</div>
+  </details>;
+  return <>
+    <button className="record-note-latest" type="button" data-note-file-index={latest.index} onClick={() => onOpen(latest.index)}>
+      <span className="record-note-latest-meta"><span>Latest{latest.date ? ` · ${latest.date}` : ""}</span>{latest.version ? <b className="record-note-version">{latest.version}</b> : null}</span>
+      <strong>{latest.title}</strong>
+      {latest.excerpt ? <span className="record-note-latest-excerpt">{latest.excerpt}</span> : null}
+    </button>
+    <div className="record-note-months">
+      {index.months.map((month, position) => group(month.key, month.label, month.notes, position === 0))}
+      {index.undated.length ? group("undated", "Undated", index.undated, false) : null}
+    </div>
+  </>;
 }
 
 function NoteFile({ note, recordTitle, onOpen }: { note: ArchiveNote & { index: number }; recordTitle: string; onOpen: (index: number) => void }) {

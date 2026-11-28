@@ -33,8 +33,8 @@
           "detail": "Look for quality-of-life improvements in how entries are written and edited, and tidy the different rules each kind of entry follows so the Studio feels less messy. Design to be discussed."
         },
         {
-          "title": "Entries with many notes",
-          "detail": "Some entries are gathering lots of notes. Find a clean way to show the extra ones in the reader without a long scroll. Design to be discussed."
+          "title": "Shorter browser windows",
+          "detail": "Gestalt is mostly checked with the taskbar and browser bars hidden. Make sure it looks just as composed when a visible taskbar or toolbar leaves less height, with nothing squished. Checked on common screen sizes with the bars showing."
         }
       ]
     },
@@ -42,6 +42,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "A note index for every entry",
+          "detail": "Entries open their notes on an index: the newest note featured, the rest filed by month with version tags, older months folded. Tab bars stay pinned while an entry scrolls, Overview dates sit on the bottom edge, and the boot's session text reads in every theme.",
+          "version": "v1.91.0",
+          "releasedOn": "2026-11-28"
+        },
         {
           "title": "Latest Log fills its plate",
           "detail": "The excerpt takes the space between the title and the footer and fades out at its foot, so taller screens show more of the note.",

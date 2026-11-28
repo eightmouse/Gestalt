@@ -11388,8 +11388,7 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
    under every line. */
 .boot-wall::after { background: radial-gradient(ellipse 42% 40% at 50% 40%, rgb(0 0 0 / .45), transparent 100%), radial-gradient(ellipse at 50% 42%, transparent 30%, rgb(0 0 0 / .5) 100%); }
 .boot-session :is(.boot-session-label, .boot-session-user, .boot-session-detail) { text-shadow: 0 1px 2px rgb(0 0 0 / .85), 0 0 18px rgb(0 0 0 / .6); }
-.boot-session .boot-session-label { color: var(--text); letter-spacing: .08em; }
-.boot-session .boot-session-detail { color: var(--text-strong); }
+.boot-session .boot-session-label { letter-spacing: .08em; }
 /* Latest Log fills its plate: date and title on top, the footer on the bottom edge, and the
    excerpt takes whatever height is between, fading out at its foot (taller screens show more). */
 @media (min-width: 1181px) and (min-height: 721px) {
@@ -11404,3 +11403,108 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
     mask-image: linear-gradient(180deg, #000 calc(100% - 1.4lh), transparent);
   }
 }
+
+/* The note index: many notes read as a changelog. The newest note is featured; the rest are filed
+   by month, the newest month open and older ones folded to one line with their count. */
+.record-note-file-grid[data-index] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.record-note-latest {
+  appearance: none;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(120deg, rgba(var(--tone-ink, 217, 213, 193), .06), transparent 60%);
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+}
+.record-note-latest:is(:hover, :focus-visible) { border-color: var(--accent); outline: none; }
+.record-note-latest-meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font: 11px / 1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.record-note-latest strong { color: var(--text-strong); font: 500 18px / 1.3 var(--sans); }
+.record-note-latest-excerpt { color: var(--text); font-size: 14px; line-height: 1.55; }
+.record-note-version { padding: 0 6px; border: 1px solid var(--line-strong); color: var(--muted); font: 400 11px / 1.6 var(--mono); letter-spacing: .02em; text-transform: none; }
+.record-note-version:empty { display: none; }
+.record-note-months { display: grid; }
+.record-note-month { border-block-end: 1px solid var(--line); }
+.record-note-month > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 2px;
+  color: var(--text);
+  font: 12px / 1.3 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+}
+.record-note-month > summary::-webkit-details-marker { display: none; }
+.record-note-month > summary > span::before { content: "\25B8"; display: inline-block; inline-size: 1.4em; color: var(--muted); transition: transform 160ms ease; }
+.record-note-month[open] > summary > span::before { transform: rotate(90deg); }
+.record-note-month > summary small { color: var(--muted); font: inherit; letter-spacing: .04em; text-transform: none; }
+.record-note-month > summary:is(:hover, :focus-visible) { color: var(--text-strong); outline: none; }
+.record-note-rows { display: grid; padding-block-end: 8px; }
+.record-note-row {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 7ch minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 2px 6px calc(1.4em + 2px);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  font: inherit;
+  cursor: pointer;
+}
+.record-note-row time { color: var(--muted); font: 12px / 1.3 var(--mono); font-variant-numeric: tabular-nums; }
+.record-note-row span { overflow: hidden; color: var(--text-strong); text-overflow: ellipsis; white-space: nowrap; }
+.record-note-row:is(:hover, :focus-visible) { background: rgba(var(--tone-ink, 217, 213, 193), .06); outline: none; }
+@media (prefers-reduced-motion: reduce) { .record-note-month > summary > span::before { transition: none; } }
+/* Version tags share one width, so the column lines up like a table. */
+.record-note-version { display: inline-block; box-sizing: border-box; inline-size: 8.5ch; overflow: hidden; text-align: center; white-space: nowrap; }
+
+@media (min-width: 761px) {
+  /* Every entry scrolls as one page, and its tab bar (Overview, Notes, ...) stays on the top edge.
+     The bar covers the window's top padding so nothing shows above it while scrolling. */
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout .record-view-tabs {
+    position: sticky;
+    inset-block-start: calc(-30px * var(--desktop-size, 1));
+    z-index: 4;
+    margin-block-start: calc(-30px * var(--desktop-size, 1));
+    padding-block-start: calc(30px * var(--desktop-size, 1));
+    background: rgb(var(--tone-surface, 8, 9, 8));
+  }
+  /* Created and Last updated sit on the bottom edge when the entry is shorter than the window. */
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout > .record-main { display: flex; flex-direction: column; }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout > .record-main > .record-reading-details { margin-block-start: auto; padding-block-start: calc(18px * var(--desktop-size, 1)); }
+}
+@media (min-width: 761px) {
+  /* The note search rides on the tab row, below the bar's covering padding. */
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout .record-view-tabs .record-note-search { inset-block-start: calc(30px * var(--desktop-size, 1)); }
+}
+@media (min-width: 761px) {
+  /* The entry's column is at least the window's height, so the dates can sit on its bottom edge. */
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout:has(> .record-main > .record-reading-details) { align-content: stretch; }
+}
+@media (min-width: 761px) {
+  /* The pinned tab bar runs edge to edge under the window's own left-to-right shading, so it never
+     shows a seam; its divider stays the width of the content. */
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout .record-view-tabs {
+    margin-inline: calc(-32px * var(--desktop-size, 1)) calc(-28px * var(--desktop-size, 1));
+    padding-inline: calc(32px * var(--desktop-size, 1)) calc(28px * var(--desktop-size, 1));
+    border-block-end: 0;
+    background:
+      linear-gradient(var(--line), var(--line)) calc(32px * var(--desktop-size, 1)) 100% / calc(100% - 60px * var(--desktop-size, 1)) 1px no-repeat,
+      linear-gradient(90deg, rgb(var(--tone-base, 5, 6, 5)), rgb(var(--tone-surface, 8, 9, 8)) 38%),
+      rgb(var(--tone-surface, 8, 9, 8));
+  }
+  .archive-shell > .workspace > .record-window:not(.is-setup-record):not(.is-field-paper-reader) .record-layout .record-view-tabs .record-note-search { inset-inline-end: calc(28px * var(--desktop-size, 1)); }
+}
+/* The session sits on the dark, blurred wallpaper in every theme, so its text is always light:
+   it does not take the Day theme's dark ink. */
+.boot-session .boot-session-label { color: rgb(226 223 210 / .78); }
+.boot-session .boot-session-user { color: rgb(246 243 233); }
+.boot-session .boot-session-detail { color: rgb(232 229 217 / .9); }
+.boot-session .boot-session-mark { border-color: rgb(226 223 210 / .35); }

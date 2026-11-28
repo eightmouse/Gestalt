@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.90.1`. Previous site-code release: `v1.90.0` (7c609ecb).
+Release target: `v1.91.0`. Previous site-code release: `v1.90.1` (613b4475).
+
+`v1.91.0` gives every entry with dated notes a note index: the newest note is a featured card with its date, version tag and first lines, and the rest are filed by month, newest first, with the latest month open and older months folded to one line with their count; undated notes sit at the end, and searching still shows the file grid. A trailing version in a note title becomes a fixed-width tag. In every entry the tab bar stays pinned to the top while the page scrolls, edge to edge under the window's own shading, and on Overview the Created and Last Updated dates sit on the bottom edge. The boot's session text is always light over the dark wallpaper, whatever the theme. Authored records, media and dependencies are unchanged.
 
 `v1.90.1` lets the Latest Log plate fill its height: the date and title stay on top, the reading time and desk count sit on the bottom edge, and the excerpt takes the space between, fading out at its foot, so taller screens show more of the note. The compact Dashboard keeps its two-line excerpt.
 

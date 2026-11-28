@@ -183,6 +183,56 @@
     const latest = projectBench(record, notes).latest;
     return latest?.date ? `note ${latest.date.replace(/ \/ \d{4}$/, "").replace(/ /g, "")}` : "";
   }
+  // The note index for records with many notes: the newest note as a featured card, then every other
+  // note grouped by month, newest first, and undated notes at the end. A trailing "(v1.90)" in a
+  // title becomes a version tag. Fewer than `threshold` notes: null, and the reader keeps its grid.
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function noteIndex(notes = [], threshold = 9) {
+    const list = (Array.isArray(notes) ? notes : []).filter((note) => note && note.id !== "main");
+    if (list.length < threshold) return null;
+    const entries = list.map((note, order) => {
+      const match = /^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})\s*[-–—]\s*(.*)$/.exec(String(note.title || "").trim());
+      const raw = (match ? match[4] : String(note.title || "")).trim() || "Untitled note";
+      const tag = /\s*\((v\d+(?:\.\d+)*)[^)]*\)\s*$/i.exec(raw);
+      const day = match ? match[1].padStart(2, "0") : "", month = match ? match[2].padStart(2, "0") : "", year = match ? match[3] : "";
+      return {
+        index: Number.isInteger(note.index) ? note.index : order, order,
+        title: tag ? raw.slice(0, tag.index).trim() || raw : raw,
+        version: tag ? tag[1].toLowerCase() : "",
+        key: match ? `${year}-${month}-${day}` : "",
+        date: match ? `${day} / ${month}` : "",
+        fullDate: match ? `${day} / ${month} / ${year}` : "",
+        month: match ? `${year}-${month}` : "",
+        body: note.body || ""
+      };
+    });
+    const dated = entries.filter((entry) => entry.key).sort((a, b) => b.key.localeCompare(a.key) || a.order - b.order);
+    const undated = entries.filter((entry) => !entry.key);
+    const first = dated[0] || undated[0];
+    const plain = String(first.body).split(/\n\s*\n/)
+      .map((block) => block.split(/\r?\n/).filter((line) => !/^\s*(?:!\[|<|:::|```|#{1,6}\s)/.test(line)).join(" "))
+      .map((block) => block.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/(\*\*|__|`)/g, "").replace(/\s+/g, " ").trim())
+      .find(Boolean) || "";
+    const excerpt = plain.length <= 170 ? plain : `${plain.slice(0, plain.lastIndexOf(" ", 170) > 100 ? plain.lastIndexOf(" ", 170) : 170).trim()}…`;
+    const strip = ({ index, title, version, date }) => ({ index, title, version, date });
+    const months = [];
+    for (const entry of dated) {
+      if (entry === first) continue;
+      let group = months.at(-1);
+      if (!group || group.key !== entry.month) {
+        const [year, month] = entry.month.split("-");
+        group = { key: entry.month, label: `${monthNames[Number(month) - 1]} ${year}`, notes: [] };
+        months.push(group);
+      }
+      group.notes.push(strip(entry));
+    }
+    return {
+      count: entries.length,
+      latest: { ...strip(first), date: first.fullDate, excerpt },
+      months,
+      undated: undated.filter((entry) => entry !== first).map(strip)
+    };
+  }
   // Recent Activity without one record flooding it. Reads the activity newest first until the rows
   // are full: a record with one or two entries keeps a row each, as before; three or more fold into
   // one row at the newest entry, carrying how many more there are and their titles. Folding frees
@@ -300,5 +350,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gamePlate, readingMinutes, projectLine, gameDiskArt, machineReadout, weatherTrace, condenseActivity, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gamePlate, readingMinutes, projectLine, noteIndex, gameDiskArt, machineReadout, weatherTrace, condenseActivity, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

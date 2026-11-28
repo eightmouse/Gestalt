@@ -112,4 +112,5 @@ assert.match(navCss, /\.archive-shell:not\(\[data-nav-wide\]\) > \.workspace > \
   assert.match(css, /grid-template-areas:\s*"systems systems systems machine/,"The machine readout sits beside the boot menu");
 }
 for (const file of ["../static-app.js", "../components/archive/record-utils.ts"]) assert.ok(readFileSync(new URL(file, import.meta.url), "utf8").includes("return age >= -24 * 60 * 60 * 1000 && age <= 48 * 60 * 60 * 1000 ? \"new\" : \"old\";"), file + ": a note dated up to a day ahead still reads as new");
+for (const file of ["../static-app.js", "../components/archive/record-content.tsx"]) { const source = readFileSync(new URL(file, import.meta.url), "utf8"); assert.ok(source.includes("pocket.noteIndex(files, 1)") && source.includes("record-note-latest") && source.includes("record-note-month"), file + ": many notes become the note index, search keeps the file grid"); }
 console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing, one shared section frame and one masthead.");
