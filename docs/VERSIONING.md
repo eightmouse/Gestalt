@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.88.3`. Previous site-code release: `v1.88.2` (bb48610f).
+Release target: `v1.88.4`. Previous site-code release: `v1.88.3` (88b0c11d).
+
+`v1.88.4` makes the boot's session screen work like an OS login: when the loader cuts, the archive's own wallpaper fades in blurred and dimmed behind the operator's picture and name, and at the handoff the whole screen fades out with a slight zoom over 420ms instead of squeezing into a line, so the blur seems to clear onto the workspace. The portrait loads eagerly so it is always there. Timings, quick start and Reduced Motion are unchanged. Authored records, media and dependencies are unchanged.
 
 `v1.88.3` lets the Projects bench show the whole latest note: its paragraphs fill the card beside the screen and fade out at the foot, and the card always matches the screen's height. A project with no dated notes shows its record's own writing instead of a blank card, titled by its first heading and dated by its last update; it is not counted as a filed note. Authored records, media and dependencies are unchanged.
 

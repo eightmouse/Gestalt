@@ -1,5 +1,7 @@
 # Gestalt Roadmap
 
+29 November, v1.88.4: The boot's session screen sits on the blurred wallpaper like an OS login and fades into the workspace.
+
 28 November, v1.88.3: Project benches show the whole latest note, and projects without dated notes show their own writing.
 
 28 November, v1.88.2: The Games drive shows more of the latest note and the notes before it. Field papers are put back on the desk when closed, and the desk gets a blotter, a pencil and a cup ring.

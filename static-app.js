@@ -1621,7 +1621,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.88.3</span>
+        <span>v1.88.4</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1635,7 +1635,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.88.3</span>
+        <span class="version-label">v1.88.4</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1655,7 +1655,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.3</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.88.4</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -3848,7 +3848,7 @@ function desktopDirectory() {
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
   const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.3</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.88.4</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
     <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
       <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
       <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
@@ -3979,6 +3979,7 @@ function render() {
     ${!state.bootDismissed && pocket ? pocket.bootMarkup : ""}
     ${state.bootDismissed ? "" : `<div class="boot-screen" aria-hidden="true">
       <i class="boot-tube"></i>
+      <i class="boot-wall"></i>
       <div class="boot-loader">
         <span>GESTALT</span>
         <div class="boot-status headline-decode-text is-resolving" aria-label="System initializing"><span>${renderCipherLetters("System initializing")}</span></div>
@@ -3986,7 +3987,7 @@ function render() {
       </div>
       <div class="boot-session">
         <span class="boot-session-label">// SESSION READY</span>
-        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async" loading="lazy">
+        <img class="boot-session-mark" src="public/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async">
         <span class="boot-session-user">Eightmouse</span>
         <span class="boot-session-detail">Opening the archive</span>
       </div>

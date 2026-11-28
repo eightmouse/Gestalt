@@ -6,11 +6,12 @@ import osBehaviour, { type StartupMode } from "@/public/os-behaviour.js";
 type BootReadiness = { records: number; appearance: string; steam: "reading" | "ready" | "offline"; lastSession?: string | null };
 
 // Power-on: the tube warms up, the wordmark resolves, the full welcome reports real readiness,
-// then the operator session holds before the screen shutters into the workspace (globals.css, Boot).
+// then the operator session holds over the blurred wallpaper before it fades into the workspace (globals.css, Boot).
 export function BootScreen({ startupMode, readiness }: { startupMode: StartupMode; readiness?: BootReadiness }) {
   return (
     <div className="boot-screen" aria-hidden="true">
       <i className="boot-tube" />
+      <i className="boot-wall" />
       <div className="boot-loader">
         <span>GESTALT</span>
         <div
@@ -25,7 +26,7 @@ export function BootScreen({ startupMode, readiness }: { startupMode: StartupMod
       </div>
       <div className="boot-session">
         <span className="boot-session-label">// SESSION READY</span>
-        <img className="boot-session-mark" src="/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async" loading="lazy" />
+        <img className="boot-session-mark" src="/images/eightmouse-avatar.png" width="120" height="120" alt="" decoding="async" />
         <span className="boot-session-user">Eightmouse</span>
         <span className="boot-session-detail">Opening the archive</span>
       </div>

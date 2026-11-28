@@ -140,7 +140,11 @@ assert.match(css, /\.archive-shell\.is-quick-boot \{ --boot-workspace-at: 760ms;
 assert.match(css, /\.boot-tube \{[^}]*animation: boot-tube-glow 1100ms cubic-bezier\(0\.33, 0, 0\.2, 1\) var\(--boot-elapsed, 0ms\) both;/, "The tube warms up slowly and dimly, on the boot clock");
 const glowFrames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === "boot-tube-glow");
 glowFrames.walkDecls((decl) => assert.equal(decl.prop, "opacity", "The soft glow only fades: a scaled-up gradient shows as blocks"));
-assert.match(css, /boot-shutter 200ms [^;]*calc\(var\(--boot-workspace-at, 2200ms\) \+ var\(--boot-elapsed, 0ms\)\) both/, "The screen leaves by shuttering into a line");
+assert.match(css, /boot-leave 420ms [^;]*calc\(var\(--boot-workspace-at, 2200ms\) \+ var\(--boot-elapsed, 0ms\)\) both/, "The screen fades out over the workspace like a login screen, not squeezed into a line");
+assert.ok(!css.includes("boot-shutter"), "The shutter squeeze is retired");
+assert.match(css, /\.boot-wall \{[^}]*background: var\(--archive-image\) center \/ cover no-repeat;[^}]*filter: blur\(26px\)[^}]*animation: boot-wall-in 420ms ease-out calc\(1280ms \+ var\(--boot-elapsed, 0ms\)\) both;/, "The session sits on the archive's own wallpaper, blurred, arriving with the session");
+assert.match(css, /\.archive-shell\.is-quick-boot \.boot-wall \{ display: none; \}/, "Quick start has no session wall");
+for (const file of ["static-app.js", "components/archive/boot-screen.tsx"]) assert.ok(read(file).includes("boot-wall") && !/boot-session-mark[^>]*loading="lazy"/.test(read(file)), file + " draws the wall and loads the portrait eagerly");
 assert.match(css, /\.archive-shell:not\(\.is-quick-boot\) \.boot-loader \{\s*animation: boot-cut 1ms linear calc\(1280ms \+ var\(--boot-elapsed, 0ms\)\) forwards;/, "The loader cuts, it never dissolves");
 assert.match(css, /\.archive-shell\.is-quick-boot :is\(\.boot-session, \.boot-readiness\) \{ display: none; \}/, "Quick start skips the readiness and session");
 for (const name of ["boot-exit", "quick-boot-exit", "boot-loader-exit", "boot-artwork", "boot-load", "boot-module-seat", "boot-module-readout"]) {
@@ -164,7 +168,7 @@ assert.match(css, /\[data-boot-module="activity"\] \{ --boot-row: 2; \}/);
 assert.match(css, /boot-screen-flare 420ms ease-out calc\(var\(--boot-workspace-at\) \+ 360ms/, "The screens power on last");
 assert.ok(2200 + 360 + 420 <= 3000 && 760 + 360 + 420 <= 1600 && 2200 + 560 <= 3000, "The last flare settles before controls are released");
 assert.ok(2200 + 60 + 2 * 80 + 240 <= 3000, "The last plate settles before releasing inert");
-for (const name of ["boot-shutter", "boot-plate-unfold"]) {
+for (const name of ["boot-leave", "boot-wall-in", "boot-plate-unfold"]) {
   const frames = sheet.nodes.find((node) => node.name === "keyframes" && node.params === name);
   assert.ok(frames, name);
   frames.walkDecls((decl) => assert.ok(["transform", "opacity", "visibility"].includes(decl.prop), `${name} animates only transform and opacity`));
@@ -332,4 +336,4 @@ assert.match(steamInit, /if \(steamDisplayStarted\) return;/);
 assert.ok(!steamInit.includes("!state.bootDismissed"), "The existing one-shot Steam read can prepare during boot");
 assert.ok(!/boot-tube-(?:line|band)|boot-tube::/.test(css), "No line and no full-screen band: the power-on never flashes");
 assert.ok(!css.includes("boot-thread") && !read("components/archive-os.tsx").includes("boot-thread") && !staticSource.includes("boot-thread"), "The travelling line is retired");
-console.log("Boot passed: tube warm-up, stable wordmark rhythms, real readiness lines, plain operator profile, shutter handoff, row-by-row plates, screen flare, and quick/reduced startup.");
+console.log("Boot passed: tube warm-up, stable wordmark rhythms, real readiness lines, plain operator profile, blurred-wallpaper session and fade handoff, row-by-row plates, screen flare, and quick/reduced startup.");

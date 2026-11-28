@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "28 / 11 / 2026",
+  "updated": "29 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -31,6 +31,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "A login, not a squeeze",
+          "detail": "The boot's session screen sits on the archive's wallpaper, blurred, with the operator's picture and name, and fades into the workspace instead of squeezing into a line.",
+          "version": "v1.88.4",
+          "releasedOn": "2026-11-29"
+        },
         {
           "title": "Whole notes on the bench",
           "detail": "The Projects bench shows the latest note's paragraphs, filling the card beside the screen and fading at the foot. Projects without dated notes show their own writing instead of a blank card.",
