@@ -23,6 +23,7 @@ declare const pocket: {
   readingMinutes(text: string): number;
   projectLine(record: WorkbenchProject & { started?: string }, notes?: readonly { id?: string; title: string; body: string }[]): string;
   noteIndex(notes?: readonly { id?: string; index?: number; title: string; body: string }[], threshold?: number): { count: number; latest: { index: number; title: string; version: string; date: string; excerpt: string }; months: { key: string; label: string; notes: { index: number; title: string; version: string; date: string }[] }[]; undated: { index: number; title: string; version: string; date: string }[] } | null;
+  diskWear(id?: string): string;
   gameDiskArt(fields?: { dashboardImage?: unknown; steamAppId?: unknown; banner?: unknown; headerImage?: unknown }): string;
   weatherTrace(values: readonly unknown[] | null | undefined): { points: string; now: [number, number]; low: number; high: number; hours: number } | null;
   recentDispatches<T extends { id: string; record: { id: string; section: string }; date: string; content?: string }>(featuredId: string | undefined, activity: readonly T[], now?: number): T[];

@@ -11560,3 +11560,225 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 @media (min-width: 761px) and (max-height: 850px) {
   .record-selector--games .record-sleeve-label { padding-block: 5px; font-size: 10px; }
 }
+@media (min-width: 761px) {
+  /* The label runs up the disk: the title on its spine and the wide picture turned on its side
+     beside it, both reading bottom to top, filling the lower part of the floppy. */
+  .record-selector--games .record-sleeve-art { grid-template-columns: 20% minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 68%; justify-content: stretch; }
+  .record-selector--games .game-disk-window { container-type: size; aspect-ratio: auto; inline-size: auto; block-size: 100%; }
+  .record-selector--games .game-disk-window img {
+    inset: 50% auto auto 50%;
+    inline-size: 100cqh;
+    block-size: 100cqw;
+    object-position: center;
+    transform: translate(-50%, -50%) rotate(-90deg);
+  }
+  .record-selector--games .game-disk-window[data-empty]::before { writing-mode: vertical-rl; transform: rotate(180deg); }
+}
+@media (min-width: 761px) {
+  /* The label keeps the picture's true shape (a 16:9 picture on its side, so 9:16): it grows as tall
+     as it needs and the metal shutter slides over its top edge, as on a real floppy. The label sits in
+     a shallow recess pressed into the case: darker at its top edge, catching light at its foot. */
+  .record-selector--games .record-sleeve-art { grid-template-rows: minmax(0, 1fr) auto; align-content: end; }
+  .record-selector--games .game-disk-window { aspect-ratio: 9 / 16; inline-size: 100%; block-size: auto; }
+  .record-selector--games :is(.game-disk-window, .record-sleeve-label) {
+    border-color: rgb(0 0 0 / .55);
+    border-block-end-color: rgba(var(--disk-ink), .22);
+    box-shadow: 0 1px 0 rgba(var(--disk-ink), .12);
+  }
+  .record-selector--games .game-disk-window::before {
+    background: var(--screen-glare), linear-gradient(180deg, transparent 60%, rgb(0 0 0 / .25));
+    box-shadow: inset 0 3px 5px rgb(0 0 0 / .55), inset 2px 0 4px rgb(0 0 0 / .35), inset 0 0 0 1px rgb(0 0 0 / .35);
+  }
+  .record-selector--games .record-sleeve-label { box-shadow: inset 0 0 6px rgb(0 0 0 / .4), 0 1px 0 rgba(var(--disk-ink), .12); }
+  /* The shutter rides over the label's top edge. */
+  .record-selector--games .record-sleeve-art::after { z-index: 3; box-shadow: 0 2px 3px rgb(0 0 0 / .45); }
+}
+@media (min-width: 761px) {
+  /* Lowered so the disc shows above it: the label keeps its 9:16 picture at a slightly smaller size
+     and sits at the foot of the case, centred under the shutter. */
+  .record-selector--games .record-sleeve-art { grid-template-columns: 19% 70%; justify-content: end; }
+}
+@media (min-width: 761px) {
+  /* The foot squares are gone; the label takes that space instead: lower on the case, centred,
+     the 9:16 picture beside the spine, so more of the disc shows above it. */
+  .record-selector--games .pocket-tape-reels { display: none; }
+  .record-selector--games .record-sleeve-art { padding-block-end: 5%; justify-content: center; }
+  .record-selector--games .game-disk-window img { object-position: center; }
+}
+
+/* Weight: the case has a real edge. A hard shadow just below and to the right reads as the
+   disk's thickness, and a soft one under it grounds it on the shelf. Reaching for a disk lifts it a
+   little, slowly, with only half the tilt, so it feels like picking up an object, not a card. */
+@media (min-width: 761px) {
+  .record-selector--games .record-sleeve {
+    filter: drop-shadow(1px 3px 0 rgb(14 16 15)) drop-shadow(0 7px 9px rgb(0 0 0 / .45));
+  }
+  :root[data-appearance="day"] .record-selector--games .record-sleeve {
+    filter: drop-shadow(1px 3px 0 rgb(122 128 120)) drop-shadow(0 7px 9px rgb(43 55 48 / .25));
+  }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  .record-selector--games .record-sleeve { transition: filter 320ms cubic-bezier(.22, .7, .31, 1); }
+  .record-selector--games .record-sleeve:not([data-sleeve-press]) .record-sleeve-art { transition: transform 320ms cubic-bezier(.22, .7, .31, 1); }
+  .record-selector--games .record-sleeve[data-sleeve-hover] .record-sleeve-art {
+    transform: perspective(900px) translateY(-4px) rotateX(calc(var(--sleeve-pitch, 0deg) * .5)) rotateY(calc(var(--sleeve-yaw, 0deg) * .5));
+  }
+  .record-selector--games .record-sleeve[data-sleeve-hover] {
+    filter: drop-shadow(1px 3px 0 rgb(14 16 15)) drop-shadow(0 14px 14px rgb(0 0 0 / .55));
+  }
+  :root[data-appearance="day"] .record-selector--games .record-sleeve[data-sleeve-hover] {
+    filter: drop-shadow(1px 3px 0 rgb(122 128 120)) drop-shadow(0 14px 14px rgb(43 55 48 / .32));
+  }
+}
+@media (min-width: 761px) {
+  /* A slimmer case (0.60) so the label fills its width: spine and 9:16 picture edge to edge,
+     nothing floating in the middle, the disc still showing above. */
+  .record-selector--games .record-sleeve-art { aspect-ratio: 0.6; grid-template-columns: 22% minmax(0, 1fr); justify-content: stretch; }
+}
+/* The shelves keep their height with the slimmer case. */
+@media (min-width: 761px) and (min-height: 851px) {
+  .section-page--games > .record-selector--games:has(> .game-drive) .record-media-cabinet {
+    --cabinet-cover: min(calc(191px * var(--selector-scale)), max(calc(84px * var(--selector-scale)), calc((100cqh - 57px * var(--selector-scale)) * 0.6)));
+  }
+}
+@media (min-width: 761px) and (max-height: 850px) {
+  .record-selector--games .record-media-cabinet { --cabinet-cover: 84px; }
+}
+
+@media (min-width: 761px) {
+  /* The spine never sets the label's height: a long title is cut with an ellipsis instead of
+     stretching the label past the disk's foot. */
+  .record-selector--games .record-sleeve-label { contain: size; }
+
+  /* A smaller shutter, closer to a real floppy's proportions. */
+  .record-selector--games .record-sleeve-art::after { inset: 0 30% auto 34%; block-size: 21%; }
+
+  /* Circuitry behind the plastic: faint traces and pads moulded under the smoked case, only just
+     visible, so the case has something inside it without competing with the label. */
+  .record-selector--games .record-sleeve-art::before {
+    background:
+      linear-gradient(rgba(var(--disk-ink), .1), rgba(var(--disk-ink), .1)) 50% 22.5% / 46% 1px no-repeat,
+      linear-gradient(rgb(0 0 0 / .4), rgb(0 0 0 / .4)) 50% 23% / 46% 1px no-repeat,
+      linear-gradient(180deg, rgba(var(--disk-ink), .18), transparent 2%),
+      linear-gradient(112deg, rgb(255 255 255 / .09), rgb(255 255 255 / .02) 26%, transparent 44%, rgb(255 255 255 / .03) 70%, transparent 86%),
+      linear-gradient(rgba(var(--tone-recessed, 25, 31, 27), .7), rgba(var(--tone-recessed, 25, 31, 27), .7)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='200' viewBox='0 0 120 200' fill='none' stroke='%23d9d5c1' stroke-width='.8' stroke-linecap='square'%3E%3Cpath d='M8 40h22v18h14M8 70h10l8 8v22M112 34H92v14l-8 8h-10M112 64h-14v30M18 150v-22l10-10h16M104 120v18l-10 10H80M60 6v14M70 6v8h12'/%3E%3Cg fill='%23d9d5c1' stroke='none'%3E%3Ccircle cx='44' cy='58' r='1.6'/%3E%3Ccircle cx='26' cy='100' r='1.6'/%3E%3Ccircle cx='74' cy='56' r='1.6'/%3E%3Ccircle cx='98' cy='94' r='1.6'/%3E%3Ccircle cx='44' cy='118' r='1.6'/%3E%3Ccircle cx='80' cy='148' r='1.6'/%3E%3C/g%3E%3C/svg%3E") center / 100% 100% no-repeat,
+      linear-gradient(180deg, rgba(var(--tone-recessed, 25, 31, 27), .86), rgba(var(--tone-well, 12, 16, 14), .94));
+    background-blend-mode: normal;
+  }
+}
+@media (min-width: 761px) {
+  /* Opened (on reach or in the drive), the smaller shutter stops just beside the insert arrow,
+     never over it: its left edge lands at 19%, right after the arrow's 8-17%. */
+  .record-selector--games .record-sleeve:is([data-sleeve-hover], :focus-visible, [data-in-drive]) .record-sleeve-art::after { transform: translateX(-42%); }
+}
+/* Thickness. A disk has a side wall: three 1px steps of lighter plastic below and to the right read
+   as the case's depth, and travel with it when it's lifted. Its outer edge is a 2px moulded rim,
+   lit along the top and left and in shade along the bottom and right, like chamfered plastic. */
+@media (min-width: 761px) {
+  .record-selector--games .record-sleeve-art { background: linear-gradient(135deg, rgba(var(--disk-ink), .5), rgba(var(--disk-ink), .16) 45%, rgb(0 0 0 / .55)); }
+  .record-selector--games .record-sleeve-art::before { inset: 2px; }
+  .record-selector--games .record-sleeve {
+    filter: drop-shadow(1px 1px 0 rgb(46 52 49)) drop-shadow(1px 1px 0 rgb(36 41 38)) drop-shadow(1px 1px 0 rgb(24 28 26)) drop-shadow(0 7px 9px rgb(0 0 0 / .5));
+  }
+  :root[data-appearance="day"] .record-selector--games .record-sleeve {
+    filter: drop-shadow(1px 1px 0 rgb(164 170 162)) drop-shadow(1px 1px 0 rgb(146 152 144)) drop-shadow(1px 1px 0 rgb(124 130 122)) drop-shadow(0 7px 9px rgb(43 55 48 / .25));
+  }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  .record-selector--games .record-sleeve[data-sleeve-hover] {
+    filter: drop-shadow(1px 1px 0 rgb(46 52 49)) drop-shadow(1px 1px 0 rgb(36 41 38)) drop-shadow(1px 1px 0 rgb(24 28 26)) drop-shadow(0 16px 14px rgb(0 0 0 / .55));
+  }
+  :root[data-appearance="day"] .record-selector--games .record-sleeve[data-sleeve-hover] {
+    filter: drop-shadow(1px 1px 0 rgb(164 170 162)) drop-shadow(1px 1px 0 rgb(146 152 144)) drop-shadow(1px 1px 0 rgb(124 130 122)) drop-shadow(0 16px 14px rgb(43 55 48 / .32));
+  }
+}
+
+/* Wear: each label picture has been handled. A soft faded patch, a faint crease at its own angle,
+   fine print grain and a little yellowing at the edges, placed per disk from its record (style
+   variables --wear-*), so no two disks wear the same way. Not damage, just not pristine. */
+@media (min-width: 761px) {
+  .record-selector--games .game-disk-window img { filter: contrast(.94) saturate(.86); }
+  .record-selector--games .game-disk-window::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(42% 30% at var(--wear-x, 50%) var(--wear-y, 50%), rgb(232 222 200 / .16), transparent 70%),
+      linear-gradient(var(--wear-a, 90deg), transparent calc(var(--wear-c, 50%) - .8%), rgb(255 250 235 / .12) var(--wear-c, 50%), rgb(0 0 0 / .16) calc(var(--wear-c, 50%) + .6%), transparent calc(var(--wear-c, 50%) + 1.4%)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .86 0 0 0 0 .78 0 0 0 .6 -.25'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23g)'/%3E%3C/svg%3E") var(--wear-x, 0) var(--wear-y, 0) / 90px 90px,
+      radial-gradient(ellipse at 50% 50%, transparent 58%, rgb(70 52 24 / .24) 100%);
+    opacity: calc(.55 + var(--wear-g, .35));
+    mix-blend-mode: soft-light;
+  }
+}
+
+/* The disc keeps turning from where it was: one rotation is always attached and only paused or
+   running, so reaching for a disk, or loading it, never restarts the spin. */
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  .record-selector--games.record-selector--games .record-media-cabinet .record-sleeve .game-disk-hub { animation: floppy-hub-turn 7s linear infinite paused; }
+  .record-selector--games.record-selector--games .record-media-cabinet:not([data-shelf-dragging]) .record-sleeve:is([data-sleeve-hover], :focus-visible:not([data-sleeve-pointer]), [data-in-drive]) .game-disk-hub { animation: floppy-hub-turn 7s linear infinite running; }
+}
+@media (min-width: 761px) {
+  /* Wear you can see: a clear faded patch, a crease with a light and a dark edge, heavier grain and
+     warmer worn edges, laid over the picture as is (no blend that cancels out on dark art). */
+  .record-selector--games .game-disk-window::after {
+    background:
+      radial-gradient(48% 36% at var(--wear-x, 50%) var(--wear-y, 50%), rgb(236 226 204 / .24), rgb(236 226 204 / .08) 55%, transparent 75%),
+      linear-gradient(var(--wear-a, 90deg), transparent calc(var(--wear-c, 50%) - 1%), rgb(255 250 235 / .2) var(--wear-c, 50%), rgb(0 0 0 / .28) calc(var(--wear-c, 50%) + .7%), transparent calc(var(--wear-c, 50%) + 1.6%)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .92 0 0 0 0 .88 0 0 0 0 .8 0 0 0 1 -.42'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23g)'/%3E%3C/svg%3E") var(--wear-x, 0) var(--wear-y, 0) / 90px 90px,
+      radial-gradient(ellipse at 50% 50%, transparent 52%, rgb(80 60 28 / .38) 100%);
+    opacity: calc(.6 + var(--wear-g, .35));
+    mix-blend-mode: normal;
+  }
+  /* The label and spine sit flat on the case again, with the plain edge they had before. */
+  .record-selector--games :is(.game-disk-window, .record-sleeve-label) { border: 1px solid rgba(var(--disk-ink), .3); box-shadow: none; }
+  .record-selector--games .game-disk-window { border-inline-start: 0; }
+  .record-selector--games .record-sleeve-label { border-block-start: 2px solid var(--section-accent); }
+  .record-selector--games .game-disk-window::before { box-shadow: none; }
+}
+@media (min-width: 761px) {
+  /* No grain and nothing that reads as an inset edge: the picture keeps only marks a handled print
+     gets. A faded patch, a faint crease and two light scuffs, each placed per disk, over colours
+     that have aged a touch. */
+  .record-selector--games .game-disk-window img { filter: sepia(.1) contrast(.95) saturate(.86); }
+  .record-selector--games .game-disk-window::before { background: var(--screen-glare); box-shadow: none; }
+  .record-selector--games .game-disk-window::after {
+    background:
+      radial-gradient(46% 34% at var(--wear-x, 50%) var(--wear-y, 50%), rgb(238 230 210 / .17), rgb(238 230 210 / .06) 55%, transparent 75%),
+      linear-gradient(var(--wear-a, 90deg), transparent calc(var(--wear-c, 50%) - .9%), rgb(255 250 235 / .14) var(--wear-c, 50%), rgb(0 0 0 / .16) calc(var(--wear-c, 50%) + .6%), transparent calc(var(--wear-c, 50%) + 1.4%)),
+      linear-gradient(calc(var(--wear-a, 90deg) + 64deg), transparent calc(100% - var(--wear-y, 50%) - .5%), rgb(255 255 255 / .1) calc(100% - var(--wear-y, 50%)), transparent calc(100% - var(--wear-y, 50%) + .4%)) 0 0 / 60% 60% no-repeat,
+      linear-gradient(calc(var(--wear-a, 90deg) - 38deg), transparent calc(var(--wear-x, 50%) - .5%), rgb(255 255 255 / .08) var(--wear-x, 50%), transparent calc(var(--wear-x, 50%) + .4%)) 100% 100% / 55% 50% no-repeat;
+    opacity: 1;
+    mix-blend-mode: normal;
+  }
+  /* The disk in the drive is marked by its brighter edge alone, no inner glow. */
+  .record-selector--games .record-sleeve[data-in-drive] .game-disk-window { box-shadow: none; }
+}
+@media (min-width: 761px) {
+  /* The spine is part of the same sticker as the picture: a lighter strip, one outline around both,
+     no stripe or line between them, so nothing reads as a channel cut into the label. The spine's
+     text is rotated, so its physical left edge is the side that meets the picture. */
+  .record-selector--games .record-sleeve-label {
+    border: 1px solid rgba(var(--disk-ink), .3);
+    border-left-width: 0;
+    background: color-mix(in srgb, rgb(var(--tone-recessed, 25, 31, 27)), rgb(var(--tone-ink, 217, 213, 193)) 12%);
+  }
+  :root[data-appearance="day"] .record-selector--games .record-sleeve-label { background: color-mix(in srgb, rgb(var(--tone-surface, 240, 240, 236)), rgb(var(--tone-ink, 40, 48, 44)) 8%); }
+
+  /* Wear, the middle ground: a clear faded patch, a crease, two scuffs, a faint haze and a few dust
+     specks, each placed per disk. No grain. */
+  .record-selector--games .game-disk-window::after {
+    background:
+      radial-gradient(circle at var(--wear-y, 30%) var(--wear-x, 60%), rgb(255 250 235 / .45) 0 .6px, transparent 1.2px),
+      radial-gradient(circle at calc(100% - var(--wear-x, 40%)) calc(var(--wear-y, 50%) + 22%), rgb(255 250 235 / .35) 0 .5px, transparent 1px),
+      radial-gradient(circle at calc(var(--wear-c, 50%) - 18%) calc(100% - var(--wear-y, 50%)), rgb(255 250 235 / .3) 0 .6px, transparent 1.2px),
+      radial-gradient(48% 36% at var(--wear-x, 50%) var(--wear-y, 50%), rgb(238 230 210 / .26), rgb(238 230 210 / .09) 55%, transparent 75%),
+      linear-gradient(var(--wear-a, 90deg), transparent calc(var(--wear-c, 50%) - 1%), rgb(255 250 235 / .2) var(--wear-c, 50%), rgb(0 0 0 / .24) calc(var(--wear-c, 50%) + .7%), transparent calc(var(--wear-c, 50%) + 1.5%)),
+      linear-gradient(calc(var(--wear-a, 90deg) + 64deg), transparent calc(100% - var(--wear-y, 50%) - .5%), rgb(255 255 255 / .16) calc(100% - var(--wear-y, 50%)), transparent calc(100% - var(--wear-y, 50%) + .45%)) 0 0 / 60% 60% no-repeat,
+      linear-gradient(calc(var(--wear-a, 90deg) - 38deg), transparent calc(var(--wear-x, 50%) - .5%), rgb(255 255 255 / .13) var(--wear-x, 50%), transparent calc(var(--wear-x, 50%) + .45%)) 100% 100% / 55% 50% no-repeat,
+      linear-gradient(rgb(240 232 214 / .05), rgb(240 232 214 / .05));
+  }
+}

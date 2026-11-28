@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.91.1`. Previous site-code release: `v1.91.0` (8be5b5e8).
+Release target: `v1.91.2`. Previous site-code release: `v1.91.1` (c98721df).
+
+`v1.91.2` reshapes each game disk around its cover. The disk is narrower, with the picture on a 9:16 label turned on its side so the whole wide art fits, and the title on a spine beside it sharing one flat outline, with the section accent along its top. The shutter is smaller, the case has faint circuitry under the smoked plastic and a shutter track, and a moulded side wall and shadow give it thickness; it lifts further when reached for. Each label is printed a little worn: a faded patch, a crease, scuffs and a few specks, placed from the record so no two disks match. The disc keeps turning from where it was instead of restarting on hover. Handheld disks are unchanged.
 
 `v1.91.1` turns each game disk's sticker into a tall cover: a portrait picture (Steam's library cover when the game has a Steam ID, otherwise the record's own art cropped from the top centre) with the title reading up a spine on its left, like a game case on a shelf, and the disc showing above it under the shutter. The status keeps only its lamp at the foot of the spine, so the title has the full length. Handheld disks are unchanged.
 

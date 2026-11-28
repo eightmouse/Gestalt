@@ -63,6 +63,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Game disks with weight",
+          "detail": "Disks are narrower and thicker, with the cover turned sideways on a 9:16 label beside the title spine, a smaller shutter, faint circuitry under the case and a little wear on each label, different on every disk. The disc keeps its spin instead of restarting.",
+          "version": "v1.91.2",
+          "releasedOn": "2026-11-28"
+        },
+        {
           "title": "Game disks become game cases",
           "detail": "Each disk carries a tall portrait cover with the title reading up a spine, the disc showing above it under the shutter. Every title gets the same spine, whatever its length.",
           "version": "v1.91.1",

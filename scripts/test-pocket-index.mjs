@@ -160,6 +160,9 @@ assert.deepEqual(index.months.map((month) => [month.label, month.notes.map((note
 assert.equal(index.months[2].notes[0].version, "v1.77", "A version range keeps its first version as the tag");
 assert.deepEqual(index.undated.map((note) => note.title), ["Updates"], "Undated notes are kept, at the end");
 assert.equal(index.count, 6);
+assert.equal(pocket.diskWear("maple-story"), pocket.diskWear("maple-story"), "A disk always wears the same way");
+assert.notEqual(pocket.diskWear("maple-story"), pocket.diskWear("deadlock"), "Different disks wear differently");
+assert.match(pocket.diskWear("x"), /^--wear-x: \d+%; --wear-y: \d+%; --wear-a: \d+deg; --wear-c: \d+%; --wear-g: 0\.\d+$/, "Only plain style variables, nothing else in the attribute");
 assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive empty");
 const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);
 assert.deepEqual(steamDrive.figures.map(({ value }) => value), ["1088.0h", "26 / 11 / 2026", "42%"]);

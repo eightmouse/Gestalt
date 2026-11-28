@@ -121,14 +121,22 @@
     const host = slug(os) || slug(title) || "machine";
     return { host: `${slug(user) || "operator"}@${host}`, entry, rows: sorted };
   }
-  // The cover on a game disk: a portrait picture, so every disk reads like a game case. Steam's
-  // library cover (always the same portrait layout) when the game has a Steam ID, then the record's
-  // own header image, its banner, then its dashboard art, each cropped from the centre. No art, no picture.
+  // A game disk's wear: where its picture is faded, the angle of a faint crease and how heavy the
+  // grain is. Derived from the record id, so every disk is different and each stays the same.
+  function diskWear(id = "") {
+    let hash = 2166136261;
+    for (const char of String(id)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+    const pick = (shift, size) => ((hash >>> shift) % size);
+    return `--wear-x: ${10 + pick(0, 80)}%; --wear-y: ${10 + pick(7, 80)}%; --wear-a: ${pick(14, 180)}deg; --wear-c: ${20 + pick(21, 60)}%; --wear-g: ${(0.25 + pick(3, 25) / 100).toFixed(2)}`;
+  }
+  // The insert behind a game disk's clear case: a wide picture, turned on its side to run up the
+  // case. Steam's store header (always the same wide layout, with the game's logo) when the game has
+  // a Steam ID, then the record's own header image, its banner, then its dashboard art. No art, no picture.
   function gameDiskArt(fields = {}) {
     const text = (value) => typeof value === "string" ? value.trim() : "";
     const appId = Number(fields.steamAppId);
     const steam = Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff
-      ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/library_600x900.jpg` : "";
+      ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg` : "";
     return steam || text(fields.headerImage) || text(fields.banner) || text(fields.dashboardImage);
   }
   // A thermograph line for the Weather plate: the next hours' forecast, drawn in a 100 x 30 box.
@@ -350,5 +358,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gamePlate, readingMinutes, projectLine, noteIndex, gameDiskArt, machineReadout, weatherTrace, condenseActivity, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gamePlate, readingMinutes, projectLine, noteIndex, gameDiskArt, diskWear, machineReadout, weatherTrace, condenseActivity, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

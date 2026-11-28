@@ -402,7 +402,7 @@ function RecordSelectorTile({ record, loaded = false, onOpenRecord }: { record: 
   const status = gameActivityLabel(record);
   const activity = gameLogPlacement(record) === "session" && (status === "Active" || status === "Inactive") ? status : "";
   const label = [record.title, activity, loaded ? "in drive" : ""].filter(Boolean).join(", ");
-  return <button className="record-sleeve" data-game-sleeve="" data-state={recordStateKey(status)} data-in-drive={loaded ? "" : undefined} type="button" aria-label={label} onClick={(event) => sectionMotion.openInstrumentSleeve(event.currentTarget, () => onOpenRecord(record), event.detail > 0)}>
+  return <button className="record-sleeve" data-game-sleeve="" data-state={recordStateKey(status)} data-in-drive={loaded ? "" : undefined} type="button" aria-label={label} style={Object.fromEntries(pocket.diskWear(record.id).split("; ").map((rule) => rule.split(": "))) as CSSProperties} onClick={(event) => sectionMotion.openInstrumentSleeve(event.currentTarget, () => onOpenRecord(record), event.detail > 0)}>
     <span className="record-sleeve-art" aria-hidden="true">
       <span className="record-sleeve-label"><strong>{record.title}</strong>{loaded ? <small>In drive</small> : activity ? <small>{activity}</small> : null}</span>
       <GameDiskWindow record={record} />
