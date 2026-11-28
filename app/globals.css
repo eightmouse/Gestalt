@@ -11508,3 +11508,55 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
 .boot-session .boot-session-user { color: rgb(246 243 233); }
 .boot-session .boot-session-detail { color: rgb(232 229 217 / .9); }
 .boot-session .boot-session-mark { border-color: rgb(226 223 210 / .35); }
+
+/* Game disks: a tall cover. The lower part of the floppy carries a portrait cover with the title
+   reading up a spine on its left, like a game case on a shelf; the disc shows through the glass
+   above it, under the shutter. Every title gets the same spine, whatever its length. */
+@media (min-width: 761px) {
+  .record-selector--games .record-sleeve-art {
+    grid-template-columns: 22% minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 60%;
+  }
+  .record-selector--games .game-disk-window {
+    grid-row: 2;
+    grid-column: 2;
+    aspect-ratio: auto;
+    block-size: 100%;
+    border: 1px solid rgba(var(--disk-ink), .3);
+    border-inline-start: 0;
+  }
+  .record-selector--games .game-disk-window img { object-position: center top; }
+  .record-selector--games .game-disk-window[data-empty]::before { padding: 10% 8%; font-size: calc(11px * var(--selector-scale)); }
+  .record-selector--games .record-sleeve-label {
+    grid-row: 2;
+    grid-column: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    block-size: 100%;
+    min-block-size: 0;
+    padding: 8px 0;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    border: 1px solid rgba(var(--disk-ink), .3);
+    border-inline-start: 1px solid rgba(var(--disk-ink), .3);
+    border-block-start: 2px solid var(--section-accent);
+    overflow: hidden;
+    font-size: calc(12px * var(--selector-scale));
+    line-height: 1.1;
+  }
+  .record-selector--games .record-sleeve-label strong { display: block; -webkit-line-clamp: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .record-selector--games .record-sleeve-label small { flex: none; border: 0; padding: 0; font-size: calc(9px * var(--selector-scale)); letter-spacing: .06em; }
+  .record-selector--games .record-sleeve-label small::before { inline-size: 5px; }
+}
+@media (min-width: 761px) {
+  /* The spine is for the title: the status keeps only its lamp at the foot (a lit square for Active
+     or In drive, an outline otherwise), and screen readers still hear it from the disk's label. */
+  .record-selector--games .record-sleeve-label small { gap: 0; font-size: 0; letter-spacing: 0; }
+  .record-selector--games .record-sleeve-label small::before { inline-size: 6px; }
+}
+@media (min-width: 761px) and (max-height: 850px) {
+  .record-selector--games .record-sleeve-label { padding-block: 5px; font-size: 10px; }
+}

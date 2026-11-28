@@ -21,10 +21,6 @@
           "detail": "Discuss after Setup editing. A writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
         },
         {
-          "title": "Games: the picture as part of the disk",
-          "detail": "Disks with short titles leave a gap under the label, while longer titles fill it. Make the game's picture part of the disk's design so every disk is complete whatever its title. Design to come."
-        },
-        {
           "title": "New section: Movies and Anime",
           "detail": "A section between Games and Logs for movies and anime, kept apart (one above the other or similar). Layout to be discussed when we get there."
         },
@@ -51,6 +47,14 @@
         {
           "title": "Command palette: make it Gestalt",
           "detail": "The palette works but looks standard. Bring it in line with the rest of Gestalt and look for quality-of-life improvements. Design to be discussed."
+        },
+        {
+          "title": "Retire the old Studio and tidy up",
+          "detail": "Disconnect the original prototype Studio, clear out what it leaves behind and tidy the project, checking that nothing else depends on it and every check still passes."
+        },
+        {
+          "title": "Handheld: catch up with desktop",
+          "detail": "The desktop has changed a lot; the handheld version needs its own upgrade so it doesn't look older. Design to be discussed when it comes up."
         }
       ]
     },
@@ -58,6 +62,12 @@
       "id": "done",
       "title": "Filed",
       "items": [
+        {
+          "title": "Game disks become game cases",
+          "detail": "Each disk carries a tall portrait cover with the title reading up a spine, the disc showing above it under the shutter. Every title gets the same spine, whatever its length.",
+          "version": "v1.91.1",
+          "releasedOn": "2026-11-28"
+        },
         {
           "title": "A note index for every entry",
           "detail": "Entries open their notes on an index: the newest note featured, the rest filed by month with version tags, older months folded. Tab bars stay pinned while an entry scrolls, Overview dates sit on the bottom edge, and the boot's session text reads in every theme.",

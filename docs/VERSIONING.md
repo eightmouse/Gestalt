@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.91.0`. Previous site-code release: `v1.90.1` (613b4475).
+Release target: `v1.91.1`. Previous site-code release: `v1.91.0` (8be5b5e8).
+
+`v1.91.1` turns each game disk's sticker into a tall cover: a portrait picture (Steam's library cover when the game has a Steam ID, otherwise the record's own art cropped from the top centre) with the title reading up a spine on its left, like a game case on a shelf, and the disc showing above it under the shutter. The status keeps only its lamp at the foot of the spine, so the title has the full length. Handheld disks are unchanged.
 
 `v1.91.0` gives every entry with dated notes a note index: the newest note is a featured card with its date, version tag and first lines, and the rest are filed by month, newest first, with the latest month open and older months folded to one line with their count; undated notes sit at the end, and searching still shows the file grid. A trailing version in a note title becomes a fixed-width tag. In every entry the tab bar stays pinned to the top while the page scrolls, edge to edge under the window's own shading, and on Overview the Created and Last Updated dates sit on the bottom edge. The boot's session text is always light over the dark wallpaper, whatever the theme. Authored records, media and dependencies are unchanged.
 

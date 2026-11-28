@@ -121,14 +121,14 @@
     const host = slug(os) || slug(title) || "machine";
     return { host: `${slug(user) || "operator"}@${host}`, entry, rows: sorted };
   }
-  // The picture in a game disk's window: one landscape source for every disk, so they all read the
-  // same way. Steam's store header (always the same layout, with the game's logo) when the game has a
-  // Steam ID, then the record's own header image, its banner, then its dashboard art. No art, no picture.
+  // The cover on a game disk: a portrait picture, so every disk reads like a game case. Steam's
+  // library cover (always the same portrait layout) when the game has a Steam ID, then the record's
+  // own header image, its banner, then its dashboard art, each cropped from the centre. No art, no picture.
   function gameDiskArt(fields = {}) {
     const text = (value) => typeof value === "string" ? value.trim() : "";
     const appId = Number(fields.steamAppId);
     const steam = Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff
-      ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg` : "";
+      ? `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/library_600x900.jpg` : "";
     return steam || text(fields.headerImage) || text(fields.banner) || text(fields.dashboardImage);
   }
   // A thermograph line for the Weather plate: the next hours' forecast, drawn in a 100 x 30 box.
