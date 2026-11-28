@@ -2,7 +2,9 @@
 
 Gestalt uses Semantic Versioning after `v1.0.0`.
 
-Release target: `v1.90.0`. Previous site-code release: `v1.89.0` (3c4850d0).
+Release target: `v1.90.1`. Previous site-code release: `v1.90.0` (7c609ecb).
+
+`v1.90.1` lets the Latest Log plate fill its height: the date and title stay on top, the reading time and desk count sit on the bottom edge, and the excerpt takes the space between, fading out at its foot, so taller screens show more of the note. The compact Dashboard keeps its two-line excerpt.
 
 `v1.90.0` gives the Terminal, Settings and the Dashboard more presence. The Terminal is a real session: a login line (with your last session under local memory), a prompt that types its own `ls -l`, a true listing with permissions, record counts and short dates, a preview line naming each directory's newest entry, arrow-key movement, a waiting block cursor and a status bar; it fits its contents, opens without a scrollbar flash and folds away on the record beat when closed. Settings becomes a control panel with Display, Motion, Navigation and Privacy tabs, a card for every option saying what it does, drawn previews of each look, a Privacy tab that explains local memory and how Auto Weather finds an approximate city, a compact title bar and a footer that stays put. On the Dashboard, Current Game shows the Steam figures it knows with an achievement bar and the latest note, Latest Log shows its title with a reading time and the papers on the desk, Projects rows name their next milestone, and the Latest Log scan is one soft line. Recent Activity folds three or more entries from one record into a single row with a +N chip, and a note dated up to a day ahead still reads as new. The boot's session text reads more clearly over the wallpaper. Authored records, media and dependencies are unchanged.
 

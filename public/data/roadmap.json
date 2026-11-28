@@ -43,6 +43,12 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Latest Log fills its plate",
+          "detail": "The excerpt takes the space between the title and the footer and fades out at its foot, so taller screens show more of the note.",
+          "version": "v1.90.1",
+          "releasedOn": "2026-11-28"
+        },
+        {
           "title": "Terminal, Settings and richer plates",
           "detail": "The Terminal is a real shell session with a typed ls -l, previews, arrow keys and a status bar, and it folds away when closed. Settings is a control panel with previews of every look and a Privacy tab. Dashboard plates show Steam figures, reading times and next milestones, and Recent Activity folds busy records into one row.",
           "version": "v1.90.0",
