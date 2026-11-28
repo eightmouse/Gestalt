@@ -35,6 +35,22 @@
         {
           "title": "Shorter browser windows",
           "detail": "Gestalt is mostly checked with the taskbar and browser bars hidden. Make sure it looks just as composed when a visible taskbar or toolbar leaves less height, with nothing squished. Checked on common screen sizes with the bars showing."
+        },
+        {
+          "title": "Visitors leave a sign",
+          "detail": "Show visits the Gestalt way, not as a counter going up: someone stumbled in and their visit left a mark. Needs a privacy-friendly way to count on a static site, with no tracking of who visited. Design and service to be discussed."
+        },
+        {
+          "title": "First visit: better defaults and a light guide",
+          "detail": "New visitors start on Auto appearance, Terminal navigation and the Code Surface Memory State, with a small, unintrusive pointer to Settings that says what can be changed there."
+        },
+        {
+          "title": "First visit: a gentler shortcut hint",
+          "detail": "Replace the pop-up that lists the T, ~ and S shortcuts on landing with something less in the way and more useful. Design to be discussed."
+        },
+        {
+          "title": "Command palette: make it Gestalt",
+          "detail": "The palette works but looks standard. Bring it in line with the rest of Gestalt and look for quality-of-life improvements. Design to be discussed."
         }
       ]
     },
