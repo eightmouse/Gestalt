@@ -23,7 +23,7 @@ const search = compile(read("components/archive/search-utils.ts"), { require: (i
 const source = read("components/archive-os.tsx");
 const ast = ts.createSourceFile("archive-os.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const component = ast.statements.find((node) => ts.isFunctionDeclaration(node) && node.name?.text === "ArchiveOS");
-const names = ["projectDashboardRecords", "latestLog", "activity", "archiveMetrics", "metrics", "searchResults"];
+const names = ["projectDashboardRecords", "latestLog", "activityStream", "activity", "archiveMetrics", "metrics", "searchResults"];
 const declarations = names.map((name) => {
   const statement = component.body.statements.find((node) => ts.isVariableStatement(node) && node.declarationList.declarations.some((item) => item.name.getText(ast) === name));
   assert.ok(statement, `${name} is derived in the real reader`);
@@ -45,6 +45,7 @@ const context = compile(`${ranking}\nfunction derive() { ${declarations.join("\n
   archiveRecords: records, recordsBySection: bySection(records), currentGame: records.at(-1), currentGameDisplay: { title: "A game" },
   searchOpen: false, searchQuery: "a game", compareLogWritingOrder: chronology.compareLogWritingOrder,
   recentActivity(...args) { calls.activity++; return utils.recentActivity(...args); },
+  pocket: require("../public/pocket-index.js"),
   getArchiveMetrics(...args) { calls.metrics++; return utils.getArchiveMetrics(...args); },
   getSearchResults(...args) { calls.search++; return search.getSearchResults(...args); },
   useMemo(calculate, dependencies) {

@@ -38,6 +38,15 @@ assert.equal(rows[4].date, "", "Invalid/missing dates stay empty");
 assert.equal(rows[5].date, "2026-10-01", "Archive uses actual writing dates, not an invented archiving time");
 assert.equal(navigation.directoryRows([{ section: "logs", date: "2026-10-01", archived: true }])[3].date, "");
 assert.equal(JSON.stringify(entries), original);
+// The listing: counts, permissions, the newest entry for the preview line, and short ls dates.
+const listing = navigation.directoryRows([{ section: "projects", date: "2026-11-28", title: "Gestalt" }, { section: "projects", date: "2026-10-01", title: "PRISM" }, { section: "logs", date: "2026-10-01", archived: true, title: "Old note" }, { section: "logs", date: "2026-11-26", title: "A Slow Signal" }]);
+assert.deepEqual([listing[0].count, listing[1].count, listing[3].count, listing[5].count], [4, 2, 1, 1], "Each directory counts its records; the dashboard lists them all; filed logs count in the Archive");
+assert.equal(listing[1].newest, "Gestalt", "The preview names the newest entry");
+assert.deepEqual([listing[1].mode, listing[5].mode], ["drwxr-xr-x", "drwxr-x---"], "Only the Archive is closed to others");
+assert.equal(listing[1].label, "Active Processes");
+assert.deepEqual([navigation.listingDate("2026-11-28"), navigation.listingDate("2026-06-13"), navigation.listingDate("")], ["28 Nov", "13 Jun", "--"]);
+assert.equal(navigation.loginLine("Yesterday", 64), "Last login: Yesterday on tty1 · 64 records");
+assert.equal(navigation.loginLine(null, 1), "Gestalt OS on tty1 · 1 record", "Without local memory there is no last login to report");
 assert.deepEqual(JSON.parse(JSON.stringify(browser.GestaltDesktopNavigation.directoryRows(entries))), rows);
 
 class Node {
@@ -435,12 +444,13 @@ assert.match(css, /\.desktop-terminal-body nav button\s*\{[^}]*color: var\(--ter
 assert.ok(!css.includes("data-nav-minimized] > .desktop-nav-terminal"), "No minimized window floats over the page");
 for (const file of ["static-app.js", "components/archive/desktop-navigation.tsx"]) {
   const render = read(file);
-  assert.ok(render.includes("directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))"));
+  assert.ok(render.includes("directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id), title: record.title }))"));
   assert.ok(render.includes('aria-label="Directory sections"'));
   assert.ok(render.includes("Eightmouse@Gestalt"));
   assert.ok(!render.includes("desktop-nav-edge") && !render.includes("data-desktop-nav-toggle"), "No side handle remains");
   assert.ok(render.includes("desktop-terminal-cursor"));
-  assert.ok(render.includes(file === "static-app.js" ? "row.date ? readableDate(row.date)" : "row.date ? formatReadableDate(row.date)"));
+  assert.ok(render.includes("listingDate(row.date)") && render.includes("desktop-terminal-login") && render.includes("desktop-terminal-status") && render.includes("desktop-directory-preview"), "A real ls -l: short dates, the login line, a preview line and the status bar");
+  assert.ok(render.includes(file === "static-app.js" ? "last filed ${readableDate(row.date)}" : "last filed ${formatReadableDate(row.date)}"), "Screen readers still hear the full date");
 }
 const staticSource = read("static-app.js");
 function staticFunction(name) {
@@ -450,14 +460,16 @@ function staticFunction(name) {
 }
 const directoryDates = new Set();
 const renderContext = vm.createContext({ window: { GestaltDesktopNavigation: navigation }, records: entries.map((entry, index) => ({ ...entry, id: String(index) })), directoryArchiveDay: "",
-  activityDate: (record) => record.date, partitionFieldLogs(records, now) { directoryDates.add(now); return { archived: records.filter((record) => record.archived) }; }, state: { activeSection: "games" } });
-vm.runInContext(`${staticFunction("readableDate")}\n${staticFunction("desktopDirectory")}\nvar markup = desktopDirectory();`, renderContext);
+  activityDate: (record) => record.date, partitionFieldLogs(records, now) { directoryDates.add(now); return { archived: records.filter((record) => record.archived) }; }, state: { activeSection: "games" }, bootPreviousSession: undefined });
+vm.runInContext(`${staticFunction("escapeHtml")}\n${staticFunction("readableDate")}\n${staticFunction("desktopDirectory")}\nvar markup = desktopDirectory();`, renderContext);
 assert.equal(directoryDates.size, 1, "The entire directory uses one archive cutoff instant");
 assert.equal(renderContext.directoryArchiveDay, [...directoryDates][0].toISOString().slice(0, 10));
 assert.equal((renderContext.markup.match(/data-directory-section/g) || []).length, 6);
-assert.ok(renderContext.markup.includes('datetime="2026-10-22">22 / 10 / 2026'));
-assert.ok(renderContext.markup.includes('data-open-section="games" aria-current="page"'));
-assert.ok(renderContext.markup.includes('<time>--</time>'));
+assert.ok(renderContext.markup.includes('datetime="2026-10-22" aria-hidden="true">22 Oct</time>'), "ls -l prints the short date");
+assert.ok(renderContext.markup.includes("last filed 22 / 10 / 2026"), "Screen readers hear the full date");
+assert.match(renderContext.markup, /data-open-section="games" aria-label="[^"]*" aria-current="page"/);
+assert.ok(renderContext.markup.includes("<b data-terminal-focus>03_games</b>"), "The status bar starts on the current directory");
+assert.ok(renderContext.markup.includes('<time aria-hidden="true">--</time>'));
 assert.ok(!renderContext.markup.includes("onerror"));
 vm.runInContext(`${staticFunction("workspaceWindowTray")}\nvar tray = workspaceWindowTray();`, renderContext);
 assert.match(renderContext.tray, /data-window-action="open" hidden>Restore active record/, "The real restore control stays hidden until minimized");

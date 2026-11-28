@@ -5,7 +5,7 @@ import pocket from "@/public/pocket-index.js";
 import osBehaviour from "@/public/os-behaviour.js";
 import { FilePlus2 } from "lucide-react";
 import type { RecordEntry, RecordSection } from "@/lib/types";
-import { activityFreshness, cleanSummaryText, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
+import { activityFreshness, cleanSummaryText, noteEntries, recordDisplaySummary, shortDate } from "@/components/archive/record-utils";
 import type { ActivityEntry } from "@/components/archive/record-utils";
 import { currentGameCover, steamBannerImage, type CurrentGameDisplay } from "@/public/steam-display.mjs";
 import { SeasonalAccent } from "@/components/archive/seasonal-accent";
@@ -22,6 +22,7 @@ type DashboardProps = {
   currentGameDisplay: CurrentGameDisplay | null;
   currentGameLoading?: boolean;
   latestLog?: RecordEntry;
+  deskCount?: number;
   panelOpen: boolean;
   projectRecords: RecordEntry[];
   onOpenRecord: (record: RecordEntry, content?: "notes", noteIndex?: number) => void;
@@ -78,6 +79,7 @@ export function ArchiveDashboard({
   currentGameDisplay,
   currentGameLoading = false,
   latestLog,
+  deskCount,
   panelOpen,
   projectRecords,
   onOpenRecord,
@@ -131,7 +133,9 @@ export function ArchiveDashboard({
           <div className="latest-log" data-state={dashboardRecordStateKey(latestLog.status)}>
             <i className="latest-log-signal" aria-hidden="true" />
             <span>{shortDate(latestLog.updated)}</span>
+            <strong className="latest-log-title">{latestLog.title}</strong>
             <p>{recordDisplaySummary(latestLog)}</p>
+            <LatestLogMeta record={latestLog} desk={deskCount ?? 0} />
           </div>
         ) : (
           <p className="subtle">No field notes stored.</p>
@@ -148,7 +152,7 @@ export function ArchiveDashboard({
                   if (item.record.section !== "setup" && item.content === "notes" && item.noteIndex !== undefined) onOpenNote(item.record, item.noteIndex);
                   else onOpenRecord(item.record, item.content, item.noteIndex);
                 }}>
-                  <strong>{item.title}</strong>
+                  <strong>{item.title}{item.more ? <b className="activity-more" title={`Also: ${(item.moreTitles ?? []).join(", ")}`}>+{item.more}</b> : null}</strong>
                   <small>{item.detail}</small>
                 </button>
                 <i className="activity-badge" aria-hidden="true">{freshness}</i>
@@ -202,12 +206,29 @@ function CurrentGame({ display, record, onCreate }: { display: CurrentGameDispla
       <div>
         <strong>{display.title}</strong>
         {summary ? <span className="current-game-summary" title={summary}>{summary}</span> : null}
-        {display.playtime ? <span>{display.playtime} Play Time</span> : null}
-        {display.lastPlayed ? <span>Last Played: {display.lastPlayed}</span> : null}
+        <CurrentGamePlate display={display} record={record} />
         {onCreate ? <button className="current-game-create" type="button" onClick={onCreate}><FilePlus2 size={14} aria-hidden="true" />Create game record</button> : null}
       </div>
     </div>
   );
+}
+
+// The figures Steam knows, the achievement bar, and the record's latest note: nothing invented.
+function CurrentGamePlate({ display, record }: { display: CurrentGameDisplay; record?: RecordEntry }) {
+  const plate = pocket.gamePlate(display, record, record ? noteEntries(record.body) : []);
+  if (!plate) return null;
+  return <>
+    {plate.figures.length ? <dl className="current-game-figures">{plate.figures.map(({ label, value }) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
+    {plate.share !== null ? <span className="current-game-bar" aria-hidden="true"><i style={{ "--share": `${plate.share}%` } as CSSProperties} /></span> : null}
+    {plate.note ? <span className="current-game-note">Latest note · {plate.note.title}{plate.note.date ? ` · ${plate.note.date.replace(/ \/ \d{4}$/, "").replace(/ /g, "")}` : ""}</span> : null}
+  </>;
+}
+
+// Latest Log's foot: how long it takes to read, and how many papers are on the desk.
+function LatestLogMeta({ record, desk }: { record: RecordEntry; desk: number }) {
+  const minutes = pocket.readingMinutes(record.body);
+  const parts = [minutes ? `${minutes} min read` : "", desk ? `${desk} ${desk === 1 ? "paper" : "papers"} on the desk` : ""].filter(Boolean);
+  return parts.length ? <small className="latest-log-meta">{parts.join(" · ")}</small> : null;
 }
 
 function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenRecord: (record: RecordEntry) => void }) {
@@ -217,7 +238,7 @@ function RecordList({ records, onOpenRecord }: { records: RecordEntry[]; onOpenR
         <button data-state={dashboardRecordStateKey(record.status)} key={record.id} type="button" onClick={() => onOpenRecord(record)}>
           <span>
             <strong>{record.title}</strong>
-            <small>{record.status}</small>
+            <small>{[record.status, pocket.projectLine(record, noteEntries(record.body))].filter(Boolean).join(" · ")}</small>
           </span>
           <i>{record.progress}%</i>
         </button>

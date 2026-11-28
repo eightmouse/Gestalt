@@ -1,8 +1,10 @@
 # Gestalt Roadmap
 
-29 November, v1.89.0: Setup becomes the machine: a boot menu of machines and a neofetch-style readout with the machine's wallpaper, above a dock, connected devices and notes.
+28 November, v1.90.0: The Terminal becomes a real shell session, Settings a control panel with previews and a Privacy tab, and the Dashboard plates gain Steam figures, reading times and next milestones. Recent Activity folds busy records into one row.
 
-29 November, v1.88.4: The boot's session screen sits on the blurred wallpaper like an OS login and fades into the workspace.
+28 November, v1.89.0: Setup becomes the machine: a boot menu of machines and a neofetch-style readout with the machine's wallpaper, above a dock, connected devices and notes.
+
+28 November, v1.88.4: The boot's session screen sits on the blurred wallpaper like an OS login and fades into the workspace.
 
 28 November, v1.88.3: Project benches show the whole latest note, and projects without dated notes show their own writing.
 

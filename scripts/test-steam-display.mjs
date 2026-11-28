@@ -101,8 +101,10 @@ function declaration(file, name) {
 }
 
 const require = createRequire(import.meta.url);
-const component = ts.transpileModule(`export ${declaration("../components/archive/dashboard.tsx", "CurrentGame")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-const react = vm.createContext({ exports: {}, require, imageFraming, steamBannerImage, currentGameCover, FilePlus2: require("lucide-react").FilePlus2, dashboardRecordStateKey: () => "playing" });
+const component = ts.transpileModule(`export ${declaration("../components/archive/dashboard.tsx", "CurrentGame")}\nexport ${declaration("../components/archive/dashboard.tsx", "CurrentGamePlate")}`, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const pocketIndex = require("../public/pocket-index.js");
+const noNotes = () => [];
+const react = vm.createContext({ exports: {}, require, imageFraming, steamBannerImage, currentGameCover, FilePlus2: require("lucide-react").FilePlus2, dashboardRecordStateKey: () => "playing", pocket: pocketIndex, noteEntries: noNotes });
 const summaryHelper = declaration("../components/archive/record-utils.ts", "cleanSummaryText");
 vm.runInContext(ts.transpileModule(summaryHelper.replace(/^export /, ""), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText, react);
 vm.runInContext(component, react);
@@ -113,9 +115,11 @@ const staticContext = vm.createContext({
   steamDisplayReady: true,
   currentGameRecord: () => ({ ...headerOnlyGame, summary: authoredSummary }),
   currentGameDisplay: () => display,
-  recordStateKey: () => "playing"
+  recordStateKey: () => "playing",
+  pocket: pocketIndex,
+  noteEntries: noNotes
 });
-for (const name of ["escapeHtml", "cleanSummaryText", "dashboardPanel", "currentGamePanel"]) vm.runInContext(declaration("../static-app.js", name), staticContext);
+for (const name of ["escapeHtml", "cleanSummaryText", "dashboardPanel", "currentGamePlateMarkup", "currentGamePanel"]) vm.runInContext(declaration("../static-app.js", name), staticContext);
 for (const model of [display, { ...display, completion: null, playtime: null, lastPlayed: null }]) {
   staticContext.currentGameDisplay = () => model;
   const reactHtml = renderToStaticMarkup(react.exports.CurrentGame({ display: model, record: { ...reactRecords[1], meta: headerOnlyGame, summary: authoredSummary } }));
@@ -123,10 +127,12 @@ for (const model of [display, { ...display, completion: null, playtime: null, la
   for (const html of [reactHtml, staticHtml]) {
     assert.ok(html.includes("Latest &lt;Game&gt;"), "Game titles are escaped");
     assert.ok(html.includes(headerOnlyGame.headerImage), "Both dashboards render the existing header, not a generic placeholder");
-    assert.doesNotMatch(html, /25% Achievements/, "Completion is not shown in this card");
+    assert.doesNotMatch(html, /25% Achievements/, "The raw Steam completion line is not printed");
     assert.match(html, /<\/strong>\s*<span class="current-game-summary"[^>]*>First look at &lt;the arena&gt; &amp; &quot;the controls&quot;\.<\/span>/);
-    assert.equal(html.includes("2.0h Play Time"), Boolean(model.playtime));
-    assert.equal(html.includes("Last Played: 20 / 10 / 2026"), Boolean(model.lastPlayed));
+    assert.equal(html.includes("<dt>Play time</dt><dd>2.0h</dd>"), Boolean(model.playtime), "Play time is a figure when Steam knows it");
+    assert.equal(html.includes("<dt>Last played</dt><dd>20 / 10 / 2026</dd>"), Boolean(model.lastPlayed));
+    assert.equal(html.includes("--share:"), Boolean(model.completion), "The achievement bar only appears with a real share");
+    if (!model.playtime && !model.lastPlayed && !model.completion) assert.doesNotMatch(html, /current-game-figures/, "No empty figure row");
     assert.equal(html.includes("18.7h"), false);
     assert.equal(html.includes("Today"), false);
   }

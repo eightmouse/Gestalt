@@ -105,8 +105,8 @@
     inset-block-start: 50%;
     inset-inline-start: 50%;
     inline-size: min(calc(900px * var(--desktop-size, 1)), calc(100vw - 96px * var(--desktop-size, 1)));
-    block-size: min(calc(520px * var(--desktop-size, 1)), calc(100dvh - 96px * var(--desktop-size, 1)));
-    max-block-size: calc(100dvh - 64px * var(--desktop-size, 1));
+    block-size: auto;
+    max-block-size: min(calc(520px * var(--desktop-size, 1)), calc(100dvh - 96px * var(--desktop-size, 1)));
     display: block;
     overflow: auto;
     overscroll-behavior: contain;
@@ -137,13 +137,13 @@
   .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready])::after { animation: desktop-terminal-frame 820ms linear both; }
   .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-terminal-bar { animation: desktop-terminal-populate 260ms 240ms ease-out both; }
   .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-terminal-prompt { animation: desktop-terminal-populate 280ms 340ms ease-out both; }
-  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-directory-heading { animation: desktop-terminal-populate 240ms 410ms ease-out both; }
-  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) nav > button { animation: desktop-terminal-populate 240ms var(--terminal-row-delay, 440ms) ease-out both; }
-  .desktop-nav-terminal nav > button:nth-child(2) { --terminal-row-delay: 470ms; }
-  .desktop-nav-terminal nav > button:nth-child(3) { --terminal-row-delay: 500ms; }
-  .desktop-nav-terminal nav > button:nth-child(4) { --terminal-row-delay: 530ms; }
-  .desktop-nav-terminal nav > button:nth-child(5) { --terminal-row-delay: 560ms; }
-  .desktop-nav-terminal nav > button:nth-child(6) { --terminal-row-delay: 590ms; }
+  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-directory-heading { animation: desktop-terminal-populate 200ms 660ms ease-out both; }
+  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) nav > button { animation: desktop-terminal-populate 200ms var(--terminal-row-delay, 690ms) ease-out both; }
+  .desktop-nav-terminal nav > button:nth-child(2) { --terminal-row-delay: 715ms; }
+  .desktop-nav-terminal nav > button:nth-child(3) { --terminal-row-delay: 740ms; }
+  .desktop-nav-terminal nav > button:nth-child(4) { --terminal-row-delay: 765ms; }
+  .desktop-nav-terminal nav > button:nth-child(5) { --terminal-row-delay: 790ms; }
+  .desktop-nav-terminal nav > button:nth-child(6) { --terminal-row-delay: 815ms; }
   .desktop-nav-terminal[data-record-retracting] { will-change: transform, opacity; transition: none !important; }
   .desktop-terminal-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-block-size: calc(38px * var(--desktop-size, 1)); padding-inline: calc(14px * var(--desktop-size, 1)); border-block-end: 1px solid var(--window-bar-edge); color: var(--text-strong); font-size: calc(16px * var(--desktop-size, 1)); }
   .desktop-terminal-bar small { margin-inline-start: calc(16px * var(--desktop-size, 1)); color: var(--window-bar-muted); font-size: calc(12px * var(--desktop-size, 1)); }
@@ -163,11 +163,11 @@
     font-size: calc(15px * var(--desktop-size, 1));
     line-height: 1.6;
   }
-  .desktop-terminal-prompt { margin: 0 0 calc(18px * var(--desktop-size, 1)); color: var(--terminal-signal); }
+  .desktop-terminal-prompt { margin: 0 0 calc(12px * var(--desktop-size, 1)); color: var(--terminal-signal); }
   .desktop-terminal-prompt span { color: var(--terminal-dim); }
-  .desktop-directory-heading { display: flex; justify-content: space-between; gap: 16px; color: var(--terminal-dim); margin-block-end: calc(12px * var(--desktop-size, 1)); font-size: calc(12px * var(--desktop-size, 1)); }
+  .desktop-directory-heading { display: flex; justify-content: space-between; gap: 16px; color: var(--terminal-dim); margin-block-end: calc(6px * var(--desktop-size, 1)); font-size: calc(13px * var(--desktop-size, 1)); }
   .desktop-terminal-body nav { display: grid; }
-  .desktop-terminal-body nav button { display: grid; grid-template-columns: calc(20px * var(--desktop-size, 1)) minmax(0, 1fr) auto; align-items: baseline; gap: calc(12px * var(--desktop-size, 1)); min-block-size: calc(36px * var(--desktop-size, 1)); padding: calc(6px * var(--desktop-size, 1)); border: 0; background: transparent; color: var(--terminal-ink); font: inherit; text-align: start; cursor: pointer; }
+  .desktop-terminal-body nav button { display: grid; grid-template-columns: calc(16px * var(--desktop-size, 1)) 11ch 4ch 7ch minmax(0, 1fr); align-items: baseline; gap: 0 calc(14px * var(--desktop-size, 1)); min-block-size: calc(32px * var(--desktop-size, 1)); padding: calc(6px * var(--desktop-size, 1)); border: 0; background: transparent; color: var(--terminal-ink); font: inherit; text-align: start; cursor: pointer; }
   .desktop-terminal-body nav button:hover, .desktop-terminal-body nav button[aria-current="page"] { background: rgb(156 212 177 / .12); color: var(--terminal-signal); }
   .desktop-directory-marker { color: var(--terminal-dim); }
   .desktop-terminal-body nav time { color: var(--terminal-dim); font-size: calc(13px * var(--desktop-size, 1)); white-space: nowrap; }
@@ -230,7 +230,12 @@
   .archive-shell[data-nav-maximized] > .desktop-nav-terminal {
     inline-size: calc(100vw - 96px * var(--desktop-size, 1));
     block-size: calc(100dvh - 112px * var(--desktop-size, 1));
+    max-block-size: none;
+    display: flex;
+    flex-direction: column;
   }
+  /* Maximized, the listing takes the room and the status bar stays on the bottom edge. */
+  .archive-shell[data-nav-maximized] > .desktop-nav-terminal > .desktop-terminal-body { flex: 1 0 auto; }
   .archive-shell[data-nav-maximized] .desktop-terminal-bar [data-desktop-terminal-maximize]::before { transform: translate(2px, -2px); }
   .desktop-terminal-hint {
     display: flex;
@@ -272,6 +277,49 @@
     pointer-events: auto;
   }
 }
+@media (min-width: 761px) {
+  /* A real session: the login line, a prompt that types its own command, a true ls -l (mode,
+     count, date, name/), one preview line under the directory you're on, a live prompt waiting
+     underneath, and a status bar along the foot. */
+  .desktop-terminal-login { margin: 0 0 calc(10px * var(--desktop-size, 1)); color: var(--terminal-dim); font-size: calc(13px * var(--desktop-size, 1)); }
+  .desktop-terminal-user { color: #9fd8b8; }
+  .desktop-terminal-command { display: inline-block; color: var(--terminal-signal); }
+  .desktop-directory-mode, .desktop-directory-count, .desktop-terminal-body nav time { color: var(--terminal-dim); font-size: calc(14px * var(--desktop-size, 1)); }
+  .desktop-directory-count { text-align: end; font-variant-numeric: tabular-nums; }
+  .desktop-directory-name { overflow: hidden; color: inherit; text-overflow: ellipsis; white-space: nowrap; }
+  .desktop-directory-preview { display: none; grid-column: 2 / -1; padding-block: 2px 4px; overflow: hidden; color: var(--terminal-dim); font-size: calc(12px * var(--desktop-size, 1)); text-overflow: ellipsis; white-space: nowrap; }
+  .desktop-directory-preview::before { content: "\2514\00a0\00a0"; }
+  .desktop-terminal-body nav:not(:focus-within, :hover) button[aria-current="page"] .desktop-directory-preview,
+  .desktop-terminal-body nav:not(:hover) button:focus .desktop-directory-preview,
+  .desktop-terminal-body nav button:hover .desktop-directory-preview { display: block; }
+  .desktop-terminal-next { margin: calc(10px * var(--desktop-size, 1)) 0 0; }
+  .desktop-terminal-next .desktop-terminal-cursor { display: inline-block; inline-size: .6em; block-size: 1.1em; margin-inline-start: 2px; vertical-align: -.2em; background: var(--terminal-signal); }
+  .desktop-terminal-status {
+    position: sticky;
+    inset-block-end: 0;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: calc(5px * var(--desktop-size, 1)) calc(14px * var(--desktop-size, 1));
+    border-block-start: 1px solid rgb(156 212 177 / .18);
+    background: #16211d;
+    color: #a4b5a9;
+    font: calc(12px * var(--desktop-size, 1)) / 1.4 "Cascadia Mono", "Consolas", monospace;
+  }
+  .desktop-terminal-status b { color: #dbf3e4; font-weight: 400; }
+  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-terminal-login { animation: desktop-terminal-populate 240ms 300ms ease-out both; }
+  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-terminal-command { animation: desktop-terminal-type 260ms steps(5, end) 400ms both; }
+  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-terminal-next { animation: desktop-terminal-populate 200ms 860ms ease-out both; }
+  .archive-shell[data-nav-open] > .desktop-nav-terminal:not([data-terminal-restoring]):not([data-terminal-ready]) .desktop-terminal-status { animation: desktop-terminal-populate 240ms 320ms ease-out both; }
+}
+@keyframes desktop-terminal-type {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .archive-shell[data-nav-open] > .desktop-nav-terminal :is(.desktop-terminal-login, .desktop-terminal-command, .desktop-terminal-next, .desktop-terminal-status) { animation: none !important; }
+}
 @keyframes desktop-terminal-blink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
@@ -287,9 +335,11 @@
   0%, 28% { opacity: 0; transform: scaleY(0); }
   76%, 100% { opacity: 1; transform: scaleY(1); }
 }
+/* Lines appear in place (opacity only): sliding them would push the content past the window edge
+   and flash a scrollbar while the terminal opens. */
 @keyframes desktop-terminal-populate {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes desktop-hint-arrive {
   from { opacity: 0; transform: translateY(6px); }

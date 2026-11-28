@@ -120,6 +120,30 @@ assert.equal(linux.entry, "Arch Linux", "The boot entry is the OS, without its d
 assert.deepEqual(linux.rows.map((row) => row.label), ["OS", "Model", "CPU", "GPU", "GPU", "RAM"], "Neofetch order, both GPUs kept in their filed order");
 assert.deepEqual(pocket.machineReadout([{ label: "Board", value: "X" }], { title: "Spare Rig" }), { host: "operator@spare", entry: "Spare Rig", rows: [{ label: "Board", value: "X" }] }, "Without an OS line the title names the machine; unknown lines still show");
 assert.equal(pocket.machineReadout([], {}).entry, "Machine");
+// Recent Activity: one or two entries of a record keep a row each; three or more fold into one row.
+const act = (record, n) => ({ id: record + ":" + n, record: { id: record }, noteTitle: record + " " + n });
+const flood = [act("g", 1), act("g", 2), act("a", 1), act("g", 3), act("g", 4), act("b", 1), act("c", 1), act("d", 1), act("e", 1), act("f", 1), act("g", 5)];
+const folded = pocket.condenseActivity(flood, 6);
+assert.deepEqual(folded.map((item) => item.id), ["g:1", "a:1", "b:1", "c:1", "d:1", "e:1"], "A flooding record takes one row and the freed rows go to the records after it");
+assert.deepEqual([folded[0].more, folded[0].moreTitles], [3, ["g 2", "g 3", "g 4"]], "The folded row counts and names the rest it covers, newest first");
+assert.deepEqual(pocket.condenseActivity([act("g", 1), act("g", 2), act("a", 1)], 6).map((item) => item.id), ["g:1", "g:2", "a:1"], "Two entries of one record still show as two rows");
+assert.equal(pocket.condenseActivity([act("g", 1), act("g", 2), act("a", 1)], 6)[0].more, undefined, "No chip below three");
+assert.equal(pocket.condenseActivity(Array.from({ length: 9 }, (_, i) => act("r" + i, 1)), 6).length, 6, "Never more rows than asked for");
+assert.deepEqual(pocket.condenseActivity([], 6), []);
+// Dashboard plates: only filed data, nothing invented.
+assert.equal(pocket.readingMinutes("word ".repeat(700)), 3, "About 220 words a minute");
+assert.equal(pocket.readingMinutes("Short."), 1, "Anything written takes at least a minute");
+assert.equal(pocket.readingMinutes(""), 0, "No text, no reading time");
+assert.equal(pocket.readingMinutes(":::note 01 / 01 / 2026 - T {#n-a}\n![x](/a.png)\n:::"), 0, "Note markers and images are not words");
+const milestones = [{ label: "Shell", progress: 100, status: "Ready" }, { label: "Release", progress: 0, status: "Queued" }];
+assert.equal(pocket.projectLine({ id: "p", progress: 50, milestones }), "next: Release", "The next unfinished milestone");
+assert.equal(pocket.projectLine({ id: "p", progress: 100, milestones: [milestones[0]] }, [{ id: "n-a", title: "30 / 10 / 2026 - Hi", body: "" }]), "note 30/10", "All done: the latest note's date");
+assert.equal(pocket.projectLine({ id: "p", progress: 0, milestones: [] }), "", "Nothing filed, nothing shown");
+const plate = pocket.gamePlate({ title: "D", completion: "38% Achievements", playtime: "212h", lastPlayed: null }, { id: "d" }, [{ id: "n-a", title: "05 / 11 / 2026 - Pleasant surprise", body: "" }]);
+assert.deepEqual(plate.figures.map((figure) => figure.label), ["Play time", "Achievements"], "Unknown figures are left out, not dashed");
+assert.equal(plate.share, 38);
+assert.deepEqual(plate.note, { title: "Pleasant surprise", date: "05 / 11 / 2026" });
+assert.equal(pocket.gamePlate({ title: "D" }, null).share, null, "No achievements, no bar");
 assert.equal(pocket.gameDrive(null), null, "No current game leaves the drive empty");
 const steamDrive = pocket.gameDrive({ title: "FINAL FANTASY XIV Online", status: "Playing", completion: "42% Achievements", playtime: "1088.0h", lastPlayed: "26 / 11 / 2026" }, { id: "ff", status: "Playing" }, [{ id: "n-a", title: "26 / 11 / 2026 - Phantom", body: "Near the end." }, { id: "n-b", title: "Older", body: "" }]);
 assert.deepEqual(steamDrive.figures.map(({ value }) => value), ["1088.0h", "26 / 11 / 2026", "42%"]);

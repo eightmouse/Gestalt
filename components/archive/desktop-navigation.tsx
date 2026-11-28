@@ -17,11 +17,12 @@ export function useDesktopNavigation(shellRef: RefObject<HTMLElement | null>, mo
   useEffect(() => { controller.current?.attach(shellRef.current, { mode, ready, busy, palette, remember }); }, [shellRef, mode, ready, busy, palette, remember]);
 }
 
-export function DesktopNavigationChrome({ records, filedLogs, activeSection, onOpenSection }: { records: RecordEntry[]; filedLogs: RecordEntry[]; activeSection: RecordSection; onOpenSection: (section: RecordSection) => void }) {
+export function DesktopNavigationChrome({ records, filedLogs, activeSection, lastSession, onOpenSection }: { records: RecordEntry[]; filedLogs: RecordEntry[]; activeSection: RecordSection; lastSession?: string | null; onOpenSection: (section: RecordSection) => void }) {
   const rows = useMemo(() => {
     const filedIds = new Set(filedLogs.map((record) => record.id));
-    return navigation.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) })));
+    return navigation.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id), title: record.title })));
   }, [records, filedLogs]);
+  const current = rows.find((row) => row.id === activeSection) ?? rows[0];
   return <>
     <button className="desktop-nav-backdrop" data-desktop-nav-dismiss type="button" aria-label="Close archive navigation" tabIndex={-1} />
     <aside className="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" className="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Tips"><span className="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside>
@@ -31,7 +32,7 @@ export function DesktopNavigationChrome({ records, filedLogs, activeSection, onO
     </section>
     <section className="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
       <header className="desktop-terminal-bar">
-        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.89.0</small></span>
+        <span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.90.0</small></span>
         <div className="window-actions">
           <button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button>
           <button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button>
@@ -39,16 +40,22 @@ export function DesktopNavigationChrome({ records, filedLogs, activeSection, onO
         </div>
       </header>
       <div className="desktop-terminal-body">
-        <p className="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span className="desktop-terminal-cursor" aria-hidden="true">_</span></p>
-        <div className="desktop-directory-heading"><span>total {rows.length}</span><span>LAST FILED</span></div>
+        <p className="desktop-terminal-login">{navigation.loginLine(lastSession, records.length)}</p>
+        <p className="desktop-terminal-prompt"><span className="desktop-terminal-user">eightmouse@gestalt</span>:~$ <span className="desktop-terminal-command">ls -l</span></p>
+        <div className="desktop-directory-heading"><span>total {rows.length}</span></div>
         <nav aria-label="Directory sections">
-          {rows.map((row) => <button key={row.id} type="button" data-directory-section aria-current={activeSection === row.id ? "page" : undefined} onClick={() => { if (activeSection !== row.id) onOpenSection(row.id); }}>
+          {rows.map((row) => <button key={row.id} type="button" data-directory-section data-directory-name={row.name} aria-label={`${row.name}, ${row.label}, ${row.count} records${row.date ? `, last filed ${formatReadableDate(row.date)}` : ""}`} aria-current={activeSection === row.id ? "page" : undefined} onClick={() => { if (activeSection !== row.id) onOpenSection(row.id); }}>
             <span className="desktop-directory-marker" aria-hidden="true">{activeSection === row.id ? ">" : "-"}</span>
-            <span>{row.name}</span>
-            <time dateTime={row.date || undefined}>{row.date ? formatReadableDate(row.date) : "--"}</time>
+            <span className="desktop-directory-mode" aria-hidden="true">{row.mode}</span>
+            <span className="desktop-directory-count" aria-hidden="true">{row.count}</span>
+            <time dateTime={row.date || undefined} aria-hidden="true">{navigation.listingDate(row.date)}</time>
+            <span className="desktop-directory-name" aria-hidden="true">{row.name}/</span>
+            <small className="desktop-directory-preview" aria-hidden="true">{row.label}{row.newest ? ` · newest: ${row.newest}` : ""}</small>
           </button>)}
         </nav>
+        <p className="desktop-terminal-prompt desktop-terminal-next" aria-hidden="true"><span className="desktop-terminal-user">eightmouse@gestalt</span>:~$ <span className="desktop-terminal-cursor" /></p>
       </div>
+      <footer className="desktop-terminal-status" aria-hidden="true"><span>NORMAL · <b data-terminal-focus>{current?.name}</b></span><span>↑↓ move · ↵ open · esc close</span><time data-terminal-clock /></footer>
     </section>
   </>;
 }

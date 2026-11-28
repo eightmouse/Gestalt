@@ -111,4 +111,5 @@ assert.match(navCss, /\.archive-shell:not\(\[data-nav-wide\]\) > \.workspace > \
   assert.match(css, /\.setup-boot,\s*\.setup-machine \{ display: none; \}/, "The boot menu and readout are desktop only");
   assert.match(css, /grid-template-areas:\s*"systems systems systems machine/,"The machine readout sits beside the boot menu");
 }
+for (const file of ["../static-app.js", "../components/archive/record-utils.ts"]) assert.ok(readFileSync(new URL(file, import.meta.url), "utf8").includes("return age >= -24 * 60 * 60 * 1000 && age <= 48 * 60 * 60 * 1000 ? \"new\" : \"old\";"), file + ": a note dated up to a day ahead still reads as new");
 console.log("Desktop sizing contracts passed: discrete viewport tiers, shared proportions, scoped reader rules, fixed control aspect ratios and long-title sizing, one shared section frame and one masthead.");

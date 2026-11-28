@@ -509,7 +509,8 @@ function activityFreshness(value, now = new Date()) {
   const activityTime = new Date(year, month - 1, day).getTime();
   const age = now.getTime() - activityTime;
 
-  return age >= 0 && age <= 48 * 60 * 60 * 1000 ? "new" : "old";
+  // A note dated up to a day ahead (another timezone, a clock a little behind) is still new.
+  return age >= -24 * 60 * 60 * 1000 && age <= 48 * 60 * 60 * 1000 ? "new" : "old";
 }
 
 function recentActivity(limit) {
@@ -1622,7 +1623,7 @@ function sidebar() {
   return `<aside class="sidebar" id="desktop-archive-sidebar" aria-label="Archive sidebar">
     <div class="brand-block">
       <div class="mobile-brand-meta">
-        <span>v1.89.0</span>
+        <span>v1.90.0</span>
         <span>HANDHELD FIELD MODE</span>
       </div>
       <div class="mobile-clock" aria-label="Archive date">
@@ -1636,7 +1637,7 @@ function sidebar() {
         </button>
       </div>
       <div class="desktop-brand-meta">
-        <span class="version-label">v1.89.0</span>
+        <span class="version-label">v1.90.0</span>
         <span class="desktop-mode-label">OPERATOR DESK MODE</span>
       </div>
       <i aria-hidden="true">-</i>
@@ -1656,7 +1657,7 @@ function sidebar() {
         <div><dt>ACTIVE PRJ</dt><dd>${metrics.activeProjects}</dd></div>
         <div><dt>ACTIVE GAME</dt><dd data-current-game-label>${escapeHtml(currentGameDisplay()?.title || "None")}</dd></div>
         <div><dt>LAST FILED</dt><dd>${escapeHtml(readableDate(metrics.latestActivityDate))}</dd></div>
-        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.89.0</dd></div>
+        <div><dt>OS VERSION</dt><dd>GESTALT OS v1.90.0</dd></div>
       </dl>
     </div>
   </aside>`;
@@ -1818,6 +1819,23 @@ function changeMemoryMode(value) {
   syncMemoryTrace();
 }
 
+// The figures Steam knows, the achievement bar, and the record's latest note: nothing invented.
+function currentGamePlateMarkup(display, record) {
+  const plate = pocket.gamePlate(display, record, record ? noteEntries(record.body || "") : []);
+  if (!plate) return "";
+  const figures = plate.figures.length ? `<dl class="current-game-figures">${plate.figures.map(({ label, value }) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>` : "";
+  const bar = plate.share !== null ? `<span class="current-game-bar" aria-hidden="true"><i style="--share: ${plate.share}%"></i></span>` : "";
+  const note = plate.note ? `<span class="current-game-note">Latest note · ${escapeHtml(plate.note.title)}${plate.note.date ? ` · ${escapeHtml(plate.note.date.replace(/ \/ \d{4}$/, "").replace(/ /g, ""))}` : ""}</span>` : "";
+  return figures + bar + note;
+}
+
+// Latest Log's foot: how long it takes to read, and how many papers are on the desk.
+function latestLogMeta(record, desk) {
+  const minutes = pocket.readingMinutes(record.body);
+  const parts = [minutes ? `${minutes} min read` : "", desk ? `${desk} ${desk === 1 ? "paper" : "papers"} on the desk` : ""].filter(Boolean);
+  return parts.length ? `<small class="latest-log-meta">${parts.join(" · ")}</small>` : "";
+}
+
 function currentGamePanel() {
   const currentGame = currentGameRecord();
   const display = currentGameDisplay();
@@ -1829,8 +1847,7 @@ function currentGamePanel() {
     <div class="game-cover${steamDisplayModule?.steamBannerImage(image) ? " is-steam-artwork" : ""}"><img src="${escapeHtml(image)}" alt="" decoding="async" referrerpolicy="no-referrer" /><img class="screen-bloom" src="${escapeHtml(image)}" alt="" aria-hidden="true" decoding="async" referrerpolicy="no-referrer" /></div>
     <div><strong>${escapeHtml(display.title)}</strong>
       ${summary ? `<span class="current-game-summary" title="${summary}">${summary}</span>` : ""}
-      ${display.playtime ? `<span>${escapeHtml(display.playtime)} Play Time</span>` : ""}
-      ${display.lastPlayed ? `<span>Last Played: ${escapeHtml(display.lastPlayed)}</span>` : ""}
+      ${currentGamePlateMarkup(display, currentGame)}
     </div>
   </div>` : `<p class="subtle" role="status">${steamDisplayReady ? "No session active." : "Reading Steam snapshot..."}</p>`;
   return dashboardPanel("CURRENT GAME", content, currentGame ? "Read note" : "", currentGame ? `data-open-record="${currentGame.id}" data-open-content="notes"` : "", "current-game-panel");
@@ -1839,7 +1856,7 @@ function currentGamePanel() {
 function dashboard() {
   const activeProjects = updatedProjectRecords();
   const latestLog = latestLogRecord();
-  const activity = recentActivity(6);
+  const activity = pocket.condenseActivity(recentActivity(60), 6);
   const activityRows = activity.map((item) => {
     const freshness = activityFreshness(item.date);
 
@@ -1852,7 +1869,7 @@ function dashboard() {
         .slice(0, 5)
         .map(
           (record) => `<button type="button" data-open-record="${record.id}" data-state="${recordStateKey(record.status)}">
-          <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.status)}</small></span>
+          <span><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml([record.status, pocket.projectLine(record, noteEntries(record.body || ""))].filter(Boolean).join(" · "))}</small></span>
           <i>${record.progress}%</i>
         </button>`
         )
@@ -1861,7 +1878,7 @@ function dashboard() {
     : `<p class="subtle">No projects filed yet.</p>`;
 
   const log = latestLog
-    ? `<div class="latest-log" data-state="${recordStateKey(latestLog.status)}"><i class="latest-log-signal" aria-hidden="true"></i><span>${shortDate(latestLog.updated)}</span><p>${escapeHtml(recordDisplaySummary(latestLog))}</p></div>`
+    ? `<div class="latest-log" data-state="${recordStateKey(latestLog.status)}"><i class="latest-log-signal" aria-hidden="true"></i><span>${shortDate(latestLog.updated)}</span><strong class="latest-log-title">${escapeHtml(latestLog.title)}</strong><p>${escapeHtml(recordDisplaySummary(latestLog))}</p>${latestLogMeta(latestLog, partitionFieldLogs(records).desk.length)}</div>`
     : `<p class="subtle">No field notes stored.</p>`;
 
   const feed = activityRows.length
@@ -1871,7 +1888,7 @@ function dashboard() {
           ({ freshness, item }) => `<li data-activity-age="${freshness}" data-state="${recordStateKey(item.record.status)}">
           <span>[${shortDate(item.date)}]</span>
           <button type="button" data-open-record="${escapeHtml(item.record.id)}"${item.content ? ` data-open-content="${item.content}"` : ""}${item.noteIndex !== undefined ? ` data-open-note-index="${item.noteIndex}"` : ""}${item.record.section !== "setup" && item.content === "notes" && item.noteIndex !== undefined ? " data-open-note-reader" : ""}>
-            <strong>${escapeHtml(item.title)}</strong>
+            <strong>${escapeHtml(item.title)}${item.more ? `<b class="activity-more" title="${escapeHtml(`Also: ${(item.moreTitles || []).join(", ")}`)}">+${item.more}</b>` : ""}</strong>
             <small>${escapeHtml(item.detail)}</small>
           </button>
           <i class="activity-badge" aria-hidden="true">${freshness}</i>
@@ -3894,13 +3911,20 @@ function desktopDirectory() {
   const now = new Date();
   directoryArchiveDay = now.toISOString().slice(0, 10);
   const filedIds = new Set(partitionFieldLogs(records, now).archived.map((record) => record.id));
-  const rows = window.GestaltDesktopNavigation?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id) }))) || [];
+  const terminalApi = window.GestaltDesktopNavigation;
+  const rows = terminalApi?.directoryRows(records.map((record) => ({ section: record.section, date: activityDate(record), archived: filedIds.has(record.id), title: record.title }))) || [];
+  const login = terminalApi?.loginLine?.(state.localMemory === "granted" ? window.GestaltOsBehaviour?.lastSessionLabel?.(bootPreviousSession) : null, records.length) || "";
+  const current = rows.find((row) => row.id === state.activeSection) || rows[0];
   return `<section class="desktop-nav-terminal" id="desktop-directory" role="dialog" aria-modal="true" aria-labelledby="desktop-directory-title" aria-hidden="true" inert>
-    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.89.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
-    <div class="desktop-terminal-body"><p class="desktop-terminal-prompt"><span>[Eightmouse@Gestalt ~]$</span> ls -l<span class="desktop-terminal-cursor" aria-hidden="true">_</span></p>
-      <div class="desktop-directory-heading"><span>total ${rows.length}</span><span>LAST FILED</span></div>
-      <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-open-section="${row.id}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span>${row.name}</span><time${row.date ? ` datetime="${row.date}"` : ""}>${row.date ? readableDate(row.date) : "--"}</time></button>`).join("")}</nav>
+    <header class="desktop-terminal-bar"><span id="desktop-directory-title">Eightmouse@Gestalt: ~ <small>v1.90.0</small></span><div class="window-actions"><button type="button" data-window-action="minimize" data-desktop-terminal-minimize aria-label="Minimize terminal">minimize</button><button type="button" data-window-action="maximize" data-desktop-terminal-maximize aria-label="Maximize terminal">maximize</button><button type="button" data-window-action="close" data-desktop-nav-dismiss aria-label="Close terminal">close</button></div></header>
+    <div class="desktop-terminal-body">
+      <p class="desktop-terminal-login">${escapeHtml(login)}</p>
+      <p class="desktop-terminal-prompt"><span class="desktop-terminal-user">eightmouse@gestalt</span>:~$ <span class="desktop-terminal-command">ls -l</span></p>
+      <div class="desktop-directory-heading"><span>total ${rows.length}</span></div>
+      <nav aria-label="Directory sections">${rows.map((row) => `<button type="button" data-directory-section data-directory-name="${row.name}" data-open-section="${row.id}" aria-label="${escapeHtml(`${row.name}, ${row.label}, ${row.count} records${row.date ? `, last filed ${readableDate(row.date)}` : ""}`)}"${state.activeSection === row.id ? ' aria-current="page"' : ""}><span class="desktop-directory-marker" aria-hidden="true">${state.activeSection === row.id ? ">" : "-"}</span><span class="desktop-directory-mode" aria-hidden="true">${row.mode}</span><span class="desktop-directory-count" aria-hidden="true">${row.count}</span><time${row.date ? ` datetime="${row.date}"` : ""} aria-hidden="true">${terminalApi.listingDate(row.date)}</time><span class="desktop-directory-name" aria-hidden="true">${row.name}/</span><small class="desktop-directory-preview" aria-hidden="true">${escapeHtml(row.label)}${row.newest ? ` · newest: ${escapeHtml(row.newest)}` : ""}</small></button>`).join("")}</nav>
+      <p class="desktop-terminal-prompt desktop-terminal-next" aria-hidden="true"><span class="desktop-terminal-user">eightmouse@gestalt</span>:~$ <span class="desktop-terminal-cursor"></span></p>
     </div>
+    <footer class="desktop-terminal-status" aria-hidden="true"><span>NORMAL · <b data-terminal-focus>${current?.name || ""}</b></span><span>↑↓ move · ↵ open · esc close</span><time data-terminal-clock></time></footer>
   </section><aside class="desktop-terminal-hint" role="status" aria-hidden="true" inert><button type="button" class="desktop-terminal-hint-action" data-system-notices-open aria-controls="system-notices" title="Open System Tips"><span class="terminal-shortcut-line">Press <kbd>T</kbd> to open terminal</span><span>Press <kbd>~</kbd> to open command palette</span><span>Press <kbd>S</kbd> to search the web</span></button></aside><section class="system-notices-panel" id="system-notices" role="region" aria-label="System Tips" aria-hidden="true" tabindex="-1" inert><header><span>// SYSTEM TIPS</span><div class="window-actions"><button type="button" data-window-action="close" data-system-notices-close aria-label="Close System Tips">close</button></div></header><dl><div class="terminal-shortcut-line"><dt><kbd>T</kbd></dt><dd>Open terminal</dd></div><div><dt><kbd>~</kbd></dt><dd>Command palette</dd></div><div><dt><kbd>S</kbd></dt><dd>Web search</dd></div><div><dt><kbd>Esc</kbd></dt><dd>Close the active window</dd></div></dl></section>`;
 }
 

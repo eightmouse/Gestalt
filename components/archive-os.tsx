@@ -291,8 +291,9 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
   const currentGameDisplay = useMemo(() => steamReady ? resolveCurrentGame(steamSnapshot, recordsBySection.games) : null, [steamReady, steamSnapshot, recordsBySection.games]);
   const currentGame = recordsBySection.games.find((record) => record.id === currentGameDisplay?.recordId);
   const latestLog = useMemo(() => [...recordsBySection.logs].sort(compareLogWritingOrder)[0], [recordsBySection.logs]);
-  const activity = useMemo(() => recentActivity(archiveRecords, 6), [archiveRecords]);
-  const pocketDispatches = useMemo(() => handheld ? pocket.recentDispatches(latestLog?.id, activity) : [], [activity, handheld, latestLog]);
+  const activityStream = useMemo(() => recentActivity(archiveRecords, 60), [archiveRecords]);
+  const activity = useMemo(() => pocket.condenseActivity(activityStream, 6), [activityStream]);
+  const pocketDispatches = useMemo(() => handheld ? pocket.recentDispatches(latestLog?.id, activityStream.slice(0, 6)) : [], [activityStream, handheld, latestLog]);
   const archiveMetrics = useMemo(() => getArchiveMetrics(archiveRecords, currentGame), [archiveRecords, currentGame]);
   const metrics = { ...archiveMetrics, activeGame: currentGameDisplay ? { title: currentGameDisplay.title } : undefined };
 
@@ -845,7 +846,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
 
   return (
     <main ref={shellRef} data-search-open={searchOpen ? "" : undefined} className={`archive-shell${hasFocusWindow ? " has-record" : ""}${showBoot ? " is-booting" : ""}${showBoot && startupMode === "quick" ? " is-quick-boot" : ""}`} inert={showBoot} aria-busy={showBoot}>
-      <DesktopNavigationChrome records={archiveRecords} filedLogs={fieldLogs.archived} activeSection={activeSection} onOpenSection={openSection} />
+      <DesktopNavigationChrome records={archiveRecords} filedLogs={fieldLogs.archived} activeSection={activeSection} lastSession={lastSession} onOpenSection={openSection} />
       {showBoot ? <BootScreen startupMode={startupMode} readiness={{ records: archiveRecords.length, appearance: appearance.resolveMode(appearanceMode), steam: steamReady ? (steamSnapshot ? "ready" : "offline") : "reading", lastSession }} /> : null}
       {showBoot ? <PocketBoot /> : null}
       {process.env.NODE_ENV === "development" ? <LocalChangeReview busy={inlineBusy || Boolean(studioRecordId)} onReviewNotebook={openRoadmap} onReview={(id) => {
@@ -954,6 +955,7 @@ export function ArchiveOS({ records }: ArchiveOSProps) {
             currentGameLoading={!steamReady}
             onCreateCurrentGame={process.env.NODE_ENV === "development" && steamRecordSeed(currentGameDisplay) ? createCurrentGameRecord : undefined}
             latestLog={latestLog}
+            deskCount={fieldLogs.desk.length}
             panelOpen={panelOpen}
             projectRecords={projectDashboardRecords}
             onOpenRecord={openRecord}

@@ -1,7 +1,7 @@
 {
   "title": "On the desk",
   "intro": "A few things in motion, a few ideas for later. Nothing here is a deadline ~",
-  "updated": "29 / 11 / 2026",
+  "updated": "28 / 11 / 2026",
   "groups": [
     {
       "id": "working",
@@ -21,24 +21,20 @@
           "detail": "Discuss after Setup editing. A writing and research companion above Connections: chat, keep a note alongside it, minimize and return. Account support, privacy and public access need checking first; everyone would use their own connection. Simple two-window tiling could follow later. Not in development yet."
         },
         {
-          "title": "Terminal: more presence",
-          "detail": "Give the desktop Terminal (T) a stronger design, with extra details here and there so it feels like a real instrument rather than a list. Design to be discussed."
-        },
-        {
-          "title": "Settings: a proper menu",
-          "detail": "Show each setting clearly, with a picture of what every mode looks like and the details behind it. Explain how Auto Weather finds your sky: an approximate city from your connection's IP address, looked up through ipapi.co, never your exact position, and Gestalt does not keep it. Design to be discussed."
-        },
-        {
-          "title": "Dashboard: richer plates",
-          "detail": "Some plates look emptier than others. Add clever, useful details to each one, nothing random or repeated, so the six plates feel equally considered. Design to be discussed."
-        },
-        {
           "title": "Games: the picture as part of the disk",
           "detail": "Disks with short titles leave a gap under the label, while longer titles fill it. Make the game's picture part of the disk's design so every disk is complete whatever its title. Design to come."
         },
         {
           "title": "New section: Movies and Anime",
           "detail": "A section between Games and Logs for movies and anime, kept apart (one above the other or similar). Layout to be discussed when we get there."
+        },
+        {
+          "title": "Studio: tidier editing",
+          "detail": "Look for quality-of-life improvements in how entries are written and edited, and tidy the different rules each kind of entry follows so the Studio feels less messy. Design to be discussed."
+        },
+        {
+          "title": "Entries with many notes",
+          "detail": "Some entries are gathering lots of notes. Find a clean way to show the extra ones in the reader without a long scroll. Design to be discussed."
         }
       ]
     },
@@ -47,16 +43,22 @@
       "title": "Filed",
       "items": [
         {
+          "title": "Terminal, Settings and richer plates",
+          "detail": "The Terminal is a real shell session with a typed ls -l, previews, arrow keys and a status bar, and it folds away when closed. Settings is a control panel with previews of every look and a Privacy tab. Dashboard plates show Steam figures, reading times and next milestones, and Recent Activity folds busy records into one row.",
+          "version": "v1.90.0",
+          "releasedOn": "2026-11-28"
+        },
+        {
           "title": "Setup is the machine",
           "detail": "Machines are boot entries; the picked one shows its wallpaper and its specs the way neofetch prints them, with a command line that opens it. Tools sit in a dock, peripherals as connected devices, and notes below, shared by every machine.",
           "version": "v1.89.0",
-          "releasedOn": "2026-11-29"
+          "releasedOn": "2026-11-28"
         },
         {
           "title": "A login, not a squeeze",
           "detail": "The boot's session screen sits on the archive's wallpaper, blurred, with the operator's picture and name, and fades into the workspace instead of squeezing into a line.",
           "version": "v1.88.4",
-          "releasedOn": "2026-11-29"
+          "releasedOn": "2026-11-28"
         },
         {
           "title": "Whole notes on the bench",

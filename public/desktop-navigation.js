@@ -16,18 +16,40 @@
     catch { /* The selected mode still works for this visit. */ }
   }
 
+  // The terminal's `ls -l`: one directory per section with what a real listing shows. Permissions
+  // (the Archive is the one closed to others), how many records it holds, its newest writing date
+  // and the newest entry's title for the preview line. The dashboard lists everything.
+  const directoryLabels = { system: "Dashboard", projects: "Active Processes", games: "Session Logs", logs: "Field Notes", setup: "Hardware & Software", archive: "Archive" };
   function directoryRows(entries) {
     const rows = ["system", "projects", "games", "logs", "setup", "archive"].map((id, index) => ({
-      id, name: `${String(index + 1).padStart(2, "0")}_${id === "system" ? "dashboard" : id}`, date: ""
+      id, name: `${String(index + 1).padStart(2, "0")}_${id === "system" ? "dashboard" : id}`, date: "",
+      label: directoryLabels[id], mode: id === "archive" ? "drwxr-x---" : "drwxr-xr-x", count: 0, newest: ""
     }));
     for (const entry of entries) {
-      if (!entry || entry.section === "system" || !rows.some((row) => row.id === entry.section) || typeof entry.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(entry.date)) continue;
-      const parsed = new Date(`${entry.date}T00:00:00Z`);
-      if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== entry.date) continue;
+      if (!entry || entry.section === "system" || !rows.some((row) => row.id === entry.section)) continue;
       const section = entry.section === "logs" && entry.archived ? "archive" : entry.section;
-      for (const row of rows) if ((row.id === "system" || row.id === section) && entry.date > row.date) row.date = entry.date;
+      const valid = typeof entry.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && (() => {
+        const parsed = new Date(`${entry.date}T00:00:00Z`);
+        return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === entry.date;
+      })();
+      for (const row of rows) {
+        if (row.id !== "system" && row.id !== section) continue;
+        row.count += 1;
+        if (valid && entry.date > row.date) { row.date = entry.date; row.newest = typeof entry.title === "string" ? entry.title.trim() : ""; }
+      }
     }
     return rows;
+  }
+  // "28 Nov": the short date `ls -l` prints, from an ISO day. Never locale dependent.
+  function listingDate(value) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+    const month = match ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(match[2]) - 1] : "";
+    return month ? `${Number(match[3])} ${month}` : "--";
+  }
+  // The terminal's first line: when you were last here (with local memory), on which tty, and how much is filed.
+  function loginLine(lastSession, records) {
+    const count = `${Number(records) || 0} ${Number(records) === 1 ? "record" : "records"}`;
+    return lastSession ? `Last login: ${lastSession} on tty1 · ${count}` : `Gestalt OS on tty1 · ${count}`;
   }
 
   function createController(host = globalThis.window, motionApi = host.GestaltRecordMotion, traceApi = host.GestaltMemoryState) {
@@ -148,6 +170,8 @@
       terminal.toggleAttribute("data-terminal-restoring", minimized);
       terminal.removeAttribute("data-terminal-ready");
       open = true; minimized = false; paint();
+      const clock = terminal?.querySelector("[data-terminal-clock]");
+      if (clock) { const now = new (host.Date || Date)(); clock.textContent = [now.getHours(), now.getMinutes()].map((value) => String(value).padStart(2, "0")).join(":"); }
       (terminal?.querySelector('[aria-current="page"]') || terminal?.querySelector("[data-directory-section]"))?.focus();
     }
     function hide(minimize = false, restore = true) {
@@ -155,6 +179,14 @@
       cancelRetraction();
       open = false; minimized = minimize; paint();
       if (restore) restoreFocus();
+    }
+    // Closing folds the terminal away on the record beat (content first, then the frame to a line
+    // and a point); without the motion helper, or under Reduced Motion, it simply closes.
+    function closeTerminal() {
+      if (!open) return;
+      if (typeof windowMotion?.close !== "function" || windowMotion.busy) { hide(); return; }
+      terminal.setAttribute("data-terminal-ready", "");
+      windowMotion.close({ node: terminal, onComplete: () => hide() });
     }
     function cancelRetraction() {
       windowMotion?.cancel();
@@ -171,6 +203,12 @@
         open = false; minimized = true; paint();
         shell?.querySelector(".desktop-terminal-restore")?.focus({ preventScroll: true });
       } });
+    }
+    // The status bar names the directory under the cursor.
+    function focusName(event) {
+      const row = event.target?.closest?.("[data-directory-section]");
+      const name = terminal?.querySelector("[data-terminal-focus]");
+      if (row && name && terminal.contains(row)) name.textContent = row.getAttribute("data-directory-name") || "";
     }
     function settleTerminal(event) {
       if (open && terminal?.contains(event.target)) terminal.setAttribute("data-terminal-ready", "");
@@ -196,7 +234,7 @@
       } else if (target.closest?.("[data-desktop-terminal-maximize]")) {
         event.preventDefault(); event.stopPropagation(); maximized = !maximized; paint();
       } else if (target.closest?.("[data-desktop-nav-dismiss]")) {
-        event.preventDefault(); event.stopPropagation(); hide();
+        event.preventDefault(); event.stopPropagation(); closeTerminal();
       } else if (terminal?.contains(target) && target.closest?.("[data-directory-section]")) {
         hide(true);
       }
@@ -215,7 +253,14 @@
       event.stopPropagation();
       if (event.key !== "Escape") terminal.setAttribute("data-terminal-ready", "");
       if (event.key === "Escape") {
-        event.preventDefault(); hide();
+        event.preventDefault(); closeTerminal();
+      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        // ↑↓ walk the listing, like a cursor in a file manager.
+        const rows = [...terminal.querySelectorAll("[data-directory-section]")];
+        if (!rows.length) return;
+        event.preventDefault();
+        const index = rows.indexOf(doc.activeElement);
+        rows[index < 0 ? 0 : (index + (event.key === "ArrowDown" ? 1 : rows.length - 1)) % rows.length]?.focus();
       } else if (event.key === "Tab") {
         const buttons = [...terminal.querySelectorAll('button:not([disabled])')];
         const index = buttons.indexOf(doc.activeElement);
@@ -252,6 +297,8 @@
           open = false;
           shell?.addEventListener("click", click);
           shell?.addEventListener("pointerdown", settleTerminal);
+          shell?.addEventListener("focusin", focusName);
+          shell?.addEventListener("pointerover", focusName);
           const attachedShell = shell;
           const attachedHint = shell?.querySelector(".desktop-terminal-hint");
           hintHovered = false; hintFocused = false;
@@ -266,6 +313,8 @@
           detach = () => {
             attachedShell?.removeEventListener("click", click);
             attachedShell?.removeEventListener("pointerdown", settleTerminal);
+            attachedShell?.removeEventListener("focusin", focusName);
+            attachedShell?.removeEventListener("pointerover", focusName);
             attachedHint?.removeEventListener("mouseenter", enterHint);
             attachedHint?.removeEventListener("mouseleave", leaveHint);
             attachedHint?.removeEventListener("focusin", focusHint);
@@ -295,5 +344,5 @@
       }
     };
   }
-  return Object.freeze({ normalizeMode, readMode, saveMode, directoryRows, createController });
+  return Object.freeze({ normalizeMode, readMode, saveMode, directoryRows, listingDate, loginLine, createController });
 });

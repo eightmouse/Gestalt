@@ -159,6 +159,57 @@
     const { latest, earlier, earlierNotes } = projectBench(record, record ? notes : [], { excerpt: 1200, history: 3 });
     return { title: String(display.title || record?.title || "").trim() || "Untitled game", status: String(record?.status || display.status || "").trim(), recordId: record?.id || "", figures, latest, earlier, earlierNotes };
   }
+  // Dashboard plates. Each line is built from data already filed; a missing value is left out.
+  // Current Game: the Steam figures that are known, the achievement share for its bar, and the
+  // record's latest note.
+  function gamePlate(display, record, notes = []) {
+    const drive = gameDrive(display, record, notes);
+    if (!drive) return null;
+    const figures = drive.figures.filter((figure) => figure.value && figure.value !== "—");
+    const achievements = figures.find((figure) => figure.label === "Achievements");
+    const share = achievements ? Math.max(0, Math.min(100, Number.parseInt(achievements.value, 10))) : null;
+    return { figures, share: Number.isFinite(share) ? share : null, note: drive.latest ? { title: drive.latest.title, date: drive.latest.date } : null };
+  }
+  // Latest Log: minutes to read, at about 220 words a minute, from the text without markup.
+  function readingMinutes(text) {
+    const words = String(text || "").replace(/:::[^\n]*/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/<[^>]+>/g, " ").match(/[\p{L}\p{N}'’]+/gu) || [];
+    return words.length ? Math.max(1, Math.round(words.length / 220)) : 0;
+  }
+  // Projects: the next unfinished milestone, or the latest note's date when every milestone is done
+  // or none are filed.
+  function projectLine(record, notes = []) {
+    const next = projectWorkbench([record])?.nextStop;
+    if (next && next.state !== "ready") return `next: ${next.label}`;
+    const latest = projectBench(record, notes).latest;
+    return latest?.date ? `note ${latest.date.replace(/ \/ \d{4}$/, "").replace(/ /g, "")}` : "";
+  }
+  // Recent Activity without one record flooding it. Reads the activity newest first until the rows
+  // are full: a record with one or two entries keeps a row each, as before; three or more fold into
+  // one row at the newest entry, carrying how many more there are and their titles. Folding frees
+  // rows, so reading carries on to the records after it. An item only extends an already folded
+  // record once the rows are full, never pulls in a new one.
+  function condenseActivity(items = [], limit = 6, keyOf = (item) => item?.record?.id) {
+    const buckets = new Map();
+    let rows = 0;
+    (Array.isArray(items) ? items : []).some((item, index) => {
+      const key = keyOf(item) ?? item?.id;
+      const bucket = buckets.get(key);
+      const size = bucket ? bucket.entries.length : 0;
+      const delta = size === 2 ? -1 : size > 2 ? 0 : 1;
+      if (rows + delta > limit) return true;
+      rows += delta;
+      if (bucket) bucket.entries.push({ item, index });
+      else buckets.set(key, { entries: [{ item, index }] });
+      return false;
+    });
+    const out = [];
+    for (const { entries } of buckets.values()) {
+      if (entries.length < 3) { out.push(...entries); continue; }
+      const titles = entries.slice(1).map(({ item }) => String(item.noteTitle || item.detail || item.title || "").trim()).filter(Boolean);
+      out.push({ item: { ...entries[0].item, more: entries.length - 1, moreTitles: titles }, index: entries[0].index });
+    }
+    return out.sort((a, b) => a.index - b.index).slice(0, limit).map(({ item }) => item);
+  }
   function recentDispatches(featuredId, activity, now = Date.now()) {
     const day = 86_400_000;
     const today = Math.floor(now / day) * day;
@@ -249,5 +300,5 @@
     return stop;
   }
 
-  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gameDiskArt, machineReadout, weatherTrace, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
+  return { directory, stamp, bootMarkup, isHandheld, readingView, readingContents, recordPage, shelfSearchMin, filterShelfGames, gameShelfIndex, fieldPaperStack, projectWorkbench, projectBench, gameDrive, gamePlate, readingMinutes, projectLine, gameDiskArt, machineReadout, weatherTrace, condenseActivity, recentDispatches, normalizeBootMode, readBootMode, saveBootMode, markBootSeen, shouldPlayBoot, meterFrames, runBoot };
 });

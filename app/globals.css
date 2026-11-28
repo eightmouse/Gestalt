@@ -255,7 +255,7 @@ button {
   inset: -48px;
   pointer-events: none;
   background: var(--archive-image) center / cover no-repeat;
-  filter: blur(26px) grayscale(.35) brightness(.4);
+  filter: blur(26px) grayscale(.35) brightness(.3);
   opacity: 0;
   animation: boot-wall-in 420ms ease-out calc(1280ms + var(--boot-elapsed, 0ms)) both;
 }
@@ -11252,3 +11252,141 @@ body:has(> .os-behaviour-dialog[open]) { overflow: hidden; }
   .archive-shell > .workspace > .setup-bay .setup-tile--peripherals .setup-tile-icon { block-size: 48px; }
   .archive-shell > .workspace > .setup-bay .setup-tile--peripherals strong { font-size: 11px; }
 }
+
+/* Recent Activity: three or more entries of one record fold into one row; the chip counts the rest. */
+.activity-feed .activity-more {
+  display: inline-block;
+  margin-inline-start: .55em;
+  padding: 0 .45em;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font: 500 .72em / 1.5 var(--mono);
+  vertical-align: .12em;
+  letter-spacing: .04em;
+}
+
+/* Settings as a control panel: a tab rail at the left, one panel at a time, every option a card
+   that says what it does, and a drawn preview where the difference is something you can see. */
+.os-behaviour-frame { inline-size: min(calc(760px * var(--os-size)), 100%); }
+.os-behaviour-layout { display: grid; grid-template-columns: calc(150px * var(--os-size)) minmax(0, 1fr); min-block-size: 0; }
+.os-tabs { display: grid; align-content: start; gap: calc(4px * var(--os-size)); padding: calc(16px * var(--os-size)) calc(10px * var(--os-size)); border-inline-end: 1px solid var(--line); }
+.os-tabs button {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 1.2ch minmax(0, 1fr);
+  gap: 6px;
+  padding: calc(8px * var(--os-size)) calc(10px * var(--os-size));
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  text-align: start;
+  font: calc(13px * var(--os-size)) / 1.2 var(--mono);
+  cursor: pointer;
+}
+.os-tabs button > span { visibility: hidden; color: var(--accent); }
+.os-tabs button:is(:hover, :focus-visible) { border-color: var(--line); color: var(--text); outline: none; }
+.os-tabs button[aria-selected="true"] { border-color: var(--line-strong); background: rgba(var(--tone-ink, 217, 213, 193), .08); color: var(--text-strong); }
+.os-tabs button[aria-selected="true"] > span { visibility: visible; }
+.os-panel { display: none; gap: calc(20px * var(--os-size)); }
+.os-panel[data-active] { display: grid; }
+.os-preference .os-preference-options { gap: calc(8px * var(--os-size)); margin-block-start: calc(8px * var(--os-size)); }
+.os-preference .os-preference-options .os-option {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 4px;
+  block-size: 100%;
+  padding: calc(10px * var(--os-size));
+  text-align: start;
+}
+.os-option b { color: var(--text); font-weight: 400; font-size: calc(14px * var(--os-size)); }
+.os-preference .os-option small { margin: 0; color: var(--muted); font-size: calc(12px * var(--os-size)); line-height: 1.35; }
+.os-preference-options input:checked + .os-option b { color: var(--text-strong); }
+.os-preference-options input:checked + .os-option { box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* The previews: little drawings of each mode, not screenshots, so they never go stale. */
+.os-preview { position: relative; display: block; inline-size: 100%; aspect-ratio: 16 / 9; margin-block-end: 4px; overflow: hidden; border: 1px solid var(--line); }
+.os-preview::before, .os-preview::after { content: ""; position: absolute; }
+.os-preview[data-preview="appearance-night"] { background: #0d100e; }
+.os-preview[data-preview="appearance-night"]::before { inset: 14% 10% 44% 10%; background: #1b211d; box-shadow: 0 0 0 1px #2a322c; }
+.os-preview[data-preview="appearance-night"]::after { inset: 62% 52% 12% 10%; background: #14302a; box-shadow: 0 0 12px rgb(107 211 186 / .45); }
+.os-preview[data-preview="appearance-day"] { background: #d9dccf; }
+.os-preview[data-preview="appearance-day"]::before { inset: 14% 10% 44% 10%; background: #eef0e6; box-shadow: 0 0 0 1px #b8bdae; }
+.os-preview[data-preview="appearance-day"]::after { inset: 62% 52% 12% 10%; background: #c9d6cc; }
+.os-preview[data-preview="appearance-auto"] { background: linear-gradient(90deg, #d9dccf 50%, #0d100e 50%); }
+.os-preview[data-preview="appearance-auto"]::before { inset: 14% 10% 44% 10%; background: linear-gradient(90deg, #eef0e6 50%, #1b211d 50%); }
+.os-preview[data-preview="appearance-auto"]::after { inset: 8% auto auto 50%; inline-size: 1px; block-size: 84%; background: var(--line-strong); }
+.os-preview[data-preview="navigation-fixed"] { background: #0f1210; }
+.os-preview[data-preview="navigation-fixed"]::before { inset: 0 auto 0 0; inline-size: 26%; background: #171c18; border-inline-end: 1px solid #2a322c; }
+.os-preview[data-preview="navigation-fixed"]::after { inset: 16% 8% 16% 34%; background: repeating-linear-gradient(180deg, #1f2621 0 22%, transparent 22% 30%); }
+.os-preview[data-preview="navigation-terminal"] { background: repeating-linear-gradient(180deg, #161b17 0 20%, #0f1210 20% 28%); }
+.os-preview[data-preview="navigation-terminal"]::before { inset: 24% 24%; background: #111917; box-shadow: 0 0 0 1px #3a4a40, 0 6px 14px rgb(0 0 0 / .6); }
+.os-preview[data-preview="navigation-terminal"]::after { inset: 34% 30% auto; block-size: 30%; background: repeating-linear-gradient(180deg, #9fd8b8 0 2px, transparent 2px 6px); opacity: .55; }
+.os-preview[data-preview="memory-legacy"] { background: #0c0f0e; }
+.os-preview[data-preview="memory-legacy"]::before { inset: 20% 35%; aspect-ratio: 1; margin: auto; border-radius: 50%; border: 1px solid rgb(143 228 206 / .5); }
+.os-preview[data-preview="memory-legacy"]::after { inset: 42% 46%; border-radius: 50%; background: rgb(143 228 206 / .7); box-shadow: 0 0 10px rgb(143 228 206 / .6); }
+.os-preview[data-preview="memory-trace"] { background: #06110e; }
+.os-preview[data-preview="memory-trace"]::before { inset: 18% 30% 18% 10%; background: repeating-linear-gradient(180deg, rgb(130 250 215 / .65) 0 2px, transparent 2px 9px); filter: drop-shadow(0 0 3px rgb(100 232 196 / .6)); }
+.os-preview[data-preview="memory-trace"]::after { inset: 18% auto auto 8%; inline-size: 2px; block-size: 64%; background: repeating-linear-gradient(180deg, rgb(111 141 130 / .8) 0 2px, transparent 2px 9px); }
+
+.os-privacy { display: grid; gap: calc(8px * var(--os-size)); }
+.os-privacy h3 { margin: calc(6px * var(--os-size)) 0 0; color: var(--text-strong); font: 400 calc(13px * var(--os-size)) / 1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.os-privacy p { margin: 0; color: var(--text); font-size: calc(14px * var(--os-size)); line-height: 1.55; }
+
+/* Handheld: no rail, every panel stacked, as before. */
+@media (max-width: 760px) {
+  .os-behaviour-layout { grid-template-columns: minmax(0, 1fr); }
+  .os-tabs { display: none; }
+  .os-panel { display: grid; }
+  .os-panel[data-os-panel="navigation"] { display: none; }
+  .os-preview { display: none; }
+}
+/* One height for every tab, so switching never makes the window jump. */
+@media (min-width: 761px) { .os-behaviour-layout { block-size: min(calc(440px * var(--os-size)), calc(100dvh - 48px - 48px * var(--os-size))); } }
+/* Settings: a compact title bar like the other windows, and a footer that stays on the bottom edge.
+   Only the open panel scrolls, and only when it has to. */
+.os-behaviour-frame { grid-template-rows: calc(38px * var(--os-size)) minmax(0, 1fr); }
+.os-behaviour-frame .window-bar { block-size: calc(38px * var(--os-size)); }
+.os-behaviour-frame .window-actions button { inline-size: calc(26px * var(--os-size)); block-size: calc(26px * var(--os-size)); }
+@media (min-width: 761px) {
+  .os-behaviour-layout { block-size: min(calc(440px * var(--os-size)), calc(100dvh - 48px - 38px * var(--os-size))); }
+  .os-behaviour-layout > .os-behaviour-body { grid-template-rows: minmax(0, 1fr) auto; gap: calc(16px * var(--os-size)); overflow: hidden; }
+  .os-behaviour-layout .os-panel[data-active] { align-content: start; min-block-size: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--accent-dim) transparent; }
+}
+@media (min-width: 761px) {
+  .os-behaviour-layout { block-size: min(calc(480px * var(--os-size)), calc(100dvh - 48px - 38px * var(--os-size))); }
+  .os-preference-options[data-options="2"] .os-preview { inline-size: 72%; }
+}
+
+/* Richer plates. Current Game: the figures Steam knows, an achievement bar and the latest note.
+   Latest Log: its title, and a foot with the reading time and the papers on the desk. */
+.current-game .current-game-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; margin: calc(8px * var(--desktop-size, 1)) 0 0; }
+.current-game .current-game-figures div { display: grid; gap: 1px; min-inline-size: 0; }
+.current-game .current-game-figures dt { color: var(--muted); font: calc(10px * var(--desktop-size, 1)) / 1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.current-game .current-game-figures dd { margin: 0; overflow: hidden; color: var(--text-strong); font: calc(13px * var(--desktop-size, 1)) / 1.3 var(--mono); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.current-game .current-game-bar { display: block; block-size: 3px; margin-block-start: 6px; background: var(--line); }
+.current-game .current-game-bar i { display: block; inline-size: var(--share, 0%); block-size: 100%; background: var(--text); }
+.current-game .current-game-note { display: block; margin-block-start: calc(8px * var(--desktop-size, 1)); overflow: hidden; color: var(--muted); font: calc(12px * var(--desktop-size, 1)) / 1.3 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.latest-log .latest-log-title { overflow: hidden; color: var(--text-strong); font: 500 calc(15px * var(--desktop-size, 1)) / 1.25 var(--sans); text-overflow: ellipsis; white-space: nowrap; }
+.latest-log .latest-log-meta { padding-block-start: 6px; border-block-start: 1px solid var(--line); color: var(--muted); font: calc(11px * var(--desktop-size, 1)) / 1.3 var(--mono); letter-spacing: .04em; }
+/* Latest Log fits its plate: anchored to the top, tighter spacing, a two-line excerpt under the
+   title, so the date and the foot are never clipped. */
+.archive-shell > .workspace > .dashboard-grid .latest-log-panel > div { align-items: start; }
+.archive-shell > .workspace > .dashboard-grid .latest-log:has(.latest-log-title) { gap: calc(6px * var(--desktop-size, 1)); }
+.latest-log:has(.latest-log-title) p { -webkit-line-clamp: 2; }
+/* The scan: one soft line, full width, attached to the rail. No box, no edges. */
+.latest-log-signal::before { inset-block-start: calc(-1 * var(--dashboard-log-tick-size)); background: linear-gradient(180deg, transparent, rgba(var(--tone-accent, 200, 189, 159), .7)); inline-size: 1px; }
+.latest-log-signal::after {
+  inset-inline: 0;
+  max-inline-size: none;
+  background: linear-gradient(180deg, transparent, rgba(var(--tone-accent, 200, 189, 159), .07) 70%, rgba(var(--tone-accent, 200, 189, 159), .16) 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000, rgb(0 0 0 / .6) 55%, transparent);
+  mask-image: linear-gradient(90deg, #000, rgb(0 0 0 / .6) 55%, transparent);
+  border-block-end: 1px solid rgba(var(--tone-accent, 200, 189, 159), .28);
+}
+/* The session reads clearly over the wallpaper: a darker pool behind the operator and a soft shadow
+   under every line. */
+.boot-wall::after { background: radial-gradient(ellipse 42% 40% at 50% 40%, rgb(0 0 0 / .45), transparent 100%), radial-gradient(ellipse at 50% 42%, transparent 30%, rgb(0 0 0 / .5) 100%); }
+.boot-session :is(.boot-session-label, .boot-session-user, .boot-session-detail) { text-shadow: 0 1px 2px rgb(0 0 0 / .85), 0 0 18px rgb(0 0 0 / .6); }
+.boot-session .boot-session-label { color: var(--text); letter-spacing: .08em; }
+.boot-session .boot-session-detail { color: var(--text-strong); }

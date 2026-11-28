@@ -20,6 +20,9 @@ export type ActivityEntry = {
   detail: string;
   record: RecordEntry;
   title: string;
+  /** Set when three or more entries of one record fold into this row. */
+  more?: number;
+  moreTitles?: string[];
 };
 
 export function formatClock(date: Date | null): string {
@@ -68,7 +71,8 @@ export function activityFreshness(value: string, now = new Date()): "new" | "old
   const activityTime = new Date(year, month - 1, day).getTime();
   const age = now.getTime() - activityTime;
 
-  return age >= 0 && age <= 48 * 60 * 60 * 1000 ? "new" : "old";
+  // A note dated up to a day ahead (another timezone, a clock a little behind) is still new.
+  return age >= -24 * 60 * 60 * 1000 && age <= 48 * 60 * 60 * 1000 ? "new" : "old";
 }
 
 export function recordHeaderImage(record: RecordEntry): string {

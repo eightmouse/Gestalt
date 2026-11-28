@@ -101,11 +101,44 @@
     if (key === "pocketBoot") return `<small data-os-pocket-note>${remember ? "Play once per tab session." : "Local memory is required to remember this choice."}</small>`;
     return "";
   }
+  // Settings is a small control panel: a rail of four tabs (Display, Motion, Navigation, Privacy),
+  // and every option is a card that says what it does. The options whose difference you can see
+  // carry a small drawn preview (CSS, so it never goes stale). Handheld shows every panel stacked.
+  const optionDetails = {
+    appearance: { night: "Dark plates, lit screens", day: "Paper light, no glow", auto: "Follows your system" },
+    entry: { first: "The open beat plays once per visit", always: "Every record opens on the beat", off: "Records open instantly" },
+    startup: { full: "Power-on, readiness and login", quick: "A short boot, straight to work" },
+    pocketBoot: { once: "Boots once per session", always: "Boots on every visit" },
+    seasonal: { auto: "Small touches on days that matter", off: "No seasonal touches" },
+    navigation: { fixed: "The archive list stays on the left", terminal: "A full-width desk; T opens the terminal" },
+    memory: { legacy: "The original drifting visual", trace: "Live code from your session" }
+  };
+  const previewed = new Set(["appearance", "navigation", "memory"]);
+  const settingsTabs = [
+    { id: "display", title: "Display", keys: ["appearance", "memory"] },
+    { id: "motion", title: "Motion", keys: ["entry", "startup", "pocketBoot", "seasonal"] },
+    { id: "navigation", title: "Navigation", keys: ["navigation"] },
+    { id: "privacy", title: "Privacy", keys: [] }
+  ];
+  function renderGroup(group, selected, remember) {
+    return `<fieldset class="os-preference" data-os-group="${group.key}"><legend>${group.title}</legend><div class="os-preference-options" data-options="${group.options.length}">${group.options.map(([value, label]) => `<label><input type="radio" name="os-${group.key}" data-os-preference="${group.key}" value="${value}"${selected[group.key] === value ? " checked" : ""}${needsLocalMemory(group.key) && !remember ? " disabled" : ""}><span class="os-option">${previewed.has(group.key) ? `<i class="os-preview" data-preview="${group.key}-${value}" aria-hidden="true"></i>` : ""}<b>${label}</b><small>${optionDetails[group.key]?.[value] || ""}</small></span></label>`).join("")}</div>${preferenceNote(group.key, remember)}</fieldset>`;
+  }
+  function renderPrivacy() {
+    return `<section class="os-privacy" aria-label="Privacy">
+      <h3>Local memory</h3>
+      <p>When you allow it, Gestalt remembers a few choices on this device only: your settings, the startup you picked and when you were last here. Nothing leaves your browser, and clearing site data forgets it.</p>
+      <h3>Auto Weather</h3>
+      <p>The weather plate asks ipapi.co for an approximate city from your connection's IP address, then reads that city's forecast from Open-Meteo. It is never your exact place, and Gestalt does not keep it.</p>
+    </section>`;
+  }
   function renderContent(values, remember) {
     const selected = normalizeValues(values);
     return `<article class="os-behaviour-frame"><header class="window-bar"><span>// SETTINGS</span><div class="window-actions"><button type="button" data-window-action="close" data-os-close aria-label="Close Settings">close</button></div></header>
-      <div class="os-behaviour-body">${groups.map((group) => `<fieldset class="os-preference" data-os-group="${group.key}"><legend>${group.title}</legend><div class="os-preference-options" data-options="${group.options.length}">${group.options.map(([value, label]) => `<label><input type="radio" name="os-${group.key}" data-os-preference="${group.key}" value="${value}"${selected[group.key] === value ? " checked" : ""}${needsLocalMemory(group.key) && !remember ? " disabled" : ""}><span>${label}</span></label>`).join("")}</div>${preferenceNote(group.key, remember)}</fieldset>`).join("")}
-      <footer class="os-behaviour-footnote">LOCAL MEMORY <span data-os-memory>${remember ? "ENABLED" : "SESSION ONLY"}</span></footer></div></article>`;
+      <div class="os-behaviour-layout">
+        <nav class="os-tabs" role="tablist" aria-label="Settings sections">${settingsTabs.map((tab, index) => `<button type="button" role="tab" id="os-tab-${tab.id}" aria-controls="os-panel-${tab.id}" aria-selected="${index === 0}" data-os-tab="${tab.id}"><span aria-hidden="true">&gt;</span>${tab.title}</button>`).join("")}</nav>
+        <div class="os-behaviour-body">${settingsTabs.map((tab, index) => `<section class="os-panel" role="tabpanel" id="os-panel-${tab.id}" aria-labelledby="os-tab-${tab.id}" data-os-panel="${tab.id}"${index === 0 ? " data-active" : ""}>${tab.keys.map((key) => renderGroup(groups.find((group) => group.key === key), selected, remember)).join("")}${tab.id === "privacy" ? renderPrivacy() : ""}</section>`).join("")}
+          <footer class="os-behaviour-footnote">LOCAL MEMORY <span data-os-memory>${remember ? "ENABLED" : "SESSION ONLY"}</span></footer></div>
+      </div></article>`;
   }
   function createController(host = globalThis.window) {
     const doc = host.document;
@@ -123,6 +156,11 @@
       dialog.querySelector("[data-os-memory]").textContent = remember ? "ENABLED" : "SESSION ONLY";
       dialog.querySelector("[data-os-startup-note]").textContent = remember ? "" : "Local memory required.";
       dialog.querySelector("[data-os-pocket-note]").textContent = remember ? "Play once per tab session." : "Local memory is required to remember this choice.";
+    }
+    function selectTab(id) {
+      if (!dialog) return;
+      for (const tab of dialog.querySelectorAll("[data-os-tab]")) tab.setAttribute?.("aria-selected", String(tab.dataset?.osTab === id));
+      for (const panel of dialog.querySelectorAll("[data-os-panel]")) panel.toggleAttribute?.("data-active", panel.dataset?.osPanel === id);
     }
     function close() {
       if (!dialog) return;
@@ -154,7 +192,9 @@
       dialog.addEventListener("cancel", (event) => { event.preventDefault(); event.stopPropagation(); dismiss(); });
       dialog.addEventListener("click", (event) => {
         event.stopPropagation();
-        if (event.target === dialog || event.target.closest?.("[data-os-close]")) dismiss();
+        if (event.target === dialog || event.target.closest?.("[data-os-close]")) { dismiss(); return; }
+        const tab = event.target.closest?.("[data-os-tab]");
+        if (tab) selectTab(tab.dataset.osTab);
       });
       dialog.addEventListener("change", (event) => {
         event.stopPropagation();
